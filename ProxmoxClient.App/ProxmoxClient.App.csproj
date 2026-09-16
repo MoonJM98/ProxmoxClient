@@ -30,6 +30,8 @@
         <!-- 로그인 화면 로고 — 실행 파일·작업 표시줄·모든 창의 아이콘 -->
         <ApplicationIcon>app.ico</ApplicationIcon>
         <Product>Proxmox Client</Product>
+        <AssemblyTitle>Proxmox Client</AssemblyTitle>
+        <Version>1.0.0</Version>
         <Copyright>Copyright (c) 2026 ProxmoxClient Contributors</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
