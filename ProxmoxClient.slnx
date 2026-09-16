@@ -1,0 +1,4 @@
+<Solution>
+    <Project Path="ProxmoxClient.App/ProxmoxClient.App.csproj"/>
+    <Project Path="ProxmoxClient.Core/ProxmoxClient.Core.csproj"/>
+</Solution>

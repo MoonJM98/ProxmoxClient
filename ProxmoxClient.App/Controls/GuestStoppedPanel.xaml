@@ -1,0 +1,20 @@
+<UserControl x:Class="ProxmoxClient.App.Controls.GuestStoppedPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+             xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+             Background="#F2141414">
+    <!-- 게스트가 꺼져 있을 때 콘솔 영역에 표시(noVNC 의 "Guest not running" 화면과 같은 역할) -->
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440" Margin="20">
+        <ic:PathIcon Data="{StaticResource IconPower}" Width="44" Height="44"
+                     IconBrush="{StaticResource BrushDim}" HorizontalAlignment="Center" />
+        <TextBlock x:Name="TitleText" Text="{loc:Tr GuestStoppedPanel_01}" FontSize="18" FontWeight="SemiBold"
+                   HorizontalAlignment="Center" Margin="0,14,0,6" />
+        <TextBlock x:Name="DetailText" Foreground="{StaticResource BrushDim}" TextWrapping="Wrap"
+                   TextAlignment="Center" HorizontalAlignment="Center" />
+        <Button x:Name="BtnStart" ic:IconAssist.Icon="{StaticResource IconPlay}"
+                Content="{loc:Tr GuestStoppedPanel_02}"
+                Style="{StaticResource AccentButton}" MinWidth="140" Margin="0,18,0,0"
+                HorizontalAlignment="Center" Click="OnStartClick" />
+    </StackPanel>
+</UserControl>

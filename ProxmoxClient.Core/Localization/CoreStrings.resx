@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" id="root"
+                xmlns="">
+        <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
+        <xsd:element name="root" msdata:IsDataSet="true">
+            <xsd:complexType>
+                <xsd:choice maxOccurs="unbounded">
+                    <xsd:element name="metadata">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" use="required" type="xsd:string"/>
+                            <xsd:attribute name="type" type="xsd:string"/>
+                            <xsd:attribute name="mimetype" type="xsd:string"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="assembly">
+                        <xsd:complexType>
+                            <xsd:attribute name="alias" type="xsd:string"/>
+                            <xsd:attribute name="name" type="xsd:string"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="data">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1"/>
+                            <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+                            <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="resheader">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsd:choice>
+            </xsd:complexType>
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <data name="ProxmoxApiClient_01" xml:space="preserve">
+    <value>프로필에 서버 주소(Host)가 설정되지 않았습니다.</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_02" xml:space="preserve">
+    <value>사용자 이름과 비밀번호가 설정되지 않았습니다.</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_03" xml:space="preserve">
+    <value>인증 티켓을 받지 못했습니다. 사용자 이름/비밀번호를 확인하세요.</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiException_01" xml:space="preserve">
+    <value>Proxmox API 요청이 실패했습니다 (HTTP {0}). {1}</value>
+        <comment>ProxmoxApiException.cs</comment>
+  </data>
+    <data name="ServerCertificateValidator_01" xml:space="preserve">
+    <value>서버 인증서가 이전에 신뢰한 인증서와 다릅니다({0}). 중간자 공격 가능성이 있어 연결을 차단했습니다.</value>
+        <comment>ServerCertificateValidator.cs</comment>
+  </data>
+    <data name="ServerCertificateValidator_02" xml:space="preserve">
+    <value>서버 인증서를 아직 신뢰하지 않았습니다({0}). 지문을 확인하고 신뢰해야 연결할 수 있습니다.</value>
+        <comment>ServerCertificateValidator.cs</comment>
+  </data>
+    <data name="PveAuthDomain_02" xml:space="preserve">
+    <value>{0} (기본)</value>
+        <comment>PveAuthDomain.cs</comment>
+  </data>
+    <data name="PveStorage_01" xml:space="preserve">
+    <value>사용 가능</value>
+        <comment>PveStorage.cs</comment>
+  </data>
+    <data name="PveStorage_02" xml:space="preserve">
+    <value>알 수 없음</value>
+        <comment>PveStorage.cs</comment>
+  </data>
+    <data name="SecretProtector_01" xml:space="preserve">
+    <value>비밀값 암호화(DPAPI)는 Windows 에서만 지원됩니다.</value>
+        <comment>SecretProtector.cs</comment>
+  </data>
+    <data name="ProxmoxTerminalSession_02" xml:space="preserve">
+    <value>터미널 세션은 한 번만 연결할 수 있습니다. 새 세션을 만드세요.</value>
+        <comment>ProxmoxTerminalSession.cs</comment>
+  </data>
+    <data name="ProxmoxTerminalSession_03" xml:space="preserve">
+    <value>터미널 프록시 시작 중...</value>
+        <comment>ProxmoxTerminalSession.cs</comment>
+  </data>
+    <data name="ProxmoxTerminalSession_04" xml:space="preserve">
+    <value>터미널 웹소켓 연결 중...</value>
+        <comment>ProxmoxTerminalSession.cs</comment>
+  </data>
+    <data name="ProxmoxTerminalSession_05" xml:space="preserve">
+    <value>터미널 인증 중...</value>
+        <comment>ProxmoxTerminalSession.cs</comment>
+  </data>
+    <data name="ProxmoxTerminalSession_06" xml:space="preserve">
+    <value>터미널 인증에 실패했습니다. 권한(VM.Console)과 티켓 만료 여부를 확인하세요.</value>
+        <comment>ProxmoxTerminalSession.cs</comment>
+  </data>
+    <data name="ProxmoxVncSession_01" xml:space="preserve">
+    <value>VNC 콘솔은 VM 전용입니다. CT 는 터미널 콘솔을 사용하세요.</value>
+        <comment>ProxmoxVncSession.cs</comment>
+  </data>
+    <data name="ProxmoxVncSession_02" xml:space="preserve">
+    <value>VNC 콘솔은 비밀번호(티켓) 인증 프로필에서만 지원됩니다. 프로필 인증 방식을 확인하세요. (SPICE는 API 토큰도 가능)</value>
+        <comment>ProxmoxVncSession.cs</comment>
+  </data>
+    <data name="ProxmoxVncSession_03" xml:space="preserve">
+    <value>VNC 프록시 시작 중...</value>
+        <comment>ProxmoxVncSession.cs</comment>
+  </data>
+    <data name="ProxmoxVncSession_04" xml:space="preserve">
+    <value>콘솔 웹소켓 연결 중...</value>
+        <comment>ProxmoxVncSession.cs</comment>
+  </data>
+    <data name="ProxmoxVncSession_05" xml:space="preserve">
+    <value>VNC 핸드셰이크 중...</value>
+        <comment>ProxmoxVncSession.cs</comment>
+  </data>
+    <data name="ProxmoxVncSession_06" xml:space="preserve">
+    <value>VNC 서버가 응답하지 않습니다. 콘솔을 다시 열어 주세요(티켓 만료 가능).</value>
+        <comment>ProxmoxVncSession.cs</comment>
+  </data>
+    <data name="RfbClient_01" xml:space="preserve">
+    <value>잘못된 RFB 인사말: {0}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_02" xml:space="preserve">
+    <value>지원하지 않는 RFB 버전입니다: {0}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_03" xml:space="preserve">
+    <value>VNC 연결이 거부되었습니다: {0}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_04" xml:space="preserve">
+    <value>VNC 인증에 실패했습니다. 콘솔을 다시 열어 주세요(티켓 만료 가능).</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_06" xml:space="preserve">
+    <value>VNC 연결이 종료되어 전송할 수 없습니다.</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_07" xml:space="preserve">
+    <value>알 수 없는 RFB 메시지 유형: {0}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_08" xml:space="preserve">
+    <value>zlib rect 길이 비정상: {0}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_09" xml:space="preserve">
+    <value>zlib 해제 부족: 행 {0}, {1}/{2}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_10" xml:space="preserve">
+    <value>Tight zlib 스트림 {0} 이(가) 손상되었습니다. 콘솔을 다시 연결하세요.</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_11" xml:space="preserve">
+    <value>Tight 알 수 없는 서브인코딩: 0x{0:X}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_12" xml:space="preserve">
+    <value>요청하지 않은 RFB 인코딩이 수신되었습니다: {0}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_13" xml:space="preserve">
+    <value>서버 사각형이 화면 범위를 벗어났습니다: ({0},{1}) {2}x{3}, 화면 {4}x{5}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_14" xml:space="preserve">
+    <value>지원하지 않는 VNC 해상도입니다: {0}x{1}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_15" xml:space="preserve">
+    <value>커서 크기 비정상: {0}x{1}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_16" xml:space="preserve">
+    <value>Tight 이미지 디코더 미설정</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_17" xml:space="preserve">
+    <value>Tight zlib 부족: {0}/{1}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_18" xml:space="preserve">
+    <value>Tight 알 수 없는 필터: {0}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="RfbClient_19" xml:space="preserve">
+    <value>VNC 연결이 끊어졌습니다.</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+    <data name="VncDesAuth_01" xml:space="preserve">
+    <value>VNC 챌린지는 16바이트여야 합니다.</value>
+        <comment>VncDesAuth.cs</comment>
+  </data>
+    <data name="OpenVpnManager_01" xml:space="preserve">
+    <value>이미 VPN에 연결되어 있거나 연결 중입니다.</value>
+        <comment>OpenVpnManager.cs</comment>
+  </data>
+    <data name="OpenVpnManager_02" xml:space="preserve">
+    <value>VPN 설정 파일을 찾을 수 없습니다: {0}</value>
+        <comment>OpenVpnManager.cs</comment>
+  </data>
+    <data name="OpenVpnManager_03" xml:space="preserve">
+    <value>openvpn.exe를 찾을 수 없습니다. OpenVPN을 설치하거나(기본 경로: </value>
+        <comment>OpenVpnManager.cs</comment>
+  </data>
+    <data name="OpenVpnManager_04" xml:space="preserve">
+    <value>C:\Program Files\OpenVPN\bin\openvpn.exe) 프로필에서 경로를 직접 지정하세요.</value>
+        <comment>OpenVpnManager.cs</comment>
+  </data>
+    <data name="OpenVpnManager_05" xml:space="preserve">
+    <value>openvpn 프로세스를 시작하지 못했습니다.</value>
+        <comment>OpenVpnManager.cs</comment>
+  </data>
+    <data name="OpenVpnManager_06" xml:space="preserve">
+    <value>openvpn 프로세스가 시작 직후 종료되었습니다. 설정 파일을 확인하세요.</value>
+        <comment>OpenVpnManager.cs</comment>
+  </data>
+    <data name="OpenVpnManager_07" xml:space="preserve">
+    <value>OpenVPN 관리 인터페이스(127.0.0.1:{0})에 연결하지 못했습니다.</value>
+        <comment>OpenVpnManager.cs</comment>
+  </data>
+    <data name="OpenVpnManager_08" xml:space="preserve">
+    <value>VPN 연결 시간이 초과되었습니다({0}초). 서버 상태와 설정 파일을 확인하세요.</value>
+        <comment>OpenVpnManager.cs</comment>
+  </data>
+    <data name="OpenVpnManager_09" xml:space="preserve">
+    <value>openvpn 프로세스가 연결 도중 종료되었습니다.</value>
+        <comment>OpenVpnManager.cs</comment>
+  </data>
+    <data name="OpenVpnManager_10" xml:space="preserve">
+    <value>사용자 이름/비밀번호 인증이 필요한 .ovpn 설정은 아직 지원되지 않습니다 (auth-user-pass 파일을 config에 포함하세요).</value>
+        <comment>OpenVpnManager.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_04" xml:space="preserve">
+    <value>스냅샷 이름을 입력하세요.</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_05" xml:space="preserve">
+    <value>VNC 콘솔은 비밀번호(티켓) 인증 프로필에서만 지원됩니다.</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_06" xml:space="preserve">
+    <value>터미널 콘솔은 비밀번호(티켓) 인증 프로필에서만 지원됩니다.</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_07" xml:space="preserve">
+    <value>SPICE 연결 정보를 받지 못했습니다.</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_08" xml:space="preserve">
+    <value>로그인이 필요합니다. 먼저 LoginAsync를 호출하세요.</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_09" xml:space="preserve">
+    <value>서버에 연결하지 못했습니다: {0}</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_10" xml:space="preserve">
+    <value>서버 응답 시간이 초과되었습니다.</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_11" xml:space="preserve">
+    <value>응답을 JSON으로 해석하지 못했습니다: {0}</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_12" xml:space="preserve">
+    <value>응답을 읽는 중 연결이 끊겼습니다: {0}</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="RfbClient_20" xml:space="preserve">
+    <value>지원하지 않는 VNC 보안 유형입니다: {0}</value>
+        <comment>RfbClient.cs</comment>
+  </data>
+</root>

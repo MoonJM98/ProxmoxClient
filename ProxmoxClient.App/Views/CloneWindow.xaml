@@ -1,0 +1,55 @@
+<Window x:Class="ProxmoxClient.App.Views.CloneWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        Style="{StaticResource ThemedWindow}"
+        Title="{loc:Tr CloneWindow_01}"
+        Width="580" SizeToContent="Height" MinWidth="520" MinHeight="340"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" ShowInTaskbar="False">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,16,20,10">
+                <TextBlock x:Name="HeaderText" Text="{loc:Tr CloneWindow_02}" FontSize="15" FontWeight="SemiBold"
+                           Margin="0,0,0,14" />
+
+                <ic:FormRow Label="{loc:Tr CloneWindow_03}">
+                    <TextBox x:Name="NewIdBox" ic:InputFilter.Mode="Integer" Width="140" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr MainWindow_40}" Hint="{loc:Tr CloneWindow_04}">
+                    <TextBox x:Name="NameBox" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr BackupWindow_05}" Hint="{loc:Tr CloneWindow_05}">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="RadioFull" Content="{loc:Tr CloneWindow_06}" IsChecked="True" />
+                        <RadioButton Content="{loc:Tr CloneWindow_07}" />
+                    </StackPanel>
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr CloneWindow_08}">
+                    <ComboBox x:Name="TargetNodeBox" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr CloneWindow_09}" Hint="{loc:Tr CloneWindow_10}">
+                    <ComboBox x:Name="StorageBox" />
+                </ic:FormRow>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button ic:IconAssist.Icon="{StaticResource IconCopy}" x:Name="BtnClone"
+                            Content="{loc:Tr CloneWindow_11}"
+                            Style="{StaticResource DialogPrimaryButton}" Click="OnClone" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr AppSettingsWindow_13}"
+                            Style="{StaticResource DialogButton}" IsCancel="True" />
+                </StackPanel>
+                <TextBlock x:Name="StatusText" Style="{StaticResource DialogStatus}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

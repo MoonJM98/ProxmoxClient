@@ -1,0 +1,103 @@
+<Window x:Class="ProxmoxClient.App.Views.CreateGuestWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        Style="{StaticResource ThemedWindow}"
+        Title="{loc:Tr CreateGuestWindow_01}"
+        Width="620" SizeToContent="Height" MaxHeight="800" MinWidth="560" MinHeight="420"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" ShowInTaskbar="False">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,16,20,10">
+                <TextBlock Text="{loc:Tr CreateGuestWindow_02}" Style="{StaticResource FormSection}" />
+                <ic:FormRow Label="{loc:Tr MainWindow_39}">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="RadioVm" Content="{loc:Tr CreateGuestWindow_03}" IsChecked="True"
+                                     Checked="OnKindChanged" />
+                        <RadioButton x:Name="RadioCt" Content="{loc:Tr CreateGuestWindow_04}" Checked="OnKindChanged" />
+                    </StackPanel>
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr MainWindow_41}">
+                    <ComboBox x:Name="NodeBox" SelectionChanged="OnNodeChanged" />
+                </ic:FormRow>
+                <ic:FormRow Label="VMID" Hint="{loc:Tr CreateGuestWindow_05}">
+                    <TextBox x:Name="VmidBox" ic:InputFilter.Mode="Integer" Width="140" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr CreateGuestWindow_06}">
+                    <TextBox x:Name="NameBox" />
+                </ic:FormRow>
+
+                <TextBlock Text="{loc:Tr CreateGuestWindow_07}" Style="{StaticResource FormSection}" />
+                <ic:FormRow Label="{loc:Tr CreateGuestWindow_08}">
+                    <TextBox x:Name="CoresBox" Text="2" ic:InputFilter.Mode="Integer" Width="140"
+                             HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr CreateGuestWindow_09}">
+                    <TextBox x:Name="MemoryBox" Text="2048" ic:InputFilter.Mode="Integer" Width="140"
+                             HorizontalAlignment="Left" />
+                </ic:FormRow>
+
+                <StackPanel x:Name="VmPanel">
+                    <TextBlock Text="{loc:Tr CreateGuestWindow_10}" Style="{StaticResource FormSection}" />
+                    <ic:FormRow Label="{loc:Tr CreateGuestWindow_11}">
+                        <ComboBox x:Name="IsoStorageBox" SelectionChanged="OnIsoStorageChanged" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr CreateGuestWindow_12}">
+                        <ComboBox x:Name="IsoBox" />
+                    </ic:FormRow>
+                </StackPanel>
+
+                <StackPanel x:Name="CtPanel" Visibility="Collapsed">
+                    <TextBlock Text="{loc:Tr CreateGuestWindow_13}" Style="{StaticResource FormSection}" />
+                    <ic:FormRow Label="{loc:Tr CreateGuestWindow_14}">
+                        <ComboBox x:Name="TemplateStorageBox" SelectionChanged="OnTemplateStorageChanged" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr CreateGuestWindow_15}">
+                        <ComboBox x:Name="TemplateBox" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr CreateGuestWindow_16}">
+                        <TextBox x:Name="SwapBox" Text="512" ic:InputFilter.Mode="Integer" Width="140"
+                                 HorizontalAlignment="Left" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr CreateGuestWindow_17}" Hint="{loc:Tr CreateGuestWindow_18}">
+                        <PasswordBox x:Name="RootPasswordBox" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="IP" Hint="{loc:Tr CreateGuestWindow_19}">
+                        <TextBox x:Name="IpBox" Text="dhcp" />
+                    </ic:FormRow>
+                </StackPanel>
+
+                <TextBlock Text="{loc:Tr CreateGuestWindow_20}" Style="{StaticResource FormSection}" />
+                <ic:FormRow Label="{loc:Tr CreateGuestWindow_21}">
+                    <ComboBox x:Name="DiskStorageBox" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr CreateGuestWindow_22}">
+                    <TextBox x:Name="DiskSizeBox" Text="32" ic:InputFilter.Mode="Integer" Width="140"
+                             HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr CreateGuestWindow_23}" Hint="{loc:Tr CreateGuestWindow_24}">
+                    <ComboBox x:Name="BridgeBox" IsEditable="True" Text="vmbr0" Width="220" HorizontalAlignment="Left" />
+                </ic:FormRow>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button ic:IconAssist.Icon="{StaticResource IconPlus}" x:Name="BtnCreate"
+                            Content="{loc:Tr CreateGuestWindow_25}"
+                            Style="{StaticResource DialogPrimaryButton}" Click="OnCreate" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr AppSettingsWindow_13}"
+                            Style="{StaticResource DialogButton}" IsCancel="True" />
+                </StackPanel>
+                <TextBlock x:Name="StatusText" Style="{StaticResource DialogStatus}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

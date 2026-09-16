@@ -1,0 +1,76 @@
+<Window x:Class="ProxmoxClient.App.Views.ConsoleSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        Style="{StaticResource ThemedWindow}"
+        Title="{loc:Tr ConsoleSettingsWindow_01}"
+        Width="640" SizeToContent="Height" MaxHeight="800" MinWidth="580" MinHeight="380"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" ShowInTaskbar="False">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,16,20,10">
+                <TextBlock Text="{loc:Tr ConsoleSettingsWindow_02}" Style="{StaticResource FormSection}" />
+                <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_03}" Hint="{loc:Tr ConsoleSettingsWindow_04}">
+                    <ComboBox x:Name="EncodingBox" SelectionChanged="OnEncodingChanged" Width="220"
+                              HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowQuality" Label="{loc:Tr ConsoleSettingsWindow_05}"
+                            Hint="{loc:Tr ConsoleSettingsWindow_06}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Width="28" TextAlignment="Right" VerticalAlignment="Center"
+                                   Text="{Binding Value, ElementName=QualitySlider, Mode=OneWay, StringFormat={}{0:0}}" />
+                        <Slider x:Name="QualitySlider" Minimum="0" Maximum="9" TickFrequency="1"
+                                IsSnapToTickEnabled="True"
+                                SmallChange="1" LargeChange="1" Margin="0,4,10,0" />
+                    </DockPanel>
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowCompression" Label="{loc:Tr ConsoleSettingsWindow_07}"
+                            Hint="{loc:Tr ConsoleSettingsWindow_08}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Width="28" TextAlignment="Right" VerticalAlignment="Center"
+                                   Text="{Binding Value, ElementName=CompressionSlider, Mode=OneWay, StringFormat={}{0:0}}" />
+                        <Slider x:Name="CompressionSlider" Minimum="0" Maximum="9" TickFrequency="1"
+                                IsSnapToTickEnabled="True"
+                                SmallChange="1" LargeChange="1" Margin="0,4,10,0" />
+                    </DockPanel>
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_09}"
+                            Hint="{loc:Tr ConsoleSettingsWindow_10}">
+                    <CheckBox x:Name="ExtendedKeysCheck" Content="{loc:Tr ConsoleSettingsWindow_11}" Margin="0,6,0,0" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_12}">
+                    <CheckBox x:Name="SmoothScalingCheck" Content="{loc:Tr ConsoleSettingsWindow_13}" Margin="0,6,0,0" />
+                </ic:FormRow>
+
+                <TextBlock Text="{loc:Tr ConsoleSettingsWindow_14}" Style="{StaticResource FormSection}" />
+                <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_15}" Hint="{loc:Tr ConsoleSettingsWindow_16}">
+                    <ComboBox x:Name="FontBox" IsEditable="True" Width="260" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowFontSize" Label="{loc:Tr ConsoleSettingsWindow_17}">
+                    <TextBox x:Name="FontSizeBox" ic:InputFilter.Mode="Integer" Width="140" HorizontalAlignment="Left" />
+                </ic:FormRow>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button ic:IconAssist.Icon="{StaticResource IconSave}" x:Name="BtnSave"
+                            Content="{loc:Tr AppSettingsWindow_12}"
+                            Style="{StaticResource DialogPrimaryButton}" Click="OnSave" IsDefault="True" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr AppSettingsWindow_13}"
+                            Style="{StaticResource DialogButton}" IsCancel="True" />
+                </StackPanel>
+                <TextBlock x:Name="StatusText" Style="{StaticResource DialogStatus}"
+                           Foreground="{StaticResource BrushDim}"
+                           Text="{loc:Tr ConsoleSettingsWindow_18}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

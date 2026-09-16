@@ -1,0 +1,64 @@
+<Window x:Class="ProxmoxClient.App.Views.BackupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        Style="{StaticResource ThemedWindow}"
+        Title="{loc:Tr BackupWindow_01}"
+        Width="580" SizeToContent="Height" MinWidth="520" MinHeight="300"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" ShowInTaskbar="False">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,16,20,10">
+                <TextBlock x:Name="HeaderText" Text="{loc:Tr BackupWindow_02}" FontSize="15" FontWeight="SemiBold"
+                           Margin="0,0,0,14" />
+
+                <ic:FormRow Label="{loc:Tr BackupWindow_03}" Hint="{loc:Tr BackupWindow_04}">
+                    <ComboBox x:Name="StorageBox">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Storage, Mode=OneWay}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr BackupWindow_05}">
+                    <WrapPanel>
+                        <RadioButton x:Name="RadioSnapshot" Content="{loc:Tr BackupWindow_06}" IsChecked="True" />
+                        <RadioButton x:Name="RadioSuspend" Content="{loc:Tr BackupWindow_07}" />
+                        <RadioButton x:Name="RadioStop" Content="{loc:Tr BackupWindow_08}" />
+                    </WrapPanel>
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr BackupWindow_09}">
+                    <WrapPanel>
+                        <RadioButton x:Name="RadioNoCompress" Content="{loc:Tr BackupWindow_10}" IsChecked="True" />
+                        <RadioButton x:Name="RadioZstd" Content="ZSTD" />
+                        <RadioButton x:Name="RadioLzo" Content="LZO" />
+                        <RadioButton x:Name="RadioGzip" Content="GZIP" />
+                    </WrapPanel>
+                </ic:FormRow>
+
+                <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
+                           Text="{loc:Tr BackupWindow_11}" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button ic:IconAssist.Icon="{StaticResource IconArchive}" x:Name="BtnBackup"
+                            Content="{loc:Tr BackupWindow_12}"
+                            Style="{StaticResource DialogPrimaryButton}" Click="OnBackup" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr AppSettingsWindow_13}"
+                            Style="{StaticResource DialogButton}" IsCancel="True" />
+                </StackPanel>
+                <TextBlock x:Name="StatusText" Style="{StaticResource DialogStatus}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,55 @@
+<Window x:Class="ProxmoxClient.App.Views.VirtViewerSetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        Style="{StaticResource ThemedWindow}"
+        Title="{loc:Tr VirtViewerSetupWindow_01}"
+        Width="720" SizeToContent="Height" MinWidth="680" MinHeight="300"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" ShowInTaskbar="False">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="20,16,20,14">
+            <TextBlock Text="{loc:Tr VirtViewerSetupWindow_02}" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+            <Border Style="{StaticResource FormPanel}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="{loc:Tr VirtViewerSetupWindow_03}" Foreground="{StaticResource BrushDim}"
+                               Margin="0,0,0,4" />
+                    <TextBlock x:Name="StatusText" Text="{loc:Tr VirtViewerSetupWindow_04}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Foreground="{StaticResource BrushDim}" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="12"
+                       Text="{loc:Tr VirtViewerSetupWindow_05}" />
+
+            <ProgressBar x:Name="DownloadProgress" Height="14" Minimum="0" Maximum="100" Margin="0,0,0,4"
+                         Visibility="Collapsed" />
+            <TextBlock x:Name="ProgressText" Foreground="{StaticResource BrushDim}" FontSize="11"
+                       Visibility="Collapsed" />
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button ic:IconAssist.Icon="{StaticResource IconDownload}" x:Name="BtnInstall"
+                            Content="{loc:Tr VirtViewerSetupWindow_06}"
+                            Style="{StaticResource DialogPrimaryButton}" Click="OnAutoInstall" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconSearch}" x:Name="BtnRescan"
+                            Content="{loc:Tr VirtViewerSetupWindow_07}"
+                            Style="{StaticResource DialogButton}" Click="OnRescan" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconX}" x:Name="BtnClose"
+                            Content="{loc:Tr FirewallWindow_18}"
+                            Style="{StaticResource DialogButton}" IsCancel="True" Click="OnClose" />
+                </StackPanel>
+                <Button ic:IconAssist.Icon="{StaticResource IconExternal}" x:Name="BtnPage"
+                        Content="{loc:Tr VirtViewerSetupWindow_08}"
+                        HorizontalAlignment="Left" Click="OnOpenPage" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

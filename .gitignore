@@ -1,0 +1,82 @@
+# ---------------------------------------------------------------- 빌드 산출물
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.binlog
+
+# 게시·배포
+[Pp]ublish/
+*.publishsettings
+*.pubxml.user
+*.zip
+*.nupkg
+*.snupkg
+
+# --------------------------------------------------------------------- 도구
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+
+# Rider / ReSharper
+.idea/
+*.sln.iml
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Visual Studio Code (설정은 공유하되 로컬 상태만 제외)
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# 이 저장소에서 쓰는 코드 분석·에이전트 도구 캐시
+.codegraph/
+.omo/
+.opencode/
+.claude/
+
+# ------------------------------------------------------------------- 패키지
+# packages/ 는 저장소 동봉 패키지 폴더이므로 추적한다(NuGet 복원 캐시가 아님)
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# --------------------------------------------------------- 테스트·프로파일링
+[Tt]est[Rr]esult*/
+[Dd]ebug[Pp]ublic/
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+*.psess
+*.vsp
+*.vspx
+
+# ----------------------------------------------------------------- 운영체제
+[Tt]humbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# --------------------------------------------------------------------- 기타
+# 로컬 비밀값·연결 정보는 절대 커밋하지 않는다
+*.env
+.env.*
+appsettings.*.local.json
+secrets.json
+
+# 임시 파일
+*.tmp
+*.bak
+*.swp
+*~

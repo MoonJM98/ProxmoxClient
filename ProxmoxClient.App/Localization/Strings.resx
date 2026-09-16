@@ -1,0 +1,2159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" id="root"
+                xmlns="">
+        <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
+        <xsd:element name="root" msdata:IsDataSet="true">
+            <xsd:complexType>
+                <xsd:choice maxOccurs="unbounded">
+                    <xsd:element name="metadata">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" use="required" type="xsd:string"/>
+                            <xsd:attribute name="type" type="xsd:string"/>
+                            <xsd:attribute name="mimetype" type="xsd:string"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="assembly">
+                        <xsd:complexType>
+                            <xsd:attribute name="alias" type="xsd:string"/>
+                            <xsd:attribute name="name" type="xsd:string"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="data">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1"/>
+                            <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+                            <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="resheader">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsd:choice>
+            </xsd:complexType>
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <data name="GuestStoppedPanel_01" xml:space="preserve">
+    <value>게스트가 실행 중이 아닙니다</value>
+        <comment>GuestStoppedPanel.xaml · Text</comment>
+  </data>
+    <data name="GuestStoppedPanel_02" xml:space="preserve">
+    <value>게스트 시작</value>
+        <comment>GuestStoppedPanel.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_01" xml:space="preserve">
+    <value>서버 전환</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_02" xml:space="preserve">
+    <value>연결 끊기</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_03" xml:space="preserve">
+    <value>새로고침</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_04" xml:space="preserve">
+    <value>설정</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_05" xml:space="preserve">
+    <value>새로고침 간격·콘솔 설정</value>
+        <comment>MainWindow.xaml · ToolTip</comment>
+  </data>
+    <data name="MainWindow_06" xml:space="preserve">
+    <value>자동 새로고침</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_07" xml:space="preserve">
+    <value>스토리지</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_08" xml:space="preserve">
+    <value>아래 목록에서 VM/CT를 선택하면 상세 정보와 그래프가 표시됩니다.</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_09" xml:space="preserve">
+    <value>콘솔</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_10" xml:space="preserve">
+    <value>더 보기</value>
+        <comment>MainWindow.xaml · ToolTip</comment>
+  </data>
+    <data name="MainWindow_11" xml:space="preserve">
+    <value>일시정지</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_12" xml:space="preserve">
+    <value>재개</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_13" xml:space="preserve">
+    <value>최대 절전</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_14" xml:space="preserve">
+    <value>복제...</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_15" xml:space="preserve">
+    <value>백업...</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_16" xml:space="preserve">
+    <value>방화벽...</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_17" xml:space="preserve">
+    <value> · 노드 </value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_18" xml:space="preserve">
+    <value> 코어</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_19" xml:space="preserve">
+    <value>메모리</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_20" xml:space="preserve">
+    <value>디스크</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_21" xml:space="preserve">
+    <value>업타임</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_22" xml:space="preserve">
+    <value>풀</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_23" xml:space="preserve">
+    <value>태그</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_24" xml:space="preserve">
+    <value>시간</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_25" xml:space="preserve">
+    <value>일</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_26" xml:space="preserve">
+    <value>주</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_27" xml:space="preserve">
+    <value>월</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_28" xml:space="preserve">
+    <value>년</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_29" xml:space="preserve">
+    <value>CPU · 메모리 · 네트워크 · 디스크 IO</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_30" xml:space="preserve">
+    <value>새 게스트</value>
+        <comment>MainWindow.xaml · Content</comment>
+  </data>
+    <data name="MainWindow_31" xml:space="preserve">
+    <value>게스트 목록</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_32" xml:space="preserve">
+    <value>개</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_33" xml:space="preserve">
+    <value>시작</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_34" xml:space="preserve">
+    <value>재부팅</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_35" xml:space="preserve">
+    <value>종료</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_36" xml:space="preserve">
+    <value>정지(강제)</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_37" xml:space="preserve">
+    <value>스냅샷...</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_38" xml:space="preserve">
+    <value>설정...</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_39" xml:space="preserve">
+    <value>종류</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_40" xml:space="preserve">
+    <value>이름</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_41" xml:space="preserve">
+    <value>노드</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_42" xml:space="preserve">
+    <value>상태</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_43" xml:space="preserve">
+    <value>템플릿</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_44" xml:space="preserve">
+    <value> · 코어 </value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_45" xml:space="preserve">
+    <value>메모리 </value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_46" xml:space="preserve">
+    <value>커널</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_47" xml:space="preserve">
+    <value>CPU 코어</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_48" xml:space="preserve">
+    <value>평균 부하</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_49" xml:space="preserve">
+    <value>   (1분 · 5분 · 15분)</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_50" xml:space="preserve">
+    <value>스왑</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_51" xml:space="preserve">
+    <value>루트 파일시스템</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_52" xml:space="preserve">
+    <value>노드 그래프 (rrd)</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_53" xml:space="preserve">
+    <value>기간:</value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_54" xml:space="preserve">
+    <value>유형</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_55" xml:space="preserve">
+    <value>콘텐츠</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_56" xml:space="preserve">
+    <value>사용량</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_57" xml:space="preserve">
+    <value>사용</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_58" xml:space="preserve">
+    <value>총 용량</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_59" xml:space="preserve">
+    <value>대상</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_60" xml:space="preserve">
+    <value>사용자</value>
+        <comment>MainWindow.xaml · Header</comment>
+  </data>
+    <data name="MainWindow_61" xml:space="preserve">
+    <value>게스트 </value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="MainWindow_62" xml:space="preserve">
+    <value>개 · 노드 </value>
+        <comment>MainWindow.xaml · Text</comment>
+  </data>
+    <data name="AppSettingsWindow_01" xml:space="preserve">
+    <value>자동 새로고침 간격 (초)</value>
+        <comment>AppSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="AppSettingsWindow_02" xml:space="preserve">
+    <value>시작 시</value>
+        <comment>AppSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="AppSettingsWindow_03" xml:space="preserve">
+    <value>연결 후 자동 새로고침 켜기</value>
+        <comment>AppSettingsWindow.xaml · Content</comment>
+  </data>
+    <data name="AppSettingsWindow_04" xml:space="preserve">
+    <value>표시</value>
+        <comment>AppSettingsWindow.xaml · Text</comment>
+  </data>
+    <data name="AppSettingsWindow_05" xml:space="preserve">
+    <value>언어</value>
+        <comment>AppSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="AppSettingsWindow_06" xml:space="preserve">
+    <value>저장하면 즉시 적용됩니다. 번역이 없는 항목은 기본 언어(한국어)로 표시됩니다.</value>
+        <comment>AppSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="AppSettingsWindow_07" xml:space="preserve">
+    <value>용량 단위</value>
+        <comment>AppSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="AppSettingsWindow_08" xml:space="preserve">
+    <value>메모리·디스크·네트워크/디스크 IO 표시. 숫자 형식은 #,##0.## (예: 1,536.5 MB)</value>
+        <comment>AppSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="AppSettingsWindow_09" xml:space="preserve">
+    <value>VNC · 터미널</value>
+        <comment>AppSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="AppSettingsWindow_10" xml:space="preserve">
+    <value>인코딩·화질·키 입력·터미널 글꼴</value>
+        <comment>AppSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="AppSettingsWindow_11" xml:space="preserve">
+    <value>콘솔 설정 열기...</value>
+        <comment>AppSettingsWindow.xaml · Content</comment>
+  </data>
+    <data name="AppSettingsWindow_12" xml:space="preserve">
+    <value>저장</value>
+        <comment>AppSettingsWindow.xaml · Content</comment>
+  </data>
+    <data name="AppSettingsWindow_13" xml:space="preserve">
+    <value>취소</value>
+        <comment>AppSettingsWindow.xaml · Content</comment>
+  </data>
+    <data name="BackupWindow_01" xml:space="preserve">
+    <value>게스트 백업</value>
+        <comment>BackupWindow.xaml · Title</comment>
+  </data>
+    <data name="BackupWindow_02" xml:space="preserve">
+    <value>백업</value>
+        <comment>BackupWindow.xaml · Text</comment>
+  </data>
+    <data name="BackupWindow_03" xml:space="preserve">
+    <value>저장소</value>
+        <comment>BackupWindow.xaml · Label</comment>
+  </data>
+    <data name="BackupWindow_04" xml:space="preserve">
+    <value>backup 콘텐츠를 지원하는 저장소만 표시됩니다.</value>
+        <comment>BackupWindow.xaml · Hint</comment>
+  </data>
+    <data name="BackupWindow_05" xml:space="preserve">
+    <value>모드</value>
+        <comment>BackupWindow.xaml · Label</comment>
+  </data>
+    <data name="BackupWindow_06" xml:space="preserve">
+    <value>스냅샷 (가동 중)</value>
+        <comment>BackupWindow.xaml · Content</comment>
+  </data>
+    <data name="BackupWindow_07" xml:space="preserve">
+    <value>일시 정지</value>
+        <comment>BackupWindow.xaml · Content</comment>
+  </data>
+    <data name="BackupWindow_08" xml:space="preserve">
+    <value>정지</value>
+        <comment>BackupWindow.xaml · Content</comment>
+  </data>
+    <data name="BackupWindow_09" xml:space="preserve">
+    <value>압축</value>
+        <comment>BackupWindow.xaml · Label</comment>
+  </data>
+    <data name="BackupWindow_10" xml:space="preserve">
+    <value>없음</value>
+        <comment>BackupWindow.xaml · Content</comment>
+  </data>
+    <data name="BackupWindow_11" xml:space="preserve">
+    <value>백업은 백그라운드 작업으로 실행되며 작업 탭에서 진행 상황을 확인할 수 있습니다.</value>
+        <comment>BackupWindow.xaml · Text</comment>
+  </data>
+    <data name="BackupWindow_12" xml:space="preserve">
+    <value>백업 시작</value>
+        <comment>BackupWindow.xaml · Content</comment>
+  </data>
+    <data name="CloneWindow_01" xml:space="preserve">
+    <value>게스트 복제</value>
+        <comment>CloneWindow.xaml · Title</comment>
+  </data>
+    <data name="CloneWindow_02" xml:space="preserve">
+    <value>복제</value>
+        <comment>CloneWindow.xaml · Text</comment>
+  </data>
+    <data name="CloneWindow_03" xml:space="preserve">
+    <value>새 VMID</value>
+        <comment>CloneWindow.xaml · Label</comment>
+  </data>
+    <data name="CloneWindow_04" xml:space="preserve">
+    <value>비움 = 자동 (Copy-of-원본)</value>
+        <comment>CloneWindow.xaml · Hint</comment>
+  </data>
+    <data name="CloneWindow_05" xml:space="preserve">
+    <value>연결 복제는 템플릿에서만 가능하며 원본 디스크를 공유합니다.</value>
+        <comment>CloneWindow.xaml · Hint</comment>
+  </data>
+    <data name="CloneWindow_06" xml:space="preserve">
+    <value>전체 복제</value>
+        <comment>CloneWindow.xaml · Content</comment>
+  </data>
+    <data name="CloneWindow_07" xml:space="preserve">
+    <value>연결 복제</value>
+        <comment>CloneWindow.xaml · Content</comment>
+  </data>
+    <data name="CloneWindow_08" xml:space="preserve">
+    <value>대상 노드</value>
+        <comment>CloneWindow.xaml · Label</comment>
+  </data>
+    <data name="CloneWindow_09" xml:space="preserve">
+    <value>대상 저장소</value>
+        <comment>CloneWindow.xaml · Label</comment>
+  </data>
+    <data name="CloneWindow_10" xml:space="preserve">
+    <value>전체 복제 시에만 적용</value>
+        <comment>CloneWindow.xaml · Hint</comment>
+  </data>
+    <data name="CloneWindow_11" xml:space="preserve">
+    <value>복제 시작</value>
+        <comment>CloneWindow.xaml · Content</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_01" xml:space="preserve">
+    <value>콘솔 설정</value>
+        <comment>ConsoleSettingsWindow.xaml · Title</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_02" xml:space="preserve">
+    <value>VNC 콘솔 (VM)</value>
+        <comment>ConsoleSettingsWindow.xaml · Text</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_03" xml:space="preserve">
+    <value>인코딩</value>
+        <comment>ConsoleSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_04" xml:space="preserve">
+    <value>Tight: JPEG+zlib 로 대역폭이 가장 적음(권장) · Zlib: 무손실 · Raw: 압축 없음(LAN 전용)</value>
+        <comment>ConsoleSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_05" xml:space="preserve">
+    <value>JPEG 품질</value>
+        <comment>ConsoleSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_06" xml:space="preserve">
+    <value>0 = 낮은 화질·적은 대역폭 … 9 = 높은 화질 (Tight 전용)</value>
+        <comment>ConsoleSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_07" xml:space="preserve">
+    <value>압축 레벨</value>
+        <comment>ConsoleSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_08" xml:space="preserve">
+    <value>0 = 빠름(대역폭 큼) … 9 = 최대 압축(CPU 사용 큼)</value>
+        <comment>ConsoleSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_09" xml:space="preserve">
+    <value>키 입력</value>
+        <comment>ConsoleSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_10" xml:space="preserve">
+    <value>스캔코드를 그대로 보내 한/영·한자·넘패드 키가 키보드 레이아웃과 무관하게 동작합니다. 서버가 지원하지 않으면 keysym 방식으로 자동 전환됩니다.</value>
+        <comment>ConsoleSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_11" xml:space="preserve">
+    <value>QEMU 확장 키 이벤트 사용 (권장)</value>
+        <comment>ConsoleSettingsWindow.xaml · Content</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_12" xml:space="preserve">
+    <value>화면 스케일링</value>
+        <comment>ConsoleSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_13" xml:space="preserve">
+    <value>맞춤 모드에서 부드럽게 축소 (글자 뭉개짐 감소)</value>
+        <comment>ConsoleSettingsWindow.xaml · Content</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_14" xml:space="preserve">
+    <value>터미널 (CT)</value>
+        <comment>ConsoleSettingsWindow.xaml · Text</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_15" xml:space="preserve">
+    <value>글꼴</value>
+        <comment>ConsoleSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_16" xml:space="preserve">
+    <value>목록에서 선택하거나 설치된 고정폭 글꼴 이름을 입력</value>
+        <comment>ConsoleSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_17" xml:space="preserve">
+    <value>글자 크기</value>
+        <comment>ConsoleSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_18" xml:space="preserve">
+    <value>인코딩·품질·키 입력 방식은 콘솔 재연결 시 적용됩니다.</value>
+        <comment>ConsoleSettingsWindow.xaml · Text</comment>
+  </data>
+    <data name="ConsoleWindow_01" xml:space="preserve">
+    <value>강제 정지</value>
+        <comment>ConsoleWindow.xaml · ToolTip</comment>
+  </data>
+    <data name="ConsoleWindow_02" xml:space="preserve">
+    <value>재연결</value>
+        <comment>ConsoleWindow.xaml · Content</comment>
+  </data>
+    <data name="ConsoleWindow_03" xml:space="preserve">
+    <value>클립보드 전송</value>
+        <comment>ConsoleWindow.xaml · Content</comment>
+  </data>
+    <data name="ConsoleWindow_04" xml:space="preserve">
+    <value>크기: 맞춤</value>
+        <comment>ConsoleWindow.xaml · Content</comment>
+  </data>
+    <data name="ConsoleWindow_05" xml:space="preserve">
+    <value>SPICE로 열기...</value>
+        <comment>ConsoleWindow.xaml · Content</comment>
+  </data>
+    <data name="ConsoleWindow_06" xml:space="preserve">
+    <value>연결 중...</value>
+        <comment>ConsoleWindow.xaml · Text</comment>
+  </data>
+    <data name="CreateGuestWindow_01" xml:space="preserve">
+    <value>새 게스트 만들기</value>
+        <comment>CreateGuestWindow.xaml · Title</comment>
+  </data>
+    <data name="CreateGuestWindow_02" xml:space="preserve">
+    <value>기본</value>
+        <comment>CreateGuestWindow.xaml · Text</comment>
+  </data>
+    <data name="CreateGuestWindow_03" xml:space="preserve">
+    <value>가상 머신 (VM)</value>
+        <comment>CreateGuestWindow.xaml · Content</comment>
+  </data>
+    <data name="CreateGuestWindow_04" xml:space="preserve">
+    <value>컨테이너 (CT)</value>
+        <comment>CreateGuestWindow.xaml · Content</comment>
+  </data>
+    <data name="CreateGuestWindow_05" xml:space="preserve">
+    <value>100 이상 — 클러스터의 다음 사용 가능 ID가 자동 입력됩니다.</value>
+        <comment>CreateGuestWindow.xaml · Hint</comment>
+  </data>
+    <data name="CreateGuestWindow_06" xml:space="preserve">
+    <value>이름 / 호스트명</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_07" xml:space="preserve">
+    <value>리소스</value>
+        <comment>CreateGuestWindow.xaml · Text</comment>
+  </data>
+    <data name="CreateGuestWindow_08" xml:space="preserve">
+    <value>코어 수</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_09" xml:space="preserve">
+    <value>메모리 (MiB)</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_10" xml:space="preserve">
+    <value>설치 미디어</value>
+        <comment>CreateGuestWindow.xaml · Text</comment>
+  </data>
+    <data name="CreateGuestWindow_11" xml:space="preserve">
+    <value>ISO 저장소</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_12" xml:space="preserve">
+    <value>ISO 이미지</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_13" xml:space="preserve">
+    <value>컨테이너</value>
+        <comment>CreateGuestWindow.xaml · Text</comment>
+  </data>
+    <data name="CreateGuestWindow_14" xml:space="preserve">
+    <value>템플릿 저장소</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_15" xml:space="preserve">
+    <value>OS 템플릿</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_16" xml:space="preserve">
+    <value>스왑 (MiB)</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_17" xml:space="preserve">
+    <value>루트 비밀번호</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_18" xml:space="preserve">
+    <value>5자 이상</value>
+        <comment>CreateGuestWindow.xaml · Hint</comment>
+  </data>
+    <data name="CreateGuestWindow_19" xml:space="preserve">
+    <value>dhcp 또는 CIDR (예: 192.168.1.50/24)</value>
+        <comment>CreateGuestWindow.xaml · Hint</comment>
+  </data>
+    <data name="CreateGuestWindow_20" xml:space="preserve">
+    <value>디스크 · 네트워크</value>
+        <comment>CreateGuestWindow.xaml · Text</comment>
+  </data>
+    <data name="CreateGuestWindow_21" xml:space="preserve">
+    <value>디스크 저장소</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_22" xml:space="preserve">
+    <value>디스크 크기 (GB)</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_23" xml:space="preserve">
+    <value>네트워크 브리지</value>
+        <comment>CreateGuestWindow.xaml · Label</comment>
+  </data>
+    <data name="CreateGuestWindow_24" xml:space="preserve">
+    <value>목록에서 선택하거나 직접 입력</value>
+        <comment>CreateGuestWindow.xaml · Hint</comment>
+  </data>
+    <data name="CreateGuestWindow_25" xml:space="preserve">
+    <value>만들기</value>
+        <comment>CreateGuestWindow.xaml · Content</comment>
+  </data>
+    <data name="FirewallWindow_01" xml:space="preserve">
+    <value>방화벽</value>
+        <comment>FirewallWindow.xaml · Title</comment>
+  </data>
+    <data name="FirewallWindow_02" xml:space="preserve">
+    <value>옵션 적용</value>
+        <comment>FirewallWindow.xaml · Content</comment>
+  </data>
+    <data name="FirewallWindow_03" xml:space="preserve">
+    <value>게스트 방화벽 사용</value>
+        <comment>FirewallWindow.xaml · Content</comment>
+  </data>
+    <data name="FirewallWindow_04" xml:space="preserve">
+    <value>삭제</value>
+        <comment>FirewallWindow.xaml · Header</comment>
+  </data>
+    <data name="FirewallWindow_05" xml:space="preserve">
+    <value>활성</value>
+        <comment>FirewallWindow.xaml · Header</comment>
+  </data>
+    <data name="FirewallWindow_06" xml:space="preserve">
+    <value>위치</value>
+        <comment>FirewallWindow.xaml · Header</comment>
+  </data>
+    <data name="FirewallWindow_07" xml:space="preserve">
+    <value>방향</value>
+        <comment>FirewallWindow.xaml · Header</comment>
+  </data>
+    <data name="FirewallWindow_08" xml:space="preserve">
+    <value>동작</value>
+        <comment>FirewallWindow.xaml · Header</comment>
+  </data>
+    <data name="FirewallWindow_09" xml:space="preserve">
+    <value>매크로</value>
+        <comment>FirewallWindow.xaml · Header</comment>
+  </data>
+    <data name="FirewallWindow_10" xml:space="preserve">
+    <value>프로토콜</value>
+        <comment>FirewallWindow.xaml · Header</comment>
+  </data>
+    <data name="FirewallWindow_11" xml:space="preserve">
+    <value>포트</value>
+        <comment>FirewallWindow.xaml · Header</comment>
+  </data>
+    <data name="FirewallWindow_12" xml:space="preserve">
+    <value>소스</value>
+        <comment>FirewallWindow.xaml · Header</comment>
+  </data>
+    <data name="FirewallWindow_13" xml:space="preserve">
+    <value>설명</value>
+        <comment>FirewallWindow.xaml · Header</comment>
+  </data>
+    <data name="FirewallWindow_14" xml:space="preserve">
+    <value>규칙 추가</value>
+        <comment>FirewallWindow.xaml · Text</comment>
+  </data>
+    <data name="FirewallWindow_15" xml:space="preserve">
+    <value>예: 22, 80,443, 2000:3000 (비움=모두)</value>
+        <comment>FirewallWindow.xaml · Hint</comment>
+  </data>
+    <data name="FirewallWindow_16" xml:space="preserve">
+    <value>CIDR 또는 별칭 (비움=모두)</value>
+        <comment>FirewallWindow.xaml · Hint</comment>
+  </data>
+    <data name="FirewallWindow_17" xml:space="preserve">
+    <value>규칙 활성</value>
+        <comment>FirewallWindow.xaml · Content</comment>
+  </data>
+    <data name="FirewallWindow_18" xml:space="preserve">
+    <value>닫기</value>
+        <comment>FirewallWindow.xaml · Content</comment>
+  </data>
+    <data name="GuestSettingsWindow_01" xml:space="preserve">
+    <value>게스트 설정</value>
+        <comment>GuestSettingsWindow.xaml · Title</comment>
+  </data>
+    <data name="GuestSettingsWindow_02" xml:space="preserve">
+    <value>일반</value>
+        <comment>GuestSettingsWindow.xaml · Text</comment>
+  </data>
+    <data name="GuestSettingsWindow_03" xml:space="preserve">
+    <value>부팅 시 자동 시작</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_04" xml:space="preserve">
+    <value>보호 모드</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_05" xml:space="preserve">
+    <value>활성화 시 게스트 삭제·디스크 제거가 차단됩니다.</value>
+        <comment>GuestSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="GuestSettingsWindow_06" xml:space="preserve">
+    <value>시작/종료 순서</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_07" xml:space="preserve">
+    <value>예: order=2,up=30,down=60</value>
+        <comment>GuestSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="GuestSettingsWindow_08" xml:space="preserve">
+    <value>OS 유형</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_09" xml:space="preserve">
+    <value>부팅 순서</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_10" xml:space="preserve">
+    <value>예: order=scsi0;ide2;net0</value>
+        <comment>GuestSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="GuestSettingsWindow_11" xml:space="preserve">
+    <value>소켓</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_12" xml:space="preserve">
+    <value>CPU 제한</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_13" xml:space="preserve">
+    <value>0 또는 비움 = 제한 없음 (소수 허용, 예: 1.5)</value>
+        <comment>GuestSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="GuestSettingsWindow_14" xml:space="preserve">
+    <value>최소 메모리 (MiB)</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_15" xml:space="preserve">
+    <value>Ballooning 최소값, 0 = 끔</value>
+        <comment>GuestSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="GuestSettingsWindow_16" xml:space="preserve">
+    <value>네트워크 (net0)</value>
+        <comment>GuestSettingsWindow.xaml · Text</comment>
+  </data>
+    <data name="GuestSettingsWindow_17" xml:space="preserve">
+    <value>브리지</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_18" xml:space="preserve">
+    <value>모델</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_19" xml:space="preserve">
+    <value>MAC 주소</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_20" xml:space="preserve">
+    <value>비움 = 자동 생성</value>
+        <comment>GuestSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="GuestSettingsWindow_21" xml:space="preserve">
+    <value>VLAN 태그</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_22" xml:space="preserve">
+    <value>1–4094, 비움 = 없음</value>
+        <comment>GuestSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="GuestSettingsWindow_23" xml:space="preserve">
+    <value>네임서버</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_24" xml:space="preserve">
+    <value>공백으로 여러 개 입력, 비움 = 호스트 설정 사용</value>
+        <comment>GuestSettingsWindow.xaml · Hint</comment>
+  </data>
+    <data name="GuestSettingsWindow_25" xml:space="preserve">
+    <value>검색 도메인</value>
+        <comment>GuestSettingsWindow.xaml · Label</comment>
+  </data>
+    <data name="GuestSettingsWindow_26" xml:space="preserve">
+    <value>변경된 항목만 서버에 적용됩니다. 일부 설정(코어·메모리 축소 등)은 게스트가 정지 상태일 때만 반영됩니다.</value>
+        <comment>GuestSettingsWindow.xaml · Text</comment>
+  </data>
+    <data name="LoginWindow_01" xml:space="preserve">
+    <value>로그인 — Proxmox 클라이언트</value>
+        <comment>LoginWindow.xaml · Title</comment>
+  </data>
+    <data name="LoginWindow_02" xml:space="preserve">
+    <value>Proxmox 클라이언트</value>
+        <comment>LoginWindow.xaml · Text</comment>
+  </data>
+    <data name="LoginWindow_03" xml:space="preserve">
+    <value>Proxmox Virtual Environment 관리 도구</value>
+        <comment>LoginWindow.xaml · Text</comment>
+  </data>
+    <data name="LoginWindow_04" xml:space="preserve">
+    <value>서버</value>
+        <comment>LoginWindow.xaml · Text</comment>
+  </data>
+    <data name="LoginWindow_05" xml:space="preserve">
+    <value>사용자 이름</value>
+        <comment>LoginWindow.xaml · Text</comment>
+  </data>
+    <data name="LoginWindow_06" xml:space="preserve">
+    <value>비밀번호</value>
+        <comment>LoginWindow.xaml · Text</comment>
+  </data>
+    <data name="LoginWindow_07" xml:space="preserve">
+    <value>인증 영역</value>
+        <comment>LoginWindow.xaml · Text</comment>
+  </data>
+    <data name="LoginWindow_08" xml:space="preserve">
+    <value>서버에서 인증 영역 다시 가져오기</value>
+        <comment>LoginWindow.xaml · ToolTip</comment>
+  </data>
+    <data name="LoginWindow_09" xml:space="preserve">
+    <value>비밀번호는 저장되지 않고 로그인에만 사용됩니다.</value>
+        <comment>LoginWindow.xaml · Text</comment>
+  </data>
+    <data name="LoginWindow_10" xml:space="preserve">
+    <value>로그인</value>
+        <comment>LoginWindow.xaml · Content</comment>
+  </data>
+    <data name="LoginWindow_11" xml:space="preserve">
+    <value>서버 추가·편집·삭제</value>
+        <comment>LoginWindow.xaml · ToolTip</comment>
+  </data>
+    <data name="ProfileDialog_01" xml:space="preserve">
+    <value>서버 설정</value>
+        <comment>ProfileDialog.xaml · Title</comment>
+  </data>
+    <data name="ProfileDialog_02" xml:space="preserve">
+    <value>서버 이름</value>
+        <comment>ProfileDialog.xaml · Label</comment>
+  </data>
+    <data name="ProfileDialog_03" xml:space="preserve">
+    <value>서버 주소</value>
+        <comment>ProfileDialog.xaml · Label</comment>
+  </data>
+    <data name="ProfileDialog_04" xml:space="preserve">
+    <value>Proxmox 기본값 8006</value>
+        <comment>ProfileDialog.xaml · Hint</comment>
+  </data>
+    <data name="ProfileDialog_05" xml:space="preserve">
+    <value>인증서</value>
+        <comment>ProfileDialog.xaml · Label</comment>
+  </data>
+    <data name="ProfileDialog_06" xml:space="preserve">
+    <value>자체 서명 인증서는 처음 연결할 때 지문을 확인하고, 이후 지문이 바뀌면 연결을 차단합니다.</value>
+        <comment>ProfileDialog.xaml · Hint</comment>
+  </data>
+    <data name="ProfileDialog_07" xml:space="preserve">
+    <value>자체 서명 인증서 허용 (self-signed)</value>
+        <comment>ProfileDialog.xaml · Content</comment>
+  </data>
+    <data name="ProfileDialog_08" xml:space="preserve">
+    <value>인증서 확인·갱신</value>
+        <comment>ProfileDialog.xaml · Content</comment>
+  </data>
+    <data name="ProfileDialog_09" xml:space="preserve">
+    <value>프록시</value>
+        <comment>ProfileDialog.xaml · Text</comment>
+  </data>
+    <data name="ProfileDialog_10" xml:space="preserve">
+    <value>연결 방식</value>
+        <comment>ProfileDialog.xaml · Label</comment>
+  </data>
+    <data name="ProfileDialog_11" xml:space="preserve">
+    <value>직접 연결</value>
+        <comment>ProfileDialog.xaml · Content</comment>
+  </data>
+    <data name="ProfileDialog_12" xml:space="preserve">
+    <value>시스템 설정</value>
+        <comment>ProfileDialog.xaml · Content</comment>
+  </data>
+    <data name="ProfileDialog_13" xml:space="preserve">
+    <value>프록시 호스트</value>
+        <comment>ProfileDialog.xaml · Label</comment>
+  </data>
+    <data name="ProfileDialog_14" xml:space="preserve">
+    <value>프록시 포트</value>
+        <comment>ProfileDialog.xaml · Label</comment>
+  </data>
+    <data name="ProfileDialog_15" xml:space="preserve">
+    <value>프록시 사용자</value>
+        <comment>ProfileDialog.xaml · Label</comment>
+  </data>
+    <data name="ProfileDialog_16" xml:space="preserve">
+    <value>인증이 필요 없으면 비워 두세요.</value>
+        <comment>ProfileDialog.xaml · Hint</comment>
+  </data>
+    <data name="ProfileDialog_17" xml:space="preserve">
+    <value>프록시 비밀번호</value>
+        <comment>ProfileDialog.xaml · Label</comment>
+  </data>
+    <data name="ProfileDialog_18" xml:space="preserve">
+    <value>터널</value>
+        <comment>ProfileDialog.xaml · Label</comment>
+  </data>
+    <data name="ProfileDialog_19" xml:space="preserve">
+    <value>연결 전 OpenVPN 터널 사용</value>
+        <comment>ProfileDialog.xaml · Content</comment>
+  </data>
+    <data name="ProfileDialog_20" xml:space="preserve">
+    <value>.ovpn 파일</value>
+        <comment>ProfileDialog.xaml · Label</comment>
+  </data>
+    <data name="ProfileDialog_21" xml:space="preserve">
+    <value>찾아보기...</value>
+        <comment>ProfileDialog.xaml · Content</comment>
+  </data>
+    <data name="ProfileRegisterWindow_01" xml:space="preserve">
+    <value>새 서버 등록</value>
+        <comment>ProfileRegisterWindow.xaml · Title</comment>
+  </data>
+    <data name="ProfileRegisterWindow_02" xml:space="preserve">
+    <value>목록에 표시할 이름</value>
+        <comment>ProfileRegisterWindow.xaml · Hint</comment>
+  </data>
+    <data name="ProfileRegisterWindow_03" xml:space="preserve">
+    <value>호스트명 또는 IP (https:// 생략 가능)</value>
+        <comment>ProfileRegisterWindow.xaml · Hint</comment>
+  </data>
+    <data name="ProfileRegisterWindow_04" xml:space="preserve">
+    <value>서버 확인</value>
+        <comment>ProfileRegisterWindow.xaml · Content</comment>
+  </data>
+    <data name="ProfileRegisterWindow_05" xml:space="preserve">
+    <value>서버 접속과 로그인 유형만 확인하고 등록합니다. 아이디·비밀번호는 로그인 화면에서 입력하며 저장되지 않습니다.</value>
+        <comment>ProfileRegisterWindow.xaml · Text</comment>
+  </data>
+    <data name="ProfileRegisterWindow_06" xml:space="preserve">
+    <value>등록</value>
+        <comment>ProfileRegisterWindow.xaml · Content</comment>
+  </data>
+    <data name="ServerManagerWindow_01" xml:space="preserve">
+    <value>서버 관리</value>
+        <comment>ServerManagerWindow.xaml · Title</comment>
+  </data>
+    <data name="ServerManagerWindow_02" xml:space="preserve">
+    <value>추가</value>
+        <comment>ServerManagerWindow.xaml · Content</comment>
+  </data>
+    <data name="ServerManagerWindow_03" xml:space="preserve">
+    <value>편집</value>
+        <comment>ServerManagerWindow.xaml · Content</comment>
+  </data>
+    <data name="ServerManagerWindow_04" xml:space="preserve">
+    <value>등록된 서버</value>
+        <comment>ServerManagerWindow.xaml · Text</comment>
+  </data>
+    <data name="ServerManagerWindow_05" xml:space="preserve">
+    <value>서버 접속 확인 후 등록합니다. 아이디·비밀번호는 로그인 화면에서 입력하며 저장되지 않습니다.</value>
+        <comment>ServerManagerWindow.xaml · Text</comment>
+  </data>
+    <data name="SnapshotDialog_01" xml:space="preserve">
+    <value>스냅샷 관리</value>
+        <comment>SnapshotDialog.xaml · Title</comment>
+  </data>
+    <data name="SnapshotDialog_02" xml:space="preserve">
+    <value>생성 시각</value>
+        <comment>SnapshotDialog.xaml · Header</comment>
+  </data>
+    <data name="SnapshotDialog_03" xml:space="preserve">
+    <value>RAM 포함</value>
+        <comment>SnapshotDialog.xaml · Header</comment>
+  </data>
+    <data name="SnapshotDialog_04" xml:space="preserve">
+    <value>선택 항목 롤백</value>
+        <comment>SnapshotDialog.xaml · Content</comment>
+  </data>
+    <data name="SnapshotDialog_05" xml:space="preserve">
+    <value>선택 항목 삭제</value>
+        <comment>SnapshotDialog.xaml · Content</comment>
+  </data>
+    <data name="SnapshotDialog_06" xml:space="preserve">
+    <value>새 스냅샷</value>
+        <comment>SnapshotDialog.xaml · Text</comment>
+  </data>
+    <data name="SnapshotDialog_07" xml:space="preserve">
+    <value>영문자로 시작, 영문·숫자·-·_ 만 사용</value>
+        <comment>SnapshotDialog.xaml · Hint</comment>
+  </data>
+    <data name="SnapshotDialog_08" xml:space="preserve">
+    <value>스냅샷 생성</value>
+        <comment>SnapshotDialog.xaml · Content</comment>
+  </data>
+    <data name="SnapshotDialog_09" xml:space="preserve">
+    <value>메모리(RAM) 상태 포함</value>
+        <comment>SnapshotDialog.xaml · Content</comment>
+  </data>
+    <data name="TerminalWindow_01" xml:space="preserve">
+    <value>터미널</value>
+        <comment>TerminalWindow.xaml · Title</comment>
+  </data>
+    <data name="TerminalWindow_02" xml:space="preserve">
+    <value>복사</value>
+        <comment>TerminalWindow.xaml · Content</comment>
+  </data>
+    <data name="TerminalWindow_03" xml:space="preserve">
+    <value>선택한 텍스트를 클립보드로 복사</value>
+        <comment>TerminalWindow.xaml · ToolTip</comment>
+  </data>
+    <data name="TerminalWindow_04" xml:space="preserve">
+    <value>붙여넣기</value>
+        <comment>TerminalWindow.xaml · Content</comment>
+  </data>
+    <data name="TerminalWindow_05" xml:space="preserve">
+    <value>클립보드 텍스트를 터미널에 입력</value>
+        <comment>TerminalWindow.xaml · ToolTip</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_01" xml:space="preserve">
+    <value>VirtViewer(SPICE 클라이언트) 설치</value>
+        <comment>VirtViewerSetupWindow.xaml · Title</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_02" xml:space="preserve">
+    <value>SPICE 콘솔용 VirtViewer 설치</value>
+        <comment>VirtViewerSetupWindow.xaml · Text</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_03" xml:space="preserve">
+    <value>설치 상태</value>
+        <comment>VirtViewerSetupWindow.xaml · Text</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_04" xml:space="preserve">
+    <value>확인 중...</value>
+        <comment>VirtViewerSetupWindow.xaml · Text</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_05" xml:space="preserve">
+    <value>자동 설치는 공식 배포처(releases.pagure.org/virt-viewer)에서 최신 Windows x64 설치 파일(MSI, 약 80MB)을 내려받아 실행합니다. 설치 진행 시 관리자 권한 승인이 필요할 수 있습니다. 설치가 끝나면 [다시 검색]을 누르세요.</value>
+        <comment>VirtViewerSetupWindow.xaml · Text</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_06" xml:space="preserve">
+    <value>자동 다운로드 후 설치</value>
+        <comment>VirtViewerSetupWindow.xaml · Content</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_07" xml:space="preserve">
+    <value>다시 검색</value>
+        <comment>VirtViewerSetupWindow.xaml · Content</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_08" xml:space="preserve">
+    <value>다운로드 페이지 열기</value>
+        <comment>VirtViewerSetupWindow.xaml · Content</comment>
+  </data>
+    <data name="App_Title" xml:space="preserve">
+    <value>Proxmox 클라이언트</value>
+        <comment>창 제목 · 로그인 화면 머리말</comment>
+  </data>
+    <data name="Tab_Guests" xml:space="preserve">
+    <value>게스트 (VM/CT)</value>
+        <comment>MainWindow · 내비게이션</comment>
+  </data>
+    <data name="Tab_Nodes" xml:space="preserve">
+    <value>노드</value>
+        <comment>MainWindow · 내비게이션</comment>
+  </data>
+    <data name="Tab_Tasks" xml:space="preserve">
+    <value>작업</value>
+        <comment>MainWindow · 내비게이션</comment>
+  </data>
+    <data name="Choice_NicVirtio" xml:space="preserve">
+    <value>VirtIO (반가상화, 권장)</value>
+        <comment>ComboChoices · 네트워크 카드</comment>
+  </data>
+    <data name="Choice_FwAccept" xml:space="preserve">
+    <value>허용 (ACCEPT)</value>
+        <comment>ComboChoices · 방화벽 동작</comment>
+  </data>
+    <data name="Choice_FwDrop" xml:space="preserve">
+    <value>차단 (DROP)</value>
+        <comment>ComboChoices · 방화벽 동작</comment>
+  </data>
+    <data name="Choice_FwReject" xml:space="preserve">
+    <value>거부 (REJECT)</value>
+        <comment>ComboChoices · 방화벽 동작</comment>
+  </data>
+    <data name="Choice_FwIn" xml:space="preserve">
+    <value>수신 (in)</value>
+        <comment>ComboChoices · 방화벽 방향</comment>
+  </data>
+    <data name="Choice_FwOut" xml:space="preserve">
+    <value>송신 (out)</value>
+        <comment>ComboChoices · 방화벽 방향</comment>
+  </data>
+    <data name="Choice_FwAllProtocols" xml:space="preserve">
+    <value>모두</value>
+        <comment>ComboChoices · 방화벽 프로토콜</comment>
+  </data>
+    <data name="GuestPower_Start" xml:space="preserve">
+    <value>시작</value>
+        <comment>전원 동작 이름</comment>
+  </data>
+    <data name="GuestPower_Shutdown" xml:space="preserve">
+    <value>종료</value>
+        <comment>전원 동작 이름</comment>
+  </data>
+    <data name="GuestPower_Stop" xml:space="preserve">
+    <value>강제 정지</value>
+        <comment>전원 동작 이름</comment>
+  </data>
+    <data name="GuestPower_Reboot" xml:space="preserve">
+    <value>재부팅</value>
+        <comment>전원 동작 이름</comment>
+  </data>
+    <data name="GuestPower_Suspend" xml:space="preserve">
+    <value>일시정지</value>
+        <comment>전원 동작 이름</comment>
+  </data>
+    <data name="GuestPower_Resume" xml:space="preserve">
+    <value>재개</value>
+        <comment>전원 동작 이름</comment>
+  </data>
+    <data name="GuestPower_Hibernate" xml:space="preserve">
+    <value>최대 절전</value>
+        <comment>전원 동작 이름</comment>
+  </data>
+    <data name="GuestStopped_Title" xml:space="preserve">
+    <value>게스트가 실행 중이 아닙니다</value>
+        <comment>콘솔 · 정지 상태 안내</comment>
+  </data>
+    <data name="GuestStopped_HintCanStart" xml:space="preserve">
+    <value>게스트를 시작하면 콘솔이 자동으로 연결됩니다.</value>
+        <comment>콘솔 · 정지 상태 안내(시작 권한 있음)</comment>
+  </data>
+    <data name="GuestStopped_HintWait" xml:space="preserve">
+    <value>게스트가 시작되면 콘솔이 자동으로 연결됩니다.</value>
+        <comment>콘솔 · 정지 상태 안내(시작 권한 없음)</comment>
+  </data>
+    <data name="GuestStopped_Starting" xml:space="preserve">
+    <value>게스트 시작 중</value>
+        <comment>콘솔 · 시작 진행 중</comment>
+  </data>
+    <data name="Uptime_WithDays" xml:space="preserve">
+    <value>{0}일 {1:D2}:{2:D2}:{3:D2}</value>
+        <comment>업타임 표시(일 단위 포함)</comment>
+  </data>
+    <data name="Main_NotConnected" xml:space="preserve">
+    <value>연결되지 않음</value>
+        <comment>MainWindow · 연결 상태 초기값</comment>
+  </data>
+    <data name="Main_SelectProfile" xml:space="preserve">
+    <value>프로필을 선택하고 연결하세요.</value>
+        <comment>MainWindow · 안내 초기값</comment>
+  </data>
+    <data name="Vpn_NotConnected" xml:space="preserve">
+    <value>연결 안 됨</value>
+        <comment>VPN 상태 초기값</comment>
+  </data>
+    <data name="Cert_Details" xml:space="preserve">
+    <value>서버: {0}
+SHA-256 지문:
+{1}
+
+주체: {2}
+발급자: {3}
+만료: {4}</value>
+        <comment>인증서 확인 · 공통 상세</comment>
+  </data>
+    <data name="Cert_MismatchTitle" xml:space="preserve">
+    <value>서버 인증서 변경 경고</value>
+        <comment>인증서 확인 · 지문 불일치</comment>
+  </data>
+    <data name="Cert_MismatchText" xml:space="preserve">
+    <value>서버 인증서가 이전에 신뢰한 인증서와 다릅니다.
+중간자 공격으로 비밀번호가 탈취될 수 있습니다. 서버 인증서를 직접 교체한 경우에만 신뢰하세요.
+
+이전 지문:
+{0}
+
+새 인증서
+{1}
+
+새 인증서를 신뢰하고 계속할까요?</value>
+        <comment>인증서 확인 · 지문 불일치 본문({0}=이전 지문, {1}=새 인증서 상세)</comment>
+  </data>
+    <data name="Cert_NewTitle" xml:space="preserve">
+    <value>서버 인증서 확인</value>
+        <comment>인증서 확인 · 처음 보는 인증서</comment>
+  </data>
+    <data name="Cert_NewText" xml:space="preserve">
+    <value>이 서버의 인증서는 공인 인증 기관이 발급하지 않았습니다(Proxmox 기본 자체 서명 인증서 등).
+Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 같은지 확인한 뒤 신뢰하세요.
+
+{0}
+
+이 인증서를 신뢰하고 계속할까요? 이후 지문이 바뀌면 다시 경고합니다.</value>
+        <comment>인증서 확인 · 처음 보는 인증서 본문({0}=인증서 상세)</comment>
+  </data>
+    <data name="Firewall_StateEnabled" xml:space="preserve">
+    <value>활성화</value>
+        <comment>FirewallWindow · 방화벽이 {0}되었습니다</comment>
+  </data>
+    <data name="Firewall_StateDisabled" xml:space="preserve">
+    <value>비활성화</value>
+        <comment>FirewallWindow · 방화벽이 {0}되었습니다</comment>
+  </data>
+    <data name="Login_ServerManager" xml:space="preserve">
+    <value>서버 관리</value>
+        <comment>LoginWindow · 하이퍼링크</comment>
+  </data>
+    <data name="App_M01" xml:space="preserve">
+    <value>예기치 않은 오류가 발생했지만 앱을 계속 시도합니다.
+
+{0}
+
+상세 로그: {1}</value>
+        <comment>App.cs · 메시지</comment>
+  </data>
+    <data name="App_M02" xml:space="preserve">
+    <value>오류</value>
+        <comment>App.cs · 메시지</comment>
+  </data>
+    <data name="ComboChoices_M01" xml:space="preserve">
+    <value>(지정 안 함)</value>
+        <comment>ComboChoices.cs · 메시지</comment>
+  </data>
+    <data name="ComboChoices_M02" xml:space="preserve">
+    <value>Linux 6.x – 2.6 커널</value>
+        <comment>ComboChoices.cs · 메시지</comment>
+  </data>
+    <data name="ComboChoices_M03" xml:space="preserve">
+    <value>Linux 2.4 커널</value>
+        <comment>ComboChoices.cs · 메시지</comment>
+  </data>
+    <data name="ComboChoices_M04" xml:space="preserve">
+    <value>기타</value>
+        <comment>ComboChoices.cs · 메시지</comment>
+  </data>
+    <data name="MainWindow_M01" xml:space="preserve">
+    <value>게스트(VM/CT)를 먼저 선택하세요.</value>
+        <comment>MainWindow.cs · 메시지</comment>
+  </data>
+    <data name="MainWindow_M02" xml:space="preserve">
+    <value>선택 확인</value>
+        <comment>MainWindow.cs · 메시지</comment>
+  </data>
+    <data name="MainWindow_M03" xml:space="preserve">
+    <value>서버에 연결되어 있지 않습니다.</value>
+        <comment>MainWindow.cs · 메시지</comment>
+  </data>
+    <data name="MainWindow_M04" xml:space="preserve">
+    <value>연결 필요</value>
+        <comment>MainWindow.cs · 메시지</comment>
+  </data>
+    <data name="MainWindow_M05" xml:space="preserve">
+    <value>backup 콘텐츠를 지원하는 저장소가 없습니다.
+먼저 저장소 설정에서 백업 콘텐츠를 활성화하세요.</value>
+        <comment>MainWindow.cs · 메시지</comment>
+  </data>
+    <data name="MainWindow_M06" xml:space="preserve">
+    <value>백업 불가</value>
+        <comment>MainWindow.cs · 메시지</comment>
+  </data>
+    <data name="MainWindow_M07" xml:space="preserve">
+    <value>템플릿은 실행할 수 없어 콘솔을 열 수 없습니다.</value>
+        <comment>MainWindow.cs · 메시지</comment>
+  </data>
+    <data name="MainWindow_M08" xml:space="preserve">
+    <value>상태 확인</value>
+        <comment>MainWindow.cs · 메시지</comment>
+  </data>
+    <data name="ThemedMessageBox_M01" xml:space="preserve">
+    <value>확인</value>
+        <comment>ThemedMessageBox.cs · 메시지</comment>
+  </data>
+    <data name="ThemedMessageBox_M02" xml:space="preserve">
+    <value>예</value>
+        <comment>ThemedMessageBox.cs · 메시지</comment>
+  </data>
+    <data name="ThemedMessageBox_M03" xml:space="preserve">
+    <value>아니오</value>
+        <comment>ThemedMessageBox.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M01" xml:space="preserve">
+    <value>프로필 저장됨: {0}</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M02" xml:space="preserve">
+    <value>프로필 삭제됨: {0}</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M03" xml:space="preserve">
+    <value>VPN 터널 연결 중...</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M04" xml:space="preserve">
+    <value>연결되었습니다.</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M05" xml:space="preserve">
+    <value>연결을 끊었습니다.</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M06" xml:space="preserve">
+    <value>{0} 다시 연결하면 새 지문을 확인할 수 있습니다.</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M07" xml:space="preserve">
+    <value>새로 고침 실패: {0}</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M08" xml:space="preserve">
+    <value>{0} {1}({2}) {3} 요청 전송됨</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M09" xml:space="preserve">
+    <value>{0} 실패: {1}</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M10" xml:space="preserve">
+    <value>작업 완료: {0} {1}</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M11" xml:space="preserve">
+    <value>작업 실패: {0} {1} — {2}</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M12" xml:space="preserve">
+    <value>작업 추적 실패: {0}</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M13" xml:space="preserve">
+    <value>VPN 터널이 연결되었습니다.</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M14" xml:space="preserve">
+    <value>VPN 연결 실패: {0}</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M15" xml:space="preserve">
+    <value>VPN 터널을 끊었습니다.</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="MainViewModel_M16" xml:space="preserve">
+    <value>VPN 해제 실패: {0}</value>
+        <comment>MainViewModel.cs · 메시지</comment>
+  </data>
+    <data name="AppSettingsWindow_M01" xml:space="preserve">
+    <value>{0}–{1}초. 짧을수록 상태가 빨리 반영되지만 서버 API 호출이 늘어납니다(진행 중인 새로고침이 있으면 다음 회차는 건너뜀).</value>
+        <comment>AppSettingsWindow.cs · 메시지</comment>
+  </data>
+    <data name="AppSettingsWindow_M02" xml:space="preserve">
+    <value>새로고침 간격은 {0}–{1}초 사이여야 합니다.</value>
+        <comment>AppSettingsWindow.cs · 메시지</comment>
+  </data>
+    <data name="AppSettingsWindow_M03" xml:space="preserve">
+    <value>저장 실패: {0}</value>
+        <comment>AppSettingsWindow.cs · 메시지</comment>
+  </data>
+    <data name="BackupWindow_M01" xml:space="preserve">
+    <value>백업 저장소를 선택하세요 (backup 콘텐츠가 있는 저장소가 없습니다).</value>
+        <comment>BackupWindow.cs · 메시지</comment>
+  </data>
+    <data name="BackupWindow_M02" xml:space="preserve">
+    <value>백업 작업 시작 중...</value>
+        <comment>BackupWindow.cs · 메시지</comment>
+  </data>
+    <data name="BackupWindow_M03" xml:space="preserve">
+    <value>백업 작업이 시작되었습니다. 작업 탭에서 진행 상황을 확인하세요.</value>
+        <comment>BackupWindow.cs · 메시지</comment>
+  </data>
+    <data name="BackupWindow_M04" xml:space="preserve">
+    <value>백업 시작 실패: {0}</value>
+        <comment>BackupWindow.cs · 메시지</comment>
+  </data>
+    <data name="CloneWindow_M01" xml:space="preserve">
+    <value>(현재 노드: {0})</value>
+        <comment>CloneWindow.cs · 메시지</comment>
+  </data>
+    <data name="CloneWindow_M02" xml:space="preserve">
+    <value>(원본과 동일)</value>
+        <comment>CloneWindow.cs · 메시지</comment>
+  </data>
+    <data name="CloneWindow_M03" xml:space="preserve">
+    <value>새 VMID는 {0} 이상이어야 합니다.</value>
+        <comment>CloneWindow.cs · 메시지</comment>
+  </data>
+    <data name="CloneWindow_M04" xml:space="preserve">
+    <value>연결 복제는 템플릿에서만 가능합니다.</value>
+        <comment>CloneWindow.cs · 메시지</comment>
+  </data>
+    <data name="CloneWindow_M05" xml:space="preserve">
+    <value>복제 작업 시작 중...</value>
+        <comment>CloneWindow.cs · 메시지</comment>
+  </data>
+    <data name="CloneWindow_M06" xml:space="preserve">
+    <value>복제 작업이 시작되었습니다. 작업 탭에서 진행 상황을 확인하세요.</value>
+        <comment>CloneWindow.cs · 메시지</comment>
+  </data>
+    <data name="CloneWindow_M07" xml:space="preserve">
+    <value>복제 실패: {0}</value>
+        <comment>CloneWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleSettingsWindow_M01" xml:space="preserve">
+    <value>글자 크기는 {0}–{1} 사이여야 합니다.</value>
+        <comment>ConsoleSettingsWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M01" xml:space="preserve">
+    <value>게스트가 실행 중이 아닙니다.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M02" xml:space="preserve">
+    <value>게스트에 연결하지 못했습니다. 부팅이 끝난 뒤 [재연결]을 눌러 주세요.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M03" xml:space="preserve">
+    <value>VNC 프록시 연결 중...</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M04" xml:space="preserve">
+    <value>연결됨 — {0}x{1} · {2} (키보드/마우스는 콘솔 창을 클릭해 포커스를 주세요)</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M05" xml:space="preserve">
+    <value>연결이 종료되었습니다.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M06" xml:space="preserve">
+    <value>연결 종료: {0}</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M07" xml:space="preserve">
+    <value>연결 실패: {0}</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M08" xml:space="preserve">
+    <value>연결됨</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M09" xml:space="preserve">
+    <value>클립보드를 게스트로 전송했습니다.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M10" xml:space="preserve">
+    <value>클립보드 전송 실패: {0}</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M11" xml:space="preserve">
+    <value>크기: 1:1</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M12" xml:space="preserve">
+    <value>{0} 요청 중...</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M13" xml:space="preserve">
+    <value>{0} 요청을 보냈습니다. 진행 상황은 메인 창 작업 탭에서 확인하세요.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M14" xml:space="preserve">
+    <value>설정을 저장했습니다. 인코딩·품질·키 입력 방식은 [재연결] 후 적용됩니다.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M15" xml:space="preserve">
+    <value>SPICE 연결 정보 조회 중...</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M16" xml:space="preserve">
+    <value>SPICE 세션을 {0}(으)로 열었습니다.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M17" xml:space="preserve">
+    <value>SPICE 실패: {0}
+VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정되어 있어야 합니다.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M18" xml:space="preserve">
+    <value>SPICE 실패: {0}</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M19" xml:space="preserve">
+    <value>SPICE로 연결하려면 SPICE 클라이언트(VirtViewer의 remote-viewer)가 필요한데 이 PC에서 찾지 못했습니다.
+
+지금 설치할까요?
+설치 창에서 공식 배포처(releases.pagure.org)의 Windows 설치 파일(약 80MB)을 내려받아 실행합니다.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M20" xml:space="preserve">
+    <value>SPICE 클라이언트 설치</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M21" xml:space="preserve">
+    <value>SPICE 취소: SPICE 클라이언트(remote-viewer)가 설치되어 있지 않습니다.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M22" xml:space="preserve">
+    <value>SPICE 취소: 설치가 끝나지 않았거나 remote-viewer를 찾지 못했습니다. 설치 후 다시 시도하세요.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="ConsoleWindow_M23" xml:space="preserve">
+    <value>SPICE 클라이언트가 바로 종료되었습니다(종료 코드 {0}). VM 디스플레이가 SPICE인지, 서버의 3128 포트(spiceproxy)에 접속할 수 있는지 확인하세요.</value>
+        <comment>ConsoleWindow.cs · 메시지</comment>
+  </data>
+    <data name="CreateGuestWindow_M01" xml:space="preserve">
+    <value>(없음 — 빈 디스크로 생성)</value>
+        <comment>CreateGuestWindow.cs · 메시지</comment>
+  </data>
+    <data name="CreateGuestWindow_M02" xml:space="preserve">
+    <value>ISO 목록 조회 실패: {0}</value>
+        <comment>CreateGuestWindow.cs · 메시지</comment>
+  </data>
+    <data name="CreateGuestWindow_M03" xml:space="preserve">
+    <value>템플릿 목록 조회 실패: {0}</value>
+        <comment>CreateGuestWindow.cs · 메시지</comment>
+  </data>
+    <data name="CreateGuestWindow_M04" xml:space="preserve">
+    <value>OS 템플릿을 선택하세요.</value>
+        <comment>CreateGuestWindow.cs · 메시지</comment>
+  </data>
+    <data name="CreateGuestWindow_M05" xml:space="preserve">
+    <value>노드를 선택하세요.</value>
+        <comment>CreateGuestWindow.cs · 메시지</comment>
+  </data>
+    <data name="CreateGuestWindow_M06" xml:space="preserve">
+    <value>디스크 저장소를 선택하세요.</value>
+        <comment>CreateGuestWindow.cs · 메시지</comment>
+  </data>
+    <data name="CreateGuestWindow_M07" xml:space="preserve">
+    <value>생성 작업 시작 중...</value>
+        <comment>CreateGuestWindow.cs · 메시지</comment>
+  </data>
+    <data name="CreateGuestWindow_M08" xml:space="preserve">
+    <value>생성 작업이 시작되었습니다. 작업 탭에서 진행 상황을 확인하세요.</value>
+        <comment>CreateGuestWindow.cs · 메시지</comment>
+  </data>
+    <data name="CreateGuestWindow_M09" xml:space="preserve">
+    <value>생성 실패: {0}</value>
+        <comment>CreateGuestWindow.cs · 메시지</comment>
+  </data>
+    <data name="FirewallWindow_M01" xml:space="preserve">
+    <value>방화벽 — {0} {1} ({2})</value>
+        <comment>FirewallWindow.cs · 메시지</comment>
+  </data>
+    <data name="FirewallWindow_M02" xml:space="preserve">
+    <value>조회 실패: {0}</value>
+        <comment>FirewallWindow.cs · 메시지</comment>
+  </data>
+    <data name="FirewallWindow_M03" xml:space="preserve">
+    <value>방화벽이 {0}되었습니다.</value>
+        <comment>FirewallWindow.cs · 메시지</comment>
+  </data>
+    <data name="FirewallWindow_M04" xml:space="preserve">
+    <value>옵션 적용 실패: {0}</value>
+        <comment>FirewallWindow.cs · 메시지</comment>
+  </data>
+    <data name="FirewallWindow_M05" xml:space="preserve">
+    <value>규칙을 추가했습니다.</value>
+        <comment>FirewallWindow.cs · 메시지</comment>
+  </data>
+    <data name="FirewallWindow_M06" xml:space="preserve">
+    <value>규칙 추가 실패: {0}</value>
+        <comment>FirewallWindow.cs · 메시지</comment>
+  </data>
+    <data name="FirewallWindow_M07" xml:space="preserve">
+    <value>규칙 #{0} ({1} {2} {3})을(를) 삭제할까요?</value>
+        <comment>FirewallWindow.cs · 메시지</comment>
+  </data>
+    <data name="FirewallWindow_M08" xml:space="preserve">
+    <value>삭제 확인</value>
+        <comment>FirewallWindow.cs · 메시지</comment>
+  </data>
+    <data name="FirewallWindow_M09" xml:space="preserve">
+    <value>규칙을 삭제했습니다.</value>
+        <comment>FirewallWindow.cs · 메시지</comment>
+  </data>
+    <data name="FirewallWindow_M10" xml:space="preserve">
+    <value>삭제 실패: {0}</value>
+        <comment>FirewallWindow.cs · 메시지</comment>
+  </data>
+    <data name="GuestSettingsWindow_M01" xml:space="preserve">
+    <value>게스트 설정 — {0} {1}</value>
+        <comment>GuestSettingsWindow.cs · 메시지</comment>
+  </data>
+    <data name="GuestSettingsWindow_M02" xml:space="preserve">
+    <value>설정을 불러왔습니다.</value>
+        <comment>GuestSettingsWindow.cs · 메시지</comment>
+  </data>
+    <data name="GuestSettingsWindow_M03" xml:space="preserve">
+    <value>설정 조회 실패: {0}</value>
+        <comment>GuestSettingsWindow.cs · 메시지</comment>
+  </data>
+    <data name="GuestSettingsWindow_M04" xml:space="preserve">
+    <value>변경된 항목이 없습니다.</value>
+        <comment>GuestSettingsWindow.cs · 메시지</comment>
+  </data>
+    <data name="GuestSettingsWindow_M05" xml:space="preserve">
+    <value>{0}개 항목 적용 중...</value>
+        <comment>GuestSettingsWindow.cs · 메시지</comment>
+  </data>
+    <data name="GuestSettingsWindow_M06" xml:space="preserve">
+    <value>저장했습니다.</value>
+        <comment>GuestSettingsWindow.cs · 메시지</comment>
+  </data>
+    <data name="LoginWindow_M01" xml:space="preserve">
+    <value>인증서를 신뢰하지 않아 인증 영역을 가져오지 못했습니다. 기본값(pam/pve)으로 진행합니다.</value>
+        <comment>LoginWindow.cs · 메시지</comment>
+  </data>
+    <data name="LoginWindow_M02" xml:space="preserve">
+    <value>서버를 먼저 선택하세요.</value>
+        <comment>LoginWindow.cs · 메시지</comment>
+  </data>
+    <data name="LoginWindow_M03" xml:space="preserve">
+    <value>인증 영역을 다시 가져오는 중...</value>
+        <comment>LoginWindow.cs · 메시지</comment>
+  </data>
+    <data name="LoginWindow_M04" xml:space="preserve">
+    <value>인증 영역 {0}개를 가져왔습니다.</value>
+        <comment>LoginWindow.cs · 메시지</comment>
+  </data>
+    <data name="LoginWindow_M05" xml:space="preserve">
+    <value>서버를 선택하세요. 등록된 서버가 없으면 아래 '서버 관리'에서 추가할 수 있습니다.</value>
+        <comment>LoginWindow.cs · 메시지</comment>
+  </data>
+    <data name="LoginWindow_M06" xml:space="preserve">
+    <value>사용자 이름과 비밀번호를 입력하세요.</value>
+        <comment>LoginWindow.cs · 메시지</comment>
+  </data>
+    <data name="LoginWindow_M07" xml:space="preserve">
+    <value>인증 영역을 선택하세요.</value>
+        <comment>LoginWindow.cs · 메시지</comment>
+  </data>
+    <data name="LoginWindow_M08" xml:space="preserve">
+    <value>이 서버는 VPN 터널이 필요합니다. 메인 화면에서 연결을 진행합니다.</value>
+        <comment>LoginWindow.cs · 메시지</comment>
+  </data>
+    <data name="LoginWindow_M09" xml:space="preserve">
+    <value>로그인 중...</value>
+        <comment>LoginWindow.cs · 메시지</comment>
+  </data>
+    <data name="LoginWindow_M10" xml:space="preserve">
+    <value>로그인 실패: {0}</value>
+        <comment>LoginWindow.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M01" xml:space="preserve">
+    <value>프로필 추가</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M02" xml:space="preserve">
+    <value>프로필 편집</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M03" xml:space="preserve">
+    <value>OpenVPN 설정 파일 선택</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M04" xml:space="preserve">
+    <value>OpenVPN 설정 (*.ovpn)|*.ovpn|모든 파일 (*.*)|*.*</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M05" xml:space="preserve">
+    <value>openvpn.exe 선택</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M06" xml:space="preserve">
+    <value>openvpn.exe|openvpn.exe|실행 파일 (*.exe)|*.exe</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M07" xml:space="preserve">
+    <value>서버 주소와 포트를 먼저 올바르게 입력하세요.</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M08" xml:space="preserve">
+    <value>입력 확인</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M09" xml:space="preserve">
+    <value>서버 인증서 확인 중...</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M10" xml:space="preserve">
+    <value>공인 인증 기관 인증서라 지문을 고정할 필요가 없습니다.</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M11" xml:space="preserve">
+    <value>인증서를 확인했습니다. [저장]을 눌러야 프로필에 기록됩니다.</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M12" xml:space="preserve">
+    <value>인증서를 신뢰하지 않아 취소했습니다. 기존 설정은 그대로입니다.</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileDialog_M13" xml:space="preserve">
+    <value>인증서 확인 실패: {0}</value>
+        <comment>ProfileDialog.cs · 메시지</comment>
+  </data>
+    <data name="ProfileRegisterWindow_M01" xml:space="preserve">
+    <value>서버 주소를 입력하세요.</value>
+        <comment>ProfileRegisterWindow.cs · 메시지</comment>
+  </data>
+    <data name="ProfileRegisterWindow_M02" xml:space="preserve">
+    <value>포트가 올바르지 않습니다 (1~65535, 기본 8006).</value>
+        <comment>ProfileRegisterWindow.cs · 메시지</comment>
+  </data>
+    <data name="ProfileRegisterWindow_M03" xml:space="preserve">
+    <value>서버에 연결하는 중...</value>
+        <comment>ProfileRegisterWindow.cs · 메시지</comment>
+  </data>
+    <data name="ProfileRegisterWindow_M04" xml:space="preserve">
+    <value>서버 확인 완료 — [등록]을 누르면 목록에 추가합니다.</value>
+        <comment>ProfileRegisterWindow.cs · 메시지</comment>
+  </data>
+    <data name="ProfileRegisterWindow_M05" xml:space="preserve">
+    <value>서버 확인 실패: {0}
+주소·포트와 '자체 서명 인증서 허용' 옵션을 확인하세요.</value>
+        <comment>ProfileRegisterWindow.cs · 메시지</comment>
+  </data>
+    <data name="ServerManagerWindow_M01" xml:space="preserve">
+    <value>추가됨: {0}</value>
+        <comment>ServerManagerWindow.cs · 메시지</comment>
+  </data>
+    <data name="ServerManagerWindow_M02" xml:space="preserve">
+    <value>편집할 서버를 목록에서 선택하세요.</value>
+        <comment>ServerManagerWindow.cs · 메시지</comment>
+  </data>
+    <data name="ServerManagerWindow_M03" xml:space="preserve">
+    <value>서버 설정을 저장했습니다.</value>
+        <comment>ServerManagerWindow.cs · 메시지</comment>
+  </data>
+    <data name="ServerManagerWindow_M04" xml:space="preserve">
+    <value>삭제할 서버를 목록에서 선택하세요.</value>
+        <comment>ServerManagerWindow.cs · 메시지</comment>
+  </data>
+    <data name="ServerManagerWindow_M05" xml:space="preserve">
+    <value>서버 '{0}'을(를) 삭제할까요?</value>
+        <comment>ServerManagerWindow.cs · 메시지</comment>
+  </data>
+    <data name="ServerManagerWindow_M06" xml:space="preserve">
+    <value>삭제됨: {0}</value>
+        <comment>ServerManagerWindow.cs · 메시지</comment>
+  </data>
+    <data name="SnapshotDialog_M01" xml:space="preserve">
+    <value>스냅샷 이름을 입력하세요 (공백 없이).</value>
+        <comment>SnapshotDialog.cs · 메시지</comment>
+  </data>
+    <data name="SnapshotDialog_M02" xml:space="preserve">
+    <value>롤백할 스냅샷을 선택하세요.</value>
+        <comment>SnapshotDialog.cs · 메시지</comment>
+  </data>
+    <data name="SnapshotDialog_M03" xml:space="preserve">
+    <value>스냅샷 '{0}'(으)로 롤백할까요?
+게스트가 실행 중이면 강제로 중지됩니다.</value>
+        <comment>SnapshotDialog.cs · 메시지</comment>
+  </data>
+    <data name="SnapshotDialog_M04" xml:space="preserve">
+    <value>롤백 확인</value>
+        <comment>SnapshotDialog.cs · 메시지</comment>
+  </data>
+    <data name="SnapshotDialog_M05" xml:space="preserve">
+    <value>삭제할 스냅샷을 선택하세요.</value>
+        <comment>SnapshotDialog.cs · 메시지</comment>
+  </data>
+    <data name="SnapshotDialog_M06" xml:space="preserve">
+    <value>스냅샷 '{0}'을(를) 삭제할까요?</value>
+        <comment>SnapshotDialog.cs · 메시지</comment>
+  </data>
+    <data name="TerminalWindow_M01" xml:space="preserve">
+    <value>연결됨 — 복사/붙여넣기는 도구 모음 버튼을 사용하세요 (Ctrl+C 는 셸로 전달됩니다)</value>
+        <comment>TerminalWindow.cs · 메시지</comment>
+  </data>
+    <data name="TerminalWindow_M02" xml:space="preserve">
+    <value>복사할 텍스트를 먼저 마우스로 선택하세요.</value>
+        <comment>TerminalWindow.cs · 메시지</comment>
+  </data>
+    <data name="TerminalWindow_M03" xml:space="preserve">
+    <value>선택한 텍스트를 복사했습니다.</value>
+        <comment>TerminalWindow.cs · 메시지</comment>
+  </data>
+    <data name="TerminalWindow_M04" xml:space="preserve">
+    <value>복사 실패: {0}</value>
+        <comment>TerminalWindow.cs · 메시지</comment>
+  </data>
+    <data name="TerminalWindow_M05" xml:space="preserve">
+    <value>붙여넣기 실패: {0}</value>
+        <comment>TerminalWindow.cs · 메시지</comment>
+  </data>
+    <data name="TerminalWindow_M06" xml:space="preserve">
+    <value>설정을 저장했습니다.</value>
+        <comment>TerminalWindow.cs · 메시지</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_M01" xml:space="preserve">
+    <value>설치되지 않음 — SPICE 콘솔을 사용하려면 VirtViewer가 필요합니다.</value>
+        <comment>VirtViewerSetupWindow.cs · 메시지</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_M02" xml:space="preserve">
+    <value>설치됨: {0}</value>
+        <comment>VirtViewerSetupWindow.cs · 메시지</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_M03" xml:space="preserve">
+    <value>최신 설치 파일을 찾지 못했습니다. [다운로드 페이지 열기]로 직접 설치해 주세요.</value>
+        <comment>VirtViewerSetupWindow.cs · 메시지</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_M04" xml:space="preserve">
+    <value>설치 파일 실행 중: {0}
+설치 마법사를 진행하세요. 설치가 끝나면 자동으로 확인합니다.</value>
+        <comment>VirtViewerSetupWindow.cs · 메시지</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_M05" xml:space="preserve">
+    <value>설치 마법사가 끝나면 [다시 검색]을 누르세요.</value>
+        <comment>VirtViewerSetupWindow.cs · 메시지</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_M06" xml:space="preserve">
+    <value>설치를 확인했습니다. SPICE 연결을 계속합니다.</value>
+        <comment>VirtViewerSetupWindow.cs · 메시지</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_M07" xml:space="preserve">
+    <value>설치는 끝났지만 remote-viewer를 찾지 못했습니다. 설치 경로를 확인한 뒤 [다시 검색]을 누르세요.</value>
+        <comment>VirtViewerSetupWindow.cs · 메시지</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_M08" xml:space="preserve">
+    <value>설치가 완료되지 않았습니다(종료 코드 {0}). 다시 시도하거나 [다운로드 페이지 열기]로 직접 설치하세요.</value>
+        <comment>VirtViewerSetupWindow.cs · 메시지</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_M09" xml:space="preserve">
+    <value>실패: {0}
+다시 시도하거나 [다운로드 페이지 열기]로 직접 설치해 주세요.</value>
+        <comment>VirtViewerSetupWindow.cs · 메시지</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_M10" xml:space="preserve">
+    <value>remote-viewer를 찾았습니다! 이 창을 닫으면 SPICE 콘솔이 계속 진행됩니다.</value>
+        <comment>VirtViewerSetupWindow.cs · 메시지</comment>
+  </data>
+    <data name="VirtViewerSetupWindow_M11" xml:space="preserve">
+    <value>설치 파일을 준비하는 중...</value>
+        <comment>VirtViewerSetupWindow.cs · 메시지</comment>
+  </data>
+    <data name="MainWindow_Snapshots" xml:space="preserve">
+    <value>스냅샷</value>
+        <comment>MainWindow.xaml</comment>
+  </data>
+    <data name="MainWindow_NodeList" xml:space="preserve">
+    <value>클러스터 노드</value>
+        <comment>MainWindow.xaml</comment>
+  </data>
+    <data name="MainWindow_NodeDetail" xml:space="preserve">
+    <value>노드 상태</value>
+        <comment>MainWindow.xaml</comment>
+  </data>
+    <data name="MainWindow_TaskStart" xml:space="preserve">
+    <value>시작(로컬)</value>
+        <comment>MainWindow.xaml</comment>
+  </data>
+    <data name="MainWindow_TaskEnd" xml:space="preserve">
+    <value>종료(로컬)</value>
+        <comment>MainWindow.xaml</comment>
+  </data>
+    <data name="LoginWindow_Close" xml:space="preserve">
+    <value>종료</value>
+        <comment>LoginWindow.xaml</comment>
+  </data>
+    <data name="Main_ConnectedTo" xml:space="preserve">
+    <value>{0} 연결됨</value>
+        <comment>MainViewModel.cs</comment>
+  </data>
+    <data name="Main_AuthPassword" xml:space="preserve">
+    <value>비밀번호 인증</value>
+        <comment>MainViewModel.cs</comment>
+  </data>
+    <data name="Main_AuthToken" xml:space="preserve">
+    <value>API 토큰</value>
+        <comment>MainViewModel.cs</comment>
+  </data>
+    <data name="Main_ConnectFailed" xml:space="preserve">
+    <value>연결 실패</value>
+        <comment>MainViewModel.cs</comment>
+  </data>
+    <data name="Graph_Network" xml:space="preserve">
+    <value>네트워크</value>
+        <comment>MainViewModel.cs</comment>
+  </data>
+    <data name="Graph_DiskIo" xml:space="preserve">
+    <value>디스크 IO</value>
+        <comment>MainViewModel.cs</comment>
+  </data>
+    <data name="Vpn_Reconnecting" xml:space="preserve">
+    <value>재연결 중...</value>
+        <comment>MainViewModel.cs</comment>
+  </data>
+    <data name="Vpn_Disconnecting" xml:space="preserve">
+    <value>끊는 중...</value>
+        <comment>MainViewModel.cs</comment>
+  </data>
+    <data name="Vpn_Error" xml:space="preserve">
+    <value>오류: {0}</value>
+        <comment>MainViewModel.cs</comment>
+  </data>
+    <data name="Vpn_UnknownError" xml:space="preserve">
+    <value>알 수 없음</value>
+        <comment>MainViewModel.cs</comment>
+  </data>
+    <data name="ProfileEditor_VpnAutoDetectFailed" xml:space="preserve">
+    <value>자동 감지 실패</value>
+        <comment>ProfileEditorViewModel.cs</comment>
+  </data>
+    <data name="ProfileEditor_CertCaOnly" xml:space="preserve">
+    <value>공인 인증 기관 검증만 사용합니다(자체 서명 인증서는 연결이 거부됩니다).</value>
+        <comment>ProfileEditorViewModel.cs</comment>
+  </data>
+    <data name="ProfileEditor_CertNoTrusted" xml:space="preserve">
+    <value>신뢰한 인증서 없음 — 처음 연결할 때 지문을 확인합니다.</value>
+        <comment>ProfileEditorViewModel.cs</comment>
+  </data>
+    <data name="ProfileEditor_CertThumbprint" xml:space="preserve">
+    <value>신뢰한 지문(SHA-256): {0}</value>
+        <comment>ProfileEditorViewModel.cs</comment>
+  </data>
+    <data name="ProfileEditor_CertThumbprintStale" xml:space="preserve">
+    <value>저장된 지문은 {0}:{1} 기준입니다. 주소가 바뀌어 저장 시 지워집니다.</value>
+        <comment>ProfileEditorViewModel.cs</comment>
+  </data>
+    <data name="ProfileEditor_NameRequired" xml:space="preserve">
+    <value>프로필 이름을 입력하세요.</value>
+        <comment>ProfileEditorViewModel.cs</comment>
+  </data>
+    <data name="ProfileEditor_PortRange" xml:space="preserve">
+    <value>포트는 1~65535 사이의 숫자여야 합니다.</value>
+        <comment>ProfileEditorViewModel.cs</comment>
+  </data>
+    <data name="ProfileEditor_ProxyHostRequired" xml:space="preserve">
+    <value>프록시 호스트를 입력하세요.</value>
+        <comment>ProfileEditorViewModel.cs</comment>
+  </data>
+    <data name="ProfileEditor_ProxyPortRange" xml:space="preserve">
+    <value>프록시 포트는 1~65535 사이의 숫자여야 합니다.</value>
+        <comment>ProfileEditorViewModel.cs</comment>
+  </data>
+    <data name="ProfileEditor_VpnConfigRequired" xml:space="preserve">
+    <value>VPN을 사용하려면 .ovpn 설정 파일 경로를 지정하세요.</value>
+        <comment>ProfileEditorViewModel.cs</comment>
+  </data>
+    <data name="AppSettings_LangAuto" xml:space="preserve">
+    <value>자동 (Windows 표시 언어)</value>
+        <comment>AppSettingsWindow.xaml.cs</comment>
+  </data>
+    <data name="AppSettings_LangKo" xml:space="preserve">
+    <value>한국어</value>
+        <comment>AppSettingsWindow.xaml.cs</comment>
+  </data>
+    <data name="AppSettings_LangEn" xml:space="preserve">
+    <value>English</value>
+        <comment>AppSettingsWindow.xaml.cs</comment>
+  </data>
+    <data name="AppSettings_ByteAuto" xml:space="preserve">
+    <value>자동 (값 크기에 맞춤)</value>
+        <comment>AppSettingsWindow.xaml.cs</comment>
+  </data>
+    <data name="BackupWindow_Header" xml:space="preserve">
+    <value>백업 — {0} {1} ({2})</value>
+        <comment>BackupWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleSettings_EncTight" xml:space="preserve">
+    <value>Tight (권장)</value>
+        <comment>ConsoleSettingsWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleSettings_EncZlib" xml:space="preserve">
+    <value>Zlib (무손실)</value>
+        <comment>ConsoleSettingsWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleSettings_EncRaw" xml:space="preserve">
+    <value>Raw (압축 없음)</value>
+        <comment>ConsoleSettingsWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleWindow_VmOnly" xml:space="preserve">
+    <value>VNC 콘솔은 VM 전용입니다. CT 는 터미널 창을 사용하세요.</value>
+        <comment>ConsoleWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleWindow_Header" xml:space="preserve">
+    <value>콘솔 — {0}</value>
+        <comment>ConsoleWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleWindow_StartedConnecting" xml:space="preserve">
+    <value>게스트가 실행되었습니다. 콘솔 연결 중...</value>
+        <comment>ConsoleWindow.xaml.cs</comment>
+  </data>
+    <data name="Console_StartRequesting" xml:space="preserve">
+    <value>시작 요청 중...</value>
+        <comment>ConsoleWindow.xaml.cs · TerminalWindow.xaml.cs</comment>
+  </data>
+    <data name="Console_WaitingBoot" xml:space="preserve">
+    <value>게스트 부팅 대기 중... 준비되면 자동으로 연결합니다.</value>
+        <comment>ConsoleWindow.xaml.cs · TerminalWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleWindow_AccelHardware" xml:space="preserve">
+    <value>하드웨어 가속</value>
+        <comment>ConsoleWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleWindow_AccelPartial" xml:space="preserve">
+    <value>부분 가속</value>
+        <comment>ConsoleWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleWindow_AccelSoftware" xml:space="preserve">
+    <value>소프트웨어 렌더링</value>
+        <comment>ConsoleWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleWindow_TightNoFrame" xml:space="preserve">
+    <value>Tight 이미지 디코딩 실패: 프레임 없음</value>
+        <comment>ConsoleWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleWindow_TightOutOfRange" xml:space="preserve">
+    <value>Tight 이미지 영역이 프레임버퍼 범위를 벗어났습니다.</value>
+        <comment>ConsoleWindow.xaml.cs</comment>
+  </data>
+    <data name="ConsoleWindow_RemoteViewerFailed" xml:space="preserve">
+    <value>remote-viewer 프로세스를 시작하지 못했습니다.</value>
+        <comment>ConsoleWindow.xaml.cs</comment>
+  </data>
+    <data name="CreateGuest_VmidMin" xml:space="preserve">
+    <value>VMID는 {0} 이상이어야 합니다.</value>
+        <comment>CreateGuestWindow.xaml.cs</comment>
+  </data>
+    <data name="CreateGuest_CoresMin" xml:space="preserve">
+    <value>코어 수는 1 이상이어야 합니다.</value>
+        <comment>CreateGuestWindow.xaml.cs</comment>
+  </data>
+    <data name="CreateGuest_MemoryMin" xml:space="preserve">
+    <value>메모리는 {0} MiB 이상이어야 합니다.</value>
+        <comment>CreateGuestWindow.xaml.cs</comment>
+  </data>
+    <data name="CreateGuest_DiskMin" xml:space="preserve">
+    <value>디스크 크기는 1 GB 이상이어야 합니다.</value>
+        <comment>CreateGuestWindow.xaml.cs</comment>
+  </data>
+    <data name="CreateGuest_SwapInvalid" xml:space="preserve">
+    <value>스왑 크기를 확인하세요.</value>
+        <comment>CreateGuestWindow.xaml.cs</comment>
+  </data>
+    <data name="CreateGuest_RootPasswordMin" xml:space="preserve">
+    <value>루트 비밀번호는 {0}자 이상이어야 합니다.</value>
+        <comment>CreateGuestWindow.xaml.cs</comment>
+  </data>
+    <data name="GuestSettings_CoresMin" xml:space="preserve">
+    <value>코어/소켓 수는 1 이상이어야 합니다.</value>
+        <comment>GuestSettingsWindow.xaml.cs</comment>
+  </data>
+    <data name="GuestSettings_MemoryMin" xml:space="preserve">
+    <value>메모리는 16 MiB 이상이어야 합니다.</value>
+        <comment>GuestSettingsWindow.xaml.cs</comment>
+  </data>
+    <data name="GuestSettings_VlanRange" xml:space="preserve">
+    <value>VLAN 태그는 1–4094 범위여야 합니다.</value>
+        <comment>GuestSettingsWindow.xaml.cs</comment>
+  </data>
+    <data name="ProfileRegister_AuthUnknown" xml:space="preserve">
+    <value>확인 불가 (기본값: Linux PAM, Proxmox VE 인증)</value>
+        <comment>ProfileRegisterWindow.xaml.cs</comment>
+  </data>
+    <data name="ProfileRegister_AuthTypes" xml:space="preserve">
+    <value>로그인 유형: {0}</value>
+        <comment>ProfileRegisterWindow.xaml.cs</comment>
+  </data>
+    <data name="SnapshotDialog_Header" xml:space="preserve">
+    <value>{0} — 노드 {1}</value>
+        <comment>SnapshotDialog.xaml.cs</comment>
+  </data>
+    <data name="SnapshotDialog_Empty" xml:space="preserve">
+    <value>스냅샷이 없습니다.</value>
+        <comment>SnapshotDialog.xaml.cs</comment>
+  </data>
+    <data name="SnapshotDialog_LoadFailed" xml:space="preserve">
+    <value>목록 로드 실패: {0}</value>
+        <comment>SnapshotDialog.xaml.cs</comment>
+  </data>
+    <data name="SnapshotDialog_Running" xml:space="preserve">
+    <value>{0} 작업 실행 중...</value>
+        <comment>SnapshotDialog.xaml.cs</comment>
+  </data>
+    <data name="SnapshotDialog_Done" xml:space="preserve">
+    <value>{0} 완료</value>
+        <comment>SnapshotDialog.xaml.cs</comment>
+  </data>
+    <data name="SnapshotDialog_Failed" xml:space="preserve">
+    <value>{0} 실패: {1}</value>
+        <comment>SnapshotDialog.xaml.cs</comment>
+  </data>
+    <data name="SnapshotDialog_ActionCreate" xml:space="preserve">
+    <value>스냅샷 '{0}' 생성</value>
+        <comment>SnapshotDialog.xaml.cs</comment>
+  </data>
+    <data name="SnapshotDialog_ActionRollback" xml:space="preserve">
+    <value>스냅샷 '{0}' 롤백</value>
+        <comment>SnapshotDialog.xaml.cs</comment>
+  </data>
+    <data name="SnapshotDialog_ActionDelete" xml:space="preserve">
+    <value>스냅샷 '{0}' 삭제</value>
+        <comment>SnapshotDialog.xaml.cs</comment>
+  </data>
+    <data name="TerminalWindow_Header" xml:space="preserve">
+    <value>터미널 — {0}</value>
+        <comment>TerminalWindow.xaml.cs</comment>
+  </data>
+    <data name="TerminalWindow_StartedConnecting" xml:space="preserve">
+    <value>게스트가 실행되었습니다. 터미널 연결 중...</value>
+        <comment>TerminalWindow.xaml.cs</comment>
+  </data>
+    <data name="VirtViewer_FetchingList" xml:space="preserve">
+    <value>다운로드 목록 조회 중...</value>
+        <comment>VirtViewerSetupWindow.xaml.cs</comment>
+  </data>
+    <data name="VirtViewer_IncompleteDownload" xml:space="preserve">
+    <value>다운로드가 완전하지 않습니다({0:N0}/{1:N0} 바이트).</value>
+        <comment>VirtViewerSetupWindow.xaml.cs</comment>
+  </data>
+    <data name="VirtViewer_Downloading" xml:space="preserve">
+    <value>다운로드 중... {0}</value>
+        <comment>VirtViewerSetupWindow.xaml.cs</comment>
+  </data>
+</root>

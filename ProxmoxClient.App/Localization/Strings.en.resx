@@ -1,0 +1,1644 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" id="root"
+                xmlns="">
+        <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
+        <xsd:element name="root" msdata:IsDataSet="true">
+            <xsd:complexType>
+                <xsd:choice maxOccurs="unbounded">
+                    <xsd:element name="metadata">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" use="required" type="xsd:string"/>
+                            <xsd:attribute name="type" type="xsd:string"/>
+                            <xsd:attribute name="mimetype" type="xsd:string"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="assembly">
+                        <xsd:complexType>
+                            <xsd:attribute name="alias" type="xsd:string"/>
+                            <xsd:attribute name="name" type="xsd:string"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="data">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1"/>
+                            <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+                            <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="resheader">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsd:choice>
+            </xsd:complexType>
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <data name="GuestStoppedPanel_01" xml:space="preserve">
+    <value>The guest is not running</value>
+  </data>
+    <data name="GuestStoppedPanel_02" xml:space="preserve">
+    <value>Start guest</value>
+  </data>
+    <data name="MainWindow_01" xml:space="preserve">
+    <value>Switch server</value>
+  </data>
+    <data name="MainWindow_02" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+    <data name="MainWindow_03" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+    <data name="MainWindow_04" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+    <data name="MainWindow_05" xml:space="preserve">
+    <value>Refresh interval and console settings</value>
+  </data>
+    <data name="MainWindow_06" xml:space="preserve">
+    <value>Auto refresh</value>
+  </data>
+    <data name="MainWindow_07" xml:space="preserve">
+    <value>Storage</value>
+  </data>
+    <data name="MainWindow_08" xml:space="preserve">
+    <value>Select a VM/CT below to see its details and graphs.</value>
+  </data>
+    <data name="MainWindow_09" xml:space="preserve">
+    <value>Console</value>
+  </data>
+    <data name="MainWindow_10" xml:space="preserve">
+    <value>More</value>
+  </data>
+    <data name="MainWindow_11" xml:space="preserve">
+    <value>Suspend</value>
+  </data>
+    <data name="MainWindow_12" xml:space="preserve">
+    <value>Resume</value>
+  </data>
+    <data name="MainWindow_13" xml:space="preserve">
+    <value>Hibernate</value>
+  </data>
+    <data name="MainWindow_14" xml:space="preserve">
+    <value>Clone...</value>
+  </data>
+    <data name="MainWindow_15" xml:space="preserve">
+    <value>Backup...</value>
+  </data>
+    <data name="MainWindow_16" xml:space="preserve">
+    <value>Firewall...</value>
+  </data>
+    <data name="MainWindow_17" xml:space="preserve">
+    <value> · Node </value>
+  </data>
+    <data name="MainWindow_18" xml:space="preserve">
+    <value> cores</value>
+  </data>
+    <data name="MainWindow_19" xml:space="preserve">
+    <value>Memory</value>
+  </data>
+    <data name="MainWindow_20" xml:space="preserve">
+    <value>Disk</value>
+  </data>
+    <data name="MainWindow_21" xml:space="preserve">
+    <value>Uptime</value>
+  </data>
+    <data name="MainWindow_22" xml:space="preserve">
+    <value>Pool</value>
+  </data>
+    <data name="MainWindow_23" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+    <data name="MainWindow_24" xml:space="preserve">
+    <value>Hour</value>
+  </data>
+    <data name="MainWindow_25" xml:space="preserve">
+    <value>Day</value>
+  </data>
+    <data name="MainWindow_26" xml:space="preserve">
+    <value>Week</value>
+  </data>
+    <data name="MainWindow_27" xml:space="preserve">
+    <value>Month</value>
+  </data>
+    <data name="MainWindow_28" xml:space="preserve">
+    <value>Year</value>
+  </data>
+    <data name="MainWindow_29" xml:space="preserve">
+    <value>CPU · Memory · Network · Disk IO</value>
+  </data>
+    <data name="MainWindow_30" xml:space="preserve">
+    <value>New guest</value>
+  </data>
+    <data name="MainWindow_31" xml:space="preserve">
+    <value>Guests</value>
+  </data>
+    <data name="MainWindow_32" xml:space="preserve">
+    <value></value>
+  </data>
+    <data name="MainWindow_33" xml:space="preserve">
+    <value>Start</value>
+  </data>
+    <data name="MainWindow_34" xml:space="preserve">
+    <value>Reboot</value>
+  </data>
+    <data name="MainWindow_35" xml:space="preserve">
+    <value>Shut down</value>
+  </data>
+    <data name="MainWindow_36" xml:space="preserve">
+    <value>Stop (force)</value>
+  </data>
+    <data name="MainWindow_37" xml:space="preserve">
+    <value>Snapshots...</value>
+  </data>
+    <data name="MainWindow_38" xml:space="preserve">
+    <value>Settings...</value>
+  </data>
+    <data name="MainWindow_39" xml:space="preserve">
+    <value>Type</value>
+  </data>
+    <data name="MainWindow_40" xml:space="preserve">
+    <value>Name</value>
+  </data>
+    <data name="MainWindow_41" xml:space="preserve">
+    <value>Node</value>
+  </data>
+    <data name="MainWindow_42" xml:space="preserve">
+    <value>Status</value>
+  </data>
+    <data name="MainWindow_43" xml:space="preserve">
+    <value>Template</value>
+  </data>
+    <data name="MainWindow_44" xml:space="preserve">
+    <value> · Cores </value>
+  </data>
+    <data name="MainWindow_45" xml:space="preserve">
+    <value>Memory </value>
+  </data>
+    <data name="MainWindow_46" xml:space="preserve">
+    <value>Kernel</value>
+  </data>
+    <data name="MainWindow_47" xml:space="preserve">
+    <value>CPU cores</value>
+  </data>
+    <data name="MainWindow_48" xml:space="preserve">
+    <value>Load average</value>
+  </data>
+    <data name="MainWindow_49" xml:space="preserve">
+    <value>   (1 min · 5 min · 15 min)</value>
+  </data>
+    <data name="MainWindow_50" xml:space="preserve">
+    <value>Swap</value>
+  </data>
+    <data name="MainWindow_51" xml:space="preserve">
+    <value>Root filesystem</value>
+  </data>
+    <data name="MainWindow_52" xml:space="preserve">
+    <value>Node graphs (RRD)</value>
+  </data>
+    <data name="MainWindow_53" xml:space="preserve">
+    <value>Range:</value>
+  </data>
+    <data name="MainWindow_54" xml:space="preserve">
+    <value>Type</value>
+  </data>
+    <data name="MainWindow_55" xml:space="preserve">
+    <value>Content</value>
+  </data>
+    <data name="MainWindow_56" xml:space="preserve">
+    <value>Usage</value>
+  </data>
+    <data name="MainWindow_57" xml:space="preserve">
+    <value>Used</value>
+  </data>
+    <data name="MainWindow_58" xml:space="preserve">
+    <value>Total</value>
+  </data>
+    <data name="MainWindow_59" xml:space="preserve">
+    <value>Target</value>
+  </data>
+    <data name="MainWindow_60" xml:space="preserve">
+    <value>User</value>
+  </data>
+    <data name="MainWindow_61" xml:space="preserve">
+    <value>Guests </value>
+  </data>
+    <data name="MainWindow_62" xml:space="preserve">
+    <value> · Nodes </value>
+  </data>
+    <data name="AppSettingsWindow_01" xml:space="preserve">
+    <value>Auto refresh interval (seconds)</value>
+  </data>
+    <data name="AppSettingsWindow_02" xml:space="preserve">
+    <value>On startup</value>
+  </data>
+    <data name="AppSettingsWindow_03" xml:space="preserve">
+    <value>Turn on auto refresh after connecting</value>
+  </data>
+    <data name="AppSettingsWindow_04" xml:space="preserve">
+    <value>Display</value>
+  </data>
+    <data name="AppSettingsWindow_05" xml:space="preserve">
+    <value>Language</value>
+  </data>
+    <data name="AppSettingsWindow_06" xml:space="preserve">
+    <value>Applied as soon as you save. Untranslated items fall back to the default language (Korean).</value>
+  </data>
+    <data name="AppSettingsWindow_07" xml:space="preserve">
+    <value>Size unit</value>
+  </data>
+    <data name="AppSettingsWindow_08" xml:space="preserve">
+    <value>Used for memory, disk and network/disk IO. Number format is #,##0.## (e.g. 1,536.5 MB)</value>
+  </data>
+    <data name="AppSettingsWindow_09" xml:space="preserve">
+    <value>VNC · Terminal</value>
+  </data>
+    <data name="AppSettingsWindow_10" xml:space="preserve">
+    <value>Encoding, quality, key input and terminal font</value>
+  </data>
+    <data name="AppSettingsWindow_11" xml:space="preserve">
+    <value>Open console settings...</value>
+  </data>
+    <data name="AppSettingsWindow_12" xml:space="preserve">
+    <value>Save</value>
+  </data>
+    <data name="AppSettingsWindow_13" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+    <data name="BackupWindow_01" xml:space="preserve">
+    <value>Back up guest</value>
+  </data>
+    <data name="BackupWindow_02" xml:space="preserve">
+    <value>Backup</value>
+  </data>
+    <data name="BackupWindow_03" xml:space="preserve">
+    <value>Storage</value>
+  </data>
+    <data name="BackupWindow_04" xml:space="preserve">
+    <value>Only storages that support backup content are listed.</value>
+  </data>
+    <data name="BackupWindow_05" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+    <data name="BackupWindow_06" xml:space="preserve">
+    <value>Snapshot (running)</value>
+  </data>
+    <data name="BackupWindow_07" xml:space="preserve">
+    <value>Suspend</value>
+  </data>
+    <data name="BackupWindow_08" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+    <data name="BackupWindow_09" xml:space="preserve">
+    <value>Compression</value>
+  </data>
+    <data name="BackupWindow_10" xml:space="preserve">
+    <value>None</value>
+  </data>
+    <data name="BackupWindow_11" xml:space="preserve">
+    <value>The backup runs as a background task; follow its progress on the Tasks tab.</value>
+  </data>
+    <data name="BackupWindow_12" xml:space="preserve">
+    <value>Start backup</value>
+  </data>
+    <data name="CloneWindow_01" xml:space="preserve">
+    <value>Clone guest</value>
+  </data>
+    <data name="CloneWindow_02" xml:space="preserve">
+    <value>Clone</value>
+  </data>
+    <data name="CloneWindow_03" xml:space="preserve">
+    <value>New VMID</value>
+  </data>
+    <data name="CloneWindow_04" xml:space="preserve">
+    <value>Empty = automatic (Copy-of-source)</value>
+  </data>
+    <data name="CloneWindow_05" xml:space="preserve">
+    <value>Linked clones are only possible from a template and share the source disk.</value>
+  </data>
+    <data name="CloneWindow_06" xml:space="preserve">
+    <value>Full clone</value>
+  </data>
+    <data name="CloneWindow_07" xml:space="preserve">
+    <value>Linked clone</value>
+  </data>
+    <data name="CloneWindow_08" xml:space="preserve">
+    <value>Target node</value>
+  </data>
+    <data name="CloneWindow_09" xml:space="preserve">
+    <value>Target storage</value>
+  </data>
+    <data name="CloneWindow_10" xml:space="preserve">
+    <value>Applies to full clones only</value>
+  </data>
+    <data name="CloneWindow_11" xml:space="preserve">
+    <value>Start clone</value>
+  </data>
+    <data name="ConsoleSettingsWindow_01" xml:space="preserve">
+    <value>Console settings</value>
+  </data>
+    <data name="ConsoleSettingsWindow_02" xml:space="preserve">
+    <value>VNC console (VM)</value>
+  </data>
+    <data name="ConsoleSettingsWindow_03" xml:space="preserve">
+    <value>Encoding</value>
+  </data>
+    <data name="ConsoleSettingsWindow_04" xml:space="preserve">
+    <value>Tight: JPEG+zlib, lowest bandwidth (recommended) · Zlib: lossless · Raw: no compression (LAN only)</value>
+  </data>
+    <data name="ConsoleSettingsWindow_05" xml:space="preserve">
+    <value>JPEG quality</value>
+  </data>
+    <data name="ConsoleSettingsWindow_06" xml:space="preserve">
+    <value>0 = lower quality, less bandwidth … 9 = higher quality (Tight only)</value>
+  </data>
+    <data name="ConsoleSettingsWindow_07" xml:space="preserve">
+    <value>Compression level</value>
+  </data>
+    <data name="ConsoleSettingsWindow_08" xml:space="preserve">
+    <value>0 = fast (more bandwidth) … 9 = maximum compression (more CPU)</value>
+  </data>
+    <data name="ConsoleSettingsWindow_09" xml:space="preserve">
+    <value>Key input</value>
+  </data>
+    <data name="ConsoleSettingsWindow_10" xml:space="preserve">
+    <value>Sends raw scancodes so IME, Hanja and numpad keys work regardless of the keyboard layout. Falls back to keysyms automatically if the server does not support it.</value>
+  </data>
+    <data name="ConsoleSettingsWindow_11" xml:space="preserve">
+    <value>Use QEMU extended key events (recommended)</value>
+  </data>
+    <data name="ConsoleSettingsWindow_12" xml:space="preserve">
+    <value>Screen scaling</value>
+  </data>
+    <data name="ConsoleSettingsWindow_13" xml:space="preserve">
+    <value>Smooth downscaling in Fit mode (less text blur)</value>
+  </data>
+    <data name="ConsoleSettingsWindow_14" xml:space="preserve">
+    <value>Terminal (CT)</value>
+  </data>
+    <data name="ConsoleSettingsWindow_15" xml:space="preserve">
+    <value>Font</value>
+  </data>
+    <data name="ConsoleSettingsWindow_16" xml:space="preserve">
+    <value>Pick from the list or type the name of an installed monospace font</value>
+  </data>
+    <data name="ConsoleSettingsWindow_17" xml:space="preserve">
+    <value>Font size</value>
+  </data>
+    <data name="ConsoleSettingsWindow_18" xml:space="preserve">
+    <value>Encoding, quality and key input take effect the next time you reconnect the console.</value>
+  </data>
+    <data name="ConsoleWindow_01" xml:space="preserve">
+    <value>Force stop</value>
+  </data>
+    <data name="ConsoleWindow_02" xml:space="preserve">
+    <value>Reconnect</value>
+  </data>
+    <data name="ConsoleWindow_03" xml:space="preserve">
+    <value>Send clipboard</value>
+  </data>
+    <data name="ConsoleWindow_04" xml:space="preserve">
+    <value>Size: Fit</value>
+  </data>
+    <data name="ConsoleWindow_05" xml:space="preserve">
+    <value>Open with SPICE...</value>
+  </data>
+    <data name="ConsoleWindow_06" xml:space="preserve">
+    <value>Connecting...</value>
+  </data>
+    <data name="CreateGuestWindow_01" xml:space="preserve">
+    <value>Create guest</value>
+  </data>
+    <data name="CreateGuestWindow_02" xml:space="preserve">
+    <value>General</value>
+  </data>
+    <data name="CreateGuestWindow_03" xml:space="preserve">
+    <value>Virtual machine (VM)</value>
+  </data>
+    <data name="CreateGuestWindow_04" xml:space="preserve">
+    <value>Container (CT)</value>
+  </data>
+    <data name="CreateGuestWindow_05" xml:space="preserve">
+    <value>100 or higher — the next free ID in the cluster is filled in automatically.</value>
+  </data>
+    <data name="CreateGuestWindow_06" xml:space="preserve">
+    <value>Name / hostname</value>
+  </data>
+    <data name="CreateGuestWindow_07" xml:space="preserve">
+    <value>Resources</value>
+  </data>
+    <data name="CreateGuestWindow_08" xml:space="preserve">
+    <value>Cores</value>
+  </data>
+    <data name="CreateGuestWindow_09" xml:space="preserve">
+    <value>Memory (MiB)</value>
+  </data>
+    <data name="CreateGuestWindow_10" xml:space="preserve">
+    <value>Installation media</value>
+  </data>
+    <data name="CreateGuestWindow_11" xml:space="preserve">
+    <value>ISO storage</value>
+  </data>
+    <data name="CreateGuestWindow_12" xml:space="preserve">
+    <value>ISO image</value>
+  </data>
+    <data name="CreateGuestWindow_13" xml:space="preserve">
+    <value>Container</value>
+  </data>
+    <data name="CreateGuestWindow_14" xml:space="preserve">
+    <value>Template storage</value>
+  </data>
+    <data name="CreateGuestWindow_15" xml:space="preserve">
+    <value>OS template</value>
+  </data>
+    <data name="CreateGuestWindow_16" xml:space="preserve">
+    <value>Swap (MiB)</value>
+  </data>
+    <data name="CreateGuestWindow_17" xml:space="preserve">
+    <value>Root password</value>
+  </data>
+    <data name="CreateGuestWindow_18" xml:space="preserve">
+    <value>5 characters or more</value>
+  </data>
+    <data name="CreateGuestWindow_19" xml:space="preserve">
+    <value>dhcp or CIDR (e.g. 192.168.1.50/24)</value>
+  </data>
+    <data name="CreateGuestWindow_20" xml:space="preserve">
+    <value>Disk · Network</value>
+  </data>
+    <data name="CreateGuestWindow_21" xml:space="preserve">
+    <value>Disk storage</value>
+  </data>
+    <data name="CreateGuestWindow_22" xml:space="preserve">
+    <value>Disk size (GB)</value>
+  </data>
+    <data name="CreateGuestWindow_23" xml:space="preserve">
+    <value>Network bridge</value>
+  </data>
+    <data name="CreateGuestWindow_24" xml:space="preserve">
+    <value>Pick from the list or type one</value>
+  </data>
+    <data name="CreateGuestWindow_25" xml:space="preserve">
+    <value>Create</value>
+  </data>
+    <data name="FirewallWindow_01" xml:space="preserve">
+    <value>Firewall</value>
+  </data>
+    <data name="FirewallWindow_02" xml:space="preserve">
+    <value>Apply options</value>
+  </data>
+    <data name="FirewallWindow_03" xml:space="preserve">
+    <value>Enable guest firewall</value>
+  </data>
+    <data name="FirewallWindow_04" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+    <data name="FirewallWindow_05" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+    <data name="FirewallWindow_06" xml:space="preserve">
+    <value>Pos</value>
+  </data>
+    <data name="FirewallWindow_07" xml:space="preserve">
+    <value>Direction</value>
+  </data>
+    <data name="FirewallWindow_08" xml:space="preserve">
+    <value>Action</value>
+  </data>
+    <data name="FirewallWindow_09" xml:space="preserve">
+    <value>Macro</value>
+  </data>
+    <data name="FirewallWindow_10" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+    <data name="FirewallWindow_11" xml:space="preserve">
+    <value>Port</value>
+  </data>
+    <data name="FirewallWindow_12" xml:space="preserve">
+    <value>Source</value>
+  </data>
+    <data name="FirewallWindow_13" xml:space="preserve">
+    <value>Comment</value>
+  </data>
+    <data name="FirewallWindow_14" xml:space="preserve">
+    <value>Add rule</value>
+  </data>
+    <data name="FirewallWindow_15" xml:space="preserve">
+    <value>e.g. 22, 80,443, 2000:3000 (empty = any)</value>
+  </data>
+    <data name="FirewallWindow_16" xml:space="preserve">
+    <value>CIDR or alias (empty = any)</value>
+  </data>
+    <data name="FirewallWindow_17" xml:space="preserve">
+    <value>Rule enabled</value>
+  </data>
+    <data name="FirewallWindow_18" xml:space="preserve">
+    <value>Close</value>
+  </data>
+    <data name="GuestSettingsWindow_01" xml:space="preserve">
+    <value>Guest settings</value>
+  </data>
+    <data name="GuestSettingsWindow_02" xml:space="preserve">
+    <value>General</value>
+  </data>
+    <data name="GuestSettingsWindow_03" xml:space="preserve">
+    <value>Start at boot</value>
+  </data>
+    <data name="GuestSettingsWindow_04" xml:space="preserve">
+    <value>Protection</value>
+  </data>
+    <data name="GuestSettingsWindow_05" xml:space="preserve">
+    <value>When enabled, deleting the guest or removing disks is blocked.</value>
+  </data>
+    <data name="GuestSettingsWindow_06" xml:space="preserve">
+    <value>Start/shutdown order</value>
+  </data>
+    <data name="GuestSettingsWindow_07" xml:space="preserve">
+    <value>e.g. order=2,up=30,down=60</value>
+  </data>
+    <data name="GuestSettingsWindow_08" xml:space="preserve">
+    <value>OS type</value>
+  </data>
+    <data name="GuestSettingsWindow_09" xml:space="preserve">
+    <value>Boot order</value>
+  </data>
+    <data name="GuestSettingsWindow_10" xml:space="preserve">
+    <value>e.g. order=scsi0;ide2;net0</value>
+  </data>
+    <data name="GuestSettingsWindow_11" xml:space="preserve">
+    <value>Sockets</value>
+  </data>
+    <data name="GuestSettingsWindow_12" xml:space="preserve">
+    <value>CPU limit</value>
+  </data>
+    <data name="GuestSettingsWindow_13" xml:space="preserve">
+    <value>0 or empty = no limit (decimals allowed, e.g. 1.5)</value>
+  </data>
+    <data name="GuestSettingsWindow_14" xml:space="preserve">
+    <value>Minimum memory (MiB)</value>
+  </data>
+    <data name="GuestSettingsWindow_15" xml:space="preserve">
+    <value>Ballooning minimum, 0 = off</value>
+  </data>
+    <data name="GuestSettingsWindow_16" xml:space="preserve">
+    <value>Network (net0)</value>
+  </data>
+    <data name="GuestSettingsWindow_17" xml:space="preserve">
+    <value>Bridge</value>
+  </data>
+    <data name="GuestSettingsWindow_18" xml:space="preserve">
+    <value>Model</value>
+  </data>
+    <data name="GuestSettingsWindow_19" xml:space="preserve">
+    <value>MAC address</value>
+  </data>
+    <data name="GuestSettingsWindow_20" xml:space="preserve">
+    <value>Empty = generated automatically</value>
+  </data>
+    <data name="GuestSettingsWindow_21" xml:space="preserve">
+    <value>VLAN tag</value>
+  </data>
+    <data name="GuestSettingsWindow_22" xml:space="preserve">
+    <value>1–4094, empty = none</value>
+  </data>
+    <data name="GuestSettingsWindow_23" xml:space="preserve">
+    <value>Nameservers</value>
+  </data>
+    <data name="GuestSettingsWindow_24" xml:space="preserve">
+    <value>Separate several with spaces, empty = use host settings</value>
+  </data>
+    <data name="GuestSettingsWindow_25" xml:space="preserve">
+    <value>Search domain</value>
+  </data>
+    <data name="GuestSettingsWindow_26" xml:space="preserve">
+    <value>Only changed items are sent to the server. Some settings (such as reducing cores or memory) apply only while the guest is stopped.</value>
+  </data>
+    <data name="LoginWindow_01" xml:space="preserve">
+    <value>Sign in — Proxmox Client</value>
+  </data>
+    <data name="LoginWindow_02" xml:space="preserve">
+    <value>Proxmox Client</value>
+  </data>
+    <data name="LoginWindow_03" xml:space="preserve">
+    <value>Management tool for Proxmox Virtual Environment</value>
+  </data>
+    <data name="LoginWindow_04" xml:space="preserve">
+    <value>Server</value>
+  </data>
+    <data name="LoginWindow_05" xml:space="preserve">
+    <value>User name</value>
+  </data>
+    <data name="LoginWindow_06" xml:space="preserve">
+    <value>Password</value>
+  </data>
+    <data name="LoginWindow_07" xml:space="preserve">
+    <value>Realm</value>
+  </data>
+    <data name="LoginWindow_08" xml:space="preserve">
+    <value>Fetch realms from the server again</value>
+  </data>
+    <data name="LoginWindow_09" xml:space="preserve">
+    <value>The password is used only to sign in and is never saved.</value>
+  </data>
+    <data name="LoginWindow_10" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+    <data name="LoginWindow_11" xml:space="preserve">
+    <value>Add, edit or remove servers</value>
+  </data>
+    <data name="ProfileDialog_01" xml:space="preserve">
+    <value>Server settings</value>
+  </data>
+    <data name="ProfileDialog_02" xml:space="preserve">
+    <value>Server name</value>
+  </data>
+    <data name="ProfileDialog_03" xml:space="preserve">
+    <value>Server address</value>
+  </data>
+    <data name="ProfileDialog_04" xml:space="preserve">
+    <value>Proxmox default is 8006</value>
+  </data>
+    <data name="ProfileDialog_05" xml:space="preserve">
+    <value>Certificate</value>
+  </data>
+    <data name="ProfileDialog_06" xml:space="preserve">
+    <value>For a self-signed certificate the fingerprint is confirmed on first connection; the connection is blocked later if it changes.</value>
+  </data>
+    <data name="ProfileDialog_07" xml:space="preserve">
+    <value>Allow self-signed certificate</value>
+  </data>
+    <data name="ProfileDialog_08" xml:space="preserve">
+    <value>Check / renew certificate</value>
+  </data>
+    <data name="ProfileDialog_09" xml:space="preserve">
+    <value>Proxy</value>
+  </data>
+    <data name="ProfileDialog_10" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+    <data name="ProfileDialog_11" xml:space="preserve">
+    <value>Direct</value>
+  </data>
+    <data name="ProfileDialog_12" xml:space="preserve">
+    <value>System settings</value>
+  </data>
+    <data name="ProfileDialog_13" xml:space="preserve">
+    <value>Proxy host</value>
+  </data>
+    <data name="ProfileDialog_14" xml:space="preserve">
+    <value>Proxy port</value>
+  </data>
+    <data name="ProfileDialog_15" xml:space="preserve">
+    <value>Proxy user</value>
+  </data>
+    <data name="ProfileDialog_16" xml:space="preserve">
+    <value>Leave empty if no authentication is required.</value>
+  </data>
+    <data name="ProfileDialog_17" xml:space="preserve">
+    <value>Proxy password</value>
+  </data>
+    <data name="ProfileDialog_18" xml:space="preserve">
+    <value>Tunnel</value>
+  </data>
+    <data name="ProfileDialog_19" xml:space="preserve">
+    <value>Use an OpenVPN tunnel before connecting</value>
+  </data>
+    <data name="ProfileDialog_20" xml:space="preserve">
+    <value>.ovpn file</value>
+  </data>
+    <data name="ProfileDialog_21" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+    <data name="ProfileRegisterWindow_01" xml:space="preserve">
+    <value>Register server</value>
+  </data>
+    <data name="ProfileRegisterWindow_02" xml:space="preserve">
+    <value>Name shown in the list</value>
+  </data>
+    <data name="ProfileRegisterWindow_03" xml:space="preserve">
+    <value>Hostname or IP (https:// may be omitted)</value>
+  </data>
+    <data name="ProfileRegisterWindow_04" xml:space="preserve">
+    <value>Check server</value>
+  </data>
+    <data name="ProfileRegisterWindow_05" xml:space="preserve">
+    <value>Only the connection and available realms are checked before registering. Your user name and password are entered on the sign-in screen and are not saved.</value>
+  </data>
+    <data name="ProfileRegisterWindow_06" xml:space="preserve">
+    <value>Register</value>
+  </data>
+    <data name="ServerManagerWindow_01" xml:space="preserve">
+    <value>Manage servers</value>
+  </data>
+    <data name="ServerManagerWindow_02" xml:space="preserve">
+    <value>Add</value>
+  </data>
+    <data name="ServerManagerWindow_03" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+    <data name="ServerManagerWindow_04" xml:space="preserve">
+    <value>Registered servers</value>
+  </data>
+    <data name="ServerManagerWindow_05" xml:space="preserve">
+    <value>The server is registered after its connection is checked. Your user name and password are entered on the sign-in screen and are not saved.</value>
+  </data>
+    <data name="SnapshotDialog_01" xml:space="preserve">
+    <value>Manage snapshots</value>
+  </data>
+    <data name="SnapshotDialog_02" xml:space="preserve">
+    <value>Created</value>
+  </data>
+    <data name="SnapshotDialog_03" xml:space="preserve">
+    <value>With RAM</value>
+  </data>
+    <data name="SnapshotDialog_04" xml:space="preserve">
+    <value>Roll back selected</value>
+  </data>
+    <data name="SnapshotDialog_05" xml:space="preserve">
+    <value>Delete selected</value>
+  </data>
+    <data name="SnapshotDialog_06" xml:space="preserve">
+    <value>New snapshot</value>
+  </data>
+    <data name="SnapshotDialog_07" xml:space="preserve">
+    <value>Start with a letter; letters, digits, - and _ only</value>
+  </data>
+    <data name="SnapshotDialog_08" xml:space="preserve">
+    <value>Create snapshot</value>
+  </data>
+    <data name="SnapshotDialog_09" xml:space="preserve">
+    <value>Include memory (RAM) state</value>
+  </data>
+    <data name="TerminalWindow_01" xml:space="preserve">
+    <value>Terminal</value>
+  </data>
+    <data name="TerminalWindow_02" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+    <data name="TerminalWindow_03" xml:space="preserve">
+    <value>Copy the selected text to the clipboard</value>
+  </data>
+    <data name="TerminalWindow_04" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+    <data name="TerminalWindow_05" xml:space="preserve">
+    <value>Type the clipboard text into the terminal</value>
+  </data>
+    <data name="VirtViewerSetupWindow_01" xml:space="preserve">
+    <value>Install VirtViewer (SPICE client)</value>
+  </data>
+    <data name="VirtViewerSetupWindow_02" xml:space="preserve">
+    <value>Install VirtViewer for the SPICE console</value>
+  </data>
+    <data name="VirtViewerSetupWindow_03" xml:space="preserve">
+    <value>Installation status</value>
+  </data>
+    <data name="VirtViewerSetupWindow_04" xml:space="preserve">
+    <value>Checking...</value>
+  </data>
+    <data name="VirtViewerSetupWindow_05" xml:space="preserve">
+    <value>Automatic installation downloads the latest Windows x64 installer (MSI, about 80 MB) from the official site (releases.pagure.org/virt-viewer) and runs it. Installing may ask for administrator approval. When it finishes, click [Search again].</value>
+  </data>
+    <data name="VirtViewerSetupWindow_06" xml:space="preserve">
+    <value>Download and install</value>
+  </data>
+    <data name="VirtViewerSetupWindow_07" xml:space="preserve">
+    <value>Search again</value>
+  </data>
+    <data name="VirtViewerSetupWindow_08" xml:space="preserve">
+    <value>Open download page</value>
+  </data>
+    <data name="App_Title" xml:space="preserve">
+    <value>Proxmox Client</value>
+  </data>
+    <data name="Tab_Guests" xml:space="preserve">
+    <value>Guests (VM/CT)</value>
+  </data>
+    <data name="Tab_Nodes" xml:space="preserve">
+    <value>Nodes</value>
+  </data>
+    <data name="Tab_Tasks" xml:space="preserve">
+    <value>Tasks</value>
+  </data>
+    <data name="Choice_NicVirtio" xml:space="preserve">
+    <value>VirtIO (paravirtualized, recommended)</value>
+  </data>
+    <data name="Choice_FwAccept" xml:space="preserve">
+    <value>Allow (ACCEPT)</value>
+  </data>
+    <data name="Choice_FwDrop" xml:space="preserve">
+    <value>Drop (DROP)</value>
+  </data>
+    <data name="Choice_FwReject" xml:space="preserve">
+    <value>Reject (REJECT)</value>
+  </data>
+    <data name="Choice_FwIn" xml:space="preserve">
+    <value>Inbound (in)</value>
+  </data>
+    <data name="Choice_FwOut" xml:space="preserve">
+    <value>Outbound (out)</value>
+  </data>
+    <data name="Choice_FwAllProtocols" xml:space="preserve">
+    <value>All</value>
+  </data>
+    <data name="GuestPower_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+    <data name="GuestPower_Shutdown" xml:space="preserve">
+    <value>Shut down</value>
+  </data>
+    <data name="GuestPower_Stop" xml:space="preserve">
+    <value>Force stop</value>
+  </data>
+    <data name="GuestPower_Reboot" xml:space="preserve">
+    <value>Reboot</value>
+  </data>
+    <data name="GuestPower_Suspend" xml:space="preserve">
+    <value>Suspend</value>
+  </data>
+    <data name="GuestPower_Resume" xml:space="preserve">
+    <value>Resume</value>
+  </data>
+    <data name="GuestPower_Hibernate" xml:space="preserve">
+    <value>Hibernate</value>
+  </data>
+    <data name="GuestStopped_Title" xml:space="preserve">
+    <value>The guest is not running</value>
+  </data>
+    <data name="GuestStopped_HintCanStart" xml:space="preserve">
+    <value>Start the guest and the console will connect automatically.</value>
+  </data>
+    <data name="GuestStopped_HintWait" xml:space="preserve">
+    <value>The console will connect automatically once the guest starts.</value>
+  </data>
+    <data name="GuestStopped_Starting" xml:space="preserve">
+    <value>Starting guest</value>
+  </data>
+    <data name="Uptime_WithDays" xml:space="preserve">
+    <value>{0}d {1:D2}:{2:D2}:{3:D2}</value>
+  </data>
+    <data name="Main_NotConnected" xml:space="preserve">
+    <value>Not connected</value>
+  </data>
+    <data name="Main_SelectProfile" xml:space="preserve">
+    <value>Select a profile and connect.</value>
+  </data>
+    <data name="Vpn_NotConnected" xml:space="preserve">
+    <value>Not connected</value>
+  </data>
+    <data name="Cert_Details" xml:space="preserve">
+    <value>Server: {0}
+SHA-256 fingerprint:
+{1}
+
+Subject: {2}
+Issuer: {3}
+Expires: {4}</value>
+  </data>
+    <data name="Cert_MismatchTitle" xml:space="preserve">
+    <value>Server certificate changed</value>
+  </data>
+    <data name="Cert_MismatchText" xml:space="preserve">
+    <value>The server certificate differs from the one you trusted earlier.
+A man-in-the-middle attack could steal your password. Trust it only if you replaced the server certificate yourself.
+
+Previous fingerprint:
+{0}
+
+New certificate
+{1}
+
+Trust the new certificate and continue?</value>
+  </data>
+    <data name="Cert_NewTitle" xml:space="preserve">
+    <value>Confirm server certificate</value>
+  </data>
+    <data name="Cert_NewText" xml:space="preserve">
+    <value>This server's certificate was not issued by a public certificate authority (for example the default self-signed Proxmox certificate).
+Compare it with the fingerprint shown under [Node → System → Certificates] in the Proxmox web UI before trusting it.
+
+{0}
+
+Trust this certificate and continue? You will be warned again if the fingerprint changes.</value>
+  </data>
+    <data name="Firewall_StateEnabled" xml:space="preserve">
+    <value>enabled</value>
+  </data>
+    <data name="Firewall_StateDisabled" xml:space="preserve">
+    <value>disabled</value>
+  </data>
+    <data name="Login_ServerManager" xml:space="preserve">
+    <value>Manage servers</value>
+  </data>
+    <data name="App_M01" xml:space="preserve">
+    <value>An unexpected error occurred, but the app will keep running.
+
+{0}
+
+Detailed log: {1}</value>
+  </data>
+    <data name="App_M02" xml:space="preserve">
+    <value>Error</value>
+  </data>
+    <data name="ComboChoices_M01" xml:space="preserve">
+    <value>(not set)</value>
+  </data>
+    <data name="ComboChoices_M02" xml:space="preserve">
+    <value>Linux 6.x – 2.6 kernel</value>
+  </data>
+    <data name="ComboChoices_M03" xml:space="preserve">
+    <value>Linux 2.4 kernel</value>
+  </data>
+    <data name="ComboChoices_M04" xml:space="preserve">
+    <value>Other</value>
+  </data>
+    <data name="MainWindow_M01" xml:space="preserve">
+    <value>Select a guest (VM/CT) first.</value>
+  </data>
+    <data name="MainWindow_M02" xml:space="preserve">
+    <value>Selection required</value>
+  </data>
+    <data name="MainWindow_M03" xml:space="preserve">
+    <value>Not connected to a server.</value>
+  </data>
+    <data name="MainWindow_M04" xml:space="preserve">
+    <value>Connection required</value>
+  </data>
+    <data name="MainWindow_M05" xml:space="preserve">
+    <value>No storage supports backup content.
+Enable backup content in the storage settings first.</value>
+  </data>
+    <data name="MainWindow_M06" xml:space="preserve">
+    <value>Backup unavailable</value>
+  </data>
+    <data name="MainWindow_M07" xml:space="preserve">
+    <value>A template cannot run, so its console cannot be opened.</value>
+  </data>
+    <data name="MainWindow_M08" xml:space="preserve">
+    <value>Check status</value>
+  </data>
+    <data name="ThemedMessageBox_M01" xml:space="preserve">
+    <value>OK</value>
+  </data>
+    <data name="ThemedMessageBox_M02" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+    <data name="ThemedMessageBox_M03" xml:space="preserve">
+    <value>No</value>
+  </data>
+    <data name="MainViewModel_M01" xml:space="preserve">
+    <value>Profile saved: {0}</value>
+  </data>
+    <data name="MainViewModel_M02" xml:space="preserve">
+    <value>Profile deleted: {0}</value>
+  </data>
+    <data name="MainViewModel_M03" xml:space="preserve">
+    <value>Connecting the VPN tunnel...</value>
+  </data>
+    <data name="MainViewModel_M04" xml:space="preserve">
+    <value>Connected.</value>
+  </data>
+    <data name="MainViewModel_M05" xml:space="preserve">
+    <value>Disconnected.</value>
+  </data>
+    <data name="MainViewModel_M06" xml:space="preserve">
+    <value>{0} Connect again to review the new fingerprint.</value>
+  </data>
+    <data name="MainViewModel_M07" xml:space="preserve">
+    <value>Refresh failed: {0}</value>
+  </data>
+    <data name="MainViewModel_M08" xml:space="preserve">
+    <value>{0} {1}({2}) {3} request sent</value>
+  </data>
+    <data name="MainViewModel_M09" xml:space="preserve">
+    <value>{0} failed: {1}</value>
+  </data>
+    <data name="MainViewModel_M10" xml:space="preserve">
+    <value>Task finished: {0} {1}</value>
+  </data>
+    <data name="MainViewModel_M11" xml:space="preserve">
+    <value>Task failed: {0} {1} — {2}</value>
+  </data>
+    <data name="MainViewModel_M12" xml:space="preserve">
+    <value>Could not track the task: {0}</value>
+  </data>
+    <data name="MainViewModel_M13" xml:space="preserve">
+    <value>The VPN tunnel is connected.</value>
+  </data>
+    <data name="MainViewModel_M14" xml:space="preserve">
+    <value>VPN connection failed: {0}</value>
+  </data>
+    <data name="MainViewModel_M15" xml:space="preserve">
+    <value>The VPN tunnel was closed.</value>
+  </data>
+    <data name="MainViewModel_M16" xml:space="preserve">
+    <value>Could not close the VPN tunnel: {0}</value>
+  </data>
+    <data name="AppSettingsWindow_M01" xml:space="preserve">
+    <value>{0}–{1} seconds. A shorter interval reflects changes sooner but makes more API calls (a refresh is skipped if the previous one is still running).</value>
+  </data>
+    <data name="AppSettingsWindow_M02" xml:space="preserve">
+    <value>The refresh interval must be between {0} and {1} seconds.</value>
+  </data>
+    <data name="AppSettingsWindow_M03" xml:space="preserve">
+    <value>Could not save: {0}</value>
+  </data>
+    <data name="BackupWindow_M01" xml:space="preserve">
+    <value>Select a backup storage (no storage with backup content was found).</value>
+  </data>
+    <data name="BackupWindow_M02" xml:space="preserve">
+    <value>Starting the backup task...</value>
+  </data>
+    <data name="BackupWindow_M03" xml:space="preserve">
+    <value>The backup task has started. Follow its progress on the Tasks tab.</value>
+  </data>
+    <data name="BackupWindow_M04" xml:space="preserve">
+    <value>Could not start the backup: {0}</value>
+  </data>
+    <data name="CloneWindow_M01" xml:space="preserve">
+    <value>(current node: {0})</value>
+  </data>
+    <data name="CloneWindow_M02" xml:space="preserve">
+    <value>(same as source)</value>
+  </data>
+    <data name="CloneWindow_M03" xml:space="preserve">
+    <value>The new VMID must be {0} or higher.</value>
+  </data>
+    <data name="CloneWindow_M04" xml:space="preserve">
+    <value>Linked clones are only possible from a template.</value>
+  </data>
+    <data name="CloneWindow_M05" xml:space="preserve">
+    <value>Starting the clone task...</value>
+  </data>
+    <data name="CloneWindow_M06" xml:space="preserve">
+    <value>The clone task has started. Follow its progress on the Tasks tab.</value>
+  </data>
+    <data name="CloneWindow_M07" xml:space="preserve">
+    <value>Clone failed: {0}</value>
+  </data>
+    <data name="ConsoleSettingsWindow_M01" xml:space="preserve">
+    <value>The font size must be between {0} and {1}.</value>
+  </data>
+    <data name="ConsoleWindow_M01" xml:space="preserve">
+    <value>The guest is not running.</value>
+  </data>
+    <data name="ConsoleWindow_M02" xml:space="preserve">
+    <value>Could not connect to the guest. Click [Reconnect] once it has finished booting.</value>
+  </data>
+    <data name="ConsoleWindow_M03" xml:space="preserve">
+    <value>Connecting to the VNC proxy...</value>
+  </data>
+    <data name="ConsoleWindow_M04" xml:space="preserve">
+    <value>Connected — {0}x{1} · {2} (click the console window to give it keyboard/mouse focus)</value>
+  </data>
+    <data name="ConsoleWindow_M05" xml:space="preserve">
+    <value>The connection was closed.</value>
+  </data>
+    <data name="ConsoleWindow_M06" xml:space="preserve">
+    <value>Connection closed: {0}</value>
+  </data>
+    <data name="ConsoleWindow_M07" xml:space="preserve">
+    <value>Connection failed: {0}</value>
+  </data>
+    <data name="ConsoleWindow_M08" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+    <data name="ConsoleWindow_M09" xml:space="preserve">
+    <value>The clipboard was sent to the guest.</value>
+  </data>
+    <data name="ConsoleWindow_M10" xml:space="preserve">
+    <value>Could not send the clipboard: {0}</value>
+  </data>
+    <data name="ConsoleWindow_M11" xml:space="preserve">
+    <value>Size: 1:1</value>
+  </data>
+    <data name="ConsoleWindow_M12" xml:space="preserve">
+    <value>Requesting {0}...</value>
+  </data>
+    <data name="ConsoleWindow_M13" xml:space="preserve">
+    <value>The {0} request was sent. Follow its progress on the Tasks tab of the main window.</value>
+  </data>
+    <data name="ConsoleWindow_M14" xml:space="preserve">
+    <value>Settings saved. Encoding, quality and key input take effect after [Reconnect].</value>
+  </data>
+    <data name="ConsoleWindow_M15" xml:space="preserve">
+    <value>Fetching SPICE connection details...</value>
+  </data>
+    <data name="ConsoleWindow_M16" xml:space="preserve">
+    <value>The SPICE session was opened with {0}.</value>
+  </data>
+    <data name="ConsoleWindow_M17" xml:space="preserve">
+    <value>SPICE failed: {0}
+The VM must be running and its display hardware must be set to SPICE (qxl).</value>
+  </data>
+    <data name="ConsoleWindow_M18" xml:space="preserve">
+    <value>SPICE failed: {0}</value>
+  </data>
+    <data name="ConsoleWindow_M19" xml:space="preserve">
+    <value>SPICE needs a SPICE client (remote-viewer from VirtViewer), which was not found on this PC.
+
+Install it now?
+The setup window downloads the Windows installer (about 80 MB) from the official site (releases.pagure.org) and runs it.</value>
+  </data>
+    <data name="ConsoleWindow_M20" xml:space="preserve">
+    <value>Install SPICE client</value>
+  </data>
+    <data name="ConsoleWindow_M21" xml:space="preserve">
+    <value>SPICE cancelled: the SPICE client (remote-viewer) is not installed.</value>
+  </data>
+    <data name="ConsoleWindow_M22" xml:space="preserve">
+    <value>SPICE cancelled: the installation did not finish or remote-viewer was not found. Install it and try again.</value>
+  </data>
+    <data name="ConsoleWindow_M23" xml:space="preserve">
+    <value>The SPICE client exited immediately (exit code {0}). Check that the VM display is SPICE and that port 3128 (spiceproxy) on the server is reachable.</value>
+  </data>
+    <data name="CreateGuestWindow_M01" xml:space="preserve">
+    <value>(none — create an empty disk)</value>
+  </data>
+    <data name="CreateGuestWindow_M02" xml:space="preserve">
+    <value>Could not list ISO images: {0}</value>
+  </data>
+    <data name="CreateGuestWindow_M03" xml:space="preserve">
+    <value>Could not list templates: {0}</value>
+  </data>
+    <data name="CreateGuestWindow_M04" xml:space="preserve">
+    <value>Select an OS template.</value>
+  </data>
+    <data name="CreateGuestWindow_M05" xml:space="preserve">
+    <value>Select a node.</value>
+  </data>
+    <data name="CreateGuestWindow_M06" xml:space="preserve">
+    <value>Select a disk storage.</value>
+  </data>
+    <data name="CreateGuestWindow_M07" xml:space="preserve">
+    <value>Starting the create task...</value>
+  </data>
+    <data name="CreateGuestWindow_M08" xml:space="preserve">
+    <value>The create task has started. Follow its progress on the Tasks tab.</value>
+  </data>
+    <data name="CreateGuestWindow_M09" xml:space="preserve">
+    <value>Could not create the guest: {0}</value>
+  </data>
+    <data name="FirewallWindow_M01" xml:space="preserve">
+    <value>Firewall — {0} {1} ({2})</value>
+  </data>
+    <data name="FirewallWindow_M02" xml:space="preserve">
+    <value>Could not load: {0}</value>
+  </data>
+    <data name="FirewallWindow_M03" xml:space="preserve">
+    <value>The firewall was {0}.</value>
+  </data>
+    <data name="FirewallWindow_M04" xml:space="preserve">
+    <value>Could not apply the options: {0}</value>
+  </data>
+    <data name="FirewallWindow_M05" xml:space="preserve">
+    <value>The rule was added.</value>
+  </data>
+    <data name="FirewallWindow_M06" xml:space="preserve">
+    <value>Could not add the rule: {0}</value>
+  </data>
+    <data name="FirewallWindow_M07" xml:space="preserve">
+    <value>Delete rule #{0} ({1} {2} {3})?</value>
+  </data>
+    <data name="FirewallWindow_M08" xml:space="preserve">
+    <value>Confirm deletion</value>
+  </data>
+    <data name="FirewallWindow_M09" xml:space="preserve">
+    <value>The rule was deleted.</value>
+  </data>
+    <data name="FirewallWindow_M10" xml:space="preserve">
+    <value>Could not delete: {0}</value>
+  </data>
+    <data name="GuestSettingsWindow_M01" xml:space="preserve">
+    <value>Guest settings — {0} {1}</value>
+  </data>
+    <data name="GuestSettingsWindow_M02" xml:space="preserve">
+    <value>Settings loaded.</value>
+  </data>
+    <data name="GuestSettingsWindow_M03" xml:space="preserve">
+    <value>Could not load the settings: {0}</value>
+  </data>
+    <data name="GuestSettingsWindow_M04" xml:space="preserve">
+    <value>Nothing was changed.</value>
+  </data>
+    <data name="GuestSettingsWindow_M05" xml:space="preserve">
+    <value>Applying {0} change(s)...</value>
+  </data>
+    <data name="GuestSettingsWindow_M06" xml:space="preserve">
+    <value>Saved.</value>
+  </data>
+    <data name="LoginWindow_M01" xml:space="preserve">
+    <value>The certificate is not trusted, so the realms could not be fetched. Continuing with the defaults (pam/pve).</value>
+  </data>
+    <data name="LoginWindow_M02" xml:space="preserve">
+    <value>Select a server first.</value>
+  </data>
+    <data name="LoginWindow_M03" xml:space="preserve">
+    <value>Fetching realms again...</value>
+  </data>
+    <data name="LoginWindow_M04" xml:space="preserve">
+    <value>Fetched {0} realm(s).</value>
+  </data>
+    <data name="LoginWindow_M05" xml:space="preserve">
+    <value>Select a server. If none are registered, add one under 'Manage servers' below.</value>
+  </data>
+    <data name="LoginWindow_M06" xml:space="preserve">
+    <value>Enter your user name and password.</value>
+  </data>
+    <data name="LoginWindow_M07" xml:space="preserve">
+    <value>Select a realm.</value>
+  </data>
+    <data name="LoginWindow_M08" xml:space="preserve">
+    <value>This server needs a VPN tunnel. The connection continues on the main screen.</value>
+  </data>
+    <data name="LoginWindow_M09" xml:space="preserve">
+    <value>Signing in...</value>
+  </data>
+    <data name="LoginWindow_M10" xml:space="preserve">
+    <value>Sign-in failed: {0}</value>
+  </data>
+    <data name="ProfileDialog_M01" xml:space="preserve">
+    <value>Add profile</value>
+  </data>
+    <data name="ProfileDialog_M02" xml:space="preserve">
+    <value>Edit profile</value>
+  </data>
+    <data name="ProfileDialog_M03" xml:space="preserve">
+    <value>Select an OpenVPN configuration file</value>
+  </data>
+    <data name="ProfileDialog_M04" xml:space="preserve">
+    <value>OpenVPN configuration (*.ovpn)|*.ovpn|All files (*.*)|*.*</value>
+  </data>
+    <data name="ProfileDialog_M05" xml:space="preserve">
+    <value>Select openvpn.exe</value>
+  </data>
+    <data name="ProfileDialog_M06" xml:space="preserve">
+    <value>openvpn.exe|openvpn.exe|Executable files (*.exe)|*.exe</value>
+  </data>
+    <data name="ProfileDialog_M07" xml:space="preserve">
+    <value>Enter a valid server address and port first.</value>
+  </data>
+    <data name="ProfileDialog_M08" xml:space="preserve">
+    <value>Check your input</value>
+  </data>
+    <data name="ProfileDialog_M09" xml:space="preserve">
+    <value>Checking the server certificate...</value>
+  </data>
+    <data name="ProfileDialog_M10" xml:space="preserve">
+    <value>The certificate is from a public authority, so pinning its fingerprint is not needed.</value>
+  </data>
+    <data name="ProfileDialog_M11" xml:space="preserve">
+    <value>The certificate was verified. Click [Save] to store it in the profile.</value>
+  </data>
+    <data name="ProfileDialog_M12" xml:space="preserve">
+    <value>Cancelled because the certificate was not trusted. The existing settings are unchanged.</value>
+  </data>
+    <data name="ProfileDialog_M13" xml:space="preserve">
+    <value>Could not verify the certificate: {0}</value>
+  </data>
+    <data name="ProfileRegisterWindow_M01" xml:space="preserve">
+    <value>Enter the server address.</value>
+  </data>
+    <data name="ProfileRegisterWindow_M02" xml:space="preserve">
+    <value>The port is not valid (1–65535, default 8006).</value>
+  </data>
+    <data name="ProfileRegisterWindow_M03" xml:space="preserve">
+    <value>Connecting to the server...</value>
+  </data>
+    <data name="ProfileRegisterWindow_M04" xml:space="preserve">
+    <value>Server verified — click [Register] to add it to the list.</value>
+  </data>
+    <data name="ProfileRegisterWindow_M05" xml:space="preserve">
+    <value>Could not verify the server: {0}
+Check the address, the port and the 'Allow self-signed certificate' option.</value>
+  </data>
+    <data name="ServerManagerWindow_M01" xml:space="preserve">
+    <value>Added: {0}</value>
+  </data>
+    <data name="ServerManagerWindow_M02" xml:space="preserve">
+    <value>Select the server to edit from the list.</value>
+  </data>
+    <data name="ServerManagerWindow_M03" xml:space="preserve">
+    <value>The server settings were saved.</value>
+  </data>
+    <data name="ServerManagerWindow_M04" xml:space="preserve">
+    <value>Select the server to delete from the list.</value>
+  </data>
+    <data name="ServerManagerWindow_M05" xml:space="preserve">
+    <value>Delete the server '{0}'?</value>
+  </data>
+    <data name="ServerManagerWindow_M06" xml:space="preserve">
+    <value>Deleted: {0}</value>
+  </data>
+    <data name="SnapshotDialog_M01" xml:space="preserve">
+    <value>Enter a snapshot name (without spaces).</value>
+  </data>
+    <data name="SnapshotDialog_M02" xml:space="preserve">
+    <value>Select the snapshot to roll back to.</value>
+  </data>
+    <data name="SnapshotDialog_M03" xml:space="preserve">
+    <value>Roll back to the snapshot '{0}'?
+A running guest will be stopped by force.</value>
+  </data>
+    <data name="SnapshotDialog_M04" xml:space="preserve">
+    <value>Confirm rollback</value>
+  </data>
+    <data name="SnapshotDialog_M05" xml:space="preserve">
+    <value>Select the snapshot to delete.</value>
+  </data>
+    <data name="SnapshotDialog_M06" xml:space="preserve">
+    <value>Delete the snapshot '{0}'?</value>
+  </data>
+    <data name="TerminalWindow_M01" xml:space="preserve">
+    <value>Connected — use the toolbar buttons to copy and paste (Ctrl+C is passed to the shell)</value>
+  </data>
+    <data name="TerminalWindow_M02" xml:space="preserve">
+    <value>Select the text with the mouse first.</value>
+  </data>
+    <data name="TerminalWindow_M03" xml:space="preserve">
+    <value>The selected text was copied.</value>
+  </data>
+    <data name="TerminalWindow_M04" xml:space="preserve">
+    <value>Could not copy: {0}</value>
+  </data>
+    <data name="TerminalWindow_M05" xml:space="preserve">
+    <value>Could not paste: {0}</value>
+  </data>
+    <data name="TerminalWindow_M06" xml:space="preserve">
+    <value>Settings saved.</value>
+  </data>
+    <data name="VirtViewerSetupWindow_M01" xml:space="preserve">
+    <value>Not installed — VirtViewer is required for the SPICE console.</value>
+  </data>
+    <data name="VirtViewerSetupWindow_M02" xml:space="preserve">
+    <value>Installed: {0}</value>
+  </data>
+    <data name="VirtViewerSetupWindow_M03" xml:space="preserve">
+    <value>No recent installer was found. Please install it yourself with [Open download page].</value>
+  </data>
+    <data name="VirtViewerSetupWindow_M04" xml:space="preserve">
+    <value>Running the installer: {0}
+Follow the setup wizard. The installation is verified automatically when it finishes.</value>
+  </data>
+    <data name="VirtViewerSetupWindow_M05" xml:space="preserve">
+    <value>Click [Search again] once the setup wizard has finished.</value>
+  </data>
+    <data name="VirtViewerSetupWindow_M06" xml:space="preserve">
+    <value>The installation was verified. Continuing with the SPICE connection.</value>
+  </data>
+    <data name="VirtViewerSetupWindow_M07" xml:space="preserve">
+    <value>The installation finished but remote-viewer was not found. Check the installation path and click [Search again].</value>
+  </data>
+    <data name="VirtViewerSetupWindow_M08" xml:space="preserve">
+    <value>The installation did not complete (exit code {0}). Try again, or install it yourself with [Open download page].</value>
+  </data>
+    <data name="VirtViewerSetupWindow_M09" xml:space="preserve">
+    <value>Failed: {0}
+Try again, or install it yourself with [Open download page].</value>
+  </data>
+    <data name="VirtViewerSetupWindow_M10" xml:space="preserve">
+    <value>remote-viewer was found. Close this window and the SPICE console will continue.</value>
+  </data>
+    <data name="VirtViewerSetupWindow_M11" xml:space="preserve">
+    <value>Preparing the installer...</value>
+  </data>
+    <data name="MainWindow_Snapshots" xml:space="preserve">
+    <value>Snapshots</value>
+  </data>
+    <data name="MainWindow_NodeList" xml:space="preserve">
+    <value>Cluster nodes</value>
+  </data>
+    <data name="MainWindow_NodeDetail" xml:space="preserve">
+    <value>Node status</value>
+  </data>
+    <data name="MainWindow_TaskStart" xml:space="preserve">
+    <value>Start (local)</value>
+  </data>
+    <data name="MainWindow_TaskEnd" xml:space="preserve">
+    <value>End (local)</value>
+  </data>
+    <data name="LoginWindow_Close" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+    <data name="Main_ConnectedTo" xml:space="preserve">
+    <value>Connected to {0}</value>
+  </data>
+    <data name="Main_AuthPassword" xml:space="preserve">
+    <value>password authentication</value>
+  </data>
+    <data name="Main_AuthToken" xml:space="preserve">
+    <value>API token</value>
+  </data>
+    <data name="Main_ConnectFailed" xml:space="preserve">
+    <value>Connection failed</value>
+  </data>
+    <data name="Graph_Network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+    <data name="Graph_DiskIo" xml:space="preserve">
+    <value>Disk IO</value>
+  </data>
+    <data name="Vpn_Reconnecting" xml:space="preserve">
+    <value>Reconnecting...</value>
+  </data>
+    <data name="Vpn_Disconnecting" xml:space="preserve">
+    <value>Disconnecting...</value>
+  </data>
+    <data name="Vpn_Error" xml:space="preserve">
+    <value>Error: {0}</value>
+  </data>
+    <data name="Vpn_UnknownError" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+    <data name="ProfileEditor_VpnAutoDetectFailed" xml:space="preserve">
+    <value>not detected</value>
+  </data>
+    <data name="ProfileEditor_CertCaOnly" xml:space="preserve">
+    <value>Only public certificate authorities are accepted (self-signed certificates are refused).</value>
+  </data>
+    <data name="ProfileEditor_CertNoTrusted" xml:space="preserve">
+    <value>No trusted certificate — the fingerprint is confirmed on the first connection.</value>
+  </data>
+    <data name="ProfileEditor_CertThumbprint" xml:space="preserve">
+    <value>Trusted fingerprint (SHA-256): {0}</value>
+  </data>
+    <data name="ProfileEditor_CertThumbprintStale" xml:space="preserve">
+    <value>The stored fingerprint belongs to {0}:{1}. It is cleared on save because the address changed.</value>
+  </data>
+    <data name="ProfileEditor_NameRequired" xml:space="preserve">
+    <value>Enter a profile name.</value>
+  </data>
+    <data name="ProfileEditor_PortRange" xml:space="preserve">
+    <value>The port must be a number between 1 and 65535.</value>
+  </data>
+    <data name="ProfileEditor_ProxyHostRequired" xml:space="preserve">
+    <value>Enter the proxy host.</value>
+  </data>
+    <data name="ProfileEditor_ProxyPortRange" xml:space="preserve">
+    <value>The proxy port must be a number between 1 and 65535.</value>
+  </data>
+    <data name="ProfileEditor_VpnConfigRequired" xml:space="preserve">
+    <value>To use a VPN, specify the path to an .ovpn configuration file.</value>
+  </data>
+    <data name="AppSettings_LangAuto" xml:space="preserve">
+    <value>Automatic (Windows display language)</value>
+  </data>
+    <data name="AppSettings_LangKo" xml:space="preserve">
+    <value>한국어</value>
+  </data>
+    <data name="AppSettings_LangEn" xml:space="preserve">
+    <value>English</value>
+  </data>
+    <data name="AppSettings_ByteAuto" xml:space="preserve">
+    <value>Automatic (match the value)</value>
+  </data>
+    <data name="BackupWindow_Header" xml:space="preserve">
+    <value>Backup — {0} {1} ({2})</value>
+  </data>
+    <data name="ConsoleSettings_EncTight" xml:space="preserve">
+    <value>Tight (recommended)</value>
+  </data>
+    <data name="ConsoleSettings_EncZlib" xml:space="preserve">
+    <value>Zlib (lossless)</value>
+  </data>
+    <data name="ConsoleSettings_EncRaw" xml:space="preserve">
+    <value>Raw (no compression)</value>
+  </data>
+    <data name="ConsoleWindow_VmOnly" xml:space="preserve">
+    <value>The VNC console is for VMs only. Use the terminal window for CTs.</value>
+  </data>
+    <data name="ConsoleWindow_Header" xml:space="preserve">
+    <value>Console — {0}</value>
+  </data>
+    <data name="ConsoleWindow_StartedConnecting" xml:space="preserve">
+    <value>The guest started. Connecting the console...</value>
+  </data>
+    <data name="Console_StartRequesting" xml:space="preserve">
+    <value>Requesting start...</value>
+  </data>
+    <data name="Console_WaitingBoot" xml:space="preserve">
+    <value>Waiting for the guest to boot... it will connect automatically when ready.</value>
+  </data>
+    <data name="ConsoleWindow_AccelHardware" xml:space="preserve">
+    <value>hardware accelerated</value>
+  </data>
+    <data name="ConsoleWindow_AccelPartial" xml:space="preserve">
+    <value>partially accelerated</value>
+  </data>
+    <data name="ConsoleWindow_AccelSoftware" xml:space="preserve">
+    <value>software rendering</value>
+  </data>
+    <data name="ConsoleWindow_TightNoFrame" xml:space="preserve">
+    <value>Tight image decoding failed: no frame</value>
+  </data>
+    <data name="ConsoleWindow_TightOutOfRange" xml:space="preserve">
+    <value>The Tight image area is outside the framebuffer.</value>
+  </data>
+    <data name="ConsoleWindow_RemoteViewerFailed" xml:space="preserve">
+    <value>Could not start the remote-viewer process.</value>
+  </data>
+    <data name="CreateGuest_VmidMin" xml:space="preserve">
+    <value>The VMID must be {0} or higher.</value>
+  </data>
+    <data name="CreateGuest_CoresMin" xml:space="preserve">
+    <value>The number of cores must be 1 or more.</value>
+  </data>
+    <data name="CreateGuest_MemoryMin" xml:space="preserve">
+    <value>Memory must be {0} MiB or more.</value>
+  </data>
+    <data name="CreateGuest_DiskMin" xml:space="preserve">
+    <value>The disk size must be 1 GB or more.</value>
+  </data>
+    <data name="CreateGuest_SwapInvalid" xml:space="preserve">
+    <value>Check the swap size.</value>
+  </data>
+    <data name="CreateGuest_RootPasswordMin" xml:space="preserve">
+    <value>The root password must be at least {0} characters.</value>
+  </data>
+    <data name="GuestSettings_CoresMin" xml:space="preserve">
+    <value>Cores and sockets must be 1 or more.</value>
+  </data>
+    <data name="GuestSettings_MemoryMin" xml:space="preserve">
+    <value>Memory must be 16 MiB or more.</value>
+  </data>
+    <data name="GuestSettings_VlanRange" xml:space="preserve">
+    <value>The VLAN tag must be between 1 and 4094.</value>
+  </data>
+    <data name="ProfileRegister_AuthUnknown" xml:space="preserve">
+    <value>unavailable (defaults: Linux PAM, Proxmox VE authentication)</value>
+  </data>
+    <data name="ProfileRegister_AuthTypes" xml:space="preserve">
+    <value>Sign-in types: {0}</value>
+  </data>
+    <data name="SnapshotDialog_Header" xml:space="preserve">
+    <value>{0} — node {1}</value>
+  </data>
+    <data name="SnapshotDialog_Empty" xml:space="preserve">
+    <value>There are no snapshots.</value>
+  </data>
+    <data name="SnapshotDialog_LoadFailed" xml:space="preserve">
+    <value>Could not load the list: {0}</value>
+  </data>
+    <data name="SnapshotDialog_Running" xml:space="preserve">
+    <value>{0} in progress...</value>
+  </data>
+    <data name="SnapshotDialog_Done" xml:space="preserve">
+    <value>{0} finished</value>
+  </data>
+    <data name="SnapshotDialog_Failed" xml:space="preserve">
+    <value>{0} failed: {1}</value>
+  </data>
+    <data name="SnapshotDialog_ActionCreate" xml:space="preserve">
+    <value>Create snapshot '{0}'</value>
+  </data>
+    <data name="SnapshotDialog_ActionRollback" xml:space="preserve">
+    <value>Roll back to snapshot '{0}'</value>
+  </data>
+    <data name="SnapshotDialog_ActionDelete" xml:space="preserve">
+    <value>Delete snapshot '{0}'</value>
+  </data>
+    <data name="TerminalWindow_Header" xml:space="preserve">
+    <value>Terminal — {0}</value>
+  </data>
+    <data name="TerminalWindow_StartedConnecting" xml:space="preserve">
+    <value>The guest started. Connecting the terminal...</value>
+  </data>
+    <data name="VirtViewer_FetchingList" xml:space="preserve">
+    <value>Fetching the download list...</value>
+  </data>
+    <data name="VirtViewer_IncompleteDownload" xml:space="preserve">
+    <value>The download is incomplete ({0:N0}/{1:N0} bytes).</value>
+  </data>
+    <data name="VirtViewer_Downloading" xml:space="preserve">
+    <value>Downloading... {0}</value>
+  </data>
+</root>

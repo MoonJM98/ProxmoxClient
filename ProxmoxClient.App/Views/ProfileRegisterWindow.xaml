@@ -1,0 +1,66 @@
+<Window x:Class="ProxmoxClient.App.Views.ProfileRegisterWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        Style="{StaticResource ThemedWindow}"
+        Title="{loc:Tr ProfileRegisterWindow_01}"
+        Width="620" SizeToContent="Height" MinWidth="560" MinHeight="320"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" ShowInTaskbar="False">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,16,20,10">
+                <ic:FormRow Label="{loc:Tr ProfileDialog_02}" Hint="{loc:Tr ProfileRegisterWindow_02}">
+                    <TextBox x:Name="NameBox" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr ProfileDialog_03}" Hint="{loc:Tr ProfileRegisterWindow_03}">
+                    <TextBox x:Name="HostBox" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr FirewallWindow_11}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconCheck}"
+                                x:Name="BtnVerify"
+                                Content="{loc:Tr ProfileRegisterWindow_04}" Style="{StaticResource AccentButton}"
+                                MinWidth="104" Click="OnVerify" />
+                        <TextBox x:Name="PortBox" Text="8006" ic:InputFilter.Mode="Integer" Width="140"
+                                 HorizontalAlignment="Left" />
+                    </DockPanel>
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr ProfileDialog_05}">
+                    <CheckBox Content="{loc:Tr ProfileDialog_07}" IsChecked="True" x:Name="SelfSignedCheck"
+                              Margin="0,6,0,0" />
+                </ic:FormRow>
+
+                <Border x:Name="ServerInfoPanel" Style="{StaticResource FormPanel}" Margin="0,4,0,6"
+                        Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock x:Name="ServerInfoText" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock x:Name="AuthTypesText" Foreground="{StaticResource BrushDim}" FontSize="12"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"
+                           Text="{loc:Tr ProfileRegisterWindow_05}" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button ic:IconAssist.Icon="{StaticResource IconSave}" x:Name="BtnRegister"
+                            Content="{loc:Tr ProfileRegisterWindow_06}"
+                            Style="{StaticResource DialogPrimaryButton}" Click="OnRegister" IsEnabled="False" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr AppSettingsWindow_13}"
+                            Style="{StaticResource DialogButton}" IsCancel="True" />
+                </StackPanel>
+                <TextBlock x:Name="StatusText" Style="{StaticResource DialogStatus}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

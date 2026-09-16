@@ -1,0 +1,85 @@
+<Window x:Class="ProxmoxClient.App.Views.SnapshotDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        xmlns:c="clr-namespace:ProxmoxClient.App"
+        Style="{StaticResource ThemedWindow}"
+        Title="{loc:Tr SnapshotDialog_01}"
+        Width="760" Height="640" MinWidth="640" MinHeight="560"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
+        ShowInTaskbar="False">
+    <Window.Resources>
+        <c:DateTimeLocalConverter x:Key="DateLocal" />
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="20,16,20,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock x:Name="HeaderText" Grid.Row="0" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,10" />
+
+            <DataGrid x:Name="SnapshotGrid" Grid.Row="1" MinHeight="160"
+                      ItemsSource="{Binding Snapshots}"
+                      SelectedItem="{Binding SelectedSnapshot}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{loc:Tr MainWindow_40}" Binding="{Binding Name, Mode=OneWay}"
+                                        Width="160" />
+                    <DataGridTextColumn Header="{loc:Tr SnapshotDialog_02}"
+                                        Binding="{Binding SnapTimeUtc, Mode=OneWay, Converter={StaticResource DateLocal}}"
+                                        Width="170" />
+                    <DataGridCheckBoxColumn Header="{loc:Tr SnapshotDialog_03}" Binding="{Binding HasRam, Mode=OneWay}"
+                                            IsReadOnly="True" Width="80" />
+                    <DataGridTextColumn Header="{loc:Tr FirewallWindow_13}"
+                                        Binding="{Binding Description, Mode=OneWay}" Width="*" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                <Button ic:IconAssist.Icon="{StaticResource IconUndo}" Content="{loc:Tr SnapshotDialog_04}"
+                        Click="OnRollback" MinWidth="110" />
+                <Button ic:IconAssist.Icon="{StaticResource IconTrash}" ic:IconAssist.Brush="{StaticResource BrushErr}"
+                        Content="{loc:Tr SnapshotDialog_05}"
+                        Style="{StaticResource DangerButton}" Click="OnDelete" MinWidth="110" Margin="8,0,0,0" />
+            </StackPanel>
+
+            <Border Grid.Row="3" Style="{StaticResource FormPanel}" Margin="0,14,0,0">
+                <StackPanel>
+                    <TextBlock Text="{loc:Tr SnapshotDialog_06}" Style="{StaticResource FormSection}" />
+                    <ic:FormRow Label="{loc:Tr MainWindow_40}" LabelWidth="90" Hint="{loc:Tr SnapshotDialog_07}">
+                        <TextBox Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr FirewallWindow_13}" LabelWidth="90">
+                        <TextBox Text="{Binding NewDescription, UpdateSourceTrigger=PropertyChanged}" />
+                    </ic:FormRow>
+                    <DockPanel Margin="102,0,0,0">
+                        <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconCamera}"
+                                Content="{loc:Tr SnapshotDialog_08}"
+                                Style="{StaticResource AccentButton}" Click="OnCreate" MinWidth="110" />
+                        <CheckBox Content="{loc:Tr SnapshotDialog_09}" IsChecked="{Binding NewIncludeRam}"
+                                  VerticalAlignment="Center" />
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr FirewallWindow_18}"
+                            Style="{StaticResource DialogButton}" IsCancel="True" />
+                </StackPanel>
+                <TextBlock Text="{Binding StatusText}" Style="{StaticResource DialogStatus}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,73 @@
+<Window x:Class="ProxmoxClient.App.Views.ServerManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        Style="{StaticResource ThemedWindow}"
+        Title="{loc:Tr ServerManagerWindow_01}"
+        Width="600" Height="520" MinWidth="520" MinHeight="420"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" ShowInTaskbar="False">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="20,16,20,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button ic:IconAssist.Icon="{StaticResource IconPlus}" Content="{loc:Tr ServerManagerWindow_02}"
+                            Style="{StaticResource AccentButton}"
+                            MinWidth="84" Click="OnAddProfile" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconPencil}" Content="{loc:Tr ServerManagerWindow_03}"
+                            MinWidth="84" Margin="8,0,0,0" Click="OnEditProfile" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconTrash}"
+                            ic:IconAssist.Brush="{StaticResource BrushErr}" Content="{loc:Tr FirewallWindow_04}"
+                            MinWidth="84" Margin="8,0,0,0" Style="{StaticResource DangerButton}"
+                            Click="OnDeleteProfile" />
+                </StackPanel>
+                <TextBlock Text="{loc:Tr ServerManagerWindow_04}" Style="{StaticResource FormSection}"
+                           VerticalAlignment="Center" Margin="0" />
+            </DockPanel>
+
+            <ListBox Grid.Row="1" x:Name="ProfileList" MinHeight="120"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Margin="2,4">
+                            <ic:PathIcon Data="{StaticResource IconServer}" Width="18" Height="18" Margin="0,0,10,0" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" />
+                                <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11">
+                                    <Run Text="{Binding Host, Mode=OneWay}" />:
+                                    <Run Text="{Binding Port, Mode=OneWay}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <TextBlock Grid.Row="2" Foreground="{StaticResource BrushDim}" FontSize="11" TextWrapping="Wrap"
+                       Margin="0,10,0,0"
+                       Text="{loc:Tr ServerManagerWindow_05}" />
+        </Grid>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr FirewallWindow_18}"
+                            Style="{StaticResource DialogButton}" IsCancel="True" />
+                </StackPanel>
+                <TextBlock x:Name="StatusText" Style="{StaticResource DialogStatus}"
+                           Foreground="{StaticResource BrushDim}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

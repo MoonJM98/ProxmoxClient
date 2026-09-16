@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" id="root"
+                xmlns="">
+        <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
+        <xsd:element name="root" msdata:IsDataSet="true">
+            <xsd:complexType>
+                <xsd:choice maxOccurs="unbounded">
+                    <xsd:element name="metadata">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" use="required" type="xsd:string"/>
+                            <xsd:attribute name="type" type="xsd:string"/>
+                            <xsd:attribute name="mimetype" type="xsd:string"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="assembly">
+                        <xsd:complexType>
+                            <xsd:attribute name="alias" type="xsd:string"/>
+                            <xsd:attribute name="name" type="xsd:string"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="data">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1"/>
+                            <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+                            <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+                            <xsd:attribute ref="xml:space"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="resheader">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required"/>
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsd:choice>
+            </xsd:complexType>
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <data name="ProxmoxApiClient_01" xml:space="preserve">
+    <value>The profile has no server address (Host).</value>
+  </data>
+    <data name="ProxmoxApiClient_02" xml:space="preserve">
+    <value>No user name and password are configured.</value>
+  </data>
+    <data name="ProxmoxApiClient_03" xml:space="preserve">
+    <value>No authentication ticket was returned. Check the user name and password.</value>
+  </data>
+    <data name="ProxmoxApiException_01" xml:space="preserve">
+    <value>The Proxmox API request failed (HTTP {0}). {1}</value>
+  </data>
+    <data name="ServerCertificateValidator_01" xml:space="preserve">
+    <value>The server certificate differs from the one trusted earlier ({0}). The connection was blocked because of a possible man-in-the-middle attack.</value>
+  </data>
+    <data name="ServerCertificateValidator_02" xml:space="preserve">
+    <value>The server certificate is not trusted yet ({0}). Confirm the fingerprint and trust it to connect.</value>
+  </data>
+    <data name="PveAuthDomain_02" xml:space="preserve">
+    <value>{0} (default)</value>
+  </data>
+    <data name="PveStorage_01" xml:space="preserve">
+    <value>available</value>
+  </data>
+    <data name="PveStorage_02" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+    <data name="SecretProtector_01" xml:space="preserve">
+    <value>Encrypting secrets (DPAPI) is only supported on Windows.</value>
+  </data>
+    <data name="ProxmoxTerminalSession_02" xml:space="preserve">
+    <value>A terminal session can only be connected once. Create a new session.</value>
+  </data>
+    <data name="ProxmoxTerminalSession_03" xml:space="preserve">
+    <value>Starting the terminal proxy...</value>
+  </data>
+    <data name="ProxmoxTerminalSession_04" xml:space="preserve">
+    <value>Connecting the terminal websocket...</value>
+  </data>
+    <data name="ProxmoxTerminalSession_05" xml:space="preserve">
+    <value>Authenticating the terminal...</value>
+  </data>
+    <data name="ProxmoxTerminalSession_06" xml:space="preserve">
+    <value>Terminal authentication failed. Check the VM.Console privilege and whether the ticket expired.</value>
+  </data>
+    <data name="ProxmoxVncSession_01" xml:space="preserve">
+    <value>The VNC console is for VMs only. Use the terminal console for CTs.</value>
+  </data>
+    <data name="ProxmoxVncSession_02" xml:space="preserve">
+    <value>The VNC console is only supported with password (ticket) authentication. Check the profile's authentication mode. (SPICE also works with an API token.)</value>
+  </data>
+    <data name="ProxmoxVncSession_03" xml:space="preserve">
+    <value>Starting the VNC proxy...</value>
+  </data>
+    <data name="ProxmoxVncSession_04" xml:space="preserve">
+    <value>Connecting the console websocket...</value>
+  </data>
+    <data name="ProxmoxVncSession_05" xml:space="preserve">
+    <value>Performing the VNC handshake...</value>
+  </data>
+    <data name="ProxmoxVncSession_06" xml:space="preserve">
+    <value>The VNC server is not responding. Please reopen the console (the ticket may have expired).</value>
+  </data>
+    <data name="RfbClient_01" xml:space="preserve">
+    <value>Invalid RFB greeting: {0}</value>
+  </data>
+    <data name="RfbClient_02" xml:space="preserve">
+    <value>Unsupported RFB version: {0}</value>
+  </data>
+    <data name="RfbClient_03" xml:space="preserve">
+    <value>The VNC connection was refused: {0}</value>
+  </data>
+    <data name="RfbClient_04" xml:space="preserve">
+    <value>VNC authentication failed. Please reopen the console (the ticket may have expired).</value>
+  </data>
+    <data name="RfbClient_06" xml:space="preserve">
+    <value>The VNC connection is closed, so nothing can be sent.</value>
+  </data>
+    <data name="RfbClient_07" xml:space="preserve">
+    <value>Unknown RFB message type: {0}</value>
+  </data>
+    <data name="RfbClient_08" xml:space="preserve">
+    <value>Invalid zlib rect length: {0}</value>
+  </data>
+    <data name="RfbClient_09" xml:space="preserve">
+    <value>Not enough zlib data: row {0}, {1}/{2}</value>
+  </data>
+    <data name="RfbClient_10" xml:space="preserve">
+    <value>Tight zlib stream {0} is corrupt. Reconnect the console.</value>
+  </data>
+    <data name="RfbClient_11" xml:space="preserve">
+    <value>Unknown Tight subencoding: 0x{0:X}</value>
+  </data>
+    <data name="RfbClient_12" xml:space="preserve">
+    <value>An RFB encoding that was not requested was received: {0}</value>
+  </data>
+    <data name="RfbClient_13" xml:space="preserve">
+    <value>A server rectangle is outside the screen: ({0},{1}) {2}x{3}, screen {4}x{5}</value>
+  </data>
+    <data name="RfbClient_14" xml:space="preserve">
+    <value>Unsupported VNC resolution: {0}x{1}</value>
+  </data>
+    <data name="RfbClient_15" xml:space="preserve">
+    <value>Invalid cursor size: {0}x{1}</value>
+  </data>
+    <data name="RfbClient_16" xml:space="preserve">
+    <value>No Tight image decoder is configured</value>
+  </data>
+    <data name="RfbClient_17" xml:space="preserve">
+    <value>Not enough Tight zlib data: {0}/{1}</value>
+  </data>
+    <data name="RfbClient_18" xml:space="preserve">
+    <value>Unknown Tight filter: {0}</value>
+  </data>
+    <data name="RfbClient_19" xml:space="preserve">
+    <value>The VNC connection was lost.</value>
+  </data>
+    <data name="VncDesAuth_01" xml:space="preserve">
+    <value>The VNC challenge must be 16 bytes.</value>
+  </data>
+    <data name="OpenVpnManager_01" xml:space="preserve">
+    <value>The VPN is already connected or connecting.</value>
+  </data>
+    <data name="OpenVpnManager_02" xml:space="preserve">
+    <value>The VPN configuration file was not found: {0}</value>
+  </data>
+    <data name="OpenVpnManager_03" xml:space="preserve">
+    <value>openvpn.exe was not found. Install OpenVPN (default path: </value>
+  </data>
+    <data name="OpenVpnManager_04" xml:space="preserve">
+    <value>C:\Program Files\OpenVPN\bin\openvpn.exe) or set the path in the profile.</value>
+  </data>
+    <data name="OpenVpnManager_05" xml:space="preserve">
+    <value>Could not start the openvpn process.</value>
+  </data>
+    <data name="OpenVpnManager_06" xml:space="preserve">
+    <value>The openvpn process exited right after starting. Check the configuration file.</value>
+  </data>
+    <data name="OpenVpnManager_07" xml:space="preserve">
+    <value>Could not connect to the OpenVPN management interface (127.0.0.1:{0}).</value>
+  </data>
+    <data name="OpenVpnManager_08" xml:space="preserve">
+    <value>The VPN connection timed out ({0} s). Check the server and the configuration file.</value>
+  </data>
+    <data name="OpenVpnManager_09" xml:space="preserve">
+    <value>The openvpn process exited while connecting.</value>
+  </data>
+    <data name="OpenVpnManager_10" xml:space="preserve">
+    <value>An .ovpn configuration that needs a user name and password is not supported yet (include an auth-user-pass file in the config).</value>
+  </data>
+    <data name="ProxmoxApiClient_04" xml:space="preserve">
+    <value>Enter a snapshot name.</value>
+  </data>
+    <data name="ProxmoxApiClient_05" xml:space="preserve">
+    <value>The VNC console is only supported with password (ticket) authentication.</value>
+  </data>
+    <data name="ProxmoxApiClient_06" xml:space="preserve">
+    <value>The terminal console is only supported with password (ticket) authentication.</value>
+  </data>
+    <data name="ProxmoxApiClient_07" xml:space="preserve">
+    <value>No SPICE connection details were returned.</value>
+  </data>
+    <data name="ProxmoxApiClient_08" xml:space="preserve">
+    <value>Sign-in required. Call LoginAsync first.</value>
+  </data>
+    <data name="ProxmoxApiClient_09" xml:space="preserve">
+    <value>Could not connect to the server: {0}</value>
+  </data>
+    <data name="ProxmoxApiClient_10" xml:space="preserve">
+    <value>The server did not respond in time.</value>
+  </data>
+    <data name="ProxmoxApiClient_11" xml:space="preserve">
+    <value>Could not parse the response as JSON: {0}</value>
+  </data>
+    <data name="ProxmoxApiClient_12" xml:space="preserve">
+    <value>The connection dropped while reading the response: {0}</value>
+  </data>
+    <data name="RfbClient_20" xml:space="preserve">
+    <value>Unsupported VNC security type: {0}</value>
+  </data>
+</root>

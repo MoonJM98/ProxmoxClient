@@ -1,0 +1,111 @@
+<Window x:Class="ProxmoxClient.App.Views.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        Style="{StaticResource ThemedWindow}"
+        Title="{loc:Tr LoginWindow_01}"
+        Width="470" SizeToContent="Height" MaxHeight="700"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 브랜드 헤더 -->
+        <Border Grid.Row="0" Padding="0,26,0,22">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#2B2B2E" Offset="0" />
+                    <GradientStop Color="#1E1E1E" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+            <StackPanel HorizontalAlignment="Center">
+                <Grid Width="46" Height="46" Margin="0,0,0,10" HorizontalAlignment="Center">
+                    <Border Background="#E57000" CornerRadius="7" Width="25" Height="25"
+                            HorizontalAlignment="Left" RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <RotateTransform Angle="45" />
+                        </Border.RenderTransform>
+                    </Border>
+                    <Border Background="#F1F1F1" CornerRadius="7" Width="25" Height="25"
+                            HorizontalAlignment="Right" Opacity="0.92" RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <RotateTransform Angle="45" />
+                        </Border.RenderTransform>
+                    </Border>
+                </Grid>
+                <TextBlock Text="{loc:Tr LoginWindow_02}" FontSize="19" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr LoginWindow_03}" FontSize="11"
+                           Foreground="{StaticResource BrushDim}" HorizontalAlignment="Center" Margin="0,3,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- 본문 -->
+        <StackPanel Grid.Row="1" Margin="20,14,20,16">
+            <TextBlock Text="{loc:Tr LoginWindow_04}" Style="{StaticResource FieldLabel}" />
+            <ComboBox x:Name="SavedList" Margin="0,0,0,10"
+                      SelectionChanged="OnSavedListSelectionChanged">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="2,2">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                            <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11">
+                                <Run Text="{Binding Host}" />:<Run Text="{Binding Port}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <!-- 자격 증명 -->
+            <Border x:Name="CredentialPanel" Background="{StaticResource BrushPanel}" CornerRadius="6"
+                    Padding="12" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" Margin="0,0,0,10"
+                    Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="{loc:Tr LoginWindow_05}" Style="{StaticResource FieldLabel}" />
+                    <TextBox x:Name="UserBox" Margin="0,0,0,6" />
+                    <TextBlock Text="{loc:Tr LoginWindow_06}" Style="{StaticResource FieldLabel}" />
+                    <PasswordBox x:Name="PassBox" Margin="0,0,0,6" KeyDown="OnPassBoxKeyDown" />
+                    <TextBlock Text="{loc:Tr LoginWindow_07}" Style="{StaticResource FieldLabel}" />
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" x:Name="BtnReloadRealms"
+                                ic:IconAssist.Icon="{StaticResource IconRefresh}"
+                                ToolTip="{loc:Tr LoginWindow_08}" Margin="6,0,0,0" Padding="9,6"
+                                Click="OnReloadRealms" />
+                        <ComboBox x:Name="RealmBox" SelectionChanged="OnRealmChanged">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayLabel}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </DockPanel>
+                    <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11" Margin="0,6,0,0"
+                               Text="{loc:Tr LoginWindow_09}" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock x:Name="StatusText" Foreground="{StaticResource BrushWarn}" TextWrapping="Wrap"
+                       Margin="0,0,0,10" MinHeight="18" />
+
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button ic:IconAssist.Icon="{StaticResource IconLogIn}" x:Name="BtnLogin"
+                            Content="{loc:Tr LoginWindow_10}"
+                            Style="{StaticResource DialogPrimaryButton}" Click="OnSavedConnect" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr LoginWindow_Close}"
+                            Style="{StaticResource DialogButton}" IsCancel="True" />
+                </StackPanel>
+                <TextBlock FontSize="12" VerticalAlignment="Center">
+                    <Hyperlink Click="OnOpenManager" Focusable="False"
+                               ToolTip="{loc:Tr LoginWindow_11}">
+                        <Run Text="{loc:Tr Login_ServerManager}" />
+                    </Hyperlink>
+                </TextBlock>
+            </DockPanel>
+        </StackPanel>
+    </Grid>
+</Window>
