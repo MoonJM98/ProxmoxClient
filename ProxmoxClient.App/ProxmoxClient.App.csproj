@@ -21,6 +21,14 @@
               CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
+    <!--
+        아이콘 원본을 배포 폴더에도 둔다 — 설치 관리자가 바로가기·프로그램 목록 아이콘으로 이 파일을 직접 쓴다.
+        exe 안의 아이콘만 쓰면 업데이트 때 exe 를 교체하는 동안 탐색기 아이콘 캐시가 빈 아이콘으로 남을 수 있다.
+    -->
+    <ItemGroup>
+        <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"/>
+    </ItemGroup>
+
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net10.0-windows</TargetFramework>

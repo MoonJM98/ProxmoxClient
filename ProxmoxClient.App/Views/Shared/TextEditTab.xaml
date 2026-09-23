@@ -1,0 +1,31 @@
+<UserControl x:Class="ProxmoxClient.App.Views.Shared.TextEditTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+             xmlns:ic="clr-namespace:ProxmoxClient.App.Controls">
+
+    <Grid Margin="20,16,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <WrapPanel Grid.Row="0" Margin="0,0,0,6">
+            <Button x:Name="SaveButton" ic:IconAssist.Icon="{StaticResource IconSave}" Margin="0,0,8,4"
+                    Content="{loc:Tr TextEditTab_Save}" Click="OnSave" MinWidth="96" />
+            <Button ic:IconAssist.Icon="{StaticResource IconRefresh}" Margin="0,0,8,4"
+                    Content="{loc:Tr TextEditTab_Reload}" Click="OnReload" MinWidth="96" />
+        </WrapPanel>
+
+        <TextBlock Grid.Row="1" x:Name="HintText" Foreground="{StaticResource BrushDim}" FontSize="11"
+                   TextWrapping="Wrap" Margin="0,0,0,10" />
+
+        <TextBox Grid.Row="2" x:Name="Editor" FontFamily="Cascadia Mono, Consolas" FontSize="12"
+                 TextWrapping="NoWrap" AcceptsReturn="True" AcceptsTab="True"
+                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+
+        <TextBlock Grid.Row="3" x:Name="StatusText" Style="{StaticResource DialogStatus}" Margin="0,10,0,0" />
+    </Grid>
+</UserControl>

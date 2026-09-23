@@ -36,7 +36,9 @@
                     <Button ic:IconAssist.Icon="{StaticResource IconLogOut}" Content="{loc:Tr MainWindow_02}"
                             Command="{Binding DisconnectCommand}" MinWidth="96" Margin="0,0,8,0" />
                     <Button ic:IconAssist.Icon="{StaticResource IconRefresh}" Content="{loc:Tr MainWindow_03}"
-                            Command="{Binding RefreshCommand}" MinWidth="90" Margin="0,0,12,0" />
+                            Command="{Binding RefreshCommand}" MinWidth="90" Margin="0,0,8,0" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconDatabase}" Content="{loc:Tr MainWindow_Datacenter}"
+                            Click="OnOpenDatacenter" MinWidth="96" Margin="0,0,12,0" />
                 </StackPanel>
                 <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconSettings}"
                         Content="{loc:Tr MainWindow_04}"
@@ -678,6 +680,7 @@
                             <TextBlock DockPanel.Dock="Top" Text="{loc:Tr MainWindow_NodeList}"
                                        Style="{StaticResource SectionHeader}" Margin="0,0,0,6" />
                             <ListBox ItemsSource="{Binding Nodes}" SelectedItem="{Binding SelectedNode}"
+                                     MouseDoubleClick="OnNodeListDoubleClick"
                                      Background="Transparent" BorderThickness="0"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                 <ListBox.ItemTemplate>
@@ -710,8 +713,12 @@
 
                     <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
                         <StackPanel>
-                            <TextBlock Text="{loc:Tr MainWindow_NodeDetail}" Style="{StaticResource SectionHeader}"
-                                       Margin="2,0,0,8" />
+                            <DockPanel Margin="2,0,0,8">
+                                <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconSettings}"
+                                        Content="{loc:Tr MainWindow_NodeManage}" Click="OnOpenNodeWindow" />
+                                <TextBlock Text="{loc:Tr MainWindow_NodeDetail}" Style="{StaticResource SectionHeader}"
+                                           VerticalAlignment="Center" />
+                            </DockPanel>
                             <Border Background="{StaticResource BrushPanel}" CornerRadius="6" Padding="12"
                                     BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" Margin="0,0,0,10">
                                 <Grid>
@@ -862,7 +869,8 @@
 
                 <!-- 패널 2: 스토리지 -->
                 <DataGrid ItemsSource="{Binding Storages}" AutoGenerateColumns="False" IsReadOnly="True"
-                          GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                          GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                          MouseDoubleClick="OnStorageDoubleClick" ToolTip="{loc:Tr MainWindow_StorageOpenHint}">
                     <DataGrid.Style>
                         <Style TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
                             <Setter Property="Visibility" Value="Collapsed" />

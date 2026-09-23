@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private readonly AppSettingsStore _appSettingsStore = new();
     private readonly MainViewModel _vm = new();
     private AppSettings _appSettings = new();
+    private bool _wizardOpen;
     private ConnectionProfile? _autoConnectProfile;
 
     public MainWindow(ConnectionProfile? autoConnectProfile = null)
@@ -82,34 +83,172 @@ public partial class MainWindow : Window
             return;
         }
 
-        var title = $"{guest.Kind.Label()} {guest.VmId} — {guest.Name}";
-        var dialog = new SnapshotDialog(api, guest.Node, guest.Kind, guest.VmId, title) { Owner = this };
-        dialog.ShowDialog();
-        _ = _vm.RefreshDataAsync();
+        OpenGuestWindow(api, guest, "snapshots");
     }
 
+    /// <summary>만들기 버튼 — 웹 UI 처럼 "VM 만들기" / "CT 만들기" 마법사를 고른다.</summary>
     private void OnCreateGuest(object sender, RoutedEventArgs e)
     {
-        if (_vm.Api is not { } api) return;
+        if (sender is not FrameworkElement button) return;
+        var menu = new ContextMenu { PlacementTarget = button, Placement = PlacementMode.Bottom };
+        menu.Items.Add(CreateMenuItem("Wz_CreateVm", Views.Create.VmWizard.ShowAsync));
+        menu.Items.Add(CreateMenuItem("Wz_CreateCt", Views.Create.CtWizard.ShowAsync));
+        menu.IsOpen = true;
+    }
 
-        var dialog = new CreateGuestWindow(api, _vm.Nodes.ToList(), _vm.Storages.ToList()) { Owner = this };
-        dialog.ShowDialog();
-        _ = _vm.RefreshDataAsync();
+    private MenuItem CreateMenuItem(string key,
+        Func<Window, ProxmoxClient.Core.Api.ProxmoxApiClient, IReadOnlyList<string>, Task<string?>> show)
+    {
+        var item = new MenuItem { Header = Loc.T(key) };
+        item.Click += async (_, _) =>
+        {
+            if (_vm.Api is not { } api || _wizardOpen) return;
+            // 선택한 게스트의 노드를 먼저 — 웹 UI 도 선택한 노드에서 마법사를 연다
+            var selected = _vm.SelectedGuest?.Node;
+            var nodes = _vm.Nodes.Where(n => n.IsOnline).Select(n => n.Node)
+                .OrderBy(n => n == selected ? 0 : 1).ToList();
+            if (nodes.Count == 0)
+            {
+                ThemedMessageBox.Show(this, Loc.T("Wz_NoOnlineNode"), Loc.T(key), MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            _wizardOpen = true;
+            _vm.StatusMessage = Loc.T("Hw_Loading");
+            try
+            {
+                _vm.StatusMessage = await show(this, api, nodes) ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                App.Log($"[만들기] 마법사 열기 실패: {ex.Message}");
+                _vm.StatusMessage = string.Empty;
+                ThemedMessageBox.Show(this, Loc.T("Wz_LoadFailed", ex.Message), Loc.T(key),
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                _wizardOpen = false;
+            }
+
+            _ = _vm.RefreshDataAsync();
+        };
+        return item;
     }
 
     private void OnMenuFirewall(object sender, RoutedEventArgs e)
     {
         if (_vm.SelectedGuest is not { } guest || _vm.Api is not { } api) return;
 
-        new FirewallWindow(api, guest) { Owner = this }.ShowDialog();
+        OpenGuestWindow(api, guest, "firewall");
     }
 
     private void OnMenuSettings(object sender, RoutedEventArgs e)
     {
         if (_vm.SelectedGuest is not { } guest || _vm.Api is not { } api) return;
 
-        var dialog = new GuestSettingsWindow(api, guest) { Owner = this };
-        dialog.ShowDialog();
+        OpenGuestWindow(api, guest, "hardware");
+    }
+
+    /// <summary>게스트 통합 창을 연다 — 웹 UI 처럼 한 창에서 탭으로 오간다.</summary>
+    private void OpenGuestWindow(ProxmoxClient.Core.Api.ProxmoxApiClient api, PveResource guest, string tabId)
+    {
+        var permissions = _vm.Permissions ?? PermissionsInfo.Admin;
+        var window = Views.Guest.GuestNavigator.Create(api, guest, permissions, _vm.RunGuestPowerForAsync, tabId);
+        window.Owner = this;
+        window.ShowDialog();
+        _ = _vm.RefreshDataAsync();
+    }
+
+    private void OnOpenDatacenter(object sender, RoutedEventArgs e)
+    {
+        if (_vm.Api is not { } api)
+        {
+            ThemedMessageBox.Show(this, Loc.T("MainWindow_M03"), Loc.T("MainWindow_M04"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var window = Views.Datacenter.DatacenterNavigator.Create(api, _vm.Permissions ?? PermissionsInfo.Admin,
+            openResource: (row, owner) => OpenResourceWindow(api, row, owner));
+        window.Owner = this;
+        window.ShowDialog();
+        _ = _vm.RefreshDataAsync();
+    }
+
+    /// <summary>
+    ///     데이터센터 검색 탭의 행(cluster/resources 한 줄)에 맞는 창을 연다 — 노드·게스트·저장소.
+    ///     게스트·저장소는 메인 목록의 같은 객체를 써서 전원 동작·상태 표시가 메인 창과 이어지게 한다.
+    /// </summary>
+    private void OpenResourceWindow(ProxmoxClient.Core.Api.ProxmoxApiClient api,
+        IReadOnlyDictionary<string, string> row, Window? owner)
+    {
+        string Value(string key) => row.TryGetValue(key, out var v) ? v : string.Empty;
+        var permissions = _vm.Permissions ?? PermissionsInfo.Admin;
+        var node = Value("node");
+
+        if (Value("type") == "pool")
+        {
+            // 풀은 웹 UI 처럼 구성원 목록을 띄운다(편집 버튼은 Pool.Allocate 가 있을 때만)
+            var pool = Value("pool");
+            Views.Shared.TableWindow.ShowModal(owner ?? this, Loc.T("DcPools_MembersTitle", pool),
+                Views.Datacenter.PoolMembers.Create(api, pool, permissions.Has("Pool.Allocate")));
+            _ = _vm.RefreshDataAsync();
+            return;
+        }
+
+        Window? window = Value("type") switch
+        {
+            "node" => Views.Node.NodeNavigator.Create(api, node, permissions),
+            "qemu" or "lxc" when int.TryParse(Value("vmid"), out var vmid)
+                                 && _vm.Guests.FirstOrDefault(g => g.VmId == vmid) is { } guest =>
+                Views.Guest.GuestNavigator.Create(api, guest, permissions, _vm.RunGuestPowerForAsync, null),
+            "storage" => Views.Storage.StorageNavigator.Create(api, node, Value("storage"),
+                _vm.Storages.FirstOrDefault(s => s.Node == node && s.Storage == Value("storage"))?.Content
+                ?? Value("content"), permissions),
+            _ => null // SDN 은 별도 창이 없다
+        };
+        if (window is null) return;
+
+        window.Owner = owner ?? this;
+        window.ShowDialog();
+        _ = _vm.RefreshDataAsync();
+    }
+
+    /// <summary>저장소 목록 더블클릭 — 그 저장소의 콘텐츠 창(백업·ISO·템플릿·디스크)을 연다.</summary>
+    private void OnStorageDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if ((e.OriginalSource as FrameworkElement)?.DataContext is not PveStorage storage
+            || _vm.Api is not { } api)
+            return;
+
+        var window = Views.Storage.StorageNavigator.Create(api, storage.Node, storage.Storage, storage.Content,
+            _vm.Permissions ?? PermissionsInfo.Admin);
+        window.Owner = this;
+        window.ShowDialog();
+        _ = _vm.RefreshDataAsync();
+    }
+
+    private void OnNodeListDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if ((e.OriginalSource as FrameworkElement)?.DataContext is PveNode) OpenNodeWindow();
+    }
+
+    private void OnOpenNodeWindow(object sender, RoutedEventArgs e)
+    {
+        OpenNodeWindow();
+    }
+
+    /// <summary>선택한 노드의 관리 창을 연다.</summary>
+    private void OpenNodeWindow()
+    {
+        if (_vm.SelectedNode is not { } node || _vm.Api is not { } api) return;
+
+        var permissions = _vm.Permissions ?? PermissionsInfo.Admin;
+        var window = Views.Node.NodeNavigator.Create(api, node.Node, permissions);
+        window.Owner = this;
+        window.ShowDialog();
         _ = _vm.RefreshDataAsync();
     }
 
@@ -175,19 +314,7 @@ public partial class MainWindow : Window
     {
         if (_vm.SelectedGuest is not { } guest || _vm.Api is not { } api) return;
 
-        var backupStorages = _vm.Storages.Where(s => s.Content.Contains("backup", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        if (backupStorages.Count == 0)
-        {
-            ThemedMessageBox.Show(this,
-                Loc.T("MainWindow_M05"),
-                Loc.T("MainWindow_M06"));
-            return;
-        }
-
-        var dialog = new BackupWindow(api, guest, backupStorages) { Owner = this };
-        dialog.ShowDialog();
-        _ = _vm.RefreshDataAsync();
+        OpenGuestWindow(api, guest, "backup");
     }
 
     private void OnOpenConsole(object sender, RoutedEventArgs e)

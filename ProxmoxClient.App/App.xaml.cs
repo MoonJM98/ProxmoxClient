@@ -16,6 +16,7 @@ public partial class App : Application
     {
         InstallExceptionHandlers();
         ApplySavedLanguage();
+        Controls.MenuSeparators.Register();
         DispatcherUnhandledException += (_, args) =>
         {
             Log(args.Exception.ToString());

@@ -1,23 +1,49 @@
 <Project Sdk="WixToolset.Sdk/7.0.0">
 
     <PropertyGroup>
+        <!-- 기본 아키텍처. 다른 것을 만들려면 -p:Platform=x86 처럼 넘긴다 -->
+        <Platform Condition="'$(Platform)' == '' OR '$(Platform)' == 'AnyCPU'">x64</Platform>
         <!-- OutputName 이 참조하므로 버전을 먼저 정의한다(MSBuild 는 순차 평가) -->
         <ProductVersion>1.0.0</ProductVersion>
-        <OutputName>ProxmoxClient-$(ProductVersion)</OutputName>
+        <OutputName>ProxmoxClient-$(ProductVersion)-$(Platform)</OutputName>
         <OutputType>Package</OutputType>
-        <!-- 게시 산출물을 그대로 담는다 — 앱을 먼저 dotnet publish 해 두어야 한다 -->
-        <PublishDir>$(MSBuildThisFileDirectory)..\publish</PublishDir>
-        <DefineConstants>PublishDir=$(PublishDir);ProductVersion=$(ProductVersion)</DefineConstants>
+        <!-- 아키텍처마다 게시 폴더를 나눠 산출물이 섞이지 않게 한다 -->
+        <PublishDir>$(MSBuildThisFileDirectory)..\publish\$(Platform)</PublishDir>
+        <RuntimeIdentifier>win-$(Platform)</RuntimeIdentifier>
         <!--
             WiX v6 부터 Open Source Maintenance Fee(OSMF) 가 적용되어 EULA 수락이 필요하다.
             연매출 $10,000 을 넘는 조직이 사용한다면 wixtoolset GitHub 스폰서 후원 의무가 생긴다.
             https://docs.firegiant.com/wix/osmf/
         -->
         <AcceptEula>wix7</AcceptEula>
+        <!-- ICE61: 같은 버전 재설치도 교체하도록(AllowSameVersionUpgrades) 한 의도된 설정이라 끈다 -->
+        <SuppressIces>ICE61</SuppressIces>
+    </PropertyGroup>
+
+    <!--
+        UpgradeCode 는 제품의 영구 식별자다. 아키텍처마다 다른 값을 써서 서로를 덮어쓰지 않게 한다
+        (x64 설치본을 x86 설치본이 밀어내는 사고 방지). 한번 배포한 뒤에는 절대 바꾸지 않는다.
+    -->
+    <PropertyGroup>
+        <UpgradeGuid Condition="'$(Platform)' == 'x64'">83683AB8-64A6-48FC-9BB9-C7A61CA62BA0</UpgradeGuid>
+        <UpgradeGuid Condition="'$(Platform)' == 'x86'">D3BA7891-81BF-4BB5-9F2E-F86F01E3AC06</UpgradeGuid>
+        <UpgradeGuid Condition="'$(Platform)' == 'arm64'">D7FA190A-0B9E-44C6-8185-2FBE91B54BF3</UpgradeGuid>
+        <!-- Platform 은 WiX SDK 가 이미 정의하므로 여기서 다시 넣지 않는다(WIX0288) -->
+        <DefineConstants>PublishDir=$(PublishDir);ProductVersion=$(ProductVersion);UpgradeGuid=$(UpgradeGuid)</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>
         <BindPath Include="$(PublishDir)"/>
     </ItemGroup>
+
+    <!--
+        앱을 자체 포함으로 게시한 뒤 그 결과를 MSI 에 담는다.
+        게시를 깜빡해 옛 산출물이 들어가는 일이 없도록 빌드에 묶어 둔다.
+    -->
+    <Target Name="PublishApp" BeforeTargets="BeforeBuild">
+        <RemoveDir Directories="$(PublishDir)"/>
+        <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)..\ProxmoxClient.App\ProxmoxClient.App.csproj&quot; -c Release -r $(RuntimeIdentifier) --self-contained true -p:DebugType=None -p:DebugSymbols=false -o &quot;$(PublishDir)&quot;"
+              WorkingDirectory="$(MSBuildThisFileDirectory).."/>
+    </Target>
 
 </Project>

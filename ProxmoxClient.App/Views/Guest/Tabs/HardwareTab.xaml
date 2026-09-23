@@ -1,0 +1,67 @@
+<UserControl x:Class="ProxmoxClient.App.Views.Guest.Tabs.HardwareTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+             xmlns:ic="clr-namespace:ProxmoxClient.App.Controls">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,16,20,10">
+                <TextBlock Text="{loc:Tr CreateGuestWindow_07}" Style="{StaticResource FormSection}" />
+                <ic:FormRow x:Name="RowSockets" Label="{loc:Tr GuestSettingsWindow_11}">
+                    <TextBox x:Name="SocketsBox" ic:InputFilter.Mode="Integer" Width="140" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowCores" Label="{loc:Tr CreateGuestWindow_08}">
+                    <TextBox x:Name="CoresBox" ic:InputFilter.Mode="Integer" Width="140" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowCpuLimit" Label="{loc:Tr GuestSettingsWindow_12}"
+                            Hint="{loc:Tr GuestSettingsWindow_13}">
+                    <TextBox x:Name="CpuLimitBox" ic:InputFilter.Mode="Decimal" Width="140" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowMemory" Label="{loc:Tr CreateGuestWindow_09}">
+                    <TextBox x:Name="MemoryBox" ic:InputFilter.Mode="Integer" Width="140" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowBalloon" Label="{loc:Tr GuestSettingsWindow_14}"
+                            Hint="{loc:Tr GuestSettingsWindow_15}">
+                    <TextBox x:Name="BalloonBox" ic:InputFilter.Mode="Integer" Width="140" HorizontalAlignment="Left" />
+                </ic:FormRow>
+
+                <TextBlock Text="{loc:Tr GuestSettingsWindow_16}" Style="{StaticResource FormSection}" />
+                <ic:FormRow Label="{loc:Tr GuestSettingsWindow_17}" Hint="{loc:Tr CreateGuestWindow_24}">
+                    <ComboBox x:Name="BridgeBox" IsEditable="True" Width="220" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowNicModel" Label="{loc:Tr GuestSettingsWindow_18}">
+                    <ComboBox x:Name="NicModelBox" Width="260" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowMac" Label="{loc:Tr GuestSettingsWindow_19}"
+                            Hint="{loc:Tr GuestSettingsWindow_20}">
+                    <TextBox x:Name="MacBox" Width="220" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr GuestSettingsWindow_21}" Hint="{loc:Tr GuestSettingsWindow_22}">
+                    <TextBox x:Name="VlanBox" ic:InputFilter.Mode="Integer" Width="140" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowIp" Label="IP" Hint="{loc:Tr CreateGuestWindow_19}">
+                    <TextBox x:Name="IpBox" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr FirewallWindow_01}">
+                    <CheckBox x:Name="NicFirewallCheck" Margin="0,6,0,0" />
+                </ic:FormRow>
+
+                <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"
+                           Text="{loc:Tr GuestSettingsWindow_26}" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <DockPanel Grid.Row="1" Margin="20,0,20,16">
+            <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconSave}" x:Name="BtnSave"
+                    Content="{loc:Tr AppSettingsWindow_12}"
+                    Style="{StaticResource AccentButton}" Click="OnSave" MinWidth="120" />
+            <TextBlock x:Name="StatusText" Style="{StaticResource DialogStatus}" />
+        </DockPanel>
+    </Grid>
+</UserControl>

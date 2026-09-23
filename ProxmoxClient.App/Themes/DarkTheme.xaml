@@ -124,6 +124,13 @@
         <Setter Property="Margin" Value="8,0,0,0" />
     </Style>
 
+    <!-- 요약 화면의 항목 이름 — 값과 나란히 놓이는 왼쪽 열 -->
+    <Style x:Key="SummaryLabel" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource BrushDim}" />
+        <Setter Property="Margin" Value="0,0,14,5" />
+        <Setter Property="MinWidth" Value="88" />
+    </Style>
+
     <Style x:Key="FormSection" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{StaticResource BrushAccentHover}" />
         <Setter Property="FontSize" Value="12" />

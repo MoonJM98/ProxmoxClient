@@ -13,7 +13,7 @@ using ProxmoxClient.Core.Vnc;
 namespace ProxmoxClient.App.Views;
 
 /// <summary>
-///     CT 터미널 콘솔 — Proxmox termproxy(서버 측 PTY) 를 Windows Terminal 렌더러(<see cref="TerminalControl" />)로 표시.
+///     터미널 콘솔(CT 콘솔·노드 셸) — Proxmox termproxy(서버 측 PTY) 를 Windows Terminal 렌더러(<see cref="TerminalControl" />)로 표시.
 /// </summary>
 public partial class TerminalWindow : Window
 {
@@ -31,14 +31,13 @@ public partial class TerminalWindow : Window
     private readonly ProxmoxApiClient _api;
     private readonly bool _canPowerManage;
 
-    private readonly PveResource _guest;
-    private readonly ResourceKind _kind;
-    private readonly string _node;
-    private readonly GuestPowerRunner _runPower;
-    private readonly GuestRunStateMonitor _runState;
+    // 노드 셸이면 게스트·전원 관련 필드는 비어 있다
+    private readonly PveResource? _guest;
+    private readonly GuestPowerRunner? _runPower;
+    private readonly GuestRunStateMonitor? _runState;
     private readonly ConsoleSettingsStore _settingsStore = new();
+    private readonly ConsoleTarget _target;
     private readonly string _title;
-    private readonly int _vmid;
     private bool _autoConnecting;
     private bool _closed;
     private ProxmoxTerminalConnection? _connection;
@@ -50,22 +49,42 @@ public partial class TerminalWindow : Window
 
     public TerminalWindow(ProxmoxApiClient api, PveResource guest, string guestTitle, GuestPowerRunner runPower,
         bool canPowerManage)
+        : this(api, ConsoleTarget.ForGuest(guest.Node, guest.Kind, guest.VmId),
+            Loc.T("TerminalWindow_Header", guestTitle))
     {
-        InitializeComponent();
-        WindowTheme.ApplyDarkTitleBar(this);
-        _api = api;
         _guest = guest;
         _runPower = runPower;
-        _node = guest.Node;
-        _kind = guest.Kind;
-        _vmid = guest.VmId;
         // 게스트 객체는 메인 새로고침으로 상태가 갱신되므로 전원 버튼 표시가 자동으로 따라간다
         PowerPanel.DataContext = guest;
         PowerPanel.Visibility = canPowerManage ? Visibility.Visible : Visibility.Collapsed;
         _canPowerManage = canPowerManage;
         StoppedPanel.StartRequested += OnStoppedPanelStart;
         _runState = new GuestRunStateMonitor(guest, OnGuestStoppedChanged);
-        _title = Loc.T("TerminalWindow_Header", guestTitle);
+    }
+
+    /// <summary>
+    ///     노드 셸 — 노드는 꺼질 일이 없으므로 전원 버튼과 정지 안내를 쓰지 않는다.
+    ///     command 가 있으면 로그인 대신 그 명령을 실행한다(예: "upgrade" = 패키지 업그레이드).
+    /// </summary>
+    public TerminalWindow(ProxmoxApiClient api, string node, string? command = null)
+        : this(api, ConsoleTarget.ForNode(node, command),
+            Loc.T(command switch
+            {
+                "upgrade" => "TerminalWindow_NodeUpgrade",
+                "ceph_install" => "TerminalWindow_CephInstall",
+                _ => "TerminalWindow_NodeShell"
+            }, node))
+    {
+        PowerPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private TerminalWindow(ProxmoxApiClient api, ConsoleTarget target, string title)
+    {
+        InitializeComponent();
+        WindowTheme.ApplyDarkTitleBar(this);
+        _api = api;
+        _target = target;
+        _title = title;
         Title = _title;
 
         Loaded += async (_, _) =>
@@ -74,7 +93,7 @@ public partial class TerminalWindow : Window
             Terminal.AutoResize = true;
             ApplyTheme();
             AttachImeForwarder();
-            if (_runState.IsStopped)
+            if (_runState?.IsStopped == true)
             {
                 ShowStopped(); // 정지 상태면 연결하지 않고 시작 안내
                 return;
@@ -85,7 +104,7 @@ public partial class TerminalWindow : Window
         Closing += (_, _) =>
         {
             _closed = true;
-            _runState.Dispose();
+            _runState?.Dispose();
             _imeForwarder?.Dispose();
             _imeForwarder = null;
             DisposeSession(true);
@@ -97,7 +116,7 @@ public partial class TerminalWindow : Window
     {
         _imeForwarder?.Dispose();
         _imeForwarder = ImeResultForwarder.Attach(Terminal, text => _session?.SendInput(text));
-        if (_imeForwarder is null) App.Log($"[터미널 {_vmid}] IME 입력 연결 실패: 터미널 네이티브 창을 찾지 못했습니다.");
+        if (_imeForwarder is null) App.Log($"[터미널 {_target.DisplayName}] IME 입력 연결 실패: 터미널 네이티브 창을 찾지 못했습니다.");
     }
 
     /// <summary>Win32 COLORREF(0x00BBGGRR).</summary>
@@ -152,6 +171,8 @@ public partial class TerminalWindow : Window
 
     private async void OnStoppedPanelStart(object? sender, EventArgs e)
     {
+        if (_guest is null || _runPower is null) return;
+
         ShowWaiting(Loc.T("Console_StartRequesting"));
         await _runPower(_guest, GuestPowerAction.Start);
         await AutoConnectAsync(Loc.T("Console_WaitingBoot"));
@@ -210,7 +231,7 @@ public partial class TerminalWindow : Window
         });
         session.Closed += ex =>
         {
-            App.Log($"[터미널 {_vmid}] 연결 종료: {(ex is null ? "정상" : ex.ToString())}");
+            App.Log($"[터미널 {_target.DisplayName}] 연결 종료: {(ex is null ? "정상" : ex.ToString())}");
             Dispatcher.BeginInvoke(() =>
             {
                 if (!IsCurrent()) return;
@@ -226,14 +247,14 @@ public partial class TerminalWindow : Window
 
         try
         {
-            await session.ConnectAsync(_node, _kind, _vmid);
+            await session.ConnectAsync(_target);
             return true;
         }
         catch (Exception ex)
         {
             if (IsCurrent())
             {
-                App.Log($"[터미널 {_vmid}] 연결 실패: {ex}");
+                App.Log($"[터미널 {_target.DisplayName}] 연결 실패: {ex}");
                 SetState(Loc.T("ConsoleWindow_M07", ex.Message));
                 UpdateButtons(false);
             }
@@ -323,6 +344,7 @@ public partial class TerminalWindow : Window
 
     private async void OnPowerAction(object sender, RoutedEventArgs e)
     {
+        if (_guest is null || _runPower is null) return;
         if (sender is not DependencyObject source
             || (GuestPowerVisibility.GetAction(source) is var action && action == GuestPowerAction.None))
             return;

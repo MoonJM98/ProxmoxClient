@@ -1,0 +1,50 @@
+<UserControl x:Class="ProxmoxClient.App.Views.Guest.Tabs.OptionsTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+             xmlns:ic="clr-namespace:ProxmoxClient.App.Controls">
+
+    <Grid Margin="20,16,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <WrapPanel Grid.Row="0" Margin="0,0,0,6">
+            <Button x:Name="BtnEdit" ic:IconAssist.Icon="{StaticResource IconPencil}" Margin="0,0,8,4"
+                    Content="{loc:Tr ServerManagerWindow_03}" Click="OnEdit" MinWidth="96" />
+            <!-- 대기 중 변경 취소 — 게스트 설정에서만 보인다(웹 UI 의 Revert) -->
+            <Button x:Name="BtnRevert" ic:IconAssist.Icon="{StaticResource IconUndo}" Margin="0,0,8,4"
+                    Content="{loc:Tr OptionsTab_Revert}" Click="OnRevert" MinWidth="96" Visibility="Collapsed"
+                    IsEnabled="False" />
+            <WrapPanel x:Name="ExtraPanel" />
+            <Button x:Name="BtnReload" ic:IconAssist.Icon="{StaticResource IconRefresh}" Margin="0,0,8,4"
+                    Content="{loc:Tr MainWindow_03}" Click="OnReload" MinWidth="96" />
+        </WrapPanel>
+
+        <DataGrid Grid.Row="1" x:Name="OptionGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                  GridLinesVisibility="Horizontal" HeadersVisibility="Column" SelectionMode="Single"
+                  MouseDoubleClick="OnGridDoubleClick" SelectionChanged="OnSelectionChanged">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="{loc:Tr MainWindow_40}" Binding="{Binding Label, Mode=OneWay}"
+                                    Width="220" />
+                <DataGridTextColumn Header="{loc:Tr DeviceTable_Value}" Binding="{Binding Display, Mode=OneWay}"
+                                    Width="*" />
+                <!-- 재시작해야 적용되는 값 — 웹 UI 의 주황색 두 번째 줄 -->
+                <DataGridTextColumn x:Name="PendingColumn" Header="{loc:Tr OptionsTab_Pending}"
+                                    Binding="{Binding PendingText, Mode=OneWay}" Width="*"
+                                    Visibility="Collapsed">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource BrushWarn}" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock Grid.Row="2" x:Name="StatusText" Style="{StaticResource DialogStatus}" Margin="0,10,0,0"
+                   TextWrapping="Wrap" />
+    </Grid>
+</UserControl>

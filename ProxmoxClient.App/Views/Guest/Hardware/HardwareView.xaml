@@ -1,0 +1,65 @@
+<UserControl x:Class="ProxmoxClient.App.Views.Guest.Hardware.HardwareView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+             xmlns:ic="clr-namespace:ProxmoxClient.App.Controls">
+
+    <Grid Margin="20,16,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 웹 UI 하드웨어 도구 모음: 추가 ▾ · 제거(분리) · 편집 · 디스크 작업 ▾ · 되돌리기 -->
+        <WrapPanel Grid.Row="0" Margin="0,0,0,6">
+            <Button x:Name="BtnAdd" ic:IconAssist.Icon="{StaticResource IconPlus}" Margin="0,0,8,4" MinWidth="96"
+                    Content="{loc:Tr Hw_AddMenu}" Click="OnAddClick">
+                <Button.ContextMenu>
+                    <ContextMenu x:Name="AddMenu" />
+                </Button.ContextMenu>
+            </Button>
+            <Button x:Name="BtnRemove" ic:IconAssist.Icon="{StaticResource IconTrash}" Margin="0,0,8,4"
+                    MinWidth="96" Content="{loc:Tr Hw_Remove}" Click="OnRemove" IsEnabled="False" />
+            <Button x:Name="BtnEdit" ic:IconAssist.Icon="{StaticResource IconPencil}" Margin="0,0,8,4" MinWidth="96"
+                    Content="{loc:Tr ServerManagerWindow_03}" Click="OnEdit" IsEnabled="False" />
+            <Button x:Name="BtnDisk" ic:IconAssist.Icon="{StaticResource IconDatabase}" Margin="0,0,8,4"
+                    MinWidth="96" Content="{loc:Tr Hw_DiskMenu}" Click="OnDiskClick" IsEnabled="False">
+                <Button.ContextMenu>
+                    <ContextMenu x:Name="DiskMenu">
+                        <MenuItem x:Name="MenuMove" Header="{loc:Tr Hw_DiskMove}" Click="OnMoveDisk" />
+                        <MenuItem x:Name="MenuReassign" Header="{loc:Tr Hw_DiskReassign}" Click="OnReassignDisk" />
+                        <MenuItem x:Name="MenuResize" Header="{loc:Tr Hw_DiskResize}" Click="OnResizeDisk" />
+                        <MenuItem x:Name="MenuEnroll" Header="{loc:Tr Hw_DiskEnroll}" Click="OnEnrollCerts" />
+                    </ContextMenu>
+                </Button.ContextMenu>
+            </Button>
+            <Button x:Name="BtnRevert" ic:IconAssist.Icon="{StaticResource IconUndo}" Margin="0,0,8,4" MinWidth="96"
+                    Content="{loc:Tr OptionsTab_Revert}" Click="OnRevert" IsEnabled="False" />
+            <Button ic:IconAssist.Icon="{StaticResource IconRefresh}" Margin="0,0,8,4" MinWidth="96"
+                    Content="{loc:Tr MainWindow_03}" Click="OnRefresh" />
+        </WrapPanel>
+
+        <DataGrid Grid.Row="1" x:Name="RowGrid" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                  GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                  SelectionChanged="OnSelectionChanged" MouseDoubleClick="OnRowDoubleClick">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="{loc:Tr MainWindow_40}" Binding="{Binding Header, Mode=OneWay}" Width="220" />
+                <DataGridTextColumn Header="{loc:Tr DeviceTable_Value}" Binding="{Binding Display, Mode=OneWay}"
+                                    Width="*" />
+                <!-- 재시작해야 적용되는 값 — 웹 UI 의 주황색 두 번째 줄 -->
+                <DataGridTextColumn x:Name="PendingColumn" Header="{loc:Tr OptionsTab_Pending}"
+                                    Binding="{Binding PendingText, Mode=OneWay}" Width="*" Visibility="Collapsed">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource BrushWarn}" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock Grid.Row="2" x:Name="StatusText" Style="{StaticResource DialogStatus}" Margin="0,10,0,0"
+                   TextWrapping="Wrap" />
+    </Grid>
+</UserControl>

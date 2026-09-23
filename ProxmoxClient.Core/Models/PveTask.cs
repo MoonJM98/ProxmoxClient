@@ -1,8 +1,8 @@
 namespace ProxmoxClient.Core.Models;
 
 /// <summary>
-///     One cluster task entry. Rows are kept alive across refreshes via <see cref="CopyFrom" />; only changed properties
-///     are notified.
+///     One cluster task entry. Rows are kept alive across refreshes via <see cref="CopyFrom" />;
+///     only changed properties are notified.
 /// </summary>
 public sealed class PveTask : ObservableModel
 {

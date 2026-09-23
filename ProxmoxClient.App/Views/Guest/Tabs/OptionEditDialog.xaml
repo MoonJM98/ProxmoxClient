@@ -1,0 +1,69 @@
+<Window x:Class="ProxmoxClient.App.Views.Guest.Tabs.OptionEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        Style="{StaticResource ThemedWindow}"
+        Width="460" SizeToContent="Height" MinWidth="360"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="20,18,20,12">
+            <!-- 항목 유형에 맞는 입력만 보여 준다 -->
+            <ic:FormRow x:Name="TextRow" Label="" LabelWidth="90" Visibility="Collapsed">
+                <TextBox x:Name="ValueBox" />
+            </ic:FormRow>
+            <CheckBox x:Name="ValueCheck" Visibility="Collapsed" Margin="0,4,0,4" />
+            <ic:FormRow x:Name="ChoiceRow" Label="" LabelWidth="90" Visibility="Collapsed">
+                <ComboBox x:Name="ValueCombo" SelectionChanged="OnChoiceChanged" />
+            </ic:FormRow>
+            <!-- OS 유형의 두 번째 단계(버전) — 유형에 버전이 여럿일 때만 보인다 -->
+            <ic:FormRow x:Name="VersionRow" Label="{loc:Tr OsType_Version}" LabelWidth="90" Visibility="Collapsed"
+                        Margin="0,8,0,0">
+                <ComboBox x:Name="VersionCombo" />
+            </ic:FormRow>
+
+            <!-- 부팅 순서 — 체크한 장치를 위에서부터 시도한다 -->
+            <Grid x:Name="BootPanel" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ListBox x:Name="BootList" Grid.Column="0" Height="220">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}">
+                                <TextBlock>
+                                    <Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" />
+                                    <Run Text="{Binding Description, Mode=OneWay}"
+                                         Foreground="{StaticResource BrushDim}" />
+                                </TextBlock>
+                            </CheckBox>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                    <Button Content="{loc:Tr BootOrder_Up}" Click="OnBootUp" MinWidth="72" Margin="0,0,0,6" />
+                    <Button Content="{loc:Tr BootOrder_Down}" Click="OnBootDown" MinWidth="72" />
+                </StackPanel>
+            </Grid>
+
+            <TextBlock x:Name="HintText" Foreground="{StaticResource BrushDim}" FontSize="11"
+                       TextWrapping="Wrap" Margin="0,8,0,0" Visibility="Collapsed" />
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button ic:IconAssist.Icon="{StaticResource IconCheck}" Content="{loc:Tr ThemedMessageBox_M01}"
+                        Style="{StaticResource DialogPrimaryButton}" Click="OnOk" IsDefault="True" />
+                <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr AppSettingsWindow_13}"
+                        Style="{StaticResource DialogButton}" IsCancel="True" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

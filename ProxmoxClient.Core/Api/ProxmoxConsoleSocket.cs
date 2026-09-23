@@ -13,13 +13,19 @@ internal static class ProxmoxConsoleSocket
     /// <summary>프록시는 생성 후 짧은 시간만 연결을 기다리므로 그 안에 붙어야 한다.</summary>
     private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(25);
 
-    public static async Task<ClientWebSocket> ConnectAsync(
+    public static Task<ClientWebSocket> ConnectAsync(
         ProxmoxApiClient api, string node, ResourceKind kind, int vmid, int port, string ticket, CancellationToken ct)
+    {
+        return ConnectAsync(api, ConsoleTarget.ForGuest(node, kind, vmid), port, ticket, ct);
+    }
+
+    public static async Task<ClientWebSocket> ConnectAsync(
+        ProxmoxApiClient api, ConsoleTarget target, int port, string ticket, CancellationToken ct)
     {
         var profile = api.Profile;
         var uri = new UriBuilder("wss", profile.Host, profile.Port) // ClientWebSocket 은 ws/wss 스키마만 허용
         {
-            Path = $"/api2/json/nodes/{Uri.EscapeDataString(node)}/{kind.ApiSegment()}/{vmid}/vncwebsocket",
+            Path = $"/api2/json/{target.BasePath}/vncwebsocket",
             Query = $"port={port}&vncticket={Uri.EscapeDataString(ticket)}"
         }.Uri;
 

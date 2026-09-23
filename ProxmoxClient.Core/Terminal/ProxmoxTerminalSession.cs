@@ -80,7 +80,12 @@ public sealed class ProxmoxTerminalSession : IDisposable
     /// <summary>연결 종료. null=정상, 아니면 오류.</summary>
     public event Action<Exception?>? Closed;
 
-    public async Task ConnectAsync(string node, ResourceKind kind, int vmid, CancellationToken ct = default)
+    public Task ConnectAsync(string node, ResourceKind kind, int vmid, CancellationToken ct = default)
+    {
+        return ConnectAsync(ConsoleTarget.ForGuest(node, kind, vmid), ct);
+    }
+
+    public async Task ConnectAsync(ConsoleTarget target, CancellationToken ct = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_socket is not null) throw new InvalidOperationException(Res.T("ProxmoxTerminalSession_02"));
@@ -88,11 +93,11 @@ public sealed class ProxmoxTerminalSession : IDisposable
         using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(ct, _lifetimeCts.Token);
 
         StatusChanged?.Invoke(Res.T("ProxmoxTerminalSession_03"));
-        var proxy = await _api.CreateTermProxyAsync(node, kind, vmid, connectCts.Token).ConfigureAwait(false);
+        var proxy = await _api.CreateTermProxyAsync(target, connectCts.Token).ConfigureAwait(false);
 
         StatusChanged?.Invoke(Res.T("ProxmoxTerminalSession_04"));
         var socket = await ProxmoxConsoleSocket
-            .ConnectAsync(_api, node, kind, vmid, proxy.Port, proxy.Ticket, connectCts.Token)
+            .ConnectAsync(_api, target, proxy.Port, proxy.Ticket, connectCts.Token)
             .ConfigureAwait(false);
 
         // 연결을 기다리는 사이 창이 닫혔으면(Dispose) 소켓을 즉시 버린다 — 주인 없는 세션이 ping 으로 서버를 붙잡는 것 방지

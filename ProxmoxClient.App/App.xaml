@@ -7,8 +7,6 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Themes/Icons.xaml" />
                 <ResourceDictionary Source="Themes/DarkTheme.xaml" />
-                <!-- 화면 문자열은 Localization/Strings.resx 로 옮겨졌다 — Themes/Strings.ko.xaml 은 더 이상 쓰지 않는다 -->
-
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

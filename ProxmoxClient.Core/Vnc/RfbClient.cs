@@ -36,7 +36,7 @@ public sealed class RfbRect
 ///     서버가 QEMU 확장 키 이벤트(의사 인코딩 -258)를 확인하면 메시지 255/0 으로 XT 스캔코드를 직접 전송한다.
 ///     핸드셰이크 이후 송신은 단일 전송 채널(순서 보장, 포인터 이동 병합, ArrayPool 버퍼)을 거친다.
 /// </summary>
-public sealed class RfbClient
+public sealed partial class RfbClient
 {
     private const int EncRaw = 0;
     private const int EncCopyRect = 1;
@@ -48,64 +48,49 @@ public sealed class RfbClient
     private const byte QemuSubExtendedKeyEvent = 0;
     private const int EncPointerPos = -232;
     private const int EncRichCursor = -239; // -240 은 XCursor(형식이 다름)
-
     /// <summary>ServerInit·DesktopSize 해상도 상한 — 비정상 값으로 거대 할당·int 오버플로가 나지 않도록.</summary>
     private const int MaxFramebufferDimension = 16384;
-
     /// <summary>연결 종료 후 읽기 루프가 끝나기를 기다렸다 해제기를 정리하는 최대 시간.</summary>
     private static readonly TimeSpan InflaterReleaseTimeout = TimeSpan.FromSeconds(2);
-
     /// <summary>현재 FramebufferUpdate 의 변경 영역(읽기 루프 전용).</summary>
     private readonly DirtyRegion _dirty = new();
-
     private readonly object _frameLock = new();
-
     /// <summary>
     ///     핸드셰이크 이후 모든 클라이언트→서버 메시지는 이 채널을 거쳐 전송 루프 하나가 순서대로 보낸다.
     ///     (여러 호출자가 락을 경쟁하며 순서가 뒤바뀌던 문제 제거, 연속 포인터 이동은 루프에서 병합)
     /// </summary>
     private readonly Channel<OutgoingMessage> _outgoing = Channel.CreateUnbounded<OutgoingMessage>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
-
     private readonly byte[] _scratch = new byte[8];
-
     private readonly Stream _stream;
     private readonly ZlibContinuousInflate[] _tightInflates = [new(), new(), new(), new()];
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private readonly ZlibContinuousInflate _zlibInflate = new();
-
     private long _bytesReceived;
     private int _closedRaised;
-
     private int _lastPointerMask = -1;
     private long _rawRects, _tightRects, _tightImageRects, _copyRects, _zlibRects, _frames;
     private long _statsSince = Environment.TickCount64;
-
     public RfbClient(Stream stream)
     {
         _stream = stream;
     }
-
     public int FramebufferWidth { get; private set; }
     public int FramebufferHeight { get; private set; }
     public string ServerName { get; private set; } = string.Empty;
     public bool QemuExtendedKeySupported { get; private set; }
-
     /// <summary>
     ///     Tight JPEG/PNG 디코더 — 압축 이미지를 프레임버퍼 위치에 직접 기록한다(<see cref="TightImageDecoder" />).
     ///     Core는 WPF 의존 없이 유지하기 위해 디코딩을 호스트에 위임한다.
     /// </summary>
     public TightImageDecoder? ImageDecoder { get; set; }
-
     /// <summary>
     ///     서버 프레임버퍼 원본(BGRA/Bgr32 4바이트/px). 읽기 스레드만 쓰고 UI 는 잠금 없이 변경 영역을 복사한다
     ///     (찢어진 프레임은 다음 갱신에서 복구). 해상도 변경 시 배열이 교체되므로 매번 이 속성에서 다시 읽는다.
     /// </summary>
     public byte[] Framebuffer { get; private set; } = [];
-
     /// <summary>콘솔 설정 — 인코딩/품질/파이프라인 (호스트에서 설정, 연결 전 적용).</summary>
     public ConsoleSettings? Settings { get; set; }
-
     /// <summary>초 단위 통계 스냅숏 — 호출 시점부터 재측정한다.</summary>
     public (double MegabitsPerSecond, double FramesPerSecond, long RawRects, long TightRects, long ImageRects, long
         CopyRects)
@@ -122,31 +107,23 @@ public sealed class RfbClient
         var seconds = Math.Max(elapsed, 0.1);
         return (bytes * 8 / seconds / 1_000_000, frames / seconds, raw, tight, image, copy);
     }
-
     /// <summary>ServerInit 수신(연결 확립, 프레임버퍼 크기 확정).</summary>
     public event Action<int, int>? ServerInitReceived;
-
     /// <summary>
     ///     프레임버퍼 갱신 신호(변경 영역 x,y,w,h) — 서버 업데이트 하나당 병합된 사각형(최대 <see cref="DirtyRegion.Capacity" />개)마다 발생.
     ///     빈 업데이트에는 발생하지 않는다. 데이터는 <see cref="Framebuffer" />에서 직접 읽는다.
     /// </summary>
     public event Action<int, int, int, int>? FrameUpdated;
-
     /// <summary>커서 위치 갱신(PointerPos 의사 rect).</summary>
     public event Action<int, int>? CursorPosition;
-
     /// <summary>커서 모양 갱신(RichCursor 의사 rect) — BGRA 픽셀(투명 적용)과 크기.</summary>
     public event Action<byte[], int, int>? CursorShape;
-
     /// <summary>벨(사운드) 알림.</summary>
     public event Action? Bell;
-
     /// <summary>서버 클립보드 텍스트.</summary>
     public event Action<string>? ServerCutText;
-
     /// <summary>연결 종료. null이면 정상 종료, 아니면 오류.</summary>
     public event Action<Exception?>? ConnectionClosed;
-
     /// <summary>
     ///     버전/보안 협상 + ClientInit/ServerInit + 픽셀 형식·인코딩 설정.
     ///     vncPassword는 RFB VNC 인증(유형 2) 시 사용(Proxmox은 VNC 티켓).
@@ -231,7 +208,6 @@ public sealed class RfbClient
 
         ServerInitReceived?.Invoke(FramebufferWidth, FramebufferHeight);
     }
-
     /// <summary>전체 화면 갱신 요청 후 읽기 루프 시작(백그라운드).</summary>
     public Task StartAsync(CancellationToken ct)
     {
@@ -275,7 +251,6 @@ public sealed class RfbClient
             await ReleaseInflatersAsync(readLoop).ConfigureAwait(false);
         }, CancellationToken.None);
     }
-
     /// <summary>
     ///     zlib 해제기의 풀 청크·네이티브 핸들 정리. 읽기 루프가 아직 해제기를 쓰는 중일 수 있으므로 끝난 뒤에만 정리하고,
     ///     제한 시간 안에 끝나지 않으면(취소가 전달되지 않는 극단적 경우) GC 에 맡긴다.
@@ -289,7 +264,6 @@ public sealed class RfbClient
         _zlibInflate.Dispose();
         foreach (var inflate in _tightInflates) inflate.Dispose();
     }
-
     /// <summary>
     ///     키 이벤트. 서버가 QEMU 확장 키 이벤트를 확인했고 스캔코드가 있으면 스캔코드(레이아웃 독립)로,
     ///     아니면 표준 KeyEvent(keysym) 로 보낸다.
@@ -318,7 +292,6 @@ public sealed class RfbClient
         BinaryPrimitives.WriteInt32BigEndian(msg.AsSpan(4, 4), keysym);
         return EnqueueAsync(msg, KeyMessageLength);
     }
-
     /// <summary>포인터 이벤트. mask: 1=좌 2=중 4=우 8=휠업 16=휠다운. 버튼 상태가 같은 연속 이동은 병합 대상.</summary>
     public Task SendPointerEventAsync(int buttonMask, int x, int y, CancellationToken ct = default)
     {
@@ -332,7 +305,6 @@ public sealed class RfbClient
         var isMove = buttonMask == Interlocked.Exchange(ref _lastPointerMask, buttonMask);
         return EnqueueAsync(msg, PointerMessageLength, isMove);
     }
-
     /// <summary>클라이언트→서버 클립보드 텍스트 전송.</summary>
     public Task SendClientCutTextAsync(string text, CancellationToken ct = default)
     {
@@ -346,7 +318,6 @@ public sealed class RfbClient
         Encoding.UTF8.GetBytes(text, msg.AsSpan(HeaderLength, payloadLength));
         return EnqueueAsync(msg, length);
     }
-
     /// <summary>풀에서 메시지 버퍼를 빌린다 — 이전 사용 흔적이 패딩 바이트로 새지 않도록 사용 구간을 0 으로 지운다.</summary>
     private static byte[] RentMessage(int length)
     {
@@ -354,7 +325,6 @@ public sealed class RfbClient
         Array.Clear(buffer, 0, length);
         return buffer;
     }
-
     private Task EnqueueAsync(byte[] buffer, int length, bool isPointerMove = false)
     {
         if (!_outgoing.Writer.TryWrite(new OutgoingMessage(buffer, length, isPointerMove)))
@@ -365,7 +335,6 @@ public sealed class RfbClient
 
         return Task.CompletedTask;
     }
-
     /// <summary>단일 전송 루프 — 큐 순서대로 보내되, 큐에 연달아 쌓인 포인터 이동은 마지막 것만 보낸다.</summary>
     private async Task RunSendLoopAsync(CancellationToken ct)
     {
@@ -389,19 +358,16 @@ public sealed class RfbClient
             }
         }
     }
-
     /// <summary>먼저 끝난 루프 외 나머지 루프의 예외를 관찰 처리 — UnobservedTaskException 로 새지 않도록.</summary>
     internal static void ObserveRemaining(params Task?[] tasks)
     {
         foreach (var task in tasks)
             task?.ContinueWith(static t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
     }
-
     private void RaiseConnectionClosed(Exception? error)
     {
         if (Interlocked.Exchange(ref _closedRaised, 1) == 0) ConnectionClosed?.Invoke(error);
     }
-
     private async Task RunLoopAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
@@ -432,7 +398,6 @@ public sealed class RfbClient
             }
         }
     }
-
     private async Task HandleFramebufferUpdateAsync(CancellationToken ct)
     {
         _dirty.Clear();
@@ -584,7 +549,6 @@ public sealed class RfbClient
 
         Interlocked.Increment(ref _frames);
     }
-
     /// <summary>
     ///     픽셀을 싣는 사각형이 프레임버퍼 안에 있는지 확인. 벗어나면 행이 다음 줄로 넘어가 화면을 덮거나
     ///     배열 끝을 넘어 예외가 나므로, 명확한 프로토콜 오류로 연결을 끊는다.
@@ -595,13 +559,11 @@ public sealed class RfbClient
             throw new IOException(
                 Res.T("RfbClient_13", x, y, w, h, FramebufferWidth, FramebufferHeight));
     }
-
     private static void ValidateFramebufferSize(int width, int height)
     {
         if (width is < 0 or > MaxFramebufferDimension || height is < 0 or > MaxFramebufferDimension)
             throw new IOException(Res.T("RfbClient_14", width, height));
     }
-
     /// <summary>
     ///     프레임버퍼 내부 영역 복사 — 행 단위 Span.CopyTo(memmove)로 임시 버퍼 없이 처리.
     ///     원본·대상이 세로로 겹친 채 아래로 옮길 때는 아래 행부터 복사해야 아직 옮기지 않은 원본 행이 덮이지 않는다.
@@ -619,29 +581,10 @@ public sealed class RfbClient
             fb.Slice(src, rowBytes).CopyTo(fb.Slice(dst, rowBytes));
         }
     }
-
-    /// <summary>압축 조각을 풀 버퍼로 읽어 해제기에 소유권째 넘긴다(해제기가 소비 후 반환) — 중간 복사 없음.</summary>
-    private async ValueTask ReadCompressedChunkAsync(ZlibContinuousInflate inflate, int length, CancellationToken ct)
-    {
-        var chunk = ArrayPool<byte>.Shared.Rent(length);
-        try
-        {
-            await ReadExactlyAsync(chunk, 0, length, ct).ConfigureAwait(false);
-        }
-        catch
-        {
-            ArrayPool<byte>.Shared.Return(chunk); // 소유권 이전 전 실패 — 여기서 반환 후 예외 전파
-            throw;
-        }
-
-        inflate.AddCompressedChunk(chunk, length);
-    }
-
     private void MarkDirty(int x, int y, int w, int h)
     {
         _dirty.Add(x, y, w, h);
     }
-
     private void EnsureFramebuffer(int width, int height, bool zero = false)
     {
         var required = checked(width * height * 4); // 해상도 상한(ValidateFramebufferSize)으로 오버플로 없음 — 방어적 확인
@@ -661,7 +604,6 @@ public sealed class RfbClient
             Framebuffer = new byte[required];
         }
     }
-
     private Task RequestFramebufferUpdateAsync(bool incremental, CancellationToken ct)
     {
         // 큐에 넣은 뒤 전송 전까지 내용이 유지돼야 하므로 요청마다 풀 버퍼를 빌리고 전송 루프가 반환
@@ -673,68 +615,6 @@ public sealed class RfbClient
         BinaryPrimitives.WriteUInt16BigEndian(msg.AsSpan(8, 2), (ushort)FramebufferHeight);
         return EnqueueAsync(msg, UpdateRequestLength);
     }
-
-    private async ValueTask<uint> ReadU32Async(CancellationToken ct)
-    {
-        await ReadExactlyAsync(_scratch, 0, 4, ct).ConfigureAwait(false);
-        return BinaryPrimitives.ReadUInt32BigEndian(_scratch);
-    }
-
-    private async ValueTask<ushort> ReadU16Async(CancellationToken ct)
-    {
-        await ReadExactlyAsync(_scratch, 0, 2, ct).ConfigureAwait(false);
-        return BinaryPrimitives.ReadUInt16BigEndian(_scratch);
-    }
-
-    /// <summary>ValueTask — 수신 버퍼에 데이터가 있어 동기로 끝나면 할당이 없다(rect 헤더·Tight 길이 등 핫패스).</summary>
-    private async ValueTask<byte> ReadByteAsync(CancellationToken ct)
-    {
-        await ReadExactlyAsync(_scratch, 0, 1, ct).ConfigureAwait(false);
-        return _scratch[0];
-    }
-
-    private async Task<byte[]> ReadPixelFormatAsync(CancellationToken ct)
-    {
-        var format = new byte[16];
-        await ReadExactlyAsync(format, 0, 16, ct).ConfigureAwait(false);
-        return format;
-    }
-
-    private async Task SkipAsync(int count, CancellationToken ct)
-    {
-        const int SkipChunkSize = 4096;
-        var sink = ArrayPool<byte>.Shared.Rent(Math.Min(count, SkipChunkSize));
-        try
-        {
-            while (count > 0)
-            {
-                var take = Math.Min(count, sink.Length);
-                await ReadExactlyAsync(sink, 0, take, ct).ConfigureAwait(false);
-                count -= take;
-            }
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(sink);
-        }
-    }
-
-    /// <summary>비동기·취소 가능 — 동기 대기(sync-over-async)로 핸드셰이크가 취소/타임아웃되지 않던 문제 제거.</summary>
-    private async Task<string> ReadStringAsciiAsync(int length, CancellationToken ct)
-    {
-        var buf = ArrayPool<byte>.Shared.Rent(length);
-        try
-        {
-            await ReadExactlyAsync(buf, 0, length, ct).ConfigureAwait(false);
-            return Encoding.Latin1.GetString(buf, 0, length);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buf);
-        }
-    }
-
-
     private async Task ReadCursorShapeAsync(int w, int h, CancellationToken ct)
     {
         if (w <= 0 || h <= 0 || w > 256 || h > 256) throw new IOException(Res.T("RfbClient_15", w, h));
@@ -763,7 +643,6 @@ public sealed class RfbClient
 
         CursorShape?.Invoke(pixels, w, h);
     }
-
     private async Task ApplyEncodingsAsync(CancellationToken ct)
     {
         var s = (Settings ?? new ConsoleSettings()).Normalize();
@@ -796,359 +675,6 @@ public sealed class RfbClient
             BinaryPrimitives.WriteInt32BigEndian(msg.AsSpan(4 + i * 4, 4), encodings[i]);
         await WriteAsync(msg, ct).ConfigureAwait(false);
     }
-
-    private async ValueTask<int> ReadTightLengthAsync(CancellationToken ct)
-    {
-        var b0 = await ReadByteAsync(ct).ConfigureAwait(false);
-        if ((b0 & 0x80) == 0) return b0;
-
-        var b1 = await ReadByteAsync(ct).ConfigureAwait(false);
-        if ((b1 & 0x80) == 0) return ((b1 & 0x7F) << 7) | (b0 & 0x7F);
-
-        var b2 = await ReadByteAsync(ct).ConfigureAwait(false);
-        return (b2 << 14) | ((b1 & 0x7F) << 7) | (b0 & 0x7F);
-    }
-
-    private async Task HandleTightFillAsync(int x, int y, int w, int h, CancellationToken ct)
-    {
-        await ReadExactlyAsync(_scratch, 0, 3, ct).ConfigureAwait(false); // RGB — 읽기 루프 전용 스크래치 재사용
-        EnsureFramebuffer(FramebufferWidth, FramebufferHeight);
-        FillRect(Framebuffer, FramebufferWidth, x, y, w, h, _scratch[0], _scratch[1], _scratch[2]);
-    }
-
-    /// <summary>단색 사각형 — BGRX 픽셀 하나를 uint 로 만들어 행마다 Span.Fill(임시 행 배열 없음, SIMD 가속).</summary>
-    private static void FillRect(byte[] framebuffer, int framebufferWidth, int x, int y, int w, int h, byte r, byte g,
-        byte b)
-    {
-        var pixel = ToBgrx(r, g, b);
-        var pixels = MemoryMarshal.Cast<byte, uint>(framebuffer.AsSpan());
-        for (var row = 0; row < h; row++) pixels.Slice((y + row) * framebufferWidth + x, w).Fill(pixel);
-    }
-
-    private async Task HandleTightImageAsync(int x, int y, int w, int h, CancellationToken ct)
-    {
-        var length = await ReadTightLengthAsync(ct).ConfigureAwait(false);
-        var data = ArrayPool<byte>.Shared.Rent(length);
-        try
-        {
-            await ReadExactlyAsync(data, 0, length, ct).ConfigureAwait(false);
-            EnsureFramebuffer(FramebufferWidth, FramebufferHeight);
-            var decoder = ImageDecoder ?? throw new IOException(Res.T("RfbClient_16"));
-
-            // 풀에서 빌린 버퍼를 복사 없이 넘기고, 디코더가 프레임버퍼 위치에 직접 기록한다
-            decoder(data, length, Framebuffer, FramebufferWidth, x, y, w, h);
-            Interlocked.Increment(ref _tightImageRects);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(data);
-        }
-    }
-
-    private async Task HandleTightBasicAsync(int streamId, int filter, int x, int y, int w, int h, CancellationToken ct)
-    {
-        var size = w * h * 3;
-        if (size == 0) return;
-
-        byte[]? palette = null;
-        var numColors = 0;
-        var bitsPerPixel = 0;
-        try
-        {
-            if (filter == 1)
-            {
-                numColors = await ReadByteAsync(ct).ConfigureAwait(false) + 1;
-                palette = ArrayPool<byte>.Shared.Rent(numColors * 3); // 최대 256색×3 — 풀 재사용
-                await ReadExactlyAsync(palette, 0, numColors * 3, ct).ConfigureAwait(false);
-                bitsPerPixel = numColors <= 2 ? 1 : 8;
-                var rowSize = (w * bitsPerPixel + 7) / 8;
-                size = rowSize * h;
-            }
-
-            var data = ArrayPool<byte>.Shared.Rent(size);
-            try
-            {
-                if (size < 12)
-                {
-                    await ReadExactlyAsync(data, 0, size, ct).ConfigureAwait(false);
-                }
-                else
-                {
-                    var length = await ReadTightLengthAsync(ct).ConfigureAwait(false);
-                    await ReadCompressedChunkAsync(_tightInflates[streamId], length, ct).ConfigureAwait(false);
-                    var produced = _tightInflates[streamId].Decompress(data, 0, size);
-                    if (produced < size) throw new IOException(Res.T("RfbClient_17", produced, size));
-                }
-
-                ApplyTightFilter(filter, data, palette, numColors, bitsPerPixel, x, y, w, h);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(data);
-            }
-        }
-        finally
-        {
-            if (palette is not null) ArrayPool<byte>.Shared.Return(palette);
-        }
-    }
-
-    private void ApplyTightFilter(int filter, byte[] data, byte[]? palette, int paletteColors, int bitsPerPixel, int x,
-        int y, int w, int h)
-    {
-        EnsureFramebuffer(FramebufferWidth, FramebufferHeight);
-
-        switch (filter)
-        {
-            case 0:
-                WriteRgbToFramebuffer(data, x, y, w, h);
-                break;
-            case 1:
-                WritePaletteToFramebuffer(data, palette!, paletteColors, bitsPerPixel, x, y, w, h);
-                break;
-            case 2:
-                ReverseGradientFilter(data.AsSpan(0, w * h * 3), w, h);
-                WriteRgbToFramebuffer(data, x, y, w, h);
-                break;
-            default:
-                throw new IOException(Res.T("RfbClient_18", filter));
-        }
-    }
-
-    /// <summary>RGB 바이트 → 프레임버퍼 픽셀(uint, 메모리 순서 B,G,R,A).</summary>
-    private static uint ToBgrx(byte r, byte g, byte b)
-    {
-        return 0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | b;
-    }
-
-    /// <summary>
-    ///     팔레트 인덱스 → 픽셀. 팔레트를 한 번만 uint 색으로 변환(스택)해 픽셀당 바이트 4회 쓰기를 uint 1회로 줄인다.
-    ///     잘못된 인덱스가 와도 256 칸 표(0 초기화) 안이므로 범위를 벗어나지 않는다.
-    /// </summary>
-    private void WritePaletteToFramebuffer(
-        byte[] data, byte[] palette, int paletteColors, int bitsPerPixel, int x, int y, int w, int h)
-    {
-        const int MaxPaletteColors = 256;
-        Span<uint> colors = stackalloc uint[MaxPaletteColors];
-        var colorCount = Math.Min(paletteColors, MaxPaletteColors);
-        for (var i = 0; i < colorCount; i++) colors[i] = ToBgrx(palette[i * 3], palette[i * 3 + 1], palette[i * 3 + 2]);
-
-        var pixels = MemoryMarshal.Cast<byte, uint>(Framebuffer.AsSpan());
-        var rowSize = (w * bitsPerPixel + 7) / 8;
-        for (var r = 0; r < h; r++)
-        {
-            var src = data.AsSpan(r * rowSize, rowSize);
-            var dst = pixels.Slice((y + r) * FramebufferWidth + x, w);
-            if (bitsPerPixel == 1)
-                for (var px = 0; px < dst.Length; px++)
-                    dst[px] = colors[(src[px >> 3] >> (7 - (px & 7))) & 1];
-            else
-                for (var px = 0; px < dst.Length; px++)
-                    dst[px] = colors[src[px]];
-        }
-    }
-
-    /// <summary>
-    ///     Gradient 역필터(Tight): 예측 = clamp(left + up - upLeft, 0, 255), 경계 밖 이웃은 0. 제자리 복원.
-    ///     첫 행·첫 픽셀 경계 처리를 루프 밖으로 빼 픽셀·채널마다 있던 분기 3개를 제거했다.
-    /// </summary>
-    private static void ReverseGradientFilter(Span<byte> data, int w, int h)
-    {
-        const int Channels = 3;
-        var stride = w * Channels;
-
-        // 첫 행: up = upLeft = 0 → 예측 = left
-        var first = data[..stride];
-        for (var i = Channels; i < first.Length; i++) first[i] = (byte)(first[i] + first[i - Channels]);
-
-        for (var r = 1; r < h; r++)
-        {
-            var row = data.Slice(r * stride, stride);
-            var prev = data.Slice((r - 1) * stride, stride);
-
-            // 첫 픽셀: left = upLeft = 0 → 예측 = up
-            for (var c = 0; c < Channels; c++) row[c] = (byte)(row[c] + prev[c]);
-
-            for (var i = Channels; i < row.Length; i++)
-            {
-                var prediction = row[i - Channels] + prev[i] - prev[i - Channels];
-                row[i] = (byte)(row[i] + (prediction < 0 ? 0 : prediction > 255 ? 255 : prediction));
-            }
-        }
-    }
-
-    /// <summary>RGB(3바이트/px) → 프레임버퍼 행에 uint 단위로 기록.</summary>
-    private void WriteRgbToFramebuffer(byte[] rgb, int x, int y, int w, int h)
-    {
-        var pixels = MemoryMarshal.Cast<byte, uint>(Framebuffer.AsSpan());
-        var srcStride = w * 3;
-        for (var r = 0; r < h; r++)
-        {
-            var src = rgb.AsSpan(r * srcStride, srcStride);
-            var dst = pixels.Slice((y + r) * FramebufferWidth + x, w);
-            for (var px = 0; px < dst.Length; px++)
-            {
-                var s = px * 3;
-                dst[px] = ToBgrx(src[s], src[s + 1], src[s + 2]);
-            }
-        }
-    }
-
-    /// <summary>ValueTask — 동기 완료(수신 버퍼에서 바로 채움) 시 Task 할당 없음.</summary>
-    private async ValueTask ReadExactlyAsync(byte[] buffer, int offset, int count, CancellationToken ct)
-    {
-        var read = 0;
-        while (read < count)
-        {
-            var n = await _stream.ReadAsync(buffer.AsMemory(offset + read, count - read), ct).ConfigureAwait(false);
-            if (n == 0) throw new EndOfStreamException(Res.T("RfbClient_19")); // 서버의 정상 종료와 오류를 구분하기 위한 전용 예외
-
-            read += n;
-            Interlocked.Add(ref _bytesReceived, n);
-        }
-    }
-
-    private async Task WriteAsync(byte[] payload, CancellationToken ct)
-    {
-        await _writeLock.WaitAsync(ct).ConfigureAwait(false);
-        try
-        {
-            await _stream.WriteAsync(payload, ct).ConfigureAwait(false);
-            await _stream.FlushAsync(ct).ConfigureAwait(false);
-        }
-        finally
-        {
-            _writeLock.Release();
-        }
-    }
-
-    private static int ParseVersionPart(string version, int offset)
-    {
-        return int.TryParse(version.AsSpan(offset, 3), out var v) ? v : 0;
-    }
-
     /// <summary>ArrayPool 에서 빌린 버퍼(Length 까지만 유효) — 전송 루프가 보낸 뒤(또는 병합으로 버릴 때) 반환한다.</summary>
     private readonly record struct OutgoingMessage(byte[] Buffer, int Length, bool IsPointerMove);
-
-    /// <summary>
-    ///     RFB zlib 연속 스트림 해제기 — 청크 큐 방식. 지속 DeflateStream 이 슬라이딩 윈도우를 유지한 채 순차로 읽는다.
-    ///     청크 버퍼는 ArrayPool 소유권을 넘겨받아, 모두 소비되거나 Reset/Dispose 될 때 반환한다.
-    /// </summary>
-    private sealed class ZlibContinuousInflate : IDisposable
-    {
-        private const int ZlibHeaderLength = 2;
-
-        private readonly Queue<(byte[] Buffer, int Length)> _chunks = new();
-        private int _chunkOffset;
-        private bool _headerSkipped;
-        private DeflateStream? _inflate;
-
-        public void Dispose()
-        {
-            Reset();
-        }
-
-        public void Reset()
-        {
-            _inflate?.Dispose();
-            _inflate = null;
-            _headerSkipped = false;
-            while (_chunks.TryDequeue(out var chunk)) ArrayPool<byte>.Shared.Return(chunk.Buffer);
-
-            _chunkOffset = 0;
-        }
-
-        /// <summary>ArrayPool 에서 빌린 버퍼의 소유권을 넘겨받는다(호출자는 반환하지 않는다).</summary>
-        public void AddCompressedChunk(byte[] rentedBuffer, int length)
-        {
-            _chunks.Enqueue((rentedBuffer, length));
-        }
-
-        public int Decompress(byte[] output, int offset, int count)
-        {
-            if (_inflate is null)
-            {
-                if (!_headerSkipped)
-                {
-                    _chunkOffset = ZlibHeaderLength; // 스트림 최초 2바이트 zlib 헤더 건너뜀(DeflateStream 은 raw deflate)
-                    _headerSkipped = true;
-                }
-
-                _inflate = new DeflateStream(
-                    new ChunkReadStream(this), CompressionMode.Decompress, true);
-            }
-
-            var read = 0;
-            while (read < count)
-            {
-                var n = _inflate.Read(output, offset + read, count - read);
-                if (n == 0) break;
-
-                read += n;
-            }
-
-            return read;
-        }
-
-        private sealed class ChunkReadStream(ZlibContinuousInflate owner) : Stream
-        {
-            public override bool CanRead => true;
-            public override bool CanSeek => false;
-            public override bool CanWrite => false;
-            public override long Length => throw new NotSupportedException();
-
-            public override long Position
-            {
-                get => throw new NotSupportedException();
-                set => throw new NotSupportedException();
-            }
-
-            /// <summary>DeflateStream 은 Span 오버로드를 호출한다 — 재정의하지 않으면 기본 구현이 임시 배열로 한 번 더 복사한다.</summary>
-            public override int Read(Span<byte> destination)
-            {
-                var totalRead = 0;
-                while (totalRead < destination.Length && owner._chunks.TryPeek(out var chunk))
-                {
-                    var available = chunk.Length - owner._chunkOffset;
-                    if (available <= 0)
-                    {
-                        ArrayPool<byte>.Shared.Return(owner._chunks.Dequeue().Buffer);
-                        owner._chunkOffset = 0;
-                        continue;
-                    }
-
-                    var toRead = Math.Min(destination.Length - totalRead, available);
-                    chunk.Buffer.AsSpan(owner._chunkOffset, toRead).CopyTo(destination[totalRead..]);
-                    owner._chunkOffset += toRead;
-                    totalRead += toRead;
-                }
-
-                return totalRead;
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                return Read(buffer.AsSpan(offset, count));
-            }
-
-            public override void Flush()
-            {
-            }
-
-            public override long Seek(long offset, SeekOrigin origin)
-            {
-                throw new NotSupportedException();
-            }
-
-            public override void SetLength(long value)
-            {
-                throw new NotSupportedException();
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                throw new NotSupportedException();
-            }
-        }
-    }
 }
