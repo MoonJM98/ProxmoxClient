@@ -44,6 +44,8 @@ _ReSharper*/
 
 # ------------------------------------------------------------------- 패키지
 # packages/ 는 저장소 동봉 패키지 폴더이므로 추적한다(NuGet 복원 캐시가 아님)
+# 위의 *.nupkg 규칙보다 뒤에 있어야 예외가 적용된다 — 빠지면 클론에서 터미널 컨트롤 복원이 실패한다
+!packages/*.nupkg
 *.nuget.props
 *.nuget.targets
 project.lock.json
