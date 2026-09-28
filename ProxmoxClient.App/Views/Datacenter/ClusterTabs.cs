@@ -2,6 +2,7 @@ using System.Windows;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Api.Domains;
 using static ProxmoxClient.App.Views.Shared.ActionHelpers;
 
 namespace ProxmoxClient.App.Views.Datacenter;
@@ -38,12 +39,11 @@ internal static class ClusterTabs
         new() { Key = "state", HeaderKey = "Table_State", Width = 90 }
     ];
 
-    private static readonly IReadOnlyList<TableColumn> SubnetColumns =
+    private static readonly IReadOnlyList<TableColumn> SdnStatusColumns =
     [
-        new() { Key = "cidr", HeaderKey = "Table_Cidr", Width = 180 },
-        new() { Key = "gateway", HeaderKey = "Table_Gateway", Width = 150 },
-        new() { Key = "snat", HeaderKey = "DcSdn_Snat", Width = 60, Format = TableFormats.Flag },
-        new() { Key = "state", HeaderKey = "Table_State", Width = 0 }
+        new() { Key = "sdn", HeaderKey = "DcSdn_Zone", Width = 140 },
+        new() { Key = "node", HeaderKey = "Table_Node", Width = 140 },
+        new() { Key = "status", HeaderKey = "Table_State", Width = 0 }
     ];
 
     private static readonly IReadOnlyList<TableColumn> MappingColumns =
@@ -54,6 +54,23 @@ internal static class ClusterTabs
     ];
 
     // ------------------------------------------------------------ 클러스터
+
+    /// <summary>Corosync totem 설정·QDevice 상태 보기(읽기 전용).</summary>
+    private static IEnumerable<TableAction> ClusterViews(ProxmoxApiClient api)
+    {
+        yield return new TableAction
+        {
+            LabelKey = "DcCluster_Totem", IconKey = "IconSettings",
+            Run = async (_, owner) => TextViewWindow.ShowModal(owner, Loc.T("DcCluster_Totem"),
+                await api.Cluster.TotemJsonAsync())
+        };
+        yield return new TableAction
+        {
+            LabelKey = "DcCluster_QDevice", IconKey = "IconServer",
+            Run = async (_, owner) => TextViewWindow.ShowModal(owner, Loc.T("DcCluster_QDevice"),
+                await api.Cluster.QDeviceJsonAsync())
+        };
+    }
 
     public static TableTab Cluster(ProxmoxApiClient api, bool canEdit)
     {
@@ -72,6 +89,7 @@ internal static class ClusterTabs
                 }
             }
         };
+        actions.AddRange(ClusterViews(api));
 
         if (canEdit)
         {
@@ -80,9 +98,14 @@ internal static class ClusterTabs
                 LabelKey = "DcCluster_Create", IconKey = "IconPlus",
                 Run = (_, owner) => SubmitTaskAsync(api, owner, Loc.T("DcCluster_Create"),
                 [
-                    new FormField { Key = "clustername", LabelKey = "DcCluster_Name", Required = true },
-                    new FormField { Key = "link0", LabelKey = "DcCluster_Link0" }
-                ], values => api.PostActionAsync("cluster/config", NonEmpty(values)), "DcCluster_Created")
+                    new FormField { Key = "clustername", LabelKey = "DcCluster_Name", Required = true, Trim = true },
+                    new FormField { Key = "link0", LabelKey = "DcCluster_Link0", Trim = true,
+                        Hint = Loc.T("DcCluster_LinkHint") },
+                    // 여분 링크(웹 UI 의 '링크 추가') — corosync 는 링크를 최대 8개까지 쓴다
+                    new FormField { Key = "link1", LabelKey = "DcCluster_Link1", Trim = true, Advanced = true },
+                    new FormField { Key = "link2", LabelKey = "DcCluster_Link2", Trim = true, Advanced = true },
+                    new FormField { Key = "link3", LabelKey = "DcCluster_Link3", Trim = true, Advanced = true }
+                ], values => api.Cluster.CreateAsync(NonEmpty(values)), "DcCluster_Created")
             });
             actions.Add(new TableAction
             {
@@ -91,40 +114,46 @@ internal static class ClusterTabs
             });
         }
 
-        return new TableTab(() => api.GetTableAsync("cluster/config/nodes"), ClusterNodeColumns, "DcCluster_Hint",
+        return new TableTab(() => api.Cluster.ConfigNodesAsync(), ClusterNodeColumns, "DcCluster_Hint",
             actions);
     }
 
     /// <summary>
     ///     이 노드를 다른 클러스터에 가입시킨다 — 그 클러스터의 가입 정보와 root 암호가 필요하다.
-    ///     가입하면 이 노드의 게스트 설정이 바뀌므로 게스트가 없는 새 노드에서만 한다(서버도 확인한다).
+    ///     가입 정보에 든 링크(peerLinks)마다 이 노드의 주소를 받는다(웹 UI 와 같다 — link0 만 보내면
+    ///     링크가 여러 개인 클러스터에는 가입할 수 없다). 게스트가 없는 새 노드에서만 한다(서버도 확인한다).
     /// </summary>
-    private static Task<string?> JoinAsync(ProxmoxApiClient api, Window? owner)
+    private static async Task<string?> JoinAsync(ProxmoxApiClient api, Window? owner)
     {
-        return SubmitTaskAsync(api, owner, Loc.T("DcCluster_Join"),
+        var first = new FormDialog(Loc.T("DcCluster_Join"),
         [
-            new FormField
+            new FormField { Key = "info", LabelKey = "DcCluster_JoinInfo", Kind = FormFieldKind.Multiline,
+                Required = true },
+            new FormField { Key = "password", LabelKey = "DcCluster_PeerPassword", Kind = FormFieldKind.Password,
+                Required = true }
+        ], values => ProxmoxApiClient.ParseClusterJoinInfo(values["info"]) is null
+            ? Loc.T("DcCluster_BadJoinInfo")
+            : null) { Owner = owner };
+        if (first.ShowDialog() != true || first.Result is not { } entered) return null;
+
+        var info = ProxmoxApiClient.ParseClusterJoinInfo(entered["info"])!;
+        var links = info.PeerLinks.Count > 0 ? info.PeerLinks : new Dictionary<int, string> { [0] = info.IpAddress };
+        var multi = links.Count > 1;
+        return await SubmitTaskAsync(api, owner, Loc.T("DcCluster_JoinLinks", info.IpAddress),
+            links.Select(link => new FormField
             {
-                Key = "info", LabelKey = "DcCluster_JoinInfo", Kind = FormFieldKind.Multiline, Required = true
-            },
-            new FormField
+                Key = $"link{link.Key}", LabelKey = Loc.T("DcCluster_LinkN", link.Key), Trim = true,
+                Required = multi, Hint = Loc.T("DcCluster_PeerLinkHint", link.Value)
+            }).ToList(), values =>
             {
-                Key = "password", LabelKey = "DcCluster_PeerPassword", Kind = FormFieldKind.Password, Required = true
-            },
-            new FormField { Key = "link0", LabelKey = "DcCluster_Link0" }
-        ], values =>
-        {
-            var info = ProxmoxApiClient.ParseClusterJoinInfo(values["info"])!;
-            var form = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["hostname"] = info.IpAddress, ["fingerprint"] = info.Fingerprint, ["password"] = values["password"]
-            };
-            if (values["link0"].Length > 0) form["link0"] = values["link0"];
-            return api.PostActionAsync("cluster/config/join", form);
-        }, "DcCluster_Joined",
-            values => ProxmoxApiClient.ParseClusterJoinInfo(values["info"]) is null
-                ? Loc.T("DcCluster_BadJoinInfo")
-                : null);
+                var form = new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["hostname"] = info.IpAddress, ["fingerprint"] = info.Fingerprint,
+                    ["password"] = entered["password"]
+                };
+                foreach (var (key, value) in values.Where(kv => kv.Value.Length > 0)) form[key] = value;
+                return api.Cluster.JoinAsync(form);
+            }, "DcCluster_Joined");
     }
 
     // ------------------------------------------------------------ SDN
@@ -136,172 +165,54 @@ internal static class ClusterTabs
             LabelKey = "NodeNetwork_Apply", IconKey = "IconCheck",
             Confirm = _ => Loc.T("DcSdn_ApplyConfirm"),
             Run = async (_, _) => await RunTaskAsync(api,
-                api.PutActionAsync("cluster/sdn", new Dictionary<string, string>()), "DcSdn_Applied")
+                api.Sdn.ApplyAsync(), "DcSdn_Applied")
         };
+        IReadOnlyList<TableAction> pending = [apply, ..SdnPending.Actions(api)];
 
-        return new SubTabsView(
-        [
-            ("DcSdn_Zones", () => new TableTab(() => api.GetTableAsync("cluster/sdn/zones?pending=1"), ZoneColumns,
-                "DcSdn_ZonesHint", canEdit ? [..ZoneActions(api), apply] : null)),
-            ("DcSdn_Vnets", () => new TableTab(() => api.GetTableAsync("cluster/sdn/vnets?pending=1"), VnetColumns,
-                "DcSdn_VnetsHint", canEdit ? [..VnetActions(api), apply] : null)),
-            ("DcSdn_Controllers", () => SdnExtras.Controllers(api, canEdit)),
-            ("DcSdn_Ipam", () => SdnExtras.Ipams(api, canEdit)),
-            ("DcSdn_Dns", () => SdnExtras.Dns(api, canEdit))
-        ]);
-    }
-
-    private static IReadOnlyList<TableAction> ZoneActions(ProxmoxApiClient api)
-    {
-        return
-        [
-            new TableAction
-            {
-                LabelKey = "Action_Add", IconKey = "IconPlus", Run = (_, owner) => AddZoneAsync(api, owner)
-            },
-            DeleteAction(row => Loc.T("DcSdn_DeleteConfirm", row["zone"]),
-                row => api.DeleteActionAsync($"cluster/sdn/zones/{Seg(row["zone"])}"), "DcSdn_Deleted")
-        ];
-    }
-
-    /// <summary>SDN 영역 — Simple·VLAN·QinQ·VXLAN·EVPN. EVPN 은 먼저 EVPN 컨트롤러를 만들어 둬야 한다.</summary>
-    private static async Task<string?> AddZoneAsync(ProxmoxApiClient api, Window? owner)
-    {
-        var choose = new FormDialog(Loc.T("DcSdn_AddZone"),
-        [
-            new FormField
-            {
-                Key = "type", LabelKey = "Table_Type", Kind = FormFieldKind.Choice, Initial = "simple",
-                Choices =
-                [
-                    ("simple", "Simple"), ("vlan", "VLAN"), ("qinq", "QinQ"), ("vxlan", "VXLAN"), ("evpn", "EVPN")
-                ]
-            }
-        ]) { Owner = owner };
-        if (choose.ShowDialog() != true || choose.Result is not { } picked) return null;
-
-        var type = picked["type"];
-        var fields = new List<FormField> { new() { Key = "zone", LabelKey = "Table_Name", Required = true } };
-        if (type is "vlan" or "qinq")
-            fields.Add(new FormField { Key = "bridge", LabelKey = "DcSdn_Bridge", Required = true, Initial = "vmbr0" });
-        if (type == "qinq") fields.Add(new FormField { Key = "tag", LabelKey = "DcSdn_Tag", Required = true });
-        if (type == "vxlan") fields.Add(new FormField { Key = "peers", LabelKey = "DcSdn_Peers", Required = true });
-        if (type == "evpn")
+        return new SubTabsView(new List<SubTab>
         {
-            var controllers = (await api.GetTableAsync("cluster/sdn/controllers"))
-                .Where(c => Value(c, "type") == "evpn")
-                .Select(c => (Value(c, "controller"), Value(c, "controller")))
-                .ToList();
-            fields.Add(new FormField
-            {
-                Key = "controller", LabelKey = "DcSdn_Controller", Kind = FormFieldKind.Choice, Choices = controllers,
-                Required = true
-            });
-            fields.Add(new FormField { Key = "vrf-vxlan", LabelKey = "DcSdn_VrfVxlan", Required = true });
-            fields.Add(new FormField { Key = "exitnodes", LabelKey = "DcSdn_ExitNodes" });
-        }
-
-        fields.Add(new FormField { Key = "mtu", LabelKey = "NodeNetwork_Mtu" });
-        fields.Add(new FormField { Key = "nodes", LabelKey = "DcStorage_Nodes" });
-
-        return await SubmitAsync(owner, Loc.T("DcSdn_AddZoneType", type), fields, values =>
-        {
-            var form = NonEmpty(values);
-            form["type"] = type;
-            return api.PostActionAsync("cluster/sdn/zones", form);
-        }, "DcSdn_Added", titleIsKey: false);
-    }
-
-    private static IReadOnlyList<TableAction> VnetActions(ProxmoxApiClient api)
-    {
-        return
-        [
-            new TableAction
-            {
-                LabelKey = "Action_Add", IconKey = "IconPlus",
-                Run = async (_, owner) =>
-                {
-                    var zones = (await api.GetTableAsync("cluster/sdn/zones"))
-                        .Select(z => (Value(z, "zone"), Value(z, "zone")))
-                        .ToList();
-                    return await SubmitAsync(owner, "DcSdn_AddVnet",
-                    [
-                        new FormField { Key = "vnet", LabelKey = "Table_Name", Required = true },
-                        new FormField
-                        {
-                            Key = "zone", LabelKey = "DcSdn_Zone", Kind = FormFieldKind.Choice, Choices = zones,
-                            Required = true
-                        },
-                        new FormField { Key = "tag", LabelKey = "DcSdn_Tag" },
-                        new FormField { Key = "alias", LabelKey = "DcSdn_Alias" },
-                        new FormField
-                        {
-                            Key = "vlanaware", LabelKey = "NodeNetwork_VlanAware", Kind = FormFieldKind.Bool
-                        }
-                    ], values => api.PostActionAsync("cluster/sdn/vnets", NonEmpty(values)), "DcSdn_Added");
-                }
-            },
-            new TableAction
-            {
-                LabelKey = "DcSdn_Subnets", IconKey = "IconList", NeedsSelection = true,
-                Run = (row, owner) =>
-                {
-                    var path = $"cluster/sdn/vnets/{Seg(row!["vnet"])}/subnets";
-                    return Task.FromResult(TableWindow.ShowModal(owner, Loc.T("DcSdn_SubnetsTitle", row["vnet"]),
-                        new TableTab(() => api.GetTableAsync($"{path}?pending=1"), SubnetColumns, "DcSdn_SubnetsHint",
-                            SubnetActions(api, path))));
-                }
-            },
-            DeleteAction(row => Loc.T("DcSdn_DeleteConfirm", row["vnet"]),
-                row => api.DeleteActionAsync($"cluster/sdn/vnets/{Seg(row["vnet"])}"), "DcSdn_Deleted")
-        ];
-    }
-
-    private static IReadOnlyList<TableAction> SubnetActions(ProxmoxApiClient api, string path)
-    {
-        return
-        [
-            new TableAction
-            {
-                LabelKey = "Action_Add", IconKey = "IconPlus",
-                Run = (_, owner) => SubmitAsync(owner, "DcSdn_AddSubnet",
-                [
-                    new FormField { Key = "subnet", LabelKey = "Table_Cidr", Required = true },
-                    new FormField { Key = "gateway", LabelKey = "Table_Gateway" },
-                    new FormField { Key = "snat", LabelKey = "DcSdn_Snat", Kind = FormFieldKind.Bool }
-                ], values =>
-                {
-                    var form = NonEmpty(values);
-                    form["type"] = "subnet";
-                    return api.PostActionAsync(path, form);
-                }, "DcSdn_Added")
-            },
-            // 서브넷 ID 는 "영역-주소-접두어" 형식이라 행의 subnet(ID) 필드로 지운다
-            DeleteAction(row => Loc.T("DcSdn_DeleteConfirm", Value(row, "cidr")),
-                row => api.DeleteActionAsync($"{path}/{Seg(Value(row, "subnet"))}"), "DcSdn_Deleted")
-        ];
+            // 노드마다 영역이 제대로 적용됐는지(웹 UI 의 SDN 상태) — 적용 뒤 확인용
+            new("DcSdn_Status", () => new TableTab(() => api.Cluster.ResourcesAsync("sdn"),
+                SdnStatusColumns, "DcSdn_StatusHint")),
+            new("DcSdn_Zones", () => new TableTab(() => api.Sdn.ListAsync("zones", pending: true), ZoneColumns,
+                "DcSdn_ZonesHint", canEdit ? [..SdnActions.Zones(api), ..pending] : null)),
+            new("DcSdn_Vnets", () => new TableTab(() => api.Sdn.ListAsync("vnets", pending: true), VnetColumns,
+                "DcSdn_VnetsHint",
+                canEdit ? [..SdnActions.Vnets(api), SdnPending.VnetFirewall(api), ..pending] : null)),
+            new("DcSdn_Controllers", () => SdnExtras.Controllers(api, canEdit)),
+            new("DcSdn_Ipam", () => SdnExtras.Ipams(api, canEdit)),
+            new("DcSdn_Dns", () => SdnExtras.Dns(api, canEdit)),
+            new("DcSdn_Fabrics", () => new TableTab(() => api.Sdn.ListFabricsAsync(), SdnFabrics.FabricColumns,
+                    "DcSdn_FabricsHint", canEdit ? [..SdnFabrics.Fabrics(api), ..pending] : null),
+                api.Sdn.Feature(nameof(SdnApi.ListFabricsAsync))),
+            SdnRouting.Tab(api, canEdit)
+        });
     }
 
     // ------------------------------------------------------------ 리소스 매핑
 
     /// <summary>
     ///     PCI·USB·디렉터리 매핑 — 이름 하나로 여러 노드의 같은 장치를 묶어 게스트가 어느 노드에서든 쓰게 한다.
-    ///     노드마다 한 줄씩 "node=…,path=…" 형식으로 적는다.
+    ///     노드마다 한 줄씩 "node=…,path=…" 형식으로 적는다. 디렉터리 매핑(8.3+)은 서버가 알 때만 탭을 둔다.
     /// </summary>
     public static SubTabsView Mappings(ProxmoxApiClient api, bool canEdit)
     {
         TableTab Mapping(string kind, string hintKey) =>
-            new(() => api.GetTableAsync($"cluster/mapping/{kind}"), MappingColumns, hintKey,
+            new(() => api.Mappings.ListAsync(kind), MappingColumns, hintKey,
                 canEdit ? MappingActions(api, kind) : null);
 
-        return new SubTabsView(
-        [
-            ("DcMapping_Pci", () => Mapping("pci", "DcMapping_PciHint")),
-            ("DcMapping_Usb", () => Mapping("usb", "DcMapping_UsbHint")),
-            ("DcMapping_Dir", () => Mapping("dir", "DcMapping_DirHint"))
-        ]);
+        return new SubTabsView(new List<SubTab>
+        {
+            new("DcMapping_Pci", () => Mapping("pci", "DcMapping_PciHint"), api.Mappings.KindFeature("pci")),
+            new("DcMapping_Usb", () => Mapping("usb", "DcMapping_UsbHint"), api.Mappings.KindFeature("usb")),
+            new("DcMapping_Dir", () => Mapping("dir", "DcMapping_DirHint"), api.Mappings.KindFeature("dir"))
+        });
     }
 
+    /// <summary>
+    ///     매핑 추가·수정 — 노드마다 한 줄("node=…,path=…"/"node=…,id=…"), 설명. PCI 는 중재 장치(mdev)와
+    ///     실시간 이전 가능 여부도. 수정은 서버 설정을 읽어 채우고 map 을 통째로 바꾼다.
+    /// </summary>
     private static IReadOnlyList<TableAction> MappingActions(ProxmoxApiClient api, string kind)
     {
         return
@@ -309,36 +220,54 @@ internal static class ClusterTabs
             new TableAction
             {
                 LabelKey = "Action_Add", IconKey = "IconPlus",
-                Run = (_, owner) => SubmitAsync(owner, "DcMapping_AddTitle",
-                [
-                    new FormField { Key = "id", LabelKey = "Table_Name", Required = true },
-                    new FormField
-                    {
-                        Key = "map", LabelKey = kind switch
-                        {
-                            "pci" => "DcMapping_MapHintPci",
-                            "usb" => "DcMapping_MapHintUsb",
-                            _ => "DcMapping_MapHintDir"
-                        },
-                        Kind = FormFieldKind.Multiline, Required = true
-                    },
-                    new FormField { Key = "description", LabelKey = "Table_Description" }
-                ], values =>
+                Run = (_, owner) => SubmitAsync(owner, "DcMapping_AddTitle", MappingFields(kind, null),
+                    values => api.Mappings.CreateAsync(kind, values),
+                    "DcMapping_Added")
+            },
+            new TableAction
+            {
+                LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
+                Run = async (row, owner) =>
                 {
-                    // 노드마다 한 줄 → map 을 줄 수만큼 반복해서 보낸다(각 줄 안의 쉼표는 그대로 둔다)
-                    var pairs = values["map"]
-                        .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                        .Select(line => new KeyValuePair<string, string>("map", line))
-                        .Append(new KeyValuePair<string, string>("id", values["id"]))
-                        .ToList();
-                    if (values["description"].Length > 0)
-                        pairs.Add(new KeyValuePair<string, string>("description", values["description"]));
-                    return api.SendPairsAsync(System.Net.Http.HttpMethod.Post, $"cluster/mapping/{kind}", pairs);
-                }, "DcMapping_Added")
+                    var id = row!["id"];
+                    var config = await api.Mappings.GetAsync(kind, id);
+                    return await SubmitAsync(owner, Loc.T("DcMapping_EditTitle", id), MappingFields(kind, config),
+                        values => api.Mappings.UpdateAsync(kind, id, values), "DcMapping_Updated",
+                        titleIsKey: false);
+                }
             },
             DeleteAction(row => Loc.T("DcMapping_DeleteConfirm", row["id"]),
-                row => api.DeleteActionAsync($"cluster/mapping/{kind}/{Seg(row["id"])}"), "DcMapping_Deleted")
+                row => api.Mappings.DeleteAsync(kind, row["id"]), "DcMapping_Deleted")
         ];
+    }
+
+    private static List<FormField> MappingFields(string kind, IReadOnlyDictionary<string, string>? config)
+    {
+        string V(string key) => config is not null && config.TryGetValue(key, out var v) ? v : string.Empty;
+        var fields = new List<FormField>();
+        if (config is null)
+            fields.Add(new FormField { Key = "id", LabelKey = "Table_Name", Required = true, Trim = true });
+        fields.Add(new FormField
+        {
+            Key = "map", Kind = FormFieldKind.Multiline, Required = true, Initial = V("map"),
+            LabelKey = kind switch
+            {
+                "pci" => "DcMapping_MapHintPci",
+                "usb" => "DcMapping_MapHintUsb",
+                _ => "DcMapping_MapHintDir"
+            }
+        });
+        if (kind == "pci")
+        {
+            fields.Add(new FormField { Key = "mdev", LabelKey = "DcMapping_Mdev", Kind = FormFieldKind.Bool,
+                Initial = V("mdev") is "1" ? "1" : "0", Hint = Loc.T("DcMapping_MdevHint") });
+            fields.Add(new FormField { Key = "live-migration-capable", LabelKey = "DcMapping_LiveMigration",
+                Kind = FormFieldKind.Bool, Initial = V("live-migration-capable") is "1" ? "1" : "0",
+                Advanced = true, Hint = Loc.T("DcMapping_LiveMigrationHint") });
+        }
+
+        fields.Add(new FormField { Key = "description", LabelKey = "Table_Description", Initial = V("description") });
+        return fields;
     }
 
     // ------------------------------------------------------------ Ceph
@@ -346,7 +275,7 @@ internal static class ClusterTabs
     /// <summary>Ceph 상태(읽기 전용) — 설치·OSD·풀 관리는 노드 셸의 pveceph 나 웹 UI 에서 한다.</summary>
     public static TextEditTab CephStatus(ProxmoxApiClient api)
     {
-        return new TextEditTab(async () => (await api.GetPrettyJsonAsync("cluster/ceph/status"), string.Empty), null,
+        return new TextEditTab(async () => (await api.Cluster.CephStatusJsonAsync(), string.Empty), null,
             "DcCeph_Hint");
     }
 }

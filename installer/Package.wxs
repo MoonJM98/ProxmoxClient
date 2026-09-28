@@ -16,7 +16,8 @@
         <!-- 같은 버전으로 다시 설치해도 기존 설치를 교체한다(아니면 프로그램 목록에 두 개가 나란히 생긴다) -->
         <MajorUpgrade AllowSameVersionUpgrades="yes"
                       DowngradeErrorMessage="이미 최신 버전의 [ProductName] 이(가) 설치되어 있습니다."/>
-        <MediaTemplate EmbedCab="yes"/>
+        <!-- 최고 압축 — 설치 파일이 작아지고, 설치 시 해제 시간 차이는 미미하다 -->
+        <MediaTemplate EmbedCab="yes" CompressionLevel="high"/>
 
         <!--
             exe 가 아닌 .ico 원본을 아이콘으로 쓴다. 업데이트 중 exe 가 교체되는 사이 탐색기가 빈 아이콘을

@@ -47,6 +47,9 @@
                 <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_12}">
                     <CheckBox x:Name="SmoothScalingCheck" Content="{loc:Tr ConsoleSettingsWindow_13}" Margin="0,6,0,0" />
                 </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr ConsoleSettings_LocalCursor}" Hint="{loc:Tr ConsoleSettings_LocalCursorHint}">
+                    <ComboBox x:Name="CursorBox" Width="220" HorizontalAlignment="Left" />
+                </ic:FormRow>
 
                 <TextBlock Text="{loc:Tr ConsoleSettingsWindow_14}" Style="{StaticResource FormSection}" />
                 <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_15}" Hint="{loc:Tr ConsoleSettingsWindow_16}">

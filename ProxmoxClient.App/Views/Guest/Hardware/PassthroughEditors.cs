@@ -40,25 +40,35 @@ internal static partial class PassthroughEditors
     }
 
     /// <summary>표 조회 실패(권한·버전)는 빈 목록으로 — 편집 창은 열리고 직접 입력은 할 수 있다.</summary>
-    private static async Task<IReadOnlyList<IReadOnlyDictionary<string, string>>> TryTableAsync(HardwareContext ctx,
-        string path)
+    private static async Task<IReadOnlyList<IReadOnlyDictionary<string, string>>> HostDevicesAsync(
+        HardwareContext ctx, string bus)
     {
         try
         {
-            return await ctx.Api.GetTableAsync(path);
+            return await ctx.Api.Guests.HostDevicesAsync(ctx.Guest.Node, bus);
         }
         catch (ProxmoxApiException ex)
         {
-            App.Log($"[하드웨어] {path} 조회 실패: {ex.Message}");
+            App.Log($"[하드웨어] {bus} 장치 조회 실패: {ex.Message}");
             return [];
         }
     }
 
+    /// <summary>이 노드에서 쓸 수 있는 매핑 이름 — 서버가 매핑(8.0+, dir 은 8.3+)을 모르면 빈 목록.</summary>
     private static async Task<IReadOnlyList<(string, string)>> MappingsAsync(HardwareContext ctx, string kind)
     {
-        var rows = await TryTableAsync(ctx, $"cluster/mapping/{kind}?check-node={ActionHelpers.Seg(ctx.Guest.Node)}");
-        return rows.Select(r => ActionHelpers.Value(r, "id")).Where(id => id.Length > 0)
-            .Select(id => (id, id)).ToList();
+        if (!ctx.Api.Mappings.Kinds.Contains(kind)) return [];
+        try
+        {
+            var rows = await ctx.Api.Mappings.ListAsync(kind, ctx.Guest.Node);
+            return rows.Select(r => ActionHelpers.Value(r, "id")).Where(id => id.Length > 0)
+                .Select(id => (id, id)).ToList();
+        }
+        catch (ProxmoxApiException ex)
+        {
+            App.Log($"[하드웨어] {kind} 매핑 조회 실패: {ex.Message}");
+            return [];
+        }
     }
 
     // ------------------------------------------------------------ USB
@@ -86,7 +96,7 @@ internal static partial class PassthroughEditors
         var mode = key is null || host == "spice" ? "spice"
             : usb.Has("mapping") ? "mapped"
             : UsbPort().IsMatch(host) ? "port" : "device";
-        var devices = (await TryTableAsync(ctx, $"{ctx.NodePath}/hardware/usb"))
+        var devices = (await HostDevicesAsync(ctx, "usb"))
             .Where(d => ActionHelpers.Value(d, "usbpath").Length > 0 && ActionHelpers.Value(d, "prodid").Length > 0
                         && ActionHelpers.Value(d, "class") != "9")
             .Select(UsbChoice).ToList();

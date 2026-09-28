@@ -12,7 +12,10 @@ public enum GuestPowerAction
     Reboot,
     Suspend,
     Resume,
-    Hibernate
+    Hibernate,
+
+    /// <summary>VM 강제 재설정(전원 리셋 버튼) — 게스트 OS 를 거치지 않는다.</summary>
+    Reset
 }
 
 /// <summary>콘솔 창 등에서 특정 게스트의 전원 동작을 실행하는 대리자(메인 뷰모델이 제공).</summary>
@@ -40,6 +43,7 @@ public static class GuestPowerRules
             GuestPowerAction.Suspend => running && isVm,
             GuestPowerAction.Resume => paused && isVm,
             GuestPowerAction.Hibernate => running && isVm,
+            GuestPowerAction.Reset => running && isVm,
             _ => false
         };
     }
@@ -55,6 +59,7 @@ public static class GuestPowerRules
             GuestPowerAction.Suspend => Loc.T("GuestPower_Suspend"),
             GuestPowerAction.Resume => Loc.T("GuestPower_Resume"),
             GuestPowerAction.Hibernate => Loc.T("GuestPower_Hibernate"),
+            GuestPowerAction.Reset => Loc.T("GuestPower_Reset"),
             _ => string.Empty
         };
     }

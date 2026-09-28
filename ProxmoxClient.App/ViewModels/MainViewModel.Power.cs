@@ -85,6 +85,12 @@ public partial class MainViewModel
     {
         return IsConnected && SelectedGuest is { IsRunning: true, Kind: ResourceKind.Qemu };
     }
+    [RelayCommand(CanExecute = nameof(CanHibernateGuest))]
+    private Task ResetGuestAsync()
+    {
+        return RunGuestPowerAsync(
+            g => Api!.ResetGuestAsync(g.Node, g.VmId), Loc.T("GuestPower_Reset"), SelectedGuest!);
+    }
     /// <summary>콘솔 창 등 외부에서 특정 게스트의 전원 동작 실행(선택된 게스트와 무관). 상태상 불가능한 동작은 무시.</summary>
     public Task RunGuestPowerForAsync(PveResource guest, GuestPowerAction action)
     {
@@ -100,6 +106,7 @@ public partial class MainViewModel
             GuestPowerAction.Suspend => g => api.SuspendGuestAsync(g.Node, g.Kind, g.VmId),
             GuestPowerAction.Resume => g => api.ResumeGuestAsync(g.Node, g.Kind, g.VmId),
             GuestPowerAction.Hibernate => g => api.HibernateGuestAsync(g.Node, g.Kind, g.VmId),
+            GuestPowerAction.Reset => g => api.ResetGuestAsync(g.Node, g.VmId),
             _ => null
         };
 

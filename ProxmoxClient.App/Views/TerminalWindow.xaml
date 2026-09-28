@@ -7,7 +7,11 @@
         Style="{StaticResource ThemedWindow}"
         Title="{loc:Tr TerminalWindow_01}"
         Width="1000" Height="640" MinWidth="640" MinHeight="400"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        KeyboardNavigation.TabNavigation="None" KeyboardNavigation.DirectionalNavigation="None"
+        KeyboardNavigation.ControlTabNavigation="None">
+    <!-- 터미널은 네이티브 창(HwndHost)이라 WPF 키보드 이동이 Tab·방향키를 먼저 가져가 포커스를 옮긴다 —
+         창 전체에서 끄면 그 키가 터미널(셸 자동 완성·명령 기록)로 간다 -->
     <Window.Resources>
         <Style TargetType="Border" x:Key="ToolbarBorder">
             <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />

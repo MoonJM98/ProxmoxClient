@@ -30,11 +30,10 @@ internal static class UpdateTabs
 
     public static SubTabsView Create(ProxmoxApiClient api, string node, bool canConsole)
     {
-        var basePath = $"nodes/{Seg(node)}/apt";
         return new SubTabsView(
         [
-            ("NodeTab_Updates", () => new TableTab(() => api.GetTableAsync($"{basePath}/update"), UpdateColumns,
-                "NodeUpdates_Hint", UpdateActions(api, node, basePath, canConsole))),
+            ("NodeTab_Updates", () => new TableTab(() => api.Nodes.ListUpdatesAsync(node), UpdateColumns,
+                "NodeUpdates_Hint", UpdateActions(api, node, canConsole))),
             ("NodeApt_Repositories", () => new TableTab(async () =>
                 {
                     // 켜고 끌 때 쓸 수 있게 목록을 읽은 시점의 digest 를 행마다 붙여 둔다
@@ -46,11 +45,19 @@ internal static class UpdateTabs
                         })
                         .ToList();
                 }, RepositoryColumns,
-                "NodeApt_Hint", RepositoryActions(api, node, basePath)))
+                "NodeApt_Hint", RepositoryActions(api, node)))
         ]);
     }
 
-    private static IReadOnlyList<TableAction> UpdateActions(ProxmoxApiClient api, string node, string basePath,
+    private static readonly IReadOnlyList<TableColumn> PackageVersionColumns =
+    [
+        new() { Key = "Package", HeaderKey = "NodeApt_Package", Width = 200 },
+        new() { Key = "Version", HeaderKey = "NodeApt_Version", Width = 180 },
+        new() { Key = "CurrentState", HeaderKey = "Table_State", Width = 110 },
+        new() { Key = "Title", HeaderKey = "Table_Description", Width = 0 }
+    ];
+
+    private static IReadOnlyList<TableAction> UpdateActions(ProxmoxApiClient api, string node,
         bool canConsole)
     {
         var actions = new List<TableAction>
@@ -58,7 +65,7 @@ internal static class UpdateTabs
             new()
             {
                 LabelKey = "NodeUpdates_RefreshRepo", IconKey = "IconDownload",
-                Run = async (_, _) => await RunTaskAsync(api, api.PostActionAsync($"{basePath}/update"),
+                Run = async (_, _) => await RunTaskAsync(api, api.Nodes.RefreshUpdatesAsync(node),
                     "NodeUpdates_Refreshed")
             },
             new()
@@ -67,13 +74,19 @@ internal static class UpdateTabs
                 Run = async (row, owner) =>
                 {
                     var package = row!["Package"];
-                    var text = await api.GetTextAsync(
-                        $"{basePath}/changelog?name={Uri.EscapeDataString(package)}"
-                        + $"&version={Uri.EscapeDataString(Value(row, "Version"))}");
+                    var text = await api.Nodes.ChangelogAsync(node, package, Value(row, "Version"));
                     return TextViewWindow.ShowModal(owner, Loc.T("NodeApt_ChangelogTitle", package), text);
                 }
             }
         };
+
+        actions.Add(new TableAction
+        {
+            LabelKey = "NodeApt_Versions", IconKey = "IconBox",
+            Run = (_, owner) => Task.FromResult(TableWindow.ShowModal(owner, Loc.T("NodeApt_VersionsTitle", node),
+                new TableTab(() => api.Nodes.PackageVersionsAsync(node), PackageVersionColumns,
+                    "NodeApt_VersionsHint")))
+        });
 
         // 웹 UI 의 '업그레이드'와 같다 — 노드 셸에서 apt dist-upgrade 를 실행해 진행을 직접 본다
         if (canConsole)
@@ -90,7 +103,7 @@ internal static class UpdateTabs
         return actions;
     }
 
-    private static IReadOnlyList<TableAction> RepositoryActions(ProxmoxApiClient api, string node, string basePath)
+    private static IReadOnlyList<TableAction> RepositoryActions(ProxmoxApiClient api, string node)
     {
         return
         [
@@ -102,7 +115,7 @@ internal static class UpdateTabs
                     // 목록을 읽은 뒤 파일이 바뀌었으면 서버가 digest 로 거절한다(순번이 다른 저장소를 가리키지 않게)
                     var digest = Value(row!, "digest");
                     var enable = Value(row!, "Enabled") is "1" or "true" ? "0" : "1";
-                    await api.PostActionAsync($"{basePath}/repositories", new Dictionary<string, string>
+                    await api.Nodes.ChangeRepositoryAsync(node, new Dictionary<string, string>
                     {
                         ["path"] = row!["path"], ["index"] = row["index"], ["enabled"] = enable, ["digest"] = digest
                     });
@@ -127,7 +140,7 @@ internal static class UpdateTabs
                             Key = "handle", LabelKey = "NodeApt_Repository", Kind = FormFieldKind.Choice,
                             Choices = choices, Required = true
                         }
-                    ], values => api.PutActionAsync($"{basePath}/repositories", new Dictionary<string, string>
+                    ], values => api.Nodes.AddRepositoryAsync(node, new Dictionary<string, string>
                     {
                         ["handle"] = values["handle"], ["digest"] = repos.Digest
                     }), "NodeApt_Added");

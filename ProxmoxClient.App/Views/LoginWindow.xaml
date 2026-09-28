@@ -67,8 +67,10 @@
                 <StackPanel>
                     <TextBlock Text="{loc:Tr LoginWindow_05}" Style="{StaticResource FieldLabel}" />
                     <TextBox x:Name="UserBox" Margin="0,0,0,6" />
-                    <TextBlock Text="{loc:Tr LoginWindow_06}" Style="{StaticResource FieldLabel}" />
+                    <TextBlock x:Name="PassLabel" Text="{loc:Tr LoginWindow_06}" Style="{StaticResource FieldLabel}" />
                     <PasswordBox x:Name="PassBox" Margin="0,0,0,6" KeyDown="OnPassBoxKeyDown" />
+                    <TextBlock x:Name="OpenIdHint" Visibility="Collapsed" TextWrapping="Wrap" FontSize="11"
+                               Foreground="{StaticResource BrushDim}" Margin="0,0,0,6" />
                     <TextBlock Text="{loc:Tr LoginWindow_07}" Style="{StaticResource FieldLabel}" />
                     <DockPanel>
                         <Button DockPanel.Dock="Right" x:Name="BtnReloadRealms"

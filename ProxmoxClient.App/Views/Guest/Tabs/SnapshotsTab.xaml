@@ -26,13 +26,15 @@
                                     Binding="{Binding SnapTimeUtc, Mode=OneWay, Converter={StaticResource DateLocal}}"
                                     Width="170" />
                 <DataGridCheckBoxColumn Header="{loc:Tr SnapshotDialog_03}" Binding="{Binding HasRam, Mode=OneWay}"
-                                        IsReadOnly="True" Width="80" />
+                                        IsReadOnly="True" Width="80" ElementStyle="{StaticResource GridCheckBox}" />
                 <DataGridTextColumn Header="{loc:Tr FirewallWindow_13}"
                                     Binding="{Binding Description, Mode=OneWay}" Width="*" />
             </DataGrid.Columns>
         </DataGrid>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button ic:IconAssist.Icon="{StaticResource IconPencil}" Content="{loc:Tr SnapshotDialog_EditNote}"
+                    Click="OnEditDescription" MinWidth="110" Margin="0,0,8,0" />
             <Button ic:IconAssist.Icon="{StaticResource IconUndo}" Content="{loc:Tr SnapshotDialog_04}"
                     Click="OnRollback" MinWidth="110" />
             <Button ic:IconAssist.Icon="{StaticResource IconTrash}" ic:IconAssist.Brush="{StaticResource BrushErr}"

@@ -1,6 +1,7 @@
 using System.Windows;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Api.Versioning;
 
 namespace ProxmoxClient.App.Views.Shared;
 
@@ -25,11 +26,12 @@ internal static class ActionHelpers
     }
 
     /// <summary>입력 대화상자를 띄우고, 확인하면 적용한 뒤 완료 문구를 돌려준다(취소면 null).</summary>
+    /// <param name="target">입력을 보낼 API 요청 — 서버가 모르는 파라미터 칸은 창에 두지 않는다.</param>
     public static async Task<string?> SubmitAsync(Window? owner, string title, IReadOnlyList<FormField> fields,
         Func<IReadOnlyDictionary<string, string>, Task<string>> apply, string doneKey, bool titleIsKey = true,
-        Func<IReadOnlyDictionary<string, string>, string?>? validate = null)
+        Func<IReadOnlyDictionary<string, string>, string?>? validate = null, ApiFeature? target = null)
     {
-        var dialog = new FormDialog(titleIsKey ? Loc.T(title) : title, fields, validate) { Owner = owner };
+        var dialog = new FormDialog(titleIsKey ? Loc.T(title) : title, fields, validate, target) { Owner = owner };
         if (dialog.ShowDialog() != true || dialog.Result is not { } values) return null;
 
         await apply(values);
@@ -41,9 +43,10 @@ internal static class ActionHelpers
     /// </summary>
     public static async Task<string?> SubmitTaskAsync(ProxmoxApiClient api, Window? owner, string title,
         IReadOnlyList<FormField> fields, Func<IReadOnlyDictionary<string, string>, Task<string>> start,
-        string doneKey, Func<IReadOnlyDictionary<string, string>, string?>? validate = null)
+        string doneKey, Func<IReadOnlyDictionary<string, string>, string?>? validate = null,
+        ApiFeature? target = null)
     {
-        var dialog = new FormDialog(title, fields, validate) { Owner = owner };
+        var dialog = new FormDialog(title, fields, validate, target) { Owner = owner };
         if (dialog.ShowDialog() != true || dialog.Result is not { } values) return null;
 
         return await RunTaskAsync(api, start(values), doneKey);

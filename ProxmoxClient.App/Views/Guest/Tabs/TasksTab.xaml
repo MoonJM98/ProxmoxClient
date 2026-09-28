@@ -30,7 +30,7 @@
 
         <DataGrid Grid.Row="1" x:Name="TaskGrid" AutoGenerateColumns="False" IsReadOnly="True"
                   GridLinesVisibility="Horizontal" HeadersVisibility="Column" SelectionMode="Single"
-                  MouseDoubleClick="OnLog">
+                  MouseDoubleClick="OnRowDoubleClick">
             <DataGrid.Columns>
                 <DataGridTemplateColumn Header="{loc:Tr MainWindow_42}" Width="90">
                     <DataGridTemplateColumn.CellTemplate>

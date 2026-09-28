@@ -1,13 +1,14 @@
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Api.Domains;
 using static ProxmoxClient.App.Views.Shared.ActionHelpers;
 
 namespace ProxmoxClient.App.Views.Node;
 
 /// <summary>
-///     노드 Ceph 화면 — 상태·설정·모니터·매니저·OSD·CephFS·풀·로그. Ceph 가 설치되지 않은 노드는 각 탭에 서버 오류가
-///     보이며, 모니터 탭의 'Ceph 설치'로 설치 마법사를 연다.
+///     노드 Ceph 화면 — 상태·설정·모니터·매니저·OSD·CephFS·풀·로그. Ceph 가 설치되지 않은 노드는 각 탭에 '설치되지
+///     않음' 안내가 보이며, 모니터 탭의 'Ceph 설치'로 설치 마법사를 연다.
 /// </summary>
 internal static class CephTabs
 {
@@ -36,33 +37,71 @@ internal static class CephTabs
 
     public static SubTabsView Create(ProxmoxApiClient api, string node, bool canEdit, bool canConsole)
     {
-        IReadOnlyList<TableAction>? install = canConsole ? [CephManage.Install(api, node)] : null;
-        var basePath = $"nodes/{Seg(node)}/ceph";
-        return new SubTabsView(
-        [
-            ("DcHa_Status", () => new TextEditTab(async () => (await api.GetPrettyJsonAsync($"{basePath}/status"),
+        var install = new List<TableAction>();
+        if (canConsole) install.Add(CephManage.Install(api, node));
+        if (canEdit) install.Add(CephManage.Init(api, node));
+        return new SubTabsView(new List<SubTab>
+        {
+            new("DcHa_Status", () => new TextEditTab(async () => (await Guard(() => api.Ceph.StatusJsonAsync(node)),
                 string.Empty), null, "CephTab_StatusHint")),
-            ("CephTab_Config", () => new TextEditTab(async () => (await api.GetTextAsync($"{basePath}/cfg/raw"),
+            new("CephTab_Config", () => new TextEditTab(async () => (await Guard(() => api.Ceph.ConfigTextAsync(node)),
                 string.Empty), null, "CephTab_ConfigHint")),
-            ("CephTab_Monitors", () => CephManage.Service(api, node, basePath, "mon", "CephTab_MonitorsHint",
+            new("CephTab_Monitors", () => CephManage.Service(api, node, "mon", "CephTab_MonitorsHint",
                 canEdit, install)),
-            ("CephTab_Managers", () => CephManage.Service(api, node, basePath, "mgr", "CephTab_ManagersHint",
+            new("CephTab_Managers", () => CephManage.Service(api, node, "mgr", "CephTab_ManagersHint",
                 canEdit)),
-            ("CephTab_Osd", () => new TableTab(() => api.GetCephOsdsAsync(node), OsdColumns, "CephTab_OsdHint",
-                canEdit ? [..CephManage.OsdLifecycle(api, node, basePath), ..OsdActions(api, basePath)] : null)),
-            ("CephTab_CephFs", () => CephManage.FileSystems(api, node, basePath, canEdit)),
-            ("CephTab_Pools", () => new TableTab(() => api.GetTableAsync($"{basePath}/pool"), PoolColumns,
-                "CephTab_PoolsHint", canEdit ? PoolActions(api, basePath) : null)),
-            ("DcFirewall_Log", () => new TextEditTab(async () =>
+            new("CephTab_Osd", () => new TableTab(() => Guard(() => api.GetCephOsdsAsync(node)), OsdColumns,
+                "CephTab_OsdHint",
+                canEdit
+                    ?
+                    [
+                        ..CephManage.OsdLifecycle(api, node), ..OsdActions(api, node),
+                        ..CephExtras.DaemonControls(api, node, row => $"osd.{Value(row, "id")}"),
+                        CephExtras.OsdDetails(api, node), CephExtras.OsdLvInfo(api, node),
+                        CephMaintenance.NodeOsdRestart(api, node)
+                    ]
+                    : [CephExtras.OsdDetails(api, node), CephExtras.OsdLvInfo(api, node)])),
+            new("CephTab_CephFs", () => CephManage.FileSystems(api, node, canEdit)),
+            new("CephFlags_Tab", () => CephExtras.Flags(api, node, canEdit)),
+            CephMaintenance.MutesTab(api, canEdit),
+            new("CephTab_Pools", () => new TableTab(() => Guard(() => api.Ceph.ListPoolsAsync(node)), PoolColumns,
+                "CephTab_PoolsHint", canEdit ? PoolActions(api, node) : [CephExtras.PoolStatus(api, node)])),
+            new("CephTab_Crush", () => new TextEditTab(async () => (await Guard(() => api.Ceph.CrushMapAsync(node)),
+                string.Empty), null, "CephTab_CrushHint")),
+            new("CephTab_ConfigDb", () => new TableTab(() => Guard(() => api.Ceph.ConfigDbAsync(node)),
+                CephExtras.ConfigDbColumns, "CephTab_ConfigDbHint"),
+                api.Ceph.Feature(nameof(CephApi.ConfigDbAsync))),
+            new("DcFirewall_Log", () => new TextEditTab(async () =>
             {
-                var lines = await api.GetTableAsync($"{basePath}/log?limit=500");
+                var lines = await Guard(() => api.Ceph.LogAsync(node));
                 return (string.Join('\n', lines.Select(l => Value(l, "t"))), string.Empty);
             }, null, "CephTab_LogHint"))
-        ]);
+        });
+    }
+
+    /// <summary>
+    ///     Ceph 가 설치되지 않은 노드는 서버가 "binary not installed: /usr/bin/ceph-mon" 같은 HTTP 500 을 준다 —
+    ///     원문 대신 설치 안내로 바꾼다(웹 UI 의 "Ceph not installed" 와 같은 뜻).
+    /// </summary>
+    internal static async Task<T> Guard<T>(Func<Task<T>> load)
+    {
+        try
+        {
+            return await load();
+        }
+        catch (ProxmoxApiException ex) when (IsNotInstalled(ex))
+        {
+            throw new ProxmoxApiException(Loc.T("CephTab_NotInstalled"));
+        }
+    }
+
+    internal static bool IsNotInstalled(ProxmoxApiException ex)
+    {
+        return ex.StatusCode == 500 && ex.Message.Contains("not installed", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>OSD 넣기(in)·빼기(out)·스크럽 — 빼면 데이터가 다른 OSD 로 옮겨지기 시작한다.</summary>
-    private static IReadOnlyList<TableAction> OsdActions(ProxmoxApiClient api, string basePath)
+    private static IReadOnlyList<TableAction> OsdActions(ProxmoxApiClient api, string node)
     {
         TableAction OsdAction(string labelKey, string iconKey, string verb, string? confirmKey) => new()
         {
@@ -71,7 +110,7 @@ internal static class CephTabs
             Run = async (row, _) =>
             {
                 var osd = row!;
-                await api.PostActionAsync($"{basePath}/osd/{Seg(Value(osd, "id"))}/{verb}");
+                await api.Ceph.OsdCommandAsync(node, Value(osd, "id"), verb);
                 return Loc.T("CephTab_OsdDone", Value(osd, "name"));
             }
         };
@@ -84,10 +123,12 @@ internal static class CephTabs
         ];
     }
 
-    private static IReadOnlyList<TableAction> PoolActions(ProxmoxApiClient api, string basePath)
+    private static IReadOnlyList<TableAction> PoolActions(ProxmoxApiClient api, string node)
     {
         return
         [
+            CephExtras.EditPool(api, node),
+            CephExtras.PoolStatus(api, node),
             new TableAction
             {
                 LabelKey = "Action_Add", IconKey = "IconPlus",
@@ -106,7 +147,7 @@ internal static class CephTabs
                         Key = "add_storages", LabelKey = "NodeDisks_AddStorage", Kind = FormFieldKind.Bool,
                         Initial = "1"
                     }
-                ], values => api.PostActionAsync($"{basePath}/pool", NonEmpty(values)), "CephTab_PoolCreated")
+                ], values => api.Ceph.CreatePoolAsync(node, NonEmpty(values)), "CephTab_PoolCreated")
             },
             new TableAction
             {
@@ -122,8 +163,7 @@ internal static class CephTabs
                             Initial = "1"
                         },
                         TypeToConfirmField()
-                    ], values => api.DeleteActionAsync(
-                        $"{basePath}/pool/{Seg(name)}?remove_storages={values["remove_storages"]}"),
+                    ], values => api.Ceph.DeletePoolAsync(node, name, values["remove_storages"] == "1"),
                         "CephTab_PoolDeleted", TypedMatches(name));
                 }
             }

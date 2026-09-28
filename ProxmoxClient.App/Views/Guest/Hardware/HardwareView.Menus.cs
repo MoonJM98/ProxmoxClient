@@ -2,6 +2,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using ProxmoxClient.App.Localization;
+using ProxmoxClient.Core.Api.Domains;
+using ProxmoxClient.Core.Api.Versioning;
 
 namespace ProxmoxClient.App.Views.Guest.Hardware;
 
@@ -24,7 +26,7 @@ public partial class HardwareView
         {
             AddItem("CtAdd_MountPoint", true, () => CtEditors.CreateMountPointAsync(ctx));
             AddItem("CtAdd_Device", ctx.Count("dev") < MaxCtDevices,
-                () => Task.FromResult(CtEditors.Device(ctx, null)));
+                () => Task.FromResult(CtEditors.Device(ctx, null)), Config(ctx, "dev0"));
             return;
         }
 
@@ -36,7 +38,7 @@ public partial class HardwareView
         AddItem("HwAdd_Cdrom", true, () => DiskEditors.CdromAsync(ctx, null));
         AddItem("HwAdd_Network", ctx.Count("net") < MaxNet, () => DeviceEditors.NetworkAsync(ctx, null));
         AddItem("HwAdd_Efi", !Has(ctx, "efidisk0"), () => DiskEditors.EfiAsync(ctx));
-        AddItem("HwAdd_Tpm", !Has(ctx, "tpmstate0"), () => DiskEditors.TpmAsync(ctx));
+        AddItem("HwAdd_Tpm", !Has(ctx, "tpmstate0"), () => DiskEditors.TpmAsync(ctx), Config(ctx, "tpmstate0"));
         AddItem("HwAdd_Usb", ctx.Count("usb") < maxUsb, () => PassthroughEditors.UsbAsync(ctx, null));
         AddItem("HwAdd_Pci", ctx.Count("hostpci") < MaxPci, () => PassthroughEditors.PciAsync(ctx, null));
         AddItem("HwAdd_Serial", ctx.Count("serial") < MaxSerial, () => Task.FromResult(DeviceEditors.Serial(ctx)));
@@ -44,7 +46,7 @@ public partial class HardwareView
         AddItem("HwAdd_Audio", !Has(ctx, "audio0"), () => Task.FromResult(DeviceEditors.Audio(ctx)));
         AddItem("HwAdd_Rng", !Has(ctx, "rng0"), () => Task.FromResult(DeviceEditors.Rng(ctx)));
         AddItem("HwAdd_Virtiofs", ctx.Count("virtiofs") < MaxVirtiofs,
-            () => PassthroughEditors.VirtiofsAsync(ctx, null));
+            () => PassthroughEditors.VirtiofsAsync(ctx, null), Config(ctx, "virtiofs0"));
     }
 
     private static bool Has(HardwareContext ctx, string key)
@@ -52,8 +54,16 @@ public partial class HardwareView
         return ctx.Config.Current.ContainsKey(key) || ctx.Effective.ContainsKey(key);
     }
 
-    private void AddItem(string labelKey, bool enabled, Func<Task<HardwareEdit>> open)
+    /// <summary>그 설정(장치)을 저장하는 기능 — 서버가 모르는 설정(예: 7.1 전의 tpmstate0)이면 메뉴에 두지 않는다.</summary>
+    private static ApiFeature Config(HardwareContext ctx, string key)
     {
+        return ctx.Api.Guests.Feature(nameof(GuestsApi.SetConfigAsync), key);
+    }
+
+    /// <param name="requires">메뉴가 쓰는 API 기능 — 서버가 못 쓰면 메뉴 항목을 두지 않는다.</param>
+    private void AddItem(string labelKey, bool enabled, Func<Task<HardwareEdit>> open, ApiFeature? requires = null)
+    {
+        if (requires is { IsAvailable: false }) return;
         var item = new MenuItem { Header = Loc.T(labelKey), IsEnabled = enabled };
         item.Click += async (_, _) => await OpenEditorAsync(open);
         AddMenu.Items.Add(item);

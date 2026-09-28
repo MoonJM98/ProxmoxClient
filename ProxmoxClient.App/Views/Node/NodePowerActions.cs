@@ -2,6 +2,8 @@ using System.Windows;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Api.Domains;
+using ProxmoxClient.Core.Api.Versioning;
 using ProxmoxClient.Core.Models;
 using static ProxmoxClient.App.Views.Shared.ActionHelpers;
 
@@ -15,7 +17,6 @@ internal static class NodePowerActions
 {
     public static IReadOnlyList<TableAction> Create(ProxmoxApiClient api, string node, PermissionsInfo permissions)
     {
-        var basePath = $"nodes/{Seg(node)}";
         var actions = new List<TableAction>();
 
         if (permissions.CanPowerMgmt)
@@ -30,7 +31,7 @@ internal static class NodePowerActions
                         Key = "force", LabelKey = "NodePower_IgnoreOnboot", Kind = FormFieldKind.Bool, Initial = "1"
                     }
                 ],
-                    form => api.PostActionAsync($"{basePath}/startall", form))
+                    form => api.Nodes.StartAllAsync(node, form))
             });
             actions.Add(new TableAction
             {
@@ -42,7 +43,15 @@ internal static class NodePowerActions
                     {
                         Key = "force-stop", LabelKey = "NodePower_ForceStop", Kind = FormFieldKind.Bool, Initial = "1"
                     }
-                ], form => api.PostActionAsync($"{basePath}/stopall", form))
+                ], form => api.Nodes.StopAllAsync(node, form), api.Nodes.Feature(nameof(NodesApi.StopAllAsync)))
+            });
+            var suspendAll = api.Nodes.Feature(nameof(NodesApi.SuspendAllAsync));
+            actions.Add(new TableAction
+            {
+                LabelKey = "NodePower_SuspendAll", IconKey = "IconPause", Requires = suspendAll,
+                Run = (_, owner) => BulkAsync(api, node, owner, "NodePower_SuspendAll",
+                    g => g.IsRunning && g.Kind == ResourceKind.Qemu, [],
+                    form => api.Nodes.SuspendAllAsync(node, form), suspendAll)
             });
         }
 
@@ -69,21 +78,21 @@ internal static class NodePowerActions
                         {
                             Key = "with-local-disks", LabelKey = "NodePower_LocalDisks", Kind = FormFieldKind.Bool
                         }
-                    ], form => api.PostActionAsync($"{basePath}/migrateall", form));
+                    ], form => api.Nodes.MigrateAllAsync(node, form));
                 }
             });
 
         if (permissions.CanSysPowerMgmt)
         {
-            actions.Add(NodeCommand(api, basePath, node, "reboot", "NodePower_Reboot", "IconRotate"));
-            actions.Add(NodeCommand(api, basePath, node, "shutdown", "NodePower_Shutdown", "IconPower"));
+            actions.Add(NodeCommand(api, node, "reboot", "NodePower_Reboot", "IconRotate"));
+            actions.Add(NodeCommand(api, node, "shutdown", "NodePower_Shutdown", "IconPower"));
         }
 
         return actions;
     }
 
     /// <summary>노드 재부팅/종료 — 노드 이름을 직접 입력해야 실행된다(이 노드의 게스트가 모두 멈춘다).</summary>
-    private static TableAction NodeCommand(ProxmoxApiClient api, string basePath, string node, string command,
+    private static TableAction NodeCommand(ProxmoxApiClient api, string node, string command,
         string labelKey, string iconKey)
     {
         return new TableAction
@@ -91,16 +100,16 @@ internal static class NodePowerActions
             LabelKey = labelKey, IconKey = iconKey,
             Run = (_, owner) => SubmitAsync(owner, Loc.T("NodePower_CommandTitle", Loc.T(labelKey), node),
                 [TypeToConfirmField()],
-                _ => api.PostActionAsync($"{basePath}/status",
-                    new Dictionary<string, string> { ["command"] = command }),
+                _ => api.Nodes.PowerAsync(node, command),
                 "NodePower_CommandSent", titleIsKey: false, validate: TypedMatches(node))
         };
     }
 
     /// <summary>이 노드의 게스트 중 조건에 맞는 것을 골라(기본 전부 선택) 일괄 작업을 시작한다.</summary>
+    /// <param name="target">보낼 요청 — 서버가 모르는 칸(예: 7.4 전의 timeout)은 창에 두지 않는다.</param>
     private static async Task<string?> BulkAsync(ProxmoxApiClient api, string node, Window? owner, string titleKey,
         Func<PveResource, bool> eligible, IReadOnlyList<FormField> extra,
-        Func<IReadOnlyDictionary<string, string>, Task<string>> start)
+        Func<IReadOnlyDictionary<string, string>, Task<string>> start, ApiFeature? target = null)
     {
         var guests = (await api.GetClusterResourcesAsync())
             .Where(r => r.Kind is ResourceKind.Qemu or ResourceKind.Lxc && r.Node == node && !r.IsTemplate)
@@ -117,6 +126,6 @@ internal static class NodePowerActions
                 Initial = string.Join(",", choices.Select(c => c.Item1)), Required = true
             },
             ..extra
-        ], values => start(NonEmpty(values)), "NodePower_BulkStarted");
+        ], values => start(NonEmpty(values)), "NodePower_BulkStarted", target: target);
     }
 }

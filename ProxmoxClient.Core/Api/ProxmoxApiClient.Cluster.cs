@@ -5,7 +5,11 @@ using System.Text.Json.Nodes;
 namespace ProxmoxClient.Core.Api;
 
 /// <summary>클러스터 가입 정보 — 웹 UI 의 'Join Information' 과 같은 base64 문자열과 그 안의 주소·지문.</summary>
-public sealed record ClusterJoinInfo(string Encoded, string IpAddress, string Fingerprint);
+public sealed record ClusterJoinInfo(string Encoded, string IpAddress, string Fingerprint)
+{
+    /// <summary>기존 클러스터 노드의 corosync 링크(번호 → 주소) — 가입하는 노드도 링크마다 자기 주소가 필요하다.</summary>
+    public IReadOnlyDictionary<int, string> PeerLinks { get; init; } = new Dictionary<int, string>();
+}
 
 public sealed partial class ProxmoxApiClient
 {
@@ -14,6 +18,7 @@ public sealed partial class ProxmoxApiClient
     ///     웹 UI 와 같은 형식({ipAddress, fingerprint, peerLinks, ring_addr, totem} JSON 의 base64)으로 만들어
     ///     웹 UI 의 가입 창에 그대로 붙여 넣을 수 있다. 클러스터가 아니면 null.
     /// </summary>
+    [Versioning.PveApi("GET", "/cluster/config/join")]
     public async Task<ClusterJoinInfo?> GetClusterJoinInfoAsync(CancellationToken ct = default)
     {
         var data = await GetJsonAsync("cluster/config/join", ct).ConfigureAwait(false);
@@ -66,9 +71,14 @@ public sealed partial class ProxmoxApiClient
             var json = JsonNode.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(encoded.Trim())));
             var ip = json?["ipAddress"]?.GetValue<string>();
             var fingerprint = json?["fingerprint"]?.GetValue<string>();
-            return ip is { Length: > 0 } && fingerprint is { Length: > 0 }
-                ? new ClusterJoinInfo(encoded.Trim(), ip, fingerprint)
-                : null;
+            if (ip is not { Length: > 0 } || fingerprint is not { Length: > 0 }) return null;
+
+            var links = new SortedDictionary<int, string>();
+            if (json?["peerLinks"] is JsonObject peerLinks)
+                foreach (var (key, value) in peerLinks)
+                    if (int.TryParse(key, out var number) && value is JsonValue address)
+                        links[number] = address.ToString();
+            return new ClusterJoinInfo(encoded.Trim(), ip, fingerprint) { PeerLinks = links };
         }
         catch (Exception ex) when (ex is FormatException or JsonException or InvalidOperationException)
         {

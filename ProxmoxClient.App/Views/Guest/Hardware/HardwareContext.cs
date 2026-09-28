@@ -41,8 +41,6 @@ internal sealed class HardwareContext(ProxmoxApiClient api, PveResource guest, G
     /// <summary>대기 중 변경까지 반영한 설정 — 편집은 이 값에서 시작한다(웹 UI 의 config 조회와 같다).</summary>
     public IReadOnlyDictionary<string, string> Effective => Config.Effective;
 
-    public string GuestPath => $"nodes/{ActionHelpers.Seg(Guest.Node)}/{Guest.Kind.ApiSegment()}/{Guest.VmId}";
-    public string NodePath => $"nodes/{ActionHelpers.Seg(Guest.Node)}";
 
     public string Get(string key)
     {
@@ -57,7 +55,7 @@ internal sealed class HardwareContext(ProxmoxApiClient api, PveResource guest, G
     /// <summary>이 노드에서 쓸 수 있고 켜진 저장소(content 로 거른다).</summary>
     public async Task<IReadOnlyList<StorageInfo>> StoragesAsync(string content)
     {
-        var rows = await Api.GetTableAsync($"{NodePath}/storage?content={content}&enabled=1");
+        var rows = await Api.Storage.NodeStoragesAsync(Guest.Node, content);
         return rows.Select(r => new StorageInfo(ActionHelpers.Value(r, "storage"), ActionHelpers.Value(r, "type")))
             .Where(s => s.Id.Length > 0)
             .OrderBy(s => s.Id, StringComparer.Ordinal)

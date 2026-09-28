@@ -2,6 +2,7 @@ using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Guest.Tabs;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Api.Domains;
 using static ProxmoxClient.App.Views.Shared.ActionHelpers;
 
 namespace ProxmoxClient.App.Views.Node;
@@ -61,29 +62,27 @@ internal static class NodeSystemTabs
 
     public static OptionsTab NodeOptions(ProxmoxApiClient api, string node)
     {
-        var path = $"nodes/{Seg(node)}/config";
-        return new OptionsTab(Options, () => api.GetObjectAsync(path),
-            async changes => await api.PutActionAsync(path, UpdateForm(changes)));
+        // 서버가 모르는 설정(예: 8.3 전의 ballooning-target)은 옵션 목록이 저장 요청(target)을 보고 뺀다
+        return new OptionsTab(Options, () => api.Nodes.GetConfigAsync(node),
+            async changes => await api.Nodes.UpdateConfigAsync(node, UpdateForm(changes)),
+            api.Nodes.Feature(nameof(NodesApi.UpdateConfigAsync)));
     }
 
     public static TextEditTab Hosts(ProxmoxApiClient api, string node, bool canEdit)
     {
-        var path = $"nodes/{Seg(node)}/hosts";
         return new TextEditTab(async () =>
             {
-                var hosts = await api.GetObjectAsync(path);
+                var hosts = await api.Nodes.GetHostsAsync(node);
                 return (Value(hosts, "data"), Value(hosts, "digest"));
             },
             canEdit
-                ? async (text, digest) => await api.PostActionAsync(path,
-                    new Dictionary<string, string> { ["data"] = text, ["digest"] = digest })
+                ? async (text, digest) => await api.Nodes.SetHostsAsync(node, text, digest)
                 : null,
             "NodeHosts_Hint");
     }
 
     public static TableTab Subscription(ProxmoxApiClient api, string node, bool canEdit)
     {
-        var path = $"nodes/{Seg(node)}/subscription";
         IReadOnlyList<TableAction>? actions = canEdit
             ?
             [
@@ -92,14 +91,14 @@ internal static class NodeSystemTabs
                     LabelKey = "NodeSubscription_Upload", IconKey = "IconPencil",
                     Run = (_, owner) => SubmitAsync(owner, "NodeSubscription_Upload",
                         [new FormField { Key = "key", LabelKey = "NodeSubscription_Key", Required = true }],
-                        values => api.PutActionAsync(path, values), "NodeSubscription_Uploaded")
+                        values => api.Nodes.SetSubscriptionKeyAsync(node, values["key"]), "NodeSubscription_Uploaded")
                 },
                 new TableAction
                 {
                     LabelKey = "NodeSubscription_Check", IconKey = "IconCheck",
                     Run = async (_, _) =>
                     {
-                        await api.PostActionAsync(path, new Dictionary<string, string> { ["force"] = "1" });
+                        await api.Nodes.CheckSubscriptionAsync(node);
                         return Loc.T("NodeSubscription_Checked");
                     }
                 },
@@ -109,7 +108,7 @@ internal static class NodeSystemTabs
                     Confirm = _ => Loc.T("NodeSubscription_RemoveConfirm"),
                     Run = async (_, _) =>
                     {
-                        await api.DeleteActionAsync(path);
+                        await api.Nodes.DeleteSubscriptionAsync(node);
                         return Loc.T("NodeSubscription_Removed");
                     }
                 }
@@ -118,7 +117,7 @@ internal static class NodeSystemTabs
 
         return new TableTab(async () =>
         {
-            var info = await api.GetObjectAsync(path);
+            var info = await api.Nodes.GetSubscriptionAsync(node);
             return SubscriptionFields
                 .Where(f => Value(info, f.Key).Length > 0)
                 .Select(f => (IReadOnlyDictionary<string, string>)new Dictionary<string, string>
@@ -134,8 +133,6 @@ internal static class NodeSystemTabs
     /// </summary>
     public static TableTab Replication(ProxmoxApiClient api, string node, int? guest = null, bool canEdit = false)
     {
-        var path = $"nodes/{Seg(node)}/replication";
-        var list = guest is { } vmid ? $"{path}?guest={vmid}" : path;
         var actions = new List<TableAction>
         {
             new()
@@ -143,7 +140,7 @@ internal static class NodeSystemTabs
                 LabelKey = "NodeReplication_RunNow", IconKey = "IconPlay", NeedsSelection = true,
                 Run = async (row, _) =>
                 {
-                    await api.PostActionAsync($"{path}/{Seg(row!["id"])}/schedule_now");
+                    await api.Nodes.RunReplicationNowAsync(node, row!["id"]);
                     return Loc.T("NodeReplication_Scheduled");
                 }
             },
@@ -152,7 +149,7 @@ internal static class NodeSystemTabs
                 LabelKey = "NodeReplication_Log", IconKey = "IconList", NeedsSelection = true,
                 Run = async (row, owner) =>
                 {
-                    var lines = await api.GetTableAsync($"{path}/{Seg(row!["id"])}/log?limit=500");
+                    var lines = await api.Nodes.ReplicationLogAsync(node, row!["id"]);
                     return TextViewWindow.ShowModal(owner, Loc.T("NodeReplication_LogTitle", row["id"]),
                         string.Join(Environment.NewLine, lines.Select(l => Value(l, "t"))));
                 }
@@ -167,10 +164,11 @@ internal static class NodeSystemTabs
                 Run = (_, owner) => AddGuestReplicationAsync(api, node, id, owner)
             });
             actions.Add(DeleteAction(row => Loc.T("DcReplication_DeleteConfirm", row["id"]),
-                row => api.DeleteActionAsync($"cluster/replication/{Seg(row["id"])}"), "DcReplication_Deleted"));
+                row => api.Jobs.DeleteReplicationAsync(row["id"]), "DcReplication_Deleted"));
         }
 
-        return new TableTab(() => api.GetTableAsync(list), ReplicationColumns, "NodeReplication_Hint", actions);
+        return new TableTab(() => api.Nodes.ReplicationAsync(node, guest), ReplicationColumns, "NodeReplication_Hint",
+            actions);
     }
 
     private static async Task<string?> AddGuestReplicationAsync(ProxmoxApiClient api, string node, int guest,
@@ -180,7 +178,7 @@ internal static class NodeSystemTabs
             .Where(n => n.Node != node)
             .Select(n => (n.Node, n.Node))
             .ToList();
-        var existing = await api.GetTableAsync("cluster/replication");
+        var existing = await api.Jobs.ListReplicationAsync();
         var vmid = guest.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         return await SubmitAsync(owner, "DcReplication_AddTitle",
@@ -198,7 +196,7 @@ internal static class NodeSystemTabs
             var form = NonEmpty(values);
             form["id"] = Datacenter.ClusterActions.NextReplicationId(existing, vmid);
             form["type"] = "local";
-            return api.PostActionAsync("cluster/replication", form);
+            return api.Jobs.CreateReplicationAsync(form);
         }, "DcReplication_Added");
     }
 }

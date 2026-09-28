@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using ProxmoxClient.App.Localization;
+using ProxmoxClient.Core.Api.Versioning;
 
 namespace ProxmoxClient.App.Views.Shared;
 
@@ -35,6 +36,9 @@ public sealed class TableAction
 
     /// <summary>실행 전에 물어볼 문구를 선택한 행으로 만든다. 없으면 바로 실행한다.</summary>
     public Func<IReadOnlyDictionary<string, string>?, string>? Confirm { get; init; }
+
+    /// <summary>이 버튼이 쓰는 API 기능 — 서버가 못 쓰면 버튼을 두지 않는다(표·옵션 화면이 알아서 뺀다).</summary>
+    public ApiFeature? Requires { get; init; }
 }
 
 /// <summary>표에 보여 줄 한 행 — 없는 필드는 빈칸, 형식은 미리 적용해 둔다.</summary>

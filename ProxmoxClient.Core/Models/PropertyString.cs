@@ -104,4 +104,41 @@ public sealed class PropertyString
     {
         return Format();
     }
+
+    /// <summary>
+    ///     서버가 이미 풀어서 돌려준 JSON 객체(<c>{"type":"secure","network":"10.0.0.0/24"}</c>)를 다시 서버 입력 형식
+    ///     (<c>type=secure,network=10.0.0.0/24</c>)으로 — cluster/options·백업 일정은 GET 은 객체, PUT/POST 는 문자열이다.
+    ///     참/거짓은 1/0, 배열은 <c>;</c> 로 잇는다. JSON 객체가 아니면 그대로 돌려준다.
+    /// </summary>
+    public static string FromJsonObject(string text)
+    {
+        if (!text.StartsWith('{')) return text;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(text);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return text;
+            var parts = doc.RootElement.EnumerateObject()
+                .Select(p => (p.Name, Value: JsonScalar(p.Value)))
+                .Where(p => p.Value is not null)
+                .Select(p => $"{p.Name}={p.Value}");
+            return string.Join(',', parts);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return text;
+        }
+    }
+
+    private static string? JsonScalar(System.Text.Json.JsonElement value)
+    {
+        return value.ValueKind switch
+        {
+            System.Text.Json.JsonValueKind.String => value.GetString(),
+            System.Text.Json.JsonValueKind.True => "1",
+            System.Text.Json.JsonValueKind.False => "0",
+            System.Text.Json.JsonValueKind.Number => value.GetRawText(),
+            System.Text.Json.JsonValueKind.Array => string.Join(';', value.EnumerateArray().Select(JsonScalar)),
+            _ => null // 중첩 객체·null 은 이 형식으로 표현할 수 없다
+        };
+    }
 }

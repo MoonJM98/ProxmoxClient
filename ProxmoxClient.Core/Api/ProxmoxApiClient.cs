@@ -42,7 +42,9 @@ public sealed partial class ProxmoxApiClient : IDisposable
 
         var handler = new HttpClientHandler
         {
-            UseProxy = profile.ProxyMode != ProxyMode.None
+            UseProxy = profile.ProxyMode != ProxyMode.None,
+            // pveproxy 는 Accept-Encoding: gzip 이면 JSON 을 압축해 보낸다 — 매초 받는 자원·작업 목록 대역폭이 크게 준다
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
         };
 
         // 모든 인증서 허용 대신 공인 CA 검증 또는 신뢰한 지문(TOFU)만 통과
@@ -87,6 +89,7 @@ public sealed partial class ProxmoxApiClient : IDisposable
     ///     Authenticates with the profile credentials. Password mode performs
     ///     POST /access/ticket and stores the ticket/CSRF token; token mode is a no-op.
     /// </summary>
+    [Versioning.PveApi("POST", "/access/ticket")]
     public async Task LoginAsync(CancellationToken ct = default)
     {
         ThrowIfDisposed();
@@ -147,9 +150,11 @@ public sealed partial class ProxmoxApiClient : IDisposable
         _auth = new AuthSession(ticket, csrfToken, Environment.TickCount64);
     }
     /// <summary>Gets the cluster version (GET /version) — handy as a connection test.</summary>
+    [Versioning.PveApi("GET", "/version")]
     public async Task<PveVersion> GetVersionAsync(CancellationToken ct = default)
     {
         var data = await GetJsonAsync("version", ct).ConfigureAwait(false);
+        RememberVersion(GetString(data, "version"));
 
         return new PveVersion
         {
@@ -159,6 +164,7 @@ public sealed partial class ProxmoxApiClient : IDisposable
         };
     }
     /// <summary>Lists all VMs and CTs in the cluster (GET /cluster/resources?type=vm).</summary>
+    [Versioning.PveApi("GET", "/cluster/resources")]
     public Task<IReadOnlyList<PveResource>> GetClusterResourcesAsync(CancellationToken ct = default)
     {
         return GetListAsync<PveResource, ResourceDto>(
@@ -167,6 +173,7 @@ public sealed partial class ProxmoxApiClient : IDisposable
             ct);
     }
     /// <summary>Lists all storages in the cluster (GET /cluster/resources?type=storage).</summary>
+    [Versioning.PveApi("GET", "/cluster/resources")]
     public Task<IReadOnlyList<PveStorage>> GetClusterStoragesAsync(CancellationToken ct = default)
     {
         return GetListAsync<PveStorage, ResourceDto>("cluster/resources?type=storage", MapStorage, ct);
@@ -175,6 +182,8 @@ public sealed partial class ProxmoxApiClient : IDisposable
     ///     클러스터 전체 현황을 한 번에 조회(GET /cluster/resources) — 게스트·노드·스토리지가 한 응답에 담긴다.
     ///     값은 pvestatd 주기로 모인 것이라 실시간보다 몇 초 늦을 수 있다(전원 작업 직후엔 status/current 로 보정).
     /// </summary>
+    [Versioning.PveApi("GET", "/cluster/resources")]
+    [Versioning.PveApi("GET", "/storage")]
     public async Task<ClusterOverview> GetClusterOverviewAsync(CancellationToken ct = default)
     {
         using var doc = await GetDocumentAsync("cluster/resources", ct).ConfigureAwait(false);
@@ -264,6 +273,7 @@ public sealed partial class ProxmoxApiClient : IDisposable
     ///     Gets the effective permission tree visible to the current user
     ///     (GET /access/permissions) and flattens it into a capability summary.
     /// </summary>
+    [Versioning.PveApi("GET", "/access/permissions")]
     public async Task<PermissionsInfo> GetPermissionsSummaryAsync(CancellationToken ct = default)
     {
         var data = await GetJsonAsync("access/permissions", ct).ConfigureAwait(false);
@@ -302,6 +312,7 @@ public sealed partial class ProxmoxApiClient : IDisposable
     ///     pve-proxy). Returns an empty list on failure so callers can fall back
     ///     to built-in defaults.
     /// </summary>
+    [Versioning.PveApi("GET", "/access/domains")]
     public async Task<IReadOnlyList<PveAuthDomain>> GetAuthDomainsAsync(CancellationToken ct = default)
     {
         try
@@ -387,14 +398,16 @@ public sealed partial class ProxmoxApiClient : IDisposable
             : body[..ResponseExcerptLength];
     }
     /// <summary>GET → "data" 요소(복제본). 1초 주기 목록 조회는 복제 없이 문서에서 바로 매핑하는 <see cref="GetListAsync{T,TDto}" /> 사용.</summary>
-    private async Task<JsonElement> GetJsonAsync(string relative, CancellationToken ct)
+    private async Task<JsonElement> GetJsonAsync(string relative, CancellationToken ct, TimeSpan? timeout = null)
     {
-        using var doc = await GetDocumentAsync(relative, ct).ConfigureAwait(false);
+        using var doc = await GetDocumentAsync(relative, ct, timeout).ConfigureAwait(false);
         return DataElement(doc).Clone(); // Clone() survives doc disposal.
     }
-    private async Task<JsonDocument> GetDocumentAsync(string relative, CancellationToken ct)
+    private async Task<JsonDocument> GetDocumentAsync(string relative, CancellationToken ct,
+        TimeSpan? timeout = null)
     {
-        using var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, relative), true, ct)
+        using var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, relative), true, ct,
+                timeout)
             .ConfigureAwait(false);
         return await ReadJsonDocumentAsync(response, ct).ConfigureAwait(false);
     }
@@ -529,25 +542,6 @@ public sealed partial class ProxmoxApiClient : IDisposable
         var root = doc.RootElement;
         return root.ValueKind == JsonValueKind.Object && root.TryGetProperty("data", out var data) ? data : root;
     }
-    private async Task<byte[]> GetPngAsync(string relative, CancellationToken ct)
-    {
-        using var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, relative), true, ct)
-            .ConfigureAwait(false);
-        try
-        {
-            if (!response.IsSuccessStatusCode)
-            {
-                var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-                throw new ProxmoxApiException((int)response.StatusCode, Excerpt(body));
-            }
-
-            return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is HttpRequestException or IOException)
-        {
-            throw new ProxmoxApiException((int)response.StatusCode, null, Res.T("ProxmoxApiClient_12", ex.Message));
-        }
-    }
     /// <summary>목록 응답을 문서에서 바로 DTO → 모델로 매핑(응답 문자열·JsonElement 복제·중간 리스트 없음).</summary>
     private async Task<IReadOnlyList<T>> GetListAsync<T, TDto>(
         string relative,
@@ -606,7 +600,7 @@ public sealed partial class ProxmoxApiClient : IDisposable
         };
     }
     /// <summary>
-    ///     Parses "UPID:{node}:{pid}:{pstart}:{starttime}:{type}:{id}:{user}:".
+    ///     Parses "UPID:{node}:{pid}:{pstart}:{starttime}:{type}:{id}:{user}:" — pid·pstart·starttime 은 16진수.
     ///     Unknown shapes yield an empty task instead of throwing.
     /// </summary>
     internal static PveTask ParseUpid(string upid)
@@ -614,7 +608,8 @@ public sealed partial class ProxmoxApiClient : IDisposable
         var parts = upid.Split(':');
         if (parts.Length < 8 || parts[0] != "UPID") return new PveTask { Upid = upid, Status = string.Empty };
 
-        var startTime = long.TryParse(parts[4], out var unix) && unix > 0
+        var startTime = long.TryParse(parts[4], NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture,
+                            out var unix) && unix > 0
             ? DateTimeOffset.FromUnixTimeSeconds(unix).UtcDateTime
             : default;
 

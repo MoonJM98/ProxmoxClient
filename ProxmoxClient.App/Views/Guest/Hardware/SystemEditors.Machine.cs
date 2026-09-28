@@ -143,7 +143,7 @@ internal static partial class SystemEditors
     {
         try
         {
-            var rows = await ctx.Api.GetTableAsync($"{ctx.NodePath}/capabilities/qemu/machines");
+            var rows = await ctx.Api.Guests.MachinesAsync(ctx.Guest.Node, ctx.Get("arch"));
             var isArm = ctx.Get("arch") == "aarch64";
             return rows.Select(r => ActionHelpers.Value(r, "id"))
                 .Where(id => id.Length > 0 && id.StartsWith(isArm ? "virt" : "pc", StringComparison.Ordinal))

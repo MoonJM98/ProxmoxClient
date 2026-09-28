@@ -33,8 +33,7 @@ internal static class BackupList
                 LabelKey = "BackupList_ShowConfig", IconKey = "IconList", NeedsSelection = true,
                 Run = async (row, owner) =>
                 {
-                    var text = await api.GetTextAsync(
-                        $"nodes/{Seg(guest.Node)}/vzdump/extractconfig?volume={Uri.EscapeDataString(row!["volid"])}");
+                    var text = await api.Guests.BackupConfigAsync(guest.Node, row!["volid"]);
                     return TextViewWindow.ShowModal(owner, Loc.T("BackupList_ConfigTitle", row["volid"]), text);
                 }
             },
@@ -49,11 +48,12 @@ internal static class BackupList
                         Key = "protected", LabelKey = "BackupList_Protected", Kind = FormFieldKind.Bool,
                         Initial = Value(row, "protected") is "1" or "true" ? "1" : "0"
                     }
-                ], values => api.PutActionAsync(ContentPath(guest, row), values), "BackupList_Saved",
+                ], values => api.Storage.UpdateVolumeAsync(guest.Node, row["storage"], row["volid"], values),
+                    "BackupList_Saved",
                     titleIsKey: false)
             },
             DeleteAction(row => Loc.T("BackupList_DeleteConfirm", row["volid"]),
-                row => api.DeleteActionAsync(ContentPath(guest, row)), "BackupList_Deleted")
+                row => api.Storage.DeleteVolumeAsync(guest.Node, row["storage"], row["volid"]), "BackupList_Deleted")
         };
 
         if (canRestore)
@@ -70,13 +70,11 @@ internal static class BackupList
     private static async Task<IReadOnlyList<IReadOnlyDictionary<string, string>>> LoadAsync(ProxmoxApiClient api,
         PveResource guest)
     {
-        var node = Seg(guest.Node);
-        var storages = await api.GetTableAsync($"nodes/{node}/storage?content=backup&enabled=1");
+        var storages = await api.Storage.NodeStoragesAsync(guest.Node, "backup");
         var rows = new List<IReadOnlyDictionary<string, string>>();
         foreach (var storage in storages.Select(s => Value(s, "storage")).Where(s => s.Length > 0))
         {
-            var files = await api.GetTableAsync(
-                $"nodes/{node}/storage/{Seg(storage)}/content?content=backup&vmid={guest.VmId}");
+            var files = await api.Storage.ContentAsync(guest.Node, storage, "backup", guest.VmId);
             rows.AddRange(files.Select(f =>
                 (IReadOnlyDictionary<string, string>)new Dictionary<string, string>(f, StringComparer.Ordinal)
                 {
@@ -98,7 +96,7 @@ internal static class BackupList
         var isVm = guest.Kind == ResourceKind.Qemu;
         var current = guest.VmId.ToString(CultureInfo.InvariantCulture);
         var content = isVm ? "images" : "rootdir";
-        var storages = (await api.GetTableAsync($"nodes/{Seg(guest.Node)}/storage?content={content}&enabled=1"))
+        var storages = (await api.Storage.NodeStoragesAsync(guest.Node, content))
             .Select(s => (Value(s, "storage"), Value(s, "storage")))
             .Prepend((string.Empty, "BackupList_OriginalStorage"))
             .ToList();
@@ -128,15 +126,10 @@ internal static class BackupList
             if (!isVm) form["restore"] = "1";
             if (values["storage"].Length > 0) form["storage"] = values["storage"];
             if (values["vmid"] == current) form["force"] = "1";
-            return api.PostActionAsync($"nodes/{Seg(guest.Node)}/{guest.Kind.ApiSegment()}", form);
+            return api.Guests.CreateAsync(guest.Node, guest.Kind, form);
         }, "BackupList_Restored",
             values => values["vmid"] != current || values["confirm"] == current
                 ? null
                 : Loc.T("BackupList_OverwriteMismatch", current));
-    }
-
-    private static string ContentPath(PveResource guest, IReadOnlyDictionary<string, string> row)
-    {
-        return $"nodes/{Seg(guest.Node)}/storage/{Seg(row["storage"])}/content/{Seg(row["volid"])}";
     }
 }

@@ -13,6 +13,23 @@ public sealed record ConsoleSettings
         Raw
     }
 
+    /// <summary>
+    ///     콘솔 위 커서 표시 방식.
+    ///     <list type="bullet">
+    ///         <item><see cref="Both" /> — PC 화살표와 게스트 커서를 함께 보인다(게스트가 보낸 모양은 겹쳐 그림).</item>
+    ///         <item><see cref="Arrow" />·<see cref="Dot" /> — PC 커서 하나만: 게스트가 모양을 보내면 그 모양,
+    ///             안 보내면(표준 VGA 등 — 게스트가 화면에 직접 그림) 화살표·점.</item>
+    ///         <item><see cref="Hidden" /> — 게스트 커서만: 모양을 보내면 그 모양을 PC 커서로, 아니면 PC 커서 숨김.</item>
+    ///     </list>
+    /// </summary>
+    public enum LocalCursorMode
+    {
+        Both,
+        Arrow,
+        Dot,
+        Hidden
+    }
+
     /// <summary>Tight 품질/압축 레벨 최솟값 (RFB 의사 인코딩 정의 범위).</summary>
     public const int MinLevel = 0;
 
@@ -35,6 +52,9 @@ public sealed record ConsoleSettings
     /// <summary>QEMU 확장 키 이벤트(스캔코드 전송) 사용 — 서버 미지원 시 keysym 으로 자동 대체.</summary>
     public bool UseQemuExtendedKeys { get; init; } = true;
 
+    /// <summary>커서 표시 방식(기본: 둘 다 — PC 화살표 + 게스트 커서).</summary>
+    public LocalCursorMode LocalCursor { get; init; } = LocalCursorMode.Both;
+
     /// <summary>맞춤 모드 축소 시 Linear 보간 사용.</summary>
     public bool SmoothScaling { get; init; } = true;
 
@@ -55,6 +75,7 @@ public sealed record ConsoleSettings
         return this with
         {
             Encoding = Enum.IsDefined(Encoding) ? Encoding : VncEncoding.Tight,
+            LocalCursor = Enum.IsDefined(LocalCursor) ? LocalCursor : LocalCursorMode.Both,
             QualityLevel = ClampLevel(QualityLevel),
             CompressionLevel = ClampLevel(CompressionLevel),
             TerminalFontFamily = string.IsNullOrWhiteSpace(TerminalFontFamily)

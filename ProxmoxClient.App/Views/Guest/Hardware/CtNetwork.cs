@@ -97,7 +97,8 @@ internal static partial class CtNetwork
         var config = await api.GetGuestPendingAsync(guest.Node, guest.Kind, guest.VmId);
         var ctx = new HardwareContext(api, guest, config, running: false);
         var edit = await EditorAsync(ctx, key);
-        var dialog = new FormDialog(edit.Title, edit.Fields, edit.Validate) { Owner = owner };
+        var dialog = new FormDialog(edit.Title, edit.Fields, edit.Validate,
+            api.Guests.Feature(nameof(Core.Api.Domains.GuestsApi.SetConfigAsync))) { Owner = owner };
         if (dialog.ShowDialog() != true || dialog.Result is not { } values) return null;
 
         await api.UpdateGuestConfigAsync(guest.Node, guest.Kind, guest.VmId,

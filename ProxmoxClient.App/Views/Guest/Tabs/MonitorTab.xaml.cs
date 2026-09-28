@@ -17,7 +17,7 @@ public partial class MonitorTab : UserControl
     private const int MaxOutputChars = 200_000;
 
     private readonly ProxmoxApiClient _api;
-    private readonly string _path;
+    private readonly PveResource _guest;
     private readonly List<string> _history = [];
     private int _historyIndex;
     private bool _busy;
@@ -26,7 +26,7 @@ public partial class MonitorTab : UserControl
     {
         InitializeComponent();
         _api = api;
-        _path = $"nodes/{ProxmoxApiClient.PathSegment(guest.Node)}/qemu/{guest.VmId}/monitor";
+        _guest = guest;
         Loaded += (_, _) => CommandBox.Focus();
     }
 
@@ -57,7 +57,7 @@ public partial class MonitorTab : UserControl
         CommandBox.Clear();
         try
         {
-            var output = await _api.PostActionAsync(_path, new Dictionary<string, string> { ["command"] = command });
+            var output = await _api.Guests.MonitorAsync(_guest.Node, _guest.VmId, command);
             var text = output.Replace("\r\n", "\n").Replace("\n", Environment.NewLine);
             Append($"# {command}{Environment.NewLine}{text}");
         }

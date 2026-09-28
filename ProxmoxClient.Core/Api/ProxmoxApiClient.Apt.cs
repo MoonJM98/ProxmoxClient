@@ -14,6 +14,7 @@ public sealed partial class ProxmoxApiClient
     ///     노드의 APT 저장소(GET nodes/{node}/apt/repositories). 파일 → 저장소 구조를 저장소마다 한 행으로 펼치며,
     ///     켜고 끌 때 필요한 파일 경로(path)와 파일 안 순번(index)을 함께 담는다.
     /// </summary>
+    [Versioning.PveApi("GET", "/nodes/{node}/apt/repositories")]
     public async Task<AptRepositories> GetAptRepositoriesAsync(string node, CancellationToken ct = default)
     {
         var data = await GetJsonAsync($"nodes/{Escape(node)}/apt/repositories", ct).ConfigureAwait(false);

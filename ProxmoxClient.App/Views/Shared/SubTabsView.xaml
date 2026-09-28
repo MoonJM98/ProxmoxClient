@@ -2,9 +2,11 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <DockPanel>
-        <!-- 메인 창 탭 줄과 같은 모양의 하위 탭 -->
-        <ListBox DockPanel.Dock="Top" x:Name="TabBar" Background="Transparent" BorderThickness="0"
-                 Margin="16,12,16,0" SelectionChanged="OnTabChanged"
+        <!-- 밑줄 탭 — 탭 줄 아래 가는 선 위에 고른 탭의 강조색 밑줄이 겹친다 -->
+        <ListBox DockPanel.Dock="Top" x:Name="TabBar" Background="Transparent"
+                 BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1"
+                 Margin="16,10,16,4" SelectionChanged="OnTabChanged"
+                 ItemContainerStyle="{StaticResource SubTabItem}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>

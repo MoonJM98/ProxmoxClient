@@ -2,6 +2,7 @@ using System.Windows;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Api.Domains;
 using static ProxmoxClient.App.Views.Shared.ActionHelpers;
 
 namespace ProxmoxClient.App.Views.Node;
@@ -82,31 +83,30 @@ internal static class DiskTabs
 
     public static SubTabsView Create(ProxmoxApiClient api, string node, bool canEdit)
     {
-        var basePath = $"nodes/{Seg(node)}/disks";
         return new SubTabsView(
         [
-            ("NodeDisks_TabDisks", () => new TableTab(() => api.GetTableAsync($"{basePath}/list"), DiskColumns,
-                "NodeDisks_Hint", DiskActions(api, basePath, canEdit))),
-            ("NodeDisks_TabLvm", () => new TableTab(() => api.GetArrayPropertyAsync($"{basePath}/lvm", "children"),
+            ("NodeDisks_TabDisks", () => new TableTab(() => api.Disks.ListAsync(node), DiskColumns,
+                "NodeDisks_Hint", DiskActions(api, node, canEdit))),
+            ("NodeDisks_TabLvm", () => new TableTab(() => api.Disks.VolumeGroupsAsync(node),
                 VolumeGroupColumns, "NodeDisks_LvmHint",
-                canEdit ? StorageActions(api, basePath, "lvm", "name") : null)),
-            ("NodeDisks_TabLvmThin", () => new TableTab(() => api.GetTableAsync($"{basePath}/lvmthin"),
+                canEdit ? StorageActions(api, node, "lvm", "name") : null)),
+            ("NodeDisks_TabLvmThin", () => new TableTab(() => api.Disks.ListStorageAsync(node, "lvmthin"),
                 ThinPoolColumns, "NodeDisks_LvmThinHint",
-                canEdit ? StorageActions(api, basePath, "lvmthin", "lv") : null)),
-            ("NodeDisks_TabDirectory", () => new TableTab(() => api.GetTableAsync($"{basePath}/directory"),
+                canEdit ? StorageActions(api, node, "lvmthin", "lv") : null)),
+            ("NodeDisks_TabDirectory", () => new TableTab(() => api.Disks.ListStorageAsync(node, "directory"),
                 DirectoryColumns, "NodeDisks_DirectoryHint",
-                canEdit ? StorageActions(api, basePath, "directory", "path") : null)),
-            ("NodeDisks_TabZfs", () => new TableTab(() => api.GetTableAsync($"{basePath}/zfs"), ZfsColumns,
-                "NodeDisks_ZfsHint", canEdit ? StorageActions(api, basePath, "zfs", "name") : null))
+                canEdit ? StorageActions(api, node, "directory", "path") : null)),
+            ("NodeDisks_TabZfs", () => new TableTab(() => api.Disks.ListStorageAsync(node, "zfs"), ZfsColumns,
+                "NodeDisks_ZfsHint", canEdit ? StorageActions(api, node, "zfs", "name") : null))
         ]);
     }
 
-    private static IReadOnlyList<TableAction> DiskActions(ProxmoxApiClient api, string basePath, bool canEdit)
+    private static IReadOnlyList<TableAction> DiskActions(ProxmoxApiClient api, string node, bool canEdit)
     {
         var smart = new TableAction
         {
             LabelKey = "NodeDisks_Smart", IconKey = "IconList", NeedsSelection = true,
-            Run = (row, owner) => ShowSmartAsync(api, basePath, row!["devpath"], owner)
+            Run = (row, owner) => ShowSmartAsync(api, node, row!["devpath"], owner)
         };
         if (!canEdit) return [smart];
 
@@ -118,8 +118,7 @@ internal static class DiskTabs
                 LabelKey = "NodeDisks_InitGpt", IconKey = "IconPlus", NeedsSelection = true,
                 Confirm = row => Loc.T("NodeDisks_InitGptConfirm", row!["devpath"]),
                 Run = async (row, _) => await RunTaskAsync(api,
-                    api.PostActionAsync($"{basePath}/initgpt",
-                        new Dictionary<string, string> { ["disk"] = row!["devpath"] }), "NodeDisks_InitGptDone")
+                    api.Disks.InitGptAsync(node, row!["devpath"]), "NodeDisks_InitGptDone")
             },
             new TableAction
             {
@@ -129,39 +128,30 @@ internal static class DiskTabs
                     var device = row!["devpath"];
                     return SubmitTaskAsync(api, owner, Loc.T("NodeDisks_WipeTitle", device),
                         [TypeToConfirmField()],
-                        _ => api.PutActionAsync($"{basePath}/wipedisk",
-                            new Dictionary<string, string> { ["disk"] = device }),
+                        _ => api.Disks.WipeAsync(node, device),
                         "NodeDisks_WipeDone", TypedMatches(device));
                 }
             }
         ];
     }
 
-    private static Task<string?> ShowSmartAsync(ProxmoxApiClient api, string basePath, string device, Window? owner)
+    private static async Task<string?> ShowSmartAsync(ProxmoxApiClient api, string node, string device,
+        Window? owner)
     {
-        var path = $"{basePath}/smart?disk={Uri.EscapeDataString(device)}";
-        return Task.FromResult(TableWindow.ShowModal(owner, Loc.T("NodeDisks_SmartTitle", device),
-            new TableTab(async () =>
-            {
-                var attributes = await api.GetArrayPropertyAsync(path, "attributes");
-                if (attributes.Count > 0) return attributes;
-
-                // NVMe 등은 속성표 대신 원문 텍스트를 준다 — 줄마다 한 행으로 보여 준다
-                var text = Value(await api.GetObjectAsync(path), "text");
-                return text.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(line => (IReadOnlyDictionary<string, string>)new Dictionary<string, string>
-                    {
-                        ["name"] = line.TrimEnd()
-                    })
-                    .ToList();
-            }, SmartColumns, "NodeDisks_SmartHint")));
+        // ATA 는 속성표, NVMe 등은 smartctl 원문만 준다 — 원문은 칸이 맞지 않으므로 고정폭 글꼴 그대로 보여 준다
+        var attributes = await api.Disks.SmartAttributesAsync(node, device);
+        UIElement content = attributes.Count > 0
+            ? new TableTab(() => api.Disks.SmartAttributesAsync(node, device), SmartColumns, "NodeDisks_SmartHint")
+            : new TextEditTab(async () => (await api.Disks.SmartTextAsync(node, device), string.Empty), null,
+                "NodeDisks_SmartHint");
+        return TableWindow.ShowModal(owner, Loc.T("NodeDisks_SmartTitle", device), content);
     }
 
     /// <summary>
     ///     LVM·LVM-Thin·디렉터리·ZFS 공통 — 만들기와 없애기. nameKey 는 행에서 이름을 꺼낼 필드
     ///     (디렉터리는 경로의 마지막 부분이 이름).
     /// </summary>
-    private static IReadOnlyList<TableAction> StorageActions(ProxmoxApiClient api, string basePath, string kind,
+    private static IReadOnlyList<TableAction> StorageActions(ProxmoxApiClient api, string node, string kind,
         string nameKey)
     {
         return
@@ -169,11 +159,12 @@ internal static class DiskTabs
             new TableAction
             {
                 LabelKey = "NodeDisks_Create", IconKey = "IconPlus",
-                Run = (_, owner) => CreateAsync(api, basePath, kind, owner)
+                Run = (_, owner) => CreateAsync(api, node, kind, owner)
             },
             new TableAction
             {
                 LabelKey = "Action_Delete", IconKey = "IconTrash", NeedsSelection = true,
+                Requires = api.Disks.Feature(nameof(DisksApi.DeleteStorageAsync)),
                 Run = (row, owner) =>
                 {
                     var name = Value(row!, nameKey);
@@ -191,23 +182,18 @@ internal static class DiskTabs
                             Key = "cleanup-disks", LabelKey = "NodeDisks_CleanupDisks", Kind = FormFieldKind.Bool
                         },
                         TypeToConfirmField()
-                    ], values =>
-                    {
-                        var query = $"cleanup-config={values["cleanup-config"]}"
-                                    + $"&cleanup-disks={values["cleanup-disks"]}";
-                        if (kind == "lvmthin")
-                            query += $"&volume-group={Uri.EscapeDataString(Value(row!, "vg"))}";
-                        return api.DeleteActionAsync($"{basePath}/{kind}/{Seg(name)}?{query}");
-                    }, "NodeDisks_Deleted", TypedMatches(name));
+                    ], values => api.Disks.DeleteStorageAsync(node, kind, name, values["cleanup-config"] == "1",
+                        values["cleanup-disks"] == "1", kind == "lvmthin" ? Value(row!, "vg") : null),
+                        "NodeDisks_Deleted", TypedMatches(name));
                 }
             }
         ];
     }
 
-    private static async Task<string?> CreateAsync(ProxmoxApiClient api, string basePath, string kind,
+    private static async Task<string?> CreateAsync(ProxmoxApiClient api, string node, string kind,
         Window? owner)
     {
-        var unused = (await api.GetTableAsync($"{basePath}/list?type=unused"))
+        var unused = (await api.Disks.ListAsync(node, unusedOnly: true))
             .Select(d => (Value(d, "devpath"), $"{Value(d, "devpath")}  {Value(d, "model")}".Trim()))
             .ToList();
 
@@ -252,7 +238,7 @@ internal static class DiskTabs
         });
 
         return await SubmitTaskAsync(api, owner, Loc.T("NodeDisks_CreateTitle", Loc.T(KindLabelKey(kind))), fields,
-            values => api.PostActionAsync($"{basePath}/{kind}", NonEmpty(values)), "NodeDisks_Created");
+            values => api.Disks.CreateStorageAsync(node, kind, NonEmpty(values)), "NodeDisks_Created");
     }
 
     private static string KindLabelKey(string kind)

@@ -7,19 +7,23 @@ namespace ProxmoxClient.Core.Api;
 public sealed partial class ProxmoxApiClient
 {
     /// <summary>Lists cluster-wide tasks, newest first (GET /cluster/tasks).</summary>
+    [Versioning.PveApi("GET", "/cluster/tasks")]
     public Task<IReadOnlyList<PveTask>> GetClusterTasksAsync(CancellationToken ct = default)
     {
         return GetListAsync<PveTask, TaskDto>("cluster/tasks", MapTask, ct);
     }
     /// <summary>
-    ///     Lists tasks on one node (GET /nodes/{node}/tasks?active=0|1&amp;limit=100).
-    ///     Running tasks (no status yet) are reported as "running".
+    ///     Lists tasks on one node (GET /nodes/{node}/tasks?source=all|active&amp;limit=100[&amp;vmid=]).
+    ///     source=all 은 실행 중과 끝난 작업을 함께 준다(기본 archive 는 끝난 것만). vmid 를 주면 그 게스트 작업만
+    ///     서버가 골라 준다(노드의 최근 100개 안에서만 거르지 않게). Running tasks are reported as "running".
     /// </summary>
-    public Task<IReadOnlyList<PveTask>> GetNodeTasksAsync(string node, bool activeOnly = false,
+    [Versioning.PveApi("GET", "/nodes/{node}/tasks")]
+    public Task<IReadOnlyList<PveTask>> GetNodeTasksAsync(string node, bool activeOnly = false, int? vmid = null,
         CancellationToken ct = default)
     {
+        var filter = vmid is { } id ? $"&vmid={id}" : string.Empty;
         return GetListAsync<PveTask, TaskDto>(
-            $"nodes/{Escape(node)}/tasks?active={(activeOnly ? 1 : 0)}&limit=100",
+            $"nodes/{Escape(node)}/tasks?source={(activeOnly ? "active" : "all")}&limit=100{filter}",
             MapTask,
             ct);
     }
@@ -28,6 +32,7 @@ public sealed partial class ProxmoxApiClient
     ///     (GET /nodes/{node}/tasks/{upid}/status). The node is parsed from the UPID.
     ///     Terminal tasks report "OK" / "ERROR: ..." (exitstatus); running ones "running".
     /// </summary>
+    [Versioning.PveApi("GET", "/nodes/{node}/tasks/{upid}/status")]
     public async Task<PveTask> GetTaskStatusAsync(string upid, CancellationToken ct = default)
     {
         var baseTask = ParseUpid(upid);
@@ -40,6 +45,7 @@ public sealed partial class ProxmoxApiClient
         if (status.Length == 0) status = GetString(data, "status");
 
         var endTime = GetLong(data, "endtime");
+        var startTime = GetLong(data, "starttime"); // 목록과 같은 값 — UPID 로 읽은 값은 예비
         return new PveTask
         {
             Upid = baseTask.Upid,
@@ -47,7 +53,9 @@ public sealed partial class ProxmoxApiClient
             Type = baseTask.Type,
             Id = baseTask.Id,
             User = baseTask.User,
-            StartTimeUtc = baseTask.StartTimeUtc,
+            StartTimeUtc = startTime > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(startTime).UtcDateTime
+                : baseTask.StartTimeUtc,
             EndTimeUtc = endTime > 0
                 ? DateTimeOffset.FromUnixTimeSeconds(endTime).UtcDateTime
                 : null,
@@ -58,6 +66,7 @@ public sealed partial class ProxmoxApiClient
     ///     Polls a task (default every 2 s) until it leaves the "running" state and
     ///     returns the final task snapshot. Cancellation stops the wait.
     /// </summary>
+    [Versioning.PveApi("GET", "/nodes/{node}/tasks/{upid}/status")]
     public async Task<PveTask> WaitTaskAsync(string upid, TimeSpan? pollInterval = null, CancellationToken ct = default)
     {
         var delay = pollInterval ?? TimeSpan.FromSeconds(2);

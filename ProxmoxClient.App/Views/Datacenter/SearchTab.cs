@@ -26,11 +26,13 @@ internal static class SearchTab
     ];
 
     /// <param name="open">행을 두 번 눌렀을 때 그 리소스 창을 여는 동작(메인 창이 넘긴다).</param>
-    public static TableTab Create(ProxmoxApiClient api, Action<IReadOnlyDictionary<string, string>, Window?>? open)
+    /// <param name="actions">표 위 버튼(클러스터 일괄 작업 등).</param>
+    public static TableTab Create(ProxmoxApiClient api, Action<IReadOnlyDictionary<string, string>, Window?>? open,
+        IReadOnlyList<TableAction>? actions = null)
     {
         return new TableTab(
-            async () => (await api.GetTableAsync("cluster/resources")).Select(ToSearchRow).ToList(),
-            Columns, "DcSearch_Hint", filterable: true, open: open);
+            async () => (await api.Cluster.ResourcesAsync()).Select(ToSearchRow).ToList(),
+            Columns, "DcSearch_Hint", actions, filterable: true, open: open);
     }
 
     /// <summary>서버 행에 설명·메모리/디스크 사용률(0~1)을 덧붙인 새 행을 만든다.</summary>

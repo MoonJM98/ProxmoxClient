@@ -84,8 +84,11 @@ public sealed class ProxmoxVncSession : IDisposable
     /// <summary>커서 위치 갱신(게스트 좌표).</summary>
     public event Action<int, int>? CursorPosition;
 
-    /// <summary>커서 모양 갱신(BGRA 픽셀, 가로, 세로).</summary>
-    public event Action<byte[], int, int>? CursorShape;
+    /// <summary>커서 모양 갱신(픽셀·크기·핫스팟, 크기 0 은 숨김).</summary>
+    public event Action<RfbCursor>? CursorShape;
+
+    /// <summary>게스트 키보드 LED(CapsLock·NumLock·ScrollLock) 변경 — 서버가 QEMU LED State 를 지원할 때.</summary>
+    public event Action<KeyboardLeds>? LedState;
 
     /// <summary>연결 종료. null=정상, 아니면 오류.</summary>
     public event Action<Exception?>? Closed;
@@ -142,7 +145,8 @@ public sealed class ProxmoxVncSession : IDisposable
         };
         rfb.FrameUpdated += (x, y, w, h) => FrameReceived?.Invoke(x, y, w, h);
         rfb.CursorPosition += (x, y) => CursorPosition?.Invoke(x, y);
-        rfb.CursorShape += (pixels, w, h) => CursorShape?.Invoke(pixels, w, h);
+        rfb.CursorShape += cursor => CursorShape?.Invoke(cursor);
+        rfb.LedState += leds => LedState?.Invoke(leds);
         rfb.ConnectionClosed += ex =>
         {
             IsConnected = false;

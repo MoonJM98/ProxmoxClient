@@ -13,6 +13,8 @@ public sealed partial class ProxmoxApiClient
     ///     Returns port + ticket used to open the vncwebsocket console channel.
     ///     Requires password (ticket) authentication.
     /// </summary>
+    [Versioning.PveApi("POST", "/nodes/{node}/qemu/{vmid}/vncproxy")]
+    [Versioning.PveApi("POST", "/nodes/{node}/lxc/{vmid}/vncproxy")]
     public async Task<VncProxyInfo> CreateVncProxyAsync(string node, ResourceKind kind, int vmid,
         CancellationToken ct = default)
     {
@@ -36,12 +38,18 @@ public sealed partial class ProxmoxApiClient
     ///     터미널 프록시 시작 (POST nodes/{node}/{lxc|qemu}/{vmid}/termproxy).
     ///     서버가 게스트 콘솔에 PTY 를 붙이고, 반환된 포트·티켓으로 vncwebsocket 에 연결한다.
     /// </summary>
+    [Versioning.PveApi("POST", "/nodes/{node}/termproxy")]
+    [Versioning.PveApi("POST", "/nodes/{node}/qemu/{vmid}/termproxy")]
+    [Versioning.PveApi("POST", "/nodes/{node}/lxc/{vmid}/termproxy")]
     public Task<TermProxyInfo> CreateTermProxyAsync(string node, ResourceKind kind, int vmid,
         CancellationToken ct = default)
     {
         return CreateTermProxyAsync(ConsoleTarget.ForGuest(node, kind, vmid), ct);
     }
     /// <summary>터미널 프록시를 연다(POST {target}/termproxy). 노드 대상이면 노드 셸이 열린다.</summary>
+    [Versioning.PveApi("POST", "/nodes/{node}/termproxy")]
+    [Versioning.PveApi("POST", "/nodes/{node}/qemu/{vmid}/termproxy")]
+    [Versioning.PveApi("POST", "/nodes/{node}/lxc/{vmid}/termproxy")]
     public async Task<TermProxyInfo> CreateTermProxyAsync(ConsoleTarget target, CancellationToken ct = default)
     {
         if (Profile.AuthMode == AuthMode.ApiToken || _auth is null)
@@ -64,6 +72,7 @@ public sealed partial class ProxmoxApiClient
     ///     Gets the SPICE proxy connection settings (POST nodes/{node}/qemu/{vmid}/spiceproxy)
     ///     used to build a .vv file for remote-viewer. QEMU VMs only.
     /// </summary>
+    [Versioning.PveApi("POST", "/nodes/{node}/qemu/{vmid}/spiceproxy")]
     public async Task<SpiceProxyInfo> GetSpiceProxyAsync(string node, int vmid, CancellationToken ct = default)
     {
         // proxy: 클라이언트가 접속할 spiceproxy 주소. 생략하면 서버가 노드 이름을 돌려주는데,

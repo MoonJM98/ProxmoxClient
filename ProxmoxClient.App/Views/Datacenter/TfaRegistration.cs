@@ -10,7 +10,8 @@ using static ProxmoxClient.App.Views.Shared.ActionHelpers;
 namespace ProxmoxClient.App.Views.Datacenter;
 
 /// <summary>
-///     2단계 인증 등록 — TOTP(인증 앱)와 복구 코드. WebAuthn·YubiKey 는 브라우저 인증 API 가 필요해 웹 UI 에서 한다.
+///     2단계 인증 등록 — TOTP(인증 앱, QR 코드), Yubico OTP, 복구 코드.
+///     WebAuthn 은 브라우저 인증 API(서버 주소 기반 출처 확인)가 필요해 웹 UI 에서 한다.
 /// </summary>
 internal static class TfaRegistration
 {
@@ -29,6 +30,10 @@ internal static class TfaRegistration
             new TableAction
             {
                 LabelKey = "DcTfa_AddTotp", IconKey = "IconPlus", Run = (_, owner) => AddTotpAsync(api, owner)
+            },
+            new TableAction
+            {
+                LabelKey = "DcTfa_AddYubico", IconKey = "IconKeyboard", Run = (_, owner) => AddYubicoAsync(api, owner)
             },
             new TableAction
             {
@@ -55,8 +60,8 @@ internal static class TfaRegistration
         var secret = NewSecret();
         var uri = TotpUri(userId, secret);
 
-        // 인증 앱에 넣을 값 — 복사할 수 있게 글 창으로 보여 준다
-        TextViewWindow.ShowModal(owner, Loc.T("DcTfa_SecretTitle"), Loc.T("DcTfa_SecretText", secret, uri));
+        // 인증 앱으로 찍을 QR 코드와 직접 입력용 비밀 값(웹 UI 와 같다)
+        TotpQrWindow.ShowModal(owner, secret, uri);
 
         return await SubmitAsync(owner, Loc.T("DcTfa_VerifyTitle", userId),
         [
@@ -70,12 +75,38 @@ internal static class TfaRegistration
                 ["description"] = target["description"]
             };
             if (values["password"].Length > 0) form["password"] = values["password"];
-            await api.SendForObjectAsync(HttpMethod.Post, $"access/tfa/{Seg(userId)}", form);
+            await api.Tfa.AddAsync(userId, form);
             return string.Empty;
         }, "DcTfa_Added", titleIsKey: false,
             validate: values => values["value"].Length == 6 && values["value"].All(char.IsAsciiDigit)
                 ? null
                 : Loc.T("DcTfa_CodeInvalid"));
+    }
+
+    /// <summary>
+    ///     Yubico OTP — 키를 눌러 나온 OTP 를 넣으면 서버가 키 ID 를 등록한다. 영역에 Yubico 설정(API ID·키)이 있어야 한다.
+    /// </summary>
+    private static async Task<string?> AddYubicoAsync(ProxmoxApiClient api, Window? owner)
+    {
+        var users = await UserChoicesAsync(api);
+        return await SubmitAsync(owner, "DcTfa_AddYubico",
+        [
+            new FormField { Key = "userid", LabelKey = "Table_UserId", Kind = FormFieldKind.Choice, Choices = users,
+                Required = true },
+            new FormField { Key = "description", LabelKey = "Table_Description", Initial = "YubiKey" },
+            new FormField { Key = "value", LabelKey = "DcTfa_YubicoOtp", Required = true, Trim = true,
+                Hint = Loc.T("DcTfa_YubicoHint") },
+            new FormField { Key = "password", LabelKey = "DcUsers_MyPassword", Kind = FormFieldKind.Password }
+        ], async values =>
+        {
+            var form = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["type"] = "yubico", ["value"] = values["value"], ["description"] = values["description"]
+            };
+            if (values["password"].Length > 0) form["password"] = values["password"];
+            await api.Tfa.AddAsync(values["userid"], form);
+            return string.Empty;
+        }, "DcTfa_Added", validate: values => values["value"].Length >= 32 ? null : Loc.T("DcTfa_YubicoInvalid"));
     }
 
     /// <summary>복구 코드 — 서버가 만든 일회용 코드를 지금 한 번만 보여 준다.</summary>
@@ -94,7 +125,7 @@ internal static class TfaRegistration
 
         var form = new Dictionary<string, string>(StringComparer.Ordinal) { ["type"] = "recovery" };
         if (values["password"].Length > 0) form["password"] = values["password"];
-        var created = await api.SendForObjectAsync(HttpMethod.Post, $"access/tfa/{Seg(values["userid"])}", form);
+        var created = await api.Tfa.AddAsync(values["userid"], form);
 
         var codes = Value(created, "recovery").Replace(", ", Environment.NewLine);
         TextViewWindow.ShowModal(owner, Loc.T("DcTfa_RecoveryTitle"), Loc.T("DcTfa_RecoveryText", codes));
@@ -103,7 +134,7 @@ internal static class TfaRegistration
 
     private static async Task<List<(string, string)>> UserChoicesAsync(ProxmoxApiClient api)
     {
-        return (await api.GetTableAsync("access/users"))
+        return (await api.Users.ListAsync())
             .Select(u => (Value(u, "userid"), Value(u, "userid")))
             .OrderBy(u => u.Item1, StringComparer.Ordinal)
             .ToList();

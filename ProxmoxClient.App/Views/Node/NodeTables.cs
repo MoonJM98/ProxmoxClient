@@ -29,18 +29,13 @@ internal static class NodeTables
 
     public static TableTab Network(ProxmoxApiClient api, string node, bool canEdit)
     {
-        return new TableTab(() => api.GetTableAsync(NodePath(node, "network")), NetworkColumns, "NodeNetwork_Hint",
+        return new TableTab(() => api.Nodes.ListNetworkAsync(node), NetworkColumns, "NodeNetwork_Hint",
             canEdit ? NetworkActions.Actions(api, node) : null);
     }
 
     public static TableTab Certificates(ProxmoxApiClient api, string node, bool canEdit)
     {
-        return new TableTab(() => api.GetTableAsync(NodePath(node, "certificates/info")), CertificateColumns,
+        return new TableTab(() => api.Nodes.CertificatesAsync(node), CertificateColumns,
             "NodeCertificates_Hint", canEdit ? CertificateActions.Actions(api, node) : null);
-    }
-
-    private static string NodePath(string node, string section)
-    {
-        return $"nodes/{ProxmoxApiClient.PathSegment(node)}/{section}";
     }
 }

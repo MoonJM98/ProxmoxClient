@@ -164,6 +164,41 @@ public partial class SnapshotsTab : UserControl
             Loc.T("SnapshotDialog_ActionRollback", snapshot.Name));
     }
 
+    /// <summary>스냅숏 설명(메모)만 바꾼다 — 스냅숏 내용은 그대로라 작업 없이 바로 끝난다.</summary>
+    private async void OnEditDescription(object sender, RoutedEventArgs e)
+    {
+        if (_busy) return; // 되돌리기·삭제 작업이 게스트를 잠근 동안에는 바꿀 수 없다
+
+        if (_vm.SelectedSnapshot is not { } snapshot)
+        {
+            Ask(Loc.T("SnapshotDialog_M02"), Loc.T("MainWindow_M02"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var dialog = new Shared.FormDialog(Loc.T("SnapshotDialog_EditNoteTitle", snapshot.Name),
+        [
+            new Shared.FormField
+            {
+                Key = "description", LabelKey = "FirewallWindow_13", Kind = Shared.FormFieldKind.Multiline,
+                Initial = snapshot.Description ?? string.Empty, CanLoadFile = false
+            }
+        ]) { Owner = Window.GetWindow(this) };
+        if (dialog.ShowDialog() != true || dialog.Result is not { } values) return;
+
+        try
+        {
+            await _api.UpdateSnapshotDescriptionAsync(_guest.Node, _guest.Kind, _guest.VmId, snapshot.Name,
+                values["description"]);
+            _vm.StatusText = Loc.T("SnapshotDialog_NoteSaved", snapshot.Name);
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _vm.StatusText = Loc.T("SnapshotDialog_Failed", Loc.T("SnapshotDialog_EditNote"), ex.Message);
+        }
+    }
+
     private async void OnDelete(object sender, RoutedEventArgs e)
     {
         if (_vm.SelectedSnapshot is not { } snapshot)

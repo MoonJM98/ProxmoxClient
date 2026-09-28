@@ -19,6 +19,9 @@ internal static class ProxmoxConsoleSocket
         return ConnectAsync(api, ConsoleTarget.ForGuest(node, kind, vmid), port, ticket, ct);
     }
 
+    [Versioning.PveApi("GET", "/nodes/{node}/vncwebsocket")]
+    [Versioning.PveApi("GET", "/nodes/{node}/qemu/{vmid}/vncwebsocket")]
+    [Versioning.PveApi("GET", "/nodes/{node}/lxc/{vmid}/vncwebsocket")]
     public static async Task<ClientWebSocket> ConnectAsync(
         ProxmoxApiClient api, ConsoleTarget target, int port, string ticket, CancellationToken ct)
     {

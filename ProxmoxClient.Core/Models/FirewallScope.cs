@@ -21,6 +21,9 @@ public sealed class FirewallScope
     /// <summary>사용 여부 등 옵션이 있는지 — 보안 그룹에는 없다.</summary>
     public bool HasOptions { get; }
 
+    /// <summary>SDN VNet 방화벽인지 — 지나가는(forward) 트래픽 규칙만 있다.</summary>
+    public bool IsVnet => BasePath.StartsWith("cluster/sdn/vnets/", StringComparison.Ordinal);
+
     public static FirewallScope Cluster { get; } = new("cluster/firewall");
 
     /// <summary>데이터센터 보안 그룹 — 여러 게스트가 함께 쓰는 규칙 묶음.</summary>
@@ -28,6 +31,12 @@ public sealed class FirewallScope
     {
         return new FirewallScope("cluster/firewall",
             $"cluster/firewall/groups/{Uri.EscapeDataString(group)}", hasOptions: false);
+    }
+
+    /// <summary>SDN VNet 방화벽(8.3+) — 규칙과 옵션(전달 정책·로그)만 있다. 별칭·IP 집합은 데이터센터 것을 쓴다.</summary>
+    public static FirewallScope ForVnet(string vnet)
+    {
+        return new FirewallScope($"cluster/sdn/vnets/{Uri.EscapeDataString(vnet)}/firewall");
     }
 
     public static FirewallScope ForNode(string node)

@@ -3,11 +3,12 @@ using System.Windows;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Api.Domains;
 using static ProxmoxClient.App.Views.Shared.ActionHelpers;
 
 namespace ProxmoxClient.App.Views.Datacenter;
 
-/// <summary>접근 제어 부가 기능 — 사용자별 API 토큰, 2단계 인증 목록, 사용자 정의 역할, 인증 영역 추가·동기화.</summary>
+/// <summary>접근 제어 부가 기능 — 사용자별 API 토큰, 2단계 인증 목록, 사용자 정의 역할(인증 영역은 RealmActions).</summary>
 internal static class AccessExtras
 {
     private static readonly IReadOnlyList<TableColumn> TokenColumns =
@@ -23,7 +24,8 @@ internal static class AccessExtras
         new() { Key = "userid", HeaderKey = "Table_UserId", Width = 150 },
         new() { Key = "type", HeaderKey = "Table_Type", Width = 90 },
         new() { Key = "description", HeaderKey = "Table_Description", Width = 0 },
-        new() { Key = "enable", HeaderKey = "Table_Enabled", Width = 60, Format = TableFormats.Flag },
+        // enable 이 없으면 켜진 상태(서버 기본값)
+        new() { Key = "enable", HeaderKey = "Table_Enabled", Width = 60, Format = v => v is "0" or "false" ? "" : "✓" },
         new() { Key = "created", HeaderKey = "DcTfa_Created", Width = 140, Format = TableFormats.EpochDate }
     ];
 
@@ -38,15 +40,30 @@ internal static class AccessExtras
             Run = (row, owner) =>
             {
                 var user = row!["userid"];
-                var path = $"access/users/{Seg(user)}/token";
                 return Task.FromResult(TableWindow.ShowModal(owner, Loc.T("DcTokens_Title", user),
-                    new TableTab(() => api.GetTableAsync(path), TokenColumns, "DcTokens_Hint",
-                        TokenActions(api, path, user))));
+                    new TableTab(() => api.Users.ListTokensAsync(user), TokenColumns, "DcTokens_Hint",
+                        TokenActions(api, user))));
             }
         };
     }
 
-    private static IReadOnlyList<TableAction> TokenActions(ProxmoxApiClient api, string path, string user)
+    /// <summary>토큰 만료일 — 사용자와 같은 날짜 형식(비우면 만료 없음).</summary>
+    private static FormField TokenExpireField(string epoch)
+    {
+        var initial = long.TryParse(epoch, out var seconds) && seconds > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(seconds).LocalDateTime.ToString("yyyy-MM-dd",
+                System.Globalization.CultureInfo.InvariantCulture)
+            : string.Empty;
+        return new FormField { Key = "expire", LabelKey = "Table_Expires", Initial = initial, Trim = true,
+            Hint = Loc.T("DcUsers_ExpireHint", "yyyy-MM-dd") };
+    }
+
+    private static string? ValidateExpire(IReadOnlyDictionary<string, string> values)
+    {
+        return UserActions.ExpireEpoch(values["expire"]) is null ? Loc.T("DcUsers_BadExpire", "yyyy-MM-dd") : null;
+    }
+
+    private static IReadOnlyList<TableAction> TokenActions(ProxmoxApiClient api, string user)
     {
         return
         [
@@ -62,15 +79,17 @@ internal static class AccessExtras
                         {
                             Key = "privsep", LabelKey = "DcTokens_PrivSep", Kind = FormFieldKind.Bool, Initial = "1"
                         },
+                        TokenExpireField(""),
                         new FormField { Key = "comment", LabelKey = "Table_Comment" }
-                    ]) { Owner = owner };
+                    ], ValidateExpire) { Owner = owner };
                     if (dialog.ShowDialog() != true || dialog.Result is not { } values) return null;
 
                     var form = NonEmpty(values);
                     form.Remove("tokenid");
+                    form.Remove("expire");
                     form["privsep"] = values["privsep"];
-                    var created = await api.SendForObjectAsync(HttpMethod.Post,
-                        $"{path}/{Seg(values["tokenid"])}", form);
+                    if (UserActions.ExpireEpoch(values["expire"]) is { } expire and not "0") form["expire"] = expire;
+                    var created = await api.Users.CreateTokenAsync(user, values["tokenid"], form);
 
                     // 비밀 값은 지금 한 번만 받을 수 있다 — 복사할 수 있게 글 창으로 보여 준다
                     TextViewWindow.ShowModal(owner, Loc.T("DcTokens_SecretTitle"),
@@ -88,13 +107,43 @@ internal static class AccessExtras
                         Key = "privsep", LabelKey = "DcTokens_PrivSep", Kind = FormFieldKind.Bool,
                         Initial = Value(row, "privsep") is "0" ? "0" : "1"
                     },
+                    TokenExpireField(Value(row, "expire")),
                     new FormField { Key = "comment", LabelKey = "Table_Comment", Initial = Value(row, "comment") }
-                ], values => api.PutActionAsync($"{path}/{Seg(row["tokenid"])}", UpdateForm(values)),
-                    "DcTokens_Updated", titleIsKey: false)
+                ], values =>
+                {
+                    var form = values.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
+                    form["expire"] = UserActions.ExpireEpoch(values["expire"]) ?? "0";
+                    // 9.0 전 서버는 delete 를 몰라 Core 가 빈 값·0 으로 바꿔 보낸다
+                    return api.Users.UpdateTokenAsync(user, row["tokenid"], UpdateForm(form));
+                }, "DcTokens_Updated", titleIsKey: false, validate: ValidateExpire)
             },
+            RegenerateAction(api, user),
+            UserActions.PermissionsAction(api, "tokenid", user),
             DeleteAction(row => Loc.T("DcTokens_DeleteConfirm", row["tokenid"]),
-                row => api.DeleteActionAsync($"{path}/{Seg(row["tokenid"])}"), "DcTokens_Deleted")
+                row => api.Users.DeleteTokenAsync(user, row["tokenid"]), "DcTokens_Deleted")
         ];
+    }
+
+    /// <summary>
+    ///     같은 토큰 ID·권한을 둔 채 비밀 값만 바꾼다(PVE 9.1+ — 낮은 서버엔 버튼이 없다).
+    ///     이전 비밀을 쓰던 곳은 바로 막힌다.
+    /// </summary>
+    private static TableAction RegenerateAction(ProxmoxApiClient api, string user)
+    {
+        return new TableAction
+        {
+            LabelKey = "DcTokens_Regenerate", IconKey = "IconRefresh", NeedsSelection = true,
+            Requires = api.Users.Feature(nameof(UsersApi.RegenerateTokenAsync), "regenerate"),
+            Confirm = row => Loc.T("DcTokens_RegenerateConfirm", row!["tokenid"]),
+            Run = async (row, owner) =>
+            {
+                var secret = await api.Users.RegenerateTokenAsync(user, row!["tokenid"]);
+                if (secret.Length == 0) return Loc.T("DcTokens_RegenerateUnsupported");
+                TextViewWindow.ShowModal(owner, Loc.T("DcTokens_SecretTitle"),
+                    Loc.T("DcTokens_Secret", $"{user}!{row["tokenid"]}", secret));
+                return Loc.T("DcTokens_Regenerated");
+            }
+        };
     }
 
     // ------------------------------------------------------------ 2단계 인증
@@ -109,21 +158,32 @@ internal static class AccessExtras
 
         return
         [
+            // 수정 — 설명과 사용 여부(웹 UI 의 TFA 편집 창). 서버는 root@pam 이 아니면 내 암호를 요구한다
             new TableAction
             {
-                LabelKey = "NodeApt_Toggle", IconKey = "IconSwitch", NeedsSelection = true,
+                LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
                 Run = (row, owner) => SubmitAsync(owner, Loc.T("DcTfa_ToggleTitle", row!["userid"], row["id"]),
-                    [Password()], values =>
-                    {
-                        var form = NonEmpty(values);
-                        form["enable"] = Value(row, "enable") is "0" or "false" ? "1" : "0";
-                        return api.PutActionAsync($"access/tfa/{Seg(row["userid"])}/{Seg(row["id"])}", form);
-                    }, "DcTfa_Toggled", titleIsKey: false)
+                [
+                    new FormField { Key = "description", LabelKey = "Table_Description",
+                        Initial = Value(row, "description") },
+                    new FormField { Key = "enable", LabelKey = "Table_Enabled", Kind = FormFieldKind.Bool,
+                        Initial = Value(row, "enable") is "0" or "false" ? "0" : "1" },
+                    Password()
+                ], values =>
+                {
+                    var form = new Dictionary<string, string>(values);
+                    if (form["password"].Length == 0) form.Remove("password");
+                    return api.Tfa.UpdateAsync(row["userid"], row["id"], form);
+                }, "DcTfa_Toggled", titleIsKey: false)
             },
-            // 삭제 요청은 본문 없이 주소로만 보내므로 암호를 함께 보내지 않는다(주소는 로그에 남을 수 있다)
-            DeleteAction(row => Loc.T("DcTfa_DeleteConfirm", row["userid"], row["id"]),
-                row => api.DeleteActionAsync($"access/tfa/{Seg(row["userid"])}/{Seg(row["id"])}"),
-                "DcTfa_Deleted")
+            // 서버는 root@pam 이 아니면 내 암호를 요구한다 — DELETE 는 본문이 없어 웹 UI 처럼 주소(HTTPS)에 싣는다
+            new TableAction
+            {
+                LabelKey = "Action_Delete", IconKey = "IconTrash", NeedsSelection = true,
+                Run = (row, owner) => SubmitAsync(owner, Loc.T("DcTfa_DeleteConfirm", row!["userid"], row["id"]),
+                    [Password()], values => api.Tfa.DeleteAsync(row["userid"], row["id"], values["password"]),
+                    "DcTfa_Deleted", titleIsKey: false)
+            }
         ];
     }
 
@@ -143,7 +203,7 @@ internal static class AccessExtras
                 Run = (row, owner) => EditRoleAsync(api, row, owner)
             },
             DeleteAction(row => Loc.T("DcRoles_DeleteConfirm", row["roleid"]),
-                row => api.DeleteActionAsync($"access/roles/{Seg(row["roleid"])}"), "DcRoles_Deleted")
+                row => api.Access.DeleteRoleAsync(row["roleid"]), "DcRoles_Deleted")
         ];
     }
 
@@ -153,7 +213,7 @@ internal static class AccessExtras
     {
         if (row is not null && Value(row, "special") is "1" or "true") return Loc.T("DcRoles_BuiltInReadOnly");
 
-        var allPrivileges = (await api.GetObjectAsync("access/roles/Administrator")).Keys
+        var allPrivileges = (await api.Access.GetRoleAsync("Administrator")).Keys
             .Order(StringComparer.Ordinal)
             .Select(p => (p, p))
             .ToList();
@@ -168,148 +228,11 @@ internal static class AccessExtras
 
         var title = row is null ? Loc.T("DcRoles_AddTitle") : Loc.T("DcRoles_EditTitle", row["roleid"]);
         return await SubmitAsync(owner, title, fields, values => row is null
-                ? api.PostActionAsync("access/roles", NonEmpty(values))
-                : api.PutActionAsync($"access/roles/{Seg(row["roleid"])}",
+                ? api.Access.CreateRoleAsync(NonEmpty(values))
+                : api.Access.UpdateRoleAsync(row["roleid"],
                     new Dictionary<string, string> { ["privs"] = values["privs"] }),
-            row is null ? "DcRoles_Added" : "DcRoles_Updated", titleIsKey: false);
-    }
-
-    // ------------------------------------------------------------ 인증 영역
-
-    public static IReadOnlyList<TableAction> RealmActions(ProxmoxApiClient api)
-    {
-        return
-        [
-            new TableAction
-            {
-                LabelKey = "Action_Add", IconKey = "IconPlus", Run = (_, owner) => AddRealmAsync(api, owner)
-            },
-            new TableAction
-            {
-                LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                Run = (row, owner) => SubmitAsync(owner, Loc.T("DcRealms_EditTitle", row!["realm"]),
-                [
-                    new FormField { Key = "comment", LabelKey = "Table_Comment", Initial = Value(row, "comment") },
-                    new FormField
-                    {
-                        Key = "default", LabelKey = "DcRealms_Default", Kind = FormFieldKind.Bool,
-                        Initial = Value(row, "default") is "1" ? "1" : "0"
-                    }
-                ], values => api.PutActionAsync($"access/domains/{Seg(row["realm"])}", UpdateForm(values)),
-                    "DcRealms_Updated", titleIsKey: false)
-            },
-            new TableAction
-            {
-                LabelKey = "DcRealms_Sync", IconKey = "IconRefresh", NeedsSelection = true,
-                Run = (row, owner) => SyncRealmAsync(api, row!, owner)
-            },
-            new TableAction
-            {
-                LabelKey = "Action_Delete", IconKey = "IconTrash", NeedsSelection = true,
-                Confirm = row => Loc.T("DcRealms_DeleteConfirm", row!["realm"]),
-                Run = async (row, _) =>
-                {
-                    var realm = row!;
-                    // pam·pve 는 서버가 지울 수 없게 막는다 — 요청 전에 알려 준다
-                    if (Value(realm, "type") is "pam" or "pve") return Loc.T("DcRealms_BuiltInReadOnly");
-
-                    await api.DeleteActionAsync($"access/domains/{Seg(realm["realm"])}");
-                    return Loc.T("DcRealms_Deleted");
-                }
-            }
-        ];
-    }
-
-    /// <summary>LDAP·AD 영역의 사용자·그룹을 서버와 맞춘다(OpenID 는 로그인할 때 만들어지므로 동기화가 없다).</summary>
-    private static Task<string?> SyncRealmAsync(ProxmoxApiClient api, IReadOnlyDictionary<string, string> row,
-        Window? owner)
-    {
-        if (Value(row, "type") is not ("ldap" or "ad"))
-            return Task.FromResult<string?>(Loc.T("DcRealms_SyncUnsupported"));
-
-        return SubmitTaskAsync(api, owner, Loc.T("DcRealms_SyncTitle", row["realm"]),
-        [
-            new FormField
-            {
-                Key = "scope", LabelKey = "DcRealms_SyncScope", Kind = FormFieldKind.Choice, Initial = "both",
-                Choices = [("both", "DcRealms_SyncBoth"), ("users", "DcTab_Users"), ("groups", "DcTab_Groups")]
-            },
-            new FormField
-            {
-                Key = "enable-new", LabelKey = "DcRealms_EnableNew", Kind = FormFieldKind.Bool, Initial = "1"
-            },
-            new FormField { Key = "dry-run", LabelKey = "DcRealms_DryRun", Kind = FormFieldKind.Bool }
-        ], values => api.PostActionAsync($"access/domains/{Seg(row["realm"])}/sync", values), "DcRealms_Synced");
-    }
-
-    /// <summary>인증 영역 추가 — 유형(LDAP·AD·OpenID)을 먼저 고른 뒤 그 유형에 필요한 칸만 받는다.</summary>
-    private static async Task<string?> AddRealmAsync(ProxmoxApiClient api, Window? owner)
-    {
-        var choose = new FormDialog(Loc.T("DcRealms_AddTitle"),
-        [
-            new FormField
-            {
-                Key = "type", LabelKey = "Table_Type", Kind = FormFieldKind.Choice, Initial = "ldap",
-                Choices = [("ldap", "LDAP"), ("ad", "Active Directory"), ("openid", "OpenID Connect")]
-            }
-        ]) { Owner = owner };
-        if (choose.ShowDialog() != true || choose.Result is not { } picked) return null;
-
-        var type = picked["type"];
-        var fields = new List<FormField> { new() { Key = "realm", LabelKey = "Table_Name", Required = true } };
-        fields.AddRange(type switch
-        {
-            "openid" =>
-            [
-                new FormField { Key = "issuer-url", LabelKey = "DcRealms_IssuerUrl", Required = true },
-                new FormField { Key = "client-id", LabelKey = "DcRealms_ClientId", Required = true },
-                new FormField { Key = "client-key", LabelKey = "DcRealms_ClientKey", Kind = FormFieldKind.Password },
-                new FormField { Key = "username-claim", LabelKey = "DcRealms_UsernameClaim" },
-                new FormField { Key = "scopes", LabelKey = "DcRealms_Scopes", Initial = "email profile" },
-                new FormField { Key = "autocreate", LabelKey = "DcRealms_AutoCreate", Kind = FormFieldKind.Bool }
-            ],
-            _ => DirectoryFields(type)
-        });
-        fields.Add(new FormField { Key = "comment", LabelKey = "Table_Comment" });
-        fields.Add(new FormField { Key = "default", LabelKey = "DcRealms_Default", Kind = FormFieldKind.Bool });
-
-        return await SubmitAsync(owner, Loc.T("DcRealms_AddTypeTitle", type.ToUpperInvariant()), fields, values =>
-        {
-            var form = NonEmpty(values);
-            form["type"] = type;
-            return api.PostActionAsync("access/domains", form);
-        }, "DcRealms_Added", titleIsKey: false);
-    }
-
-    private static List<FormField> DirectoryFields(string type)
-    {
-        var fields = new List<FormField>();
-        if (type == "ad")
-            fields.Add(new FormField { Key = "domain", LabelKey = "DcRealms_Domain", Required = true });
-        else
-        {
-            fields.Add(new FormField { Key = "base_dn", LabelKey = "DcRealms_BaseDn", Required = true });
-            fields.Add(new FormField
-            {
-                Key = "user_attr", LabelKey = "DcRealms_UserAttr", Initial = "uid", Required = true
-            });
-        }
-
-        fields.AddRange(
-        [
-            new FormField { Key = "server1", LabelKey = "DcRealms_Server1", Required = true },
-            new FormField { Key = "server2", LabelKey = "DcRealms_Server2" },
-            new FormField { Key = "port", LabelKey = "DcRealms_Port" },
-            new FormField
-            {
-                Key = "mode", LabelKey = "DcRealms_Mode", Kind = FormFieldKind.Choice, Initial = "ldap",
-                Choices = [("ldap", "LDAP"), ("ldaps", "LDAPS"), ("ldap+starttls", "LDAP + STARTTLS")]
-            },
-            new FormField { Key = "verify", LabelKey = "DcRealms_Verify", Kind = FormFieldKind.Bool },
-            new FormField { Key = "bind_dn", LabelKey = "DcRealms_BindDn" },
-            new FormField { Key = "password", LabelKey = "DcStorage_Password", Kind = FormFieldKind.Password }
-        ]);
-        return fields;
+            row is null ? "DcRoles_Added" : "DcRoles_Updated", titleIsKey: false,
+            validate: values => values["privs"].Length == 0 ? Loc.T("DcRoles_NeedPrivs") : null);
     }
 
     private static string FormatExpire(string raw)

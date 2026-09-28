@@ -48,8 +48,15 @@ public sealed partial class RfbClient
     private const byte QemuSubExtendedKeyEvent = 0;
     private const int EncPointerPos = -232;
     private const int EncRichCursor = -239; // -240 은 XCursor(형식이 다름)
+    private const int EncQemuLedState = -261; // 게스트 키보드 LED(CapsLock·NumLock·ScrollLock) 1바이트
     /// <summary>ServerInit·DesktopSize 해상도 상한 — 비정상 값으로 거대 할당·int 오버플로가 나지 않도록.</summary>
     private const int MaxFramebufferDimension = 16384;
+    private const int MaxCursorSize = 256;
+    /// <summary>
+    ///     포인터 이동 최소 간격(noVNC 와 같은 17ms, 약 60Hz) — 고주사율 마우스의 이동을 모두 보내면 서버가
+    ///     이동마다 화면 갱신을 만들어 대역폭과 지연이 늘어난다. 버튼·휠·키는 간격 없이 바로 보낸다.
+    /// </summary>
+    private static readonly TimeSpan PointerMoveInterval = TimeSpan.FromMilliseconds(17);
     /// <summary>연결 종료 후 읽기 루프가 끝나기를 기다렸다 해제기를 정리하는 최대 시간.</summary>
     private static readonly TimeSpan InflaterReleaseTimeout = TimeSpan.FromSeconds(2);
     /// <summary>현재 FramebufferUpdate 의 변경 영역(읽기 루프 전용).</summary>
@@ -61,7 +68,9 @@ public sealed partial class RfbClient
     /// </summary>
     private readonly Channel<OutgoingMessage> _outgoing = Channel.CreateUnbounded<OutgoingMessage>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+    private const int RectHeaderLength = 12;
     private readonly byte[] _scratch = new byte[8];
+    private readonly byte[] _rectHeader = new byte[RectHeaderLength];
     private readonly Stream _stream;
     private readonly ZlibContinuousInflate[] _tightInflates = [new(), new(), new(), new()];
     private readonly SemaphoreSlim _writeLock = new(1, 1);
@@ -116,8 +125,10 @@ public sealed partial class RfbClient
     public event Action<int, int, int, int>? FrameUpdated;
     /// <summary>커서 위치 갱신(PointerPos 의사 rect).</summary>
     public event Action<int, int>? CursorPosition;
-    /// <summary>커서 모양 갱신(RichCursor 의사 rect) — BGRA 픽셀(투명 적용)과 크기.</summary>
-    public event Action<byte[], int, int>? CursorShape;
+    /// <summary>커서 모양 갱신(RichCursor 의사 rect) — 클라이언트가 마우스 위치에 직접 그린다.</summary>
+    public event Action<RfbCursor>? CursorShape;
+    /// <summary>게스트 키보드 LED 가 바뀌었다(QEMU LED State 의사 rect).</summary>
+    public event Action<KeyboardLeds>? LedState;
     /// <summary>벨(사운드) 알림.</summary>
     public event Action? Bell;
     /// <summary>서버 클립보드 텍스트.</summary>
@@ -335,17 +346,37 @@ public sealed partial class RfbClient
 
         return Task.CompletedTask;
     }
-    /// <summary>단일 전송 루프 — 큐 순서대로 보내되, 큐에 연달아 쌓인 포인터 이동은 마지막 것만 보낸다.</summary>
+    /// <summary>
+    ///     단일 전송 루프 — 큐 순서대로 보내되, 큐에 연달아 쌓인 포인터 이동은 마지막 것만 보낸다.
+    ///     직전 이동을 보낸 지 <see cref="PointerMoveInterval" /> 이 안 됐으면 그만큼 기다렸다가 그사이 쌓인 이동까지 합친다.
+    /// </summary>
     private async Task RunSendLoopAsync(CancellationToken ct)
     {
         var reader = _outgoing.Reader;
+        long? lastMove = null;
         while (await reader.WaitToReadAsync(ct).ConfigureAwait(false))
         while (reader.TryRead(out var message))
         {
-            while (message.IsPointerMove && reader.TryPeek(out var next) && next.IsPointerMove)
+            if (message.IsPointerMove)
             {
-                ArrayPool<byte>.Shared.Return(message.Buffer); // 병합으로 버려지는 이동 메시지도 반환
-                reader.TryRead(out message);
+                var wait = lastMove is { } last
+                    ? PointerMoveInterval - System.Diagnostics.Stopwatch.GetElapsedTime(last)
+                    : TimeSpan.Zero;
+                if (wait > TimeSpan.Zero)
+                {
+                    try
+                    {
+                        await Task.Delay(wait, ct).ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        ArrayPool<byte>.Shared.Return(message.Buffer);
+                        throw;
+                    }
+                }
+
+                message = LatestMove(reader, message);
+                lastMove = System.Diagnostics.Stopwatch.GetTimestamp();
             }
 
             try
@@ -357,6 +388,17 @@ public sealed partial class RfbClient
                 ArrayPool<byte>.Shared.Return(message.Buffer);
             }
         }
+    }
+    /// <summary>큐 앞쪽에 이어진 포인터 이동을 마지막 것 하나로 합친다(버려지는 버퍼는 반환).</summary>
+    private static OutgoingMessage LatestMove(ChannelReader<OutgoingMessage> reader, OutgoingMessage message)
+    {
+        while (reader.TryPeek(out var next) && next.IsPointerMove)
+        {
+            ArrayPool<byte>.Shared.Return(message.Buffer);
+            reader.TryRead(out message);
+        }
+
+        return message;
     }
     /// <summary>먼저 끝난 루프 외 나머지 루프의 예외를 관찰 처리 — UnobservedTaskException 로 새지 않도록.</summary>
     internal static void ObserveRemaining(params Task?[] tasks)
@@ -410,13 +452,13 @@ public sealed partial class RfbClient
 
         for (var i = 0; i < rectCount; i++)
         {
-            await ReadExactlyAsync(_scratch, 0, 8, ct).ConfigureAwait(false);
-            var x = BinaryPrimitives.ReadUInt16BigEndian(_scratch.AsSpan(0, 2));
-            var y = BinaryPrimitives.ReadUInt16BigEndian(_scratch.AsSpan(2, 2));
-            var w = BinaryPrimitives.ReadUInt16BigEndian(_scratch.AsSpan(4, 2));
-            var h = BinaryPrimitives.ReadUInt16BigEndian(_scratch.AsSpan(6, 2));
-            await ReadExactlyAsync(_scratch, 0, 4, ct).ConfigureAwait(false);
-            var encoding = BinaryPrimitives.ReadInt32BigEndian(_scratch.AsSpan(0, 4));
+            // rect 헤더 12바이트(x,y,w,h,인코딩)를 한 번에 읽는다
+            await ReadExactlyAsync(_rectHeader, 0, RectHeaderLength, ct).ConfigureAwait(false);
+            var x = BinaryPrimitives.ReadUInt16BigEndian(_rectHeader.AsSpan(0, 2));
+            var y = BinaryPrimitives.ReadUInt16BigEndian(_rectHeader.AsSpan(2, 2));
+            var w = BinaryPrimitives.ReadUInt16BigEndian(_rectHeader.AsSpan(4, 2));
+            var h = BinaryPrimitives.ReadUInt16BigEndian(_rectHeader.AsSpan(6, 2));
+            var encoding = BinaryPrimitives.ReadInt32BigEndian(_rectHeader.AsSpan(8, 4));
             if (encoding is EncRaw or EncZlib or EncTight or EncCopyRect) ValidateRect(x, y, w, h);
 
             switch (encoding)
@@ -511,7 +553,11 @@ public sealed partial class RfbClient
                     CursorPosition?.Invoke(x, y);
                     break;
                 case EncRichCursor:
-                    await ReadCursorShapeAsync(w, h, ct).ConfigureAwait(false);
+                    await ReadCursorShapeAsync(x, y, w, h, ct).ConfigureAwait(false);
+                    break;
+                case EncQemuLedState:
+                    await ReadExactlyAsync(_scratch, 0, 1, ct).ConfigureAwait(false);
+                    LedState?.Invoke(KeyboardLeds.FromQemu(_scratch[0]));
                     break;
                 case EncCopyRect:
                 {
@@ -615,9 +661,16 @@ public sealed partial class RfbClient
         BinaryPrimitives.WriteUInt16BigEndian(msg.AsSpan(8, 2), (ushort)FramebufferHeight);
         return EnqueueAsync(msg, UpdateRequestLength);
     }
-    private async Task ReadCursorShapeAsync(int w, int h, CancellationToken ct)
+    /// <summary>RichCursor — rect 위치가 핫스팟, 본문은 픽셀 + 1비트 마스크. 0×0 은 커서 숨김(본문 없음).</summary>
+    private async Task ReadCursorShapeAsync(int hotX, int hotY, int w, int h, CancellationToken ct)
     {
-        if (w <= 0 || h <= 0 || w > 256 || h > 256) throw new IOException(Res.T("RfbClient_15", w, h));
+        if (w == 0 || h == 0)
+        {
+            CursorShape?.Invoke(new RfbCursor([], 0, 0, 0, 0));
+            return;
+        }
+
+        if (w > MaxCursorSize || h > MaxCursorSize) throw new IOException(Res.T("RfbClient_15", w, h));
 
         var pixels = new byte[w * h * 4];
         await ReadExactlyAsync(pixels, 0, pixels.Length, ct).ConfigureAwait(false);
@@ -641,7 +694,7 @@ public sealed partial class RfbClient
             ArrayPool<byte>.Shared.Return(mask);
         }
 
-        CursorShape?.Invoke(pixels, w, h);
+        CursorShape?.Invoke(new RfbCursor(pixels, w, h, Math.Min(hotX, w - 1), Math.Min(hotY, h - 1)));
     }
     private async Task ApplyEncodingsAsync(CancellationToken ct)
     {
@@ -664,6 +717,11 @@ public sealed partial class RfbClient
 
         encodings.Add(EncCopyRect);
         encodings.Add(EncDesktopSize);
+        // 커서를 서버가 화면에 그리지 않고 모양만 보내게 한다 — 클라이언트가 마우스 위치에 바로 그려 지연이 없고,
+        // 커서가 움직일 때마다 그 주변 화면을 다시 받지 않아도 된다(웹 UI noVNC 와 같은 방식)
+        encodings.Add(EncRichCursor);
+        // 게스트 잠금 키(LED) 상태를 받아 창이 키보드를 잡은 동안 PC 키보드에 똑같이 보인다
+        encodings.Add(EncQemuLedState);
         if (s.UseQemuExtendedKeys) encodings.Add(EncQemuExtendedKeyEvent);
 
         encodings.Add(EncRaw);

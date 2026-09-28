@@ -15,6 +15,7 @@ public sealed partial class ProxmoxApiClient
     /// </summary>
     /// <param name="content">서버 콘텐츠 종류: iso, vztmpl, import.</param>
     /// <param name="progress">보낸 비율(0~1).</param>
+    [Versioning.PveApi("POST", "/nodes/{node}/storage/{storage}/upload")]
     public async Task<string> UploadToStorageAsync(string node, string storage, string content, string filePath,
         IProgress<double>? progress = null, CancellationToken ct = default)
     {

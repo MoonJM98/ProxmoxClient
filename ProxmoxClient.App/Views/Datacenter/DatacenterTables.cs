@@ -1,3 +1,5 @@
+using System.Windows;
+using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
 
@@ -22,6 +24,7 @@ internal static class DatacenterTables
         new() { Key = "storage", HeaderKey = "Table_Name", Width = 140 },
         new() { Key = "type", HeaderKey = "Table_Type", Width = 90 },
         new() { Key = "content", HeaderKey = "Table_Content", Width = 0 },
+        new() { Key = "_target", HeaderKey = "DcStorage_PathTarget", Width = 180 },
         new() { Key = "shared", HeaderKey = "Table_Shared", Width = 60, Format = TableFormats.Flag },
         new() { Key = "disable", HeaderKey = "Table_Enabled", Width = 60, Format = TableFormats.InverseFlag },
         new() { Key = "nodes", HeaderKey = "Table_Nodes", Width = 140 }
@@ -35,7 +38,7 @@ internal static class DatacenterTables
         new() { Key = "next-run", HeaderKey = "Table_NextRun", Width = 140, Format = TableFormats.EpochDate },
         new() { Key = "storage", HeaderKey = "Table_Storage", Width = 110 },
         new() { Key = "node", HeaderKey = "Table_Node", Width = 90 },
-        new() { Key = "vmid", HeaderKey = "Table_Guests", Width = 110 },
+        new() { Key = "_selection", HeaderKey = "Table_Guests", Width = 150 },
         new() { Key = "mode", HeaderKey = "Table_Mode", Width = 80 },
         new() { Key = "comment", HeaderKey = "Table_Comment", Width = 0 }
     ];
@@ -113,31 +116,65 @@ internal static class DatacenterTables
 
     public static TableTab Summary(ProxmoxApiClient api)
     {
-        return Create(api, "cluster/status", StatusColumns, "DcSummary_Hint");
+        return Create(() => api.Cluster.StatusAsync(), StatusColumns, "DcSummary_Hint");
     }
 
     public static TableTab Storage(ProxmoxApiClient api, bool canEdit)
     {
-        return Create(api, "storage", StorageColumns, "DcStorage_Hint",
-            canEdit ? ClusterActions.Storage(api) : null);
+        return new TableTab(async () => (await api.Storage.ListAsync()).Select(WithTarget).ToList(),
+            StorageColumns, "DcStorage_Hint", canEdit ? StorageActions.Actions(api) : null);
     }
 
     public static TableTab BackupJobs(ProxmoxApiClient api, bool canEdit)
     {
-        return Create(api, "cluster/backup", BackupJobColumns, "DcBackup_Hint",
-            canEdit ? ClusterActions.BackupJobs(api) : null);
+        return new TableTab(async () => (await api.Jobs.ListBackupJobsAsync()).Select(WithSelection).ToList(),
+            BackupJobColumns, "DcBackup_Hint", canEdit ? ClusterActions.BackupJobs(api) : null);
+    }
+
+    /// <summary>웹 UI 의 Path/Target 열 — 유형마다 다른 위치 값(경로·서버:내보내기·풀·대상·데이터스토어).</summary>
+    internal static IReadOnlyDictionary<string, string> WithTarget(IReadOnlyDictionary<string, string> row)
+    {
+        string V(string key) => row.TryGetValue(key, out var v) ? v : string.Empty;
+        var target = V("path") is { Length: > 0 } path ? path
+            : V("export") is { Length: > 0 } export ? $"{V("server")}:{export}"
+            : V("share") is { Length: > 0 } share ? $"//{V("server")}/{share}"
+            : V("datastore") is { Length: > 0 } store ? $"{V("server")}:{store}"
+            : V("thinpool") is { Length: > 0 } thin ? $"{V("vgname")}/{thin}"
+            : V("vgname") is { Length: > 0 } vg ? vg
+            : V("pool") is { Length: > 0 } pool ? pool
+            : V("target");
+        return new Dictionary<string, string>(row) { ["_target"] = target };
+    }
+
+    /// <summary>웹 UI 의 Selection 열 — 전체(제외 목록)·풀·지정 게스트.</summary>
+    internal static IReadOnlyDictionary<string, string> WithSelection(IReadOnlyDictionary<string, string> row)
+    {
+        string V(string key) => row.TryGetValue(key, out var v) ? v : string.Empty;
+        var selection = V("all") is "1" or "true"
+            ? V("exclude") is { Length: > 0 } excluded
+                ? Loc.T("DcBackup_AllExcept", excluded)
+                : Loc.T("DcBackup_SelectAll")
+            : V("pool") is { Length: > 0 } pool ? Loc.T("DcBackup_PoolSelection", pool)
+            : V("vmid");
+        return new Dictionary<string, string>(row) { ["_selection"] = selection };
     }
 
     public static TableTab Replication(ProxmoxApiClient api, bool canEdit)
     {
-        return Create(api, "cluster/replication", ReplicationColumns, "DcReplication_Hint",
+        return Create(() => api.Jobs.ListReplicationAsync(), ReplicationColumns, "DcReplication_Hint",
             canEdit ? ClusterActions.Replication(api) : null);
     }
 
-    public static TableTab HaResources(ProxmoxApiClient api, bool canEdit)
+    /// <param name="rules">PVE 9 이상(규칙) — 리소스 편집 칸이 버전마다 다르다.</param>
+    public static TableTab HaResources(ProxmoxApiClient api, bool canEdit, bool rules)
     {
-        return Create(api, "cluster/ha/resources", HaColumns, "DcHa_Hint",
-            canEdit ? ClusterActions.HaResources(api) : null);
+        return Create(() => api.Ha.ListResourcesAsync(), HaColumns, "DcHa_Hint",
+            canEdit ? HaActions.Resources(api, rules) : null);
+    }
+
+    public static TableTab HaStatus(ProxmoxApiClient api, IReadOnlyList<TableAction>? actions = null)
+    {
+        return Create(() => api.Ha.StatusAsync(), HaStatusColumns, "DcHa_StatusHint", actions);
     }
 
     private static readonly IReadOnlyList<TableColumn> HaStatusColumns =
@@ -150,68 +187,66 @@ internal static class DatacenterTables
         new() { Key = "quorate", HeaderKey = "Table_Quorate", Width = 70, Format = TableFormats.Flag }
     ];
 
-    /// <summary>웹 UI 의 HA 화면 — 상태·리소스·규칙 하위 탭.</summary>
-    public static SubTabsView Ha(ProxmoxApiClient api, bool canEdit)
+    /// <summary>웹 UI 의 HA 화면 — 상태·리소스와, 서버 버전에 따라 규칙(PVE 9) 또는 그룹(PVE 8).</summary>
+    public static UIElement Ha(ProxmoxApiClient api, bool canEdit)
     {
-        return new SubTabsView(
-        [
-            ("DcHa_Status", () => Create(api, "cluster/ha/status/current", HaStatusColumns, "DcHa_StatusHint")),
-            ("DcHa_Resources", () => HaResources(api, canEdit)),
-            ("DcTab_HaRules", () => HaRules(api, canEdit)),
-            ("DcHaGroups_Tab", () => new TableTab(() => api.GetTableAsync("cluster/ha/groups"), HaGroupActions.Columns,
-                "DcHaGroups_Hint", canEdit ? HaGroupActions.Actions(api) : null))
-        ]);
+        return HaActions.View(api, canEdit, HaResources);
     }
 
     public static TableTab HaRules(ProxmoxApiClient api, bool canEdit)
     {
-        return Create(api, "cluster/ha/rules", HaRuleActions.Columns, "DcHaRules_Hint",
+        return Create(() => api.Ha.ListRulesAsync(), HaRuleActions.Columns, "DcHaRules_Hint",
             canEdit ? HaRuleActions.Actions(api) : null);
     }
 
     public static TableTab Users(ProxmoxApiClient api, bool canEdit)
     {
-        return Create(api, "access/users", UserColumns, "DcUsers_Hint", canEdit ? AccessActions.Users(api) : null);
+        // full=1 — 그룹·토큰까지 받는다(웹 UI 와 같다). 버튼은 권한이 없어도 자기 암호·토큰용으로 보인다
+        return new TableTab(() => api.Users.ListAsync(full: true), UserColumns, "DcUsers_Hint",
+            UserActions.Actions(api, canEdit));
     }
 
     public static TableTab Groups(ProxmoxApiClient api, bool canEdit)
     {
-        return Create(api, "access/groups", GroupColumns, "DcGroups_Hint",
+        return new TableTab(() => api.Access.ListGroupsAsync(), GroupColumns, "DcGroups_Hint",
             canEdit ? AccessActions.Groups(api) : null);
     }
 
     public static TableTab Roles(ProxmoxApiClient api, bool canEdit)
     {
-        return Create(api, "access/roles", RoleColumns, "DcRoles_Hint",
+        return new TableTab(() => api.Access.ListRolesAsync(), RoleColumns, "DcRoles_Hint",
             canEdit ? AccessExtras.RoleActions(api) : null);
     }
 
     public static TableTab Tfa(ProxmoxApiClient api, bool canEdit)
     {
-        return new TableTab(() => api.GetFlattenedTableAsync("access/tfa", "entries"), AccessExtras.TfaColumns,
-            "DcTfa_Hint", canEdit ? [..TfaRegistration.Actions(api), ..AccessExtras.TfaActions(api)] : null);
+        // 누구나 자기 2단계 인증을 등록·관리한다(서버가 다른 사용자 항목은 권한으로 막는다)
+        return new TableTab(() => api.Tfa.ListAsync(), AccessExtras.TfaColumns,
+            "DcTfa_Hint", [..TfaRegistration.Actions(api), ..AccessExtras.TfaActions(api)]);
     }
 
     public static TableTab Acl(ProxmoxApiClient api, bool canEdit)
     {
-        return Create(api, "access/acl", AclColumns, "DcAcl_Hint", canEdit ? AccessActions.Acl(api) : null);
+        return new TableTab(() => api.Access.ListAclAsync(), AclColumns, "DcAcl_Hint",
+            canEdit ? AccessActions.Acl(api) : null);
     }
 
     public static TableTab Realms(ProxmoxApiClient api, bool canEdit)
     {
-        return Create(api, "access/domains", RealmColumns, "DcRealms_Hint",
-            canEdit ? AccessExtras.RealmActions(api) : null);
+        return new TableTab(() => api.Realms.ListAsync(), RealmColumns, "DcRealms_Hint",
+            canEdit ? RealmActions.Actions(api) : null);
     }
 
     public static TableTab Pools(ProxmoxApiClient api, bool canEdit)
     {
-        return Create(api, "pools", PoolColumns, "DcPools_Hint", canEdit ? AccessActions.Pools(api) : null);
+        return new TableTab(() => api.Pools.ListAsync(), PoolColumns, "DcPools_Hint",
+            canEdit ? AccessActions.Pools(api) : null);
     }
 
-    private static TableTab Create(ProxmoxApiClient api, string path, IReadOnlyList<TableColumn> columns,
-        string hintKey, IReadOnlyList<TableAction>? actions = null)
+    private static TableTab Create(Func<Task<IReadOnlyList<IReadOnlyDictionary<string, string>>>> load,
+        IReadOnlyList<TableColumn> columns, string hintKey, IReadOnlyList<TableAction>? actions = null)
     {
-        return new TableTab(() => api.GetTableAsync(path), columns, hintKey, actions);
+        return new TableTab(load, columns, hintKey, actions);
     }
 
     /// <summary>사용자 만료일 — 0 은 '만료 없음'이라 빈칸으로 둔다.</summary>

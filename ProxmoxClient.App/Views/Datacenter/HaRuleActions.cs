@@ -46,21 +46,25 @@ internal static class HaRuleActions
                 Run = (row, owner) => EditAsync(api, Value(row!, "type"), row, owner)
             },
             DeleteAction(row => Loc.T("DcHaRules_DeleteConfirm", row["rule"]),
-                row => api.DeleteActionAsync($"cluster/ha/rules/{Seg(row["rule"])}"), "DcHaRules_Deleted")
+                row => api.Ha.DeleteRuleAsync(row["rule"]), "DcHaRules_Deleted")
         ];
     }
 
     /// <summary>row 가 null 이면 새 규칙. 규칙 유형은 만든 뒤 바꿀 수 없어 편집 때는 행의 유형을 그대로 쓴다.</summary>
-    private static Task<string?> EditAsync(ProxmoxApiClient api, string type,
+    private static async Task<string?> EditAsync(ProxmoxApiClient api, string type,
         IReadOnlyDictionary<string, string>? row, Window? owner)
     {
         string Initial(string key, string fallback = "") => row is null ? fallback : Value(row, key);
 
         var fields = new List<FormField>();
         if (row is null) fields.Add(new FormField { Key = "rule", LabelKey = "Table_Name", Required = true });
+        // 규칙 대상은 HA 로 관리 중인 리소스에서 고른다(웹 UI 와 같다)
+        var sids = (await api.Ha.ListResourcesAsync()).Select(r => Value(r, "sid"))
+            .Where(sid => sid.Length > 0).Order(StringComparer.Ordinal).Select(sid => (sid, sid)).ToList();
         fields.Add(new FormField
         {
-            Key = "resources", LabelKey = "DcHaRules_ResourcesHint", Required = true, Initial = Initial("resources")
+            Key = "resources", LabelKey = "DcHaRules_ResourcesHint", Kind = FormFieldKind.MultiChoice, Choices = sids,
+            Required = true, Initial = Initial("resources").Replace(" ", "")
         });
 
         if (type == NodeAffinity)
@@ -96,7 +100,7 @@ internal static class HaRuleActions
             ? Loc.T(type == NodeAffinity ? "DcHaRules_AddNode" : "DcHaRules_AddResource")
             : Loc.T("DcHaRules_EditTitle", row["rule"]);
 
-        return SubmitAsync(owner, title, fields, values =>
+        return await SubmitAsync(owner, title, fields, values =>
         {
             var edited = values.Where(kv => kv.Key != "enabled")
                 .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
@@ -106,12 +110,12 @@ internal static class HaRuleActions
             {
                 var form = NonEmpty(edited);
                 form["type"] = type;
-                return api.PostActionAsync("cluster/ha/rules", form);
+                return api.Ha.CreateRuleAsync(form);
             }
 
             var update = UpdateForm(edited);
             update["type"] = type;
-            return api.PutActionAsync($"cluster/ha/rules/{Seg(row["rule"])}", update);
+            return api.Ha.UpdateRuleAsync(row["rule"], update);
         }, row is null ? "DcHaRules_Added" : "DcHaRules_Updated", titleIsKey: false);
     }
 }

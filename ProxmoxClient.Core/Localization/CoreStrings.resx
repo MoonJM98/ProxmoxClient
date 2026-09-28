@@ -303,4 +303,10 @@
     <value>지원하지 않는 VNC 보안 유형입니다: {0}</value>
         <comment>RfbClient.cs</comment>
   </data>
+  <data name="Backup_PinnedNodeOffline" xml:space="preserve">
+    <value>일정이 지정한 노드 {0} 가 오프라인이라 지금 실행할 수 없습니다.</value>
+  </data>
+  <data name="Api_VersionRequired" xml:space="preserve">
+    <value>이 기능은 PVE {0} 이상에서 쓸 수 있습니다(서버: {1}).</value>
+  </data>
 </root>

@@ -2,7 +2,6 @@ using System.IO;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Services;
@@ -24,7 +23,6 @@ public partial class MainViewModel
             _guestGraphVersion++;
             _guestGraphSignature = null;
             _guestGraphLoadedAt = 0;
-            GuestGraph = null;
             GuestGraphSeries = null;
             return;
         }
@@ -36,42 +34,19 @@ public partial class MainViewModel
         var timeframe = GuestTimeframe;
         try
         {
-            // rrddata JSON → 클라이언트 차트. 미지원 서버: rrdtool PNG 폴백.
-            if (!_rrdDataUnsupported)
-            {
-                var samples = await api.GetGuestRrdDataAsync(guest.Node, guest.Kind, guest.VmId, timeframe)
-                    .ConfigureAwait(true);
-                if (version != _guestGraphVersion) return; // 더 새 요청(선택·기간 변경·연결 해제)이 있음
-
-                // 시그니처가 같으면(새 표본 없음) 시리즈 목록을 만들지 않는다
-                var signature = GraphSignature($"{guest.Node}:{guest.VmId}", timeframe, samples);
-                if (_guestGraphSignature != signature)
-                {
-                    var graph = BuildGraph(timeframe, samples);
-                    _guestGraphSignature = signature;
-                    GuestGraphXLabels = graph.XLabels;
-                    GuestGraphTimes = graph.Times;
-                    GuestGraphSeries = graph.Series;
-                }
-
-                GuestGraph = null;
-                return;
-            }
-
-            var png = await api.GetGuestRrdPngAsync(guest.Node, guest.Kind, guest.VmId, timeframe, GuestGraphDs)
+            // rrddata JSON → 클라이언트 차트(rrddata 는 지원 범위 7~9 모두에 있다)
+            var samples = await api.GetGuestRrdDataAsync(guest.Node, guest.Kind, guest.VmId, timeframe)
                 .ConfigureAwait(true);
-            if (version == _guestGraphVersion)
-            {
-                GuestGraph = LoadPng(png);
-                GuestGraphSeries = null;
-                _guestGraphSignature = null;
-            }
-        }
-        catch (ProxmoxApiException ex) when (!_rrdDataUnsupported && IsRrdDataUnsupported(ex))
-        {
-            _rrdDataUnsupported = true;
-            if (version == _guestGraphVersion)
-                await LoadGuestGraphAsync().ConfigureAwait(true); // 곧바로 PNG 경로로 한 번 더(플래그로 재귀 1회 한정)
+            if (version != _guestGraphVersion) return; // 더 새 요청(선택·기간 변경·연결 해제)이 있음
+
+            // 시그니처가 같으면(새 표본 없음) 시리즈 목록을 만들지 않는다
+            var signature = GraphSignature($"{guest.Node}:{guest.VmId}", timeframe, samples);
+            if (_guestGraphSignature == signature) return;
+            var graph = BuildGraph(timeframe, samples);
+            _guestGraphSignature = signature;
+            GuestGraphXLabels = graph.XLabels;
+            GuestGraphTimes = graph.Times;
+            GuestGraphSeries = graph.Series;
         }
         catch (Exception ex) when (IsTransientError(ex))
         {
@@ -86,7 +61,6 @@ public partial class MainViewModel
             _nodeGraphVersion++;
             _nodeGraphSignature = null;
             _nodeGraphLoadedAt = 0;
-            NodeGraph = null;
             NodeGraphSeries = null;
             return;
         }
@@ -98,37 +72,16 @@ public partial class MainViewModel
         var timeframe = NodeTimeframe;
         try
         {
-            if (!_rrdDataUnsupported)
-            {
-                var samples = await api.GetNodeRrdDataAsync(node.Node, timeframe).ConfigureAwait(true);
-                if (version != _nodeGraphVersion) return;
+            var samples = await api.GetNodeRrdDataAsync(node.Node, timeframe).ConfigureAwait(true);
+            if (version != _nodeGraphVersion) return;
 
-                var signature = GraphSignature(node.Node, timeframe, samples);
-                if (_nodeGraphSignature != signature)
-                {
-                    var graph = BuildGraph(timeframe, samples);
-                    _nodeGraphSignature = signature;
-                    NodeGraphXLabels = graph.XLabels;
-                    NodeGraphTimes = graph.Times;
-                    NodeGraphSeries = graph.Series;
-                }
-
-                NodeGraph = null;
-                return;
-            }
-
-            var png = await api.GetNodeRrdPngAsync(node.Node, timeframe, NodeGraphDs).ConfigureAwait(true);
-            if (version == _nodeGraphVersion)
-            {
-                NodeGraph = LoadPng(png);
-                NodeGraphSeries = null;
-                _nodeGraphSignature = null;
-            }
-        }
-        catch (ProxmoxApiException ex) when (!_rrdDataUnsupported && IsRrdDataUnsupported(ex))
-        {
-            _rrdDataUnsupported = true;
-            if (version == _nodeGraphVersion) await LoadNodeGraphAsync().ConfigureAwait(true);
+            var signature = GraphSignature(node.Node, timeframe, samples);
+            if (_nodeGraphSignature == signature) return;
+            var graph = BuildGraph(timeframe, samples);
+            _nodeGraphSignature = signature;
+            NodeGraphXLabels = graph.XLabels;
+            NodeGraphTimes = graph.Times;
+            NodeGraphSeries = graph.Series;
         }
         catch (Exception ex) when (IsTransientError(ex))
         {
@@ -137,11 +90,6 @@ public partial class MainViewModel
     private static bool IsGraphDue(long loadedAt)
     {
         return Environment.TickCount64 - loadedAt >= (long)GraphRefreshInterval.TotalMilliseconds;
-    }
-    /// <summary>rrddata 엔드포인트가 없는 구버전 서버 응답(권한·일시 오류는 제외).</summary>
-    private static bool IsRrdDataUnsupported(ProxmoxApiException ex)
-    {
-        return ex.StatusCode is 400 or 404 or 501;
     }
     /// <summary>새로고침·조회 경로에서 삼키고 다음 주기에 재시도할 오류(연결 끊김·타임아웃·연결 해제 중 Dispose 등).</summary>
     private static bool IsTransientError(Exception ex)
@@ -209,19 +157,6 @@ public partial class MainViewModel
             "year" => time.ToString("yy/MM"),
             _ => time.ToString("MM/dd")
         };
-    }
-    private static ImageSource? LoadPng(byte[] png)
-    {
-        if (png.Length == 0) return null;
-
-        var image = new BitmapImage();
-        using var stream = new MemoryStream(png);
-        image.BeginInit();
-        image.CacheOption = BitmapCacheOption.OnLoad;
-        image.StreamSource = stream;
-        image.EndInit();
-        image.Freeze();
-        return image;
     }
     private sealed record GraphData(
         IReadOnlyList<GraphSeries> Series,

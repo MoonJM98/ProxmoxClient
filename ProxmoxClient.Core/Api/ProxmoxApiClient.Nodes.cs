@@ -7,6 +7,7 @@ namespace ProxmoxClient.Core.Api;
 public sealed partial class ProxmoxApiClient
 {
     /// <summary>Lists all nodes (GET /nodes).</summary>
+    [Versioning.PveApi("GET", "/nodes")]
     public Task<IReadOnlyList<PveNode>> GetNodesAsync(CancellationToken ct = default)
     {
         return GetListAsync<PveNode, NodeDto>(
@@ -27,6 +28,7 @@ public sealed partial class ProxmoxApiClient
             ct);
     }
     /// <summary>Gets detailed runtime status for one node (GET /nodes/{node}/status).</summary>
+    [Versioning.PveApi("GET", "/nodes/{node}/status")]
     public async Task<PveNodeStatus> GetNodeStatusAsync(string node, CancellationToken ct = default)
     {
         var data = await GetJsonAsync($"nodes/{Escape(node)}/status", ct).ConfigureAwait(false);
@@ -58,12 +60,16 @@ public sealed partial class ProxmoxApiClient
     ///     게스트 설정과 같은 모양이라 화면에서 같은 편집 흐름을 쓸 수 있다.
     /// </summary>
     /// <param name="section">nodes/{node} 아래 경로. 예: "dns", "time", "config".</param>
+    [Versioning.PveApi("GET", "/nodes/{node}/dns")]
+    [Versioning.PveApi("GET", "/nodes/{node}/time")]
     public Task<IReadOnlyDictionary<string, string>> GetNodeSectionAsync(
         string node, string section, CancellationToken ct = default)
     {
         return GetObjectAsync($"nodes/{Escape(node)}/{section}", ct);
     }
     /// <summary>바뀐 항목만 노드 설정에 적용한다(PUT nodes/{node}/{section}).</summary>
+    [Versioning.PveApi("PUT", "/nodes/{node}/dns")]
+    [Versioning.PveApi("PUT", "/nodes/{node}/time")]
     public Task<string> UpdateNodeSectionAsync(
         string node, string section, IReadOnlyDictionary<string, string> changes, CancellationToken ct = default)
     {
@@ -73,6 +79,7 @@ public sealed partial class ProxmoxApiClient
     ///     노드 시스템 로그 (GET nodes/{node}/syslog). 최신 줄이 뒤에 오며, 줄마다 번호가 붙어 온다.
     /// </summary>
     /// <param name="lines">가져올 줄 수(서버 기본값보다 많이 요청하면 잘릴 수 있다).</param>
+    [Versioning.PveApi("GET", "/nodes/{node}/syslog")]
     public async Task<IReadOnlyList<string>> GetNodeSyslogAsync(
         string node, int lines = 200, CancellationToken ct = default)
     {

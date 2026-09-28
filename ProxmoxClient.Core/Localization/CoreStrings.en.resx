@@ -243,4 +243,10 @@
     <data name="RfbClient_20" xml:space="preserve">
     <value>Unsupported VNC security type: {0}</value>
   </data>
+  <data name="Backup_PinnedNodeOffline" xml:space="preserve">
+    <value>The job's node {0} is offline, so it cannot run now.</value>
+  </data>
+  <data name="Api_VersionRequired" xml:space="preserve">
+    <value>This feature requires PVE {0} or later (server: {1}).</value>
+  </data>
 </root>

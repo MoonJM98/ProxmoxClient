@@ -32,7 +32,6 @@ internal static class GuestLifecycleActions
     public static IReadOnlyList<TableAction> Create(ProxmoxApiClient api, PveResource guest,
         PermissionsInfo permissions)
     {
-        var path = $"nodes/{Seg(guest.Node)}/{guest.Kind.ApiSegment()}/{guest.VmId}";
         var vmid = guest.VmId.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var actions = new List<TableAction>();
 
@@ -51,47 +50,10 @@ internal static class GuestLifecycleActions
                         .ToList(), AgentColumns, "GuestLife_AgentInfoHint")))
             });
 
-        if (permissions.CanMigrate)
-            actions.Add(new TableAction
-            {
-                LabelKey = "GuestLife_Migrate", IconKey = "IconSwitch",
-                Run = async (_, owner) =>
-                {
-                    var targets = (await api.GetNodesAsync())
-                        .Where(n => n.Node != guest.Node
-                                    && string.Equals(n.Status, "online", StringComparison.OrdinalIgnoreCase))
-                        .Select(n => (n.Node, n.Node))
-                        .ToList();
-                    var isVm = guest.Kind == ResourceKind.Qemu;
+        actions.AddRange(GuestAgentActions.Create(api, guest, permissions));
 
-                    return await SubmitAsync(owner, Loc.T("GuestLife_MigrateTitle", vmid),
-                    [
-                        new FormField
-                        {
-                            Key = "target", LabelKey = "Table_Target", Kind = FormFieldKind.Choice, Choices = targets,
-                            Required = true
-                        },
-                        new FormField
-                        {
-                            Key = isVm ? "online" : "restart", Kind = FormFieldKind.Bool,
-                            LabelKey = isVm ? "GuestLife_Online" : "GuestLife_Restart",
-                            Initial = guest.IsRunning ? "1" : "0"
-                        },
-                        ..(isVm
-                            ?
-                            new[]
-                            {
-                                new FormField
-                                {
-                                    Key = "with-local-disks", LabelKey = "NodePower_LocalDisks",
-                                    Kind = FormFieldKind.Bool
-                                }
-                            }
-                            : [])
-                    ], values => api.PostActionAsync($"{path}/migrate", values), "GuestLife_MigrateStarted",
-                        titleIsKey: false);
-                }
-            });
+        if (permissions.CanMigrate) actions.Add(GuestMigrateAction.Create(api, guest));
+        if (guest.Kind == ResourceKind.Qemu && permissions.CanConfigure) actions.Add(UnlinkUnusedDisks(api, guest));
 
         if (permissions.CanAllocate)
         {
@@ -104,7 +66,7 @@ internal static class GuestLifecycleActions
                     // 실행 중인 게스트는 템플릿으로 바꿀 수 없다 — 서버 오류 대신 먼저 알려 준다
                     if (guest.IsRunning) return Loc.T("GuestLife_StopFirst");
 
-                    await api.PostActionAsync($"{path}/template");
+                    await api.Guests.ConvertToTemplateAsync(guest);
                     return Loc.T("GuestLife_Templated");
                 }
             });
@@ -125,13 +87,47 @@ internal static class GuestLifecycleActions
                             Kind = FormFieldKind.Bool, Initial = "1"
                         },
                         TypeToConfirmField()
-                    ], values => api.DeleteActionAsync(
-                        $"{path}?purge={values["purge"]}"
-                        + $"&destroy-unreferenced-disks={values["destroy-unreferenced-disks"]}"),
+                    ], values => api.Guests.DestroyAsync(guest, values["purge"] == "1",
+                        values["destroy-unreferenced-disks"] == "1"),
                         "GuestLife_Deleted", TypedMatches(vmid))
             });
         }
 
         return actions;
+    }
+
+    /// <summary>
+    ///     안 쓰는 디스크(unusedN) 지우기 — 설정에서 빼고 저장소의 이미지도 지운다(되돌릴 수 없다). 고른 것만 지운다.
+    /// </summary>
+    private static TableAction UnlinkUnusedDisks(ProxmoxApiClient api, PveResource guest)
+    {
+        return new TableAction
+        {
+            LabelKey = "GuestLife_UnlinkUnused", IconKey = "IconTrash",
+            Run = async (_, owner) =>
+            {
+                var config = await api.GetGuestConfigAsync(guest.Node, guest.Kind, guest.VmId);
+                var unused = config.Where(kv => kv.Key.Length > 6
+                                               && kv.Key.StartsWith("unused", StringComparison.Ordinal)
+                                               && kv.Key[6..].All(char.IsAsciiDigit))
+                    .OrderBy(kv => kv.Key, StringComparer.Ordinal)
+                    .Select(kv => (kv.Key, $"{kv.Key}: {kv.Value}"))
+                    .ToList();
+                if (unused.Count == 0) return Loc.T("GuestLife_NoUnused");
+
+                return await SubmitAsync(owner, Loc.T("GuestLife_UnlinkTitle", guest.VmId),
+                [
+                    new FormField { Key = "disks", LabelKey = "GuestLife_UnlinkPick", Kind = FormFieldKind.MultiChoice,
+                        Choices = unused, Required = true, Hint = Loc.T("GuestLife_UnlinkHint") },
+                    TypeToConfirmField()
+                ], async values =>
+                {
+                    await api.Guests.UnlinkDisksAsync(guest.Node, guest.VmId,
+                        values["disks"].Split(',', StringSplitOptions.RemoveEmptyEntries));
+                    return string.Empty;
+                }, "GuestLife_Unlinked", titleIsKey: false,
+                    validate: TypedMatches(guest.VmId.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            }
+        };
     }
 }

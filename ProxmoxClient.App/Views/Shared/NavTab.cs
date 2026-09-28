@@ -1,4 +1,5 @@
 using System.Windows;
+using ProxmoxClient.Core.Api.Versioning;
 
 namespace ProxmoxClient.App.Views.Shared;
 
@@ -15,4 +16,7 @@ public sealed class NavTab
 
     /// <summary>처음 고를 때 한 번만 부른다. 이후에는 만든 내용을 다시 쓴다.</summary>
     public required Func<UIElement> Create { get; init; }
+
+    /// <summary>이 탭이 쓰는 API 기능 — 서버가 못 쓰면 탐색 창이 탭을 두지 않는다.</summary>
+    public ApiFeature? Requires { get; init; }
 }

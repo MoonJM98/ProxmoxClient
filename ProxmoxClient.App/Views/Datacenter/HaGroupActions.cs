@@ -35,7 +35,7 @@ internal static class HaGroupActions
                 Run = (row, owner) => EditAsync(api, row, owner)
             },
             DeleteAction(row => Loc.T("DcHaGroups_DeleteConfirm", row["group"]),
-                row => api.DeleteActionAsync($"cluster/ha/groups/{Seg(row["group"])}"), "DcHaGroups_Deleted")
+                row => api.Ha.DeleteGroupAsync(row["group"]), "DcHaGroups_Deleted")
         ];
     }
 
@@ -69,11 +69,11 @@ internal static class HaGroupActions
         return SubmitAsync(owner, title, fields, values =>
         {
             if (row is not null)
-                return api.PutActionAsync($"cluster/ha/groups/{Seg(row["group"])}", UpdateForm(values));
+                return api.Ha.UpdateGroupAsync(row["group"], UpdateForm(values));
 
             var form = NonEmpty(values);
             form["type"] = "group";
-            return api.PostActionAsync("cluster/ha/groups", form);
+            return api.Ha.CreateGroupAsync(form);
         }, row is null ? "DcHaGroups_Added" : "DcHaGroups_Updated", titleIsKey: false);
     }
 }

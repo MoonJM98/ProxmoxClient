@@ -45,14 +45,13 @@ public static class GuestNavigator
                 // 웹 UI 와 같은 하드웨어(VM)·리소스(CT) 화면
                 ("GuestHardware_All", () => new Hardware.HardwareView(api, guest))
             ]),
-            "cloudinit" => CreateOptionsTab(api, guest, Tabs.CloudInitOptions.All, [RegenerateCloudInit(api, guest)]),
+            "cloudinit" => CreateOptionsTab(api, guest, Tabs.CloudInitOptions.All,
+                [RegenerateCloudInit(api, guest), ..CloudInitViews.Actions(api, guest)]),
             "options" => CreateOptionsTab(api, guest, Tabs.GuestOptions.All),
             "network" => Hardware.CtNetwork.Create(api, guest),
             "dns" => CreateOptionsTab(api, guest, Tabs.GuestOptions.CtDns),
             "tasks" => new Tabs.TasksTab(
-                async () => (await api.GetNodeTasksAsync(guest.Node))
-                    .Where(task => int.TryParse(task.Id, out var vmid) && vmid == guest.VmId)
-                    .ToList(),
+                async () => await api.GetNodeTasksAsync(guest.Node, vmid: guest.VmId),
                 "TasksTab_Hint", "TasksTab_Empty", api),
             "backup" => new Shared.SubTabsView(
             [
@@ -74,7 +73,7 @@ public static class GuestNavigator
     {
         var path = $"/vms/{guest.VmId}";
         return new Shared.TableTab(
-            async () => (await api.GetTableAsync("access/acl"))
+            async () => (await api.Access.ListAclAsync())
                 .Where(entry => entry.TryGetValue("path", out var p) && p == path)
                 .ToList(),
             Datacenter.DatacenterTables.AclColumns,
@@ -89,13 +88,14 @@ public static class GuestNavigator
     private static Tabs.OptionsTab CreateOptionsTab(ProxmoxApiClient api, PveResource guest,
         IReadOnlyList<Tabs.GuestOption> options, IReadOnlyList<Shared.TableAction>? extraActions = null)
     {
+        // 서버 버전이 모르는 설정(예: 8.0 전의 ciupgrade)은 옵션 목록이 저장 요청(target)을 보고 뺀다
         return new Tabs.OptionsTab(
             options.Where(o => o.AppliesTo(guest.Kind)).ToList(),
             () => api.GetGuestPendingAsync(guest.Node, guest.Kind, guest.VmId),
             async changes => await api.UpdateGuestConfigAsync(guest.Node, guest.Kind, guest.VmId,
                 Shared.ActionHelpers.UpdateForm(changes)),
             async keys => await api.RevertGuestPendingAsync(guest.Node, guest.Kind, guest.VmId, keys),
-            extraActions);
+            extraActions, api.Guests.Feature(nameof(Core.Api.Domains.GuestsApi.SetConfigAsync)));
     }
 
     /// <summary>Cloud-Init 이미지 다시 만들기(PUT …/cloudinit) — 바꾼 설정을 드라이브에 바로 반영한다.</summary>
@@ -106,8 +106,7 @@ public static class GuestNavigator
             LabelKey = "CloudInit_Regenerate", IconKey = "IconRotate",
             Run = async (_, _) =>
             {
-                await api.PutActionAsync($"nodes/{Shared.ActionHelpers.Seg(guest.Node)}/qemu/{guest.VmId}/cloudinit",
-                    new Dictionary<string, string>());
+                await api.Guests.RegenerateCloudInitAsync(guest.Node, guest.VmId);
                 return Loc.T("CloudInit_Regenerated");
             }
         };

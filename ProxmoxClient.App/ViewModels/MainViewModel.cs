@@ -3,7 +3,6 @@ using System.IO;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -43,8 +42,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _autoRefresh = true;
     [ObservableProperty] private string _connectionStatus = Loc.T("Main_NotConnected");
     private bool _disposed;
-    [ObservableProperty] private ImageSource? _guestGraph;
-    [ObservableProperty] private string _guestGraphDs = "cpu";
     private long _guestGraphLoadedAt;
     [ObservableProperty] private IReadOnlyList<GraphSeries>? _guestGraphSeries;
     private string? _guestGraphSignature;
@@ -78,8 +75,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(ShowGuestsPanel))]
     [NotifyPropertyChangedFor(nameof(ShowNodesPanel))]
     private int _navIndex;
-    [ObservableProperty] private ImageSource? _nodeGraph;
-    [ObservableProperty] private string _nodeGraphDs = "cpu";
     private long _nodeGraphLoadedAt;
     [ObservableProperty] private IReadOnlyList<GraphSeries>? _nodeGraphSeries;
     private string? _nodeGraphSignature;
@@ -93,7 +88,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private ObservableCollection<ConnectionProfile> _profiles = [];
     private bool _refreshing;
     /// <summary>rrddata(JSON) 미지원 서버로 확인됨 — 이후 PNG 경로만 사용(매 조회마다 실패 요청 생략). 연결마다 초기화.</summary>
-    private bool _rrdDataUnsupported;
     /// <summary>로그인 화면이 전달한 런타임 프로필(자격 증명 포함). 저장본에는 자격 증명이 없다.</summary>
     private ConnectionProfile? _runtimeProfile;
     [ObservableProperty]
@@ -104,6 +98,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [NotifyCanExecuteChangedFor(nameof(SuspendGuestCommand))]
     [NotifyCanExecuteChangedFor(nameof(ResumeGuestCommand))]
     [NotifyCanExecuteChangedFor(nameof(HibernateGuestCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ResetGuestCommand))]
     private PveResource? _selectedGuest;
     [ObservableProperty] private PveNode? _selectedNode;
     [ObservableProperty]
@@ -116,6 +111,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private ObservableCollection<PveTask> _tasks = [];
     /// <summary>타이머 틱 재진입 방지 — 서버 응답이 간격보다 느리면 틱마다 작업 상태 조회가 겹겹이 쌓이던 문제 방지.</summary>
     private bool _tickBusy;
+    /// <summary>창이 최소화돼 목록을 볼 수 없는 동안 — 자동 새로고침(매 틱 전체 목록 조회)을 쉰다.</summary>
+    private bool _backgrounded;
     [ObservableProperty] private long _vpnBytesIn;
     [ObservableProperty] private long _vpnBytesOut;
     [ObservableProperty] private string _vpnLogText = "";
@@ -165,6 +162,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ApplyRefreshInterval(normalized.RefreshInterval);
         AutoRefresh = normalized.AutoRefreshOnStart;
     }
+    /// <summary>
+    ///     창 최소화 여부 — 최소화 동안은 자동 새로고침을 멈추고(실행 중 작업의 완료 확인은 계속),
+    ///     다시 보이면 곧바로 한 번 새로고침해 밀린 변경을 반영한다.
+    /// </summary>
+    public void SetBackgrounded(bool backgrounded)
+    {
+        if (_backgrounded == backgrounded) return;
+        _backgrounded = backgrounded;
+        if (!backgrounded && AutoRefresh && IsConnected) _ = RefreshDataAsync();
+    }
     /// <summary>자동 새로고침 간격 변경(설정 저장 시 즉시 적용). 사용자가 켜고 끈 자동 새로고침 상태는 건드리지 않는다.</summary>
     public void ApplyRefreshInterval(TimeSpan interval)
     {
@@ -181,17 +188,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _ = LoadNodeStatusAsync();
         _ = LoadNodeGraphAsync();
     }
-    partial void OnGuestGraphDsChanged(string value)
-    {
-        _ = LoadGuestGraphAsync();
-    }
     partial void OnGuestTimeframeChanged(string value)
     {
         _ = LoadGuestGraphAsync();
-    }
-    partial void OnNodeGraphDsChanged(string value)
-    {
-        _ = LoadNodeGraphAsync();
     }
     partial void OnNodeTimeframeChanged(string value)
     {
@@ -275,7 +274,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
             Api?.Dispose();
             var api = new ProxmoxApiClient(profile);
             Api = api;
-            _rrdDataUnsupported = false;
             // 서버 인증서를 아직 신뢰하지 않았거나 바뀌었으면 사용자에게 지문을 확인받고, 신뢰하면 프로필에 저장 후 재시도
             await CertificateTrust.RunAsync(
                     () => api.LoginAsync(),
@@ -351,9 +349,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Nodes.Clear();
         Tasks.Clear();
         NodeStatus = null;
-        GuestGraph = null;
         GuestGraphSeries = null;
-        NodeGraph = null;
         NodeGraphSeries = null;
         // 진행 중이던 그래프 요청 결과가 연결 해제 후 도착해도 버리도록 버전을 올린다
         _guestGraphVersion++;
@@ -510,7 +506,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 UpsertTask(fresh);
             }
 
-            if (AutoRefresh && IsConnected && !_refreshing) await RefreshDataAsync().ConfigureAwait(true);
+            if (AutoRefresh && IsConnected && !_refreshing && !_backgrounded)
+                await RefreshDataAsync().ConfigureAwait(true);
         }
         catch (Exception ex) when (IsTransientError(ex))
         {

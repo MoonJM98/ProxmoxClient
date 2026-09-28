@@ -3,6 +3,7 @@ using System.Windows;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Models;
 
 namespace ProxmoxClient.App.Views.Create;
 
@@ -54,7 +55,7 @@ internal sealed class CtWizard
 
     private async Task<string> CreateAsync()
     {
-        return await WizardData.CreateAsync(_api, $"nodes/{ActionHelpers.Seg(_d.Node)}/lxc", _d.BuildParams(),
+        return await WizardData.CreateAsync(_api, _d.Node, ResourceKind.Lxc, _d.BuildParams(),
             _d.VmId.Trim());
     }
 

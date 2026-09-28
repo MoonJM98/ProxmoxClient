@@ -30,6 +30,7 @@ public partial class MainWindow : Window
         _autoConnectProfile = autoConnectProfile;
         Loaded += OnLoadedAsync;
         Closing += (_, _) => _vm.Dispose();
+        StateChanged += (_, _) => _vm.SetBackgrounded(WindowState == WindowState.Minimized);
     }
 
     private async void OnLoadedAsync(object sender, RoutedEventArgs e)
@@ -206,7 +207,7 @@ public partial class MainWindow : Window
                 Views.Guest.GuestNavigator.Create(api, guest, permissions, _vm.RunGuestPowerForAsync, null),
             "storage" => Views.Storage.StorageNavigator.Create(api, node, Value("storage"),
                 _vm.Storages.FirstOrDefault(s => s.Node == node && s.Storage == Value("storage"))?.Content
-                ?? Value("content"), permissions),
+                ?? Value("content"), permissions, Value("plugintype") is { Length: > 0 } type ? type : null),
             _ => null // SDN 은 별도 창이 없다
         };
         if (window is null) return;
@@ -224,7 +225,7 @@ public partial class MainWindow : Window
             return;
 
         var window = Views.Storage.StorageNavigator.Create(api, storage.Node, storage.Storage, storage.Content,
-            _vm.Permissions ?? PermissionsInfo.Admin);
+            _vm.Permissions ?? PermissionsInfo.Admin, storage.PluginType is { Length: > 0 } type ? type : null);
         window.Owner = this;
         window.ShowDialog();
         _ = _vm.RefreshDataAsync();
@@ -233,6 +234,29 @@ public partial class MainWindow : Window
     private void OnNodeListDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if ((e.OriginalSource as FrameworkElement)?.DataContext is PveNode) OpenNodeWindow();
+    }
+
+    /// <summary>꺼진 노드를 Wake-on-LAN 으로 깨운다 — 요청은 연결된(켜진) 노드가 받아 패킷을 보낸다.</summary>
+    private async void OnWakeNode(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedNode is not { IsOnline: false } node || _vm.Api is not { } api) return;
+
+        var button = sender as Button;
+        if (button is not null) button.IsEnabled = false; // 연타로 요청이 여러 번 가지 않게
+        try
+        {
+            await api.Nodes.WakeOnLanAsync(node.Node);
+            _vm.StatusMessage = Loc.T("NodeWake_Sent", node.Node);
+        }
+        catch (Exception ex)
+        {
+            App.Log($"[노드] {node.Node} Wake-on-LAN 실패: {ex.Message}");
+            _vm.StatusMessage = Loc.T("NodeWake_Failed", node.Node, ex.Message);
+        }
+        finally
+        {
+            if (button is not null) button.IsEnabled = true;
+        }
     }
 
     private void OnOpenNodeWindow(object sender, RoutedEventArgs e)
@@ -281,6 +305,15 @@ public partial class MainWindow : Window
             e.Handled = true;
             OnOpenConsole(sender, e);
         }
+    }
+
+    /// <summary>작업 목록 행 더블클릭 → 그 작업의 로그 창.</summary>
+    private void OnTaskGridDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (Views.Shared.TaskLogViewer.RowTask(e) is not { } task || _vm.Api is not { } api) return;
+
+        e.Handled = true;
+        Views.Shared.TaskLogViewer.Show(api, task, this);
     }
 
     private void OnMenuConsole(object sender, RoutedEventArgs e)

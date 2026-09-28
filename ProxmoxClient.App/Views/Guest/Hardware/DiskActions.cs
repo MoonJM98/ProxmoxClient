@@ -1,5 +1,5 @@
 using System.Globalization;
-using System.Net.Http;
+using ProxmoxClient.Core.Api;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Models;
@@ -15,8 +15,8 @@ internal static class DiskActions
     private const double MaxResizeGib = 131072;
     private static readonly string[] Buses = ["ide", "sata", "scsi", "virtio"];
 
-    /// <summary>디스크 작업 요청 — 설정 변경이 아니라 별도 경로(move_disk·resize)로 보낸다.</summary>
-    internal sealed record DiskRequest(HttpMethod Method, string Path, IReadOnlyDictionary<string, string> Form);
+    /// <summary>디스크 작업 요청 — 설정 변경이 아니라 별도 요청(move_disk·resize)으로 보낸다(작업 UPID).</summary>
+    internal sealed record DiskRequest(Func<ProxmoxApiClient, Task<string>> Send);
 
     /// <summary>디스크 작업 창 — 입력 칸과, 입력을 요청으로 바꾸는 함수.</summary>
     internal sealed record DiskDialog(
@@ -52,8 +52,7 @@ internal static class DiskActions
             };
             if (V(values, "format").Length > 0) form["format"] = V(values, "format");
             if (V(values, "delete") == "1") form["delete"] = "1";
-            var path = $"{ctx.GuestPath}/{(ctx.IsCt ? "move_volume" : "move_disk")}";
-            return new DiskRequest(HttpMethod.Post, path, form);
+            return new DiskRequest(api => api.Guests.MoveDiskAsync(ctx.Guest, form));
         });
     }
 
@@ -72,7 +71,7 @@ internal static class DiskActions
     /// </summary>
     public static async Task<DiskDialog> ReassignAsync(HardwareContext ctx, string key)
     {
-        var vms = (await ctx.Api.GetTableAsync("cluster/resources?type=vm"))
+        var vms = (await ctx.Api.Cluster.ResourcesAsync("vm"))
             .Where(r => ActionHelpers.Value(r, "type") == (ctx.IsCt ? "lxc" : "qemu")
                         && ActionHelpers.Value(r, "node") == ctx.Guest.Node
                         && ActionHelpers.Value(r, "template") != "1"
@@ -101,14 +100,13 @@ internal static class DiskActions
                 : Loc.T("HwDisk_TargetIdHint"),
             Build = _ => new Dictionary<string, string>()
         };
-        return new DiskDialog(edit, values => new DiskRequest(HttpMethod.Post,
-            $"{ctx.GuestPath}/{(ctx.IsCt ? "move_volume" : "move_disk")}",
+        return new DiskDialog(edit, values => new DiskRequest(api => api.Guests.MoveDiskAsync(ctx.Guest,
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["vmid"] = ctx.Guest.VmId.ToString(CultureInfo.InvariantCulture), [ctx.IsCt ? "volume" : "disk"] = key,
                 ["target-vmid"] = V(values, "target"),
                 [ctx.IsCt ? "target-volume" : "target-disk"] = $"{V(values, "bus")}{V(values, "id")}"
-            }));
+            })));
     }
 
     /// <summary>크기 늘리기 — resize disk·size=+NG (소수 셋째 자리까지).</summary>
@@ -128,11 +126,8 @@ internal static class DiskActions
                 : Loc.T("DeviceTable_SizeInvalid"),
             Build = _ => new Dictionary<string, string>()
         };
-        return new DiskDialog(edit, values => new DiskRequest(HttpMethod.Put, $"{ctx.GuestPath}/resize",
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["disk"] = key, ["size"] = $"+{V(values, "size")}G"
-            }));
+        return new DiskDialog(edit, values => new DiskRequest(api =>
+            api.Guests.ResizeDiskAsync(ctx.Guest, key, $"+{V(values, "size")}G")));
     }
 
     /// <summary>EFI 디스크에 새 인증서(Microsoft 2023)를 넣을 수 있는가 — 미리 등록된 키가 있고 아직 2023k 가 아닐 때(PVE 9).</summary>

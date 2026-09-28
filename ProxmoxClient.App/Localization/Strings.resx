@@ -635,10 +635,6 @@
     <value>예: 22, 80,443, 2000:3000 (비움=모두)</value>
         <comment>FirewallWindow.xaml · Hint</comment>
   </data>
-    <data name="FirewallWindow_16" xml:space="preserve">
-    <value>CIDR 또는 별칭 (비움=모두)</value>
-        <comment>FirewallWindow.xaml · Hint</comment>
-  </data>
     <data name="FirewallWindow_17" xml:space="preserve">
     <value>규칙 활성</value>
         <comment>FirewallWindow.xaml · Content</comment>
@@ -1423,10 +1419,6 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>규칙을 추가했습니다.</value>
         <comment>FirewallWindow.cs · 메시지</comment>
   </data>
-    <data name="FirewallWindow_M06" xml:space="preserve">
-    <value>규칙 추가 실패: {0}</value>
-        <comment>FirewallWindow.cs · 메시지</comment>
-  </data>
     <data name="FirewallWindow_M07" xml:space="preserve">
     <value>규칙 #{0} ({1} {2} {3})을(를) 삭제할까요?</value>
         <comment>FirewallWindow.cs · 메시지</comment>
@@ -1437,10 +1429,6 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   </data>
     <data name="FirewallWindow_M09" xml:space="preserve">
     <value>규칙을 삭제했습니다.</value>
-        <comment>FirewallWindow.cs · 메시지</comment>
-  </data>
-    <data name="FirewallWindow_M10" xml:space="preserve">
-    <value>삭제 실패: {0}</value>
         <comment>FirewallWindow.cs · 메시지</comment>
   </data>
     <data name="GuestSettingsWindow_M02" xml:space="preserve">
@@ -2617,14 +2605,6 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   </data>
   <data name="DcAcl_AddTitle" xml:space="preserve">
     <value>권한 추가</value>
-    <comment>AccessActions</comment>
-  </data>
-  <data name="DcAcl_TypeUser" xml:space="preserve">
-    <value>사용자</value>
-    <comment>AccessActions</comment>
-  </data>
-  <data name="DcAcl_TypeGroup" xml:space="preserve">
-    <value>그룹</value>
     <comment>AccessActions</comment>
   </data>
   <data name="DcAcl_Added" xml:space="preserve">
@@ -4999,6 +4979,1141 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>커널</value>
     <comment>CephAgent</comment>
   </data>
+  <data name="TaskLog_Download" xml:space="preserve">
+    <value>다운로드</value>
+  </data>
+  <data name="TaskLog_Running" xml:space="preserve">
+    <value>실행 중 — 1초마다 새 로그를 읽습니다.</value>
+  </data>
+  <data name="TaskLog_Finished" xml:space="preserve">
+    <value>끝남: {0}</value>
+  </data>
+  <data name="TaskLog_StopRequested" xml:space="preserve">
+    <value>중지를 요청했습니다.</value>
+  </data>
+  <data name="TaskLog_Saved" xml:space="preserve">
+    <value>로그를 저장했습니다: {0}</value>
+  </data>
+  <data name="FormDialog_Scanning" xml:space="preserve">
+    <value>서버에서 찾는 중…</value>
+  </data>
+  <data name="FormDialog_NothingFound" xml:space="preserve">
+    <value>찾은 항목이 없습니다 — 앞 칸 값을 확인하거나 직접 입력하세요.</value>
+  </data>
+  <data name="FormDialog_ScanFailed" xml:space="preserve">
+    <value>찾아보기 실패: {0}</value>
+  </data>
+  <data name="StorageScan_Hint" xml:space="preserve">
+    <value>▼ 를 펼치면 서버에서 찾아봅니다.</value>
+  </data>
+  <data name="StorageScan_NeedField" xml:space="preserve">
+    <value>먼저 '{0}' 칸을 채우세요.</value>
+  </data>
+  <data name="GuestPower_Reset" xml:space="preserve">
+    <value>재설정</value>
+  </data>
+  <data name="Prune_Action" xml:space="preserve">
+    <value>정리</value>
+  </data>
+  <data name="Prune_Title" xml:space="preserve">
+    <value>백업 정리 — {0} ({1})</value>
+  </data>
+  <data name="Prune_NoGuest" xml:space="preserve">
+    <value>게스트 번호가 없는 백업이라 정리할 수 없습니다.</value>
+  </data>
+  <data name="Prune_NothingToRemove" xml:space="preserve">
+    <value>지울 백업이 없습니다(백업 {0}개 모두 보존).</value>
+  </data>
+  <data name="Prune_More" xml:space="preserve">
+    <value>… 외 {0}개</value>
+  </data>
+  <data name="Prune_Confirm" xml:space="preserve">
+    <value>백업 {0}개를 지우고 {1}개를 남깁니다. 지운 백업은 되돌릴 수 없습니다.
+
+{2}
+
+계속할까요?</value>
+  </data>
+  <data name="Prune_Done" xml:space="preserve">
+    <value>백업 정리를 마쳤습니다: {0}</value>
+  </data>
+  <data name="NodeTab_Services" xml:space="preserve">
+    <value>서비스</value>
+  </data>
+  <data name="NodeServices_Hint" xml:space="preserve">
+    <value>노드의 시스템 서비스입니다. pveproxy·pvedaemon 을 멈추거나 다시 시작하면 이 앱의 연결도 잠시 끊깁니다.</value>
+  </data>
+  <data name="NodeServices_UnitState" xml:space="preserve">
+    <value>유닛 상태</value>
+  </data>
+  <data name="NodeServices_Start" xml:space="preserve">
+    <value>시작</value>
+  </data>
+  <data name="NodeServices_Stop" xml:space="preserve">
+    <value>중지</value>
+  </data>
+  <data name="NodeServices_Restart" xml:space="preserve">
+    <value>재시작</value>
+  </data>
+  <data name="NodeServices_Reload" xml:space="preserve">
+    <value>다시 읽기</value>
+  </data>
+  <data name="NodeServices_Confirm" xml:space="preserve">
+    <value>'{1}' 서비스 — {0}할까요?</value>
+  </data>
+  <data name="NodeServices_Done" xml:space="preserve">
+    <value>서비스 작업을 마쳤습니다: {0}</value>
+  </data>
+  <data name="NodePower_SuspendAll" xml:space="preserve">
+    <value>모두 일시 중지</value>
+  </data>
+  <data name="ClusterLog_Tab" xml:space="preserve">
+    <value>클러스터 로그</value>
+  </data>
+  <data name="ClusterLog_Hint" xml:space="preserve">
+    <value>클러스터 전체의 최근 기록입니다(최신이 위).</value>
+  </data>
+  <data name="ClusterLog_Time" xml:space="preserve">
+    <value>시각</value>
+  </data>
+  <data name="ClusterLog_Service" xml:space="preserve">
+    <value>서비스</value>
+  </data>
+  <data name="ClusterLog_User" xml:space="preserve">
+    <value>사용자</value>
+  </data>
+  <data name="ClusterLog_Message" xml:space="preserve">
+    <value>내용</value>
+  </data>
+  <data name="SnapshotDialog_EditNote" xml:space="preserve">
+    <value>설명 편집</value>
+  </data>
+  <data name="SnapshotDialog_EditNoteTitle" xml:space="preserve">
+    <value>스냅숏 설명 — {0}</value>
+  </data>
+  <data name="SnapshotDialog_NoteSaved" xml:space="preserve">
+    <value>'{0}' 스냅숏 설명을 저장했습니다.</value>
+  </data>
+  <data name="NodeWake_Button" xml:space="preserve">
+    <value>깨우기</value>
+  </data>
+  <data name="NodeWake_Hint" xml:space="preserve">
+    <value>Wake-on-LAN 으로 꺼진 노드를 켭니다(노드 옵션에 MAC 주소가 있어야 합니다).</value>
+  </data>
+  <data name="NodeWake_Sent" xml:space="preserve">
+    <value>{0} 노드에 Wake-on-LAN 신호를 보냈습니다.</value>
+  </data>
+  <data name="NodeWake_Failed" xml:space="preserve">
+    <value>{0} 노드 깨우기 실패: {1}</value>
+  </data>
+  <data name="Migrate_NoTarget" xml:space="preserve">
+    <value>옮길 수 있는 노드가 없습니다.
+{0}</value>
+  </data>
+  <data name="Migrate_Blocked" xml:space="preserve">
+    <value>옮길 수 없는 노드:
+{0}</value>
+  </data>
+  <data name="Migrate_LocalResources" xml:space="preserve">
+    <value>로컬 자원이 있어 온라인 이전이 막힐 수 있습니다: {0}</value>
+  </data>
+  <data name="Migrate_LocalDisks" xml:space="preserve">
+    <value>함께 옮길 로컬 디스크:
+{0}</value>
+  </data>
+  <data name="GuestAgent_CtNetwork" xml:space="preserve">
+    <value>네트워크 정보</value>
+  </data>
+  <data name="GuestAgent_CtNetworkTitle" xml:space="preserve">
+    <value>CT {0} 네트워크</value>
+  </data>
+  <data name="GuestAgent_CtNetworkHint" xml:space="preserve">
+    <value>컨테이너 안 인터페이스와 IP 입니다(실행 중일 때만).</value>
+  </data>
+  <data name="GuestAgent_Mac" xml:space="preserve">
+    <value>MAC</value>
+  </data>
+  <data name="GuestAgent_Ipv4" xml:space="preserve">
+    <value>IPv4</value>
+  </data>
+  <data name="GuestAgent_Ipv6" xml:space="preserve">
+    <value>IPv6</value>
+  </data>
+  <data name="GuestAgent_FsTrim" xml:space="preserve">
+    <value>디스크 TRIM</value>
+  </data>
+  <data name="GuestAgent_FsTrimDone" xml:space="preserve">
+    <value>게스트 파일 시스템 TRIM 을 마쳤습니다: {0}</value>
+  </data>
+  <data name="GuestAgent_SetPassword" xml:space="preserve">
+    <value>게스트 암호 변경</value>
+  </data>
+  <data name="GuestAgent_SetPasswordTitle" xml:space="preserve">
+    <value>VM {0} — 게스트 안 사용자 암호</value>
+  </data>
+  <data name="GuestAgent_PasswordConfirm" xml:space="preserve">
+    <value>암호 확인</value>
+  </data>
+  <data name="GuestAgent_PasswordMismatch" xml:space="preserve">
+    <value>두 암호가 다릅니다.</value>
+  </data>
+  <data name="GuestAgent_PasswordSet" xml:space="preserve">
+    <value>게스트 안 사용자 암호를 바꿨습니다.</value>
+  </data>
+  <data name="CloudInit_ShowPending" xml:space="preserve">
+    <value>대기 값 보기</value>
+  </data>
+  <data name="CloudInit_PendingTitle" xml:space="preserve">
+    <value>VM {0} Cloud-Init 대기 값</value>
+  </data>
+  <data name="CloudInit_PendingHint" xml:space="preserve">
+    <value>대기 값은 'Cloud-Init 다시 만들기' 뒤에 드라이브에 반영됩니다.</value>
+  </data>
+  <data name="CloudInit_Current" xml:space="preserve">
+    <value>지금 값</value>
+  </data>
+  <data name="CloudInit_Pending" xml:space="preserve">
+    <value>대기 값</value>
+  </data>
+  <data name="CloudInit_Deleted" xml:space="preserve">
+    <value>지울 예정</value>
+  </data>
+  <data name="CloudInit_ShowDump" xml:space="preserve">
+    <value>생성된 설정 보기</value>
+  </data>
+  <data name="CloudInit_DumpTitle" xml:space="preserve">
+    <value>VM {0} Cloud-Init 생성 설정</value>
+  </data>
+  <data name="CloudInit_DumpUser" xml:space="preserve">
+    <value>사용자</value>
+  </data>
+  <data name="CloudInit_DumpNetwork" xml:space="preserve">
+    <value>네트워크</value>
+  </data>
+  <data name="CloudInit_DumpMeta" xml:space="preserve">
+    <value>메타</value>
+  </data>
+  <data name="CloudInit_DumpHint" xml:space="preserve">
+    <value>서버가 게스트에 넘겨줄 설정 원문입니다(읽기 전용).</value>
+  </data>
+  <data name="DcHa_Migrate" xml:space="preserve">
+    <value>이전</value>
+  </data>
+  <data name="DcHa_Relocate" xml:space="preserve">
+    <value>재배치</value>
+  </data>
+  <data name="DcHa_MoveTitle" xml:space="preserve">
+    <value>HA {0} — {1}</value>
+  </data>
+  <data name="DcHa_MoveRequested" xml:space="preserve">
+    <value>HA 관리자에 요청했습니다: {0} (실제 이동은 조금 뒤에 보입니다)</value>
+  </data>
+  <data name="CephFlags_Tab" xml:space="preserve">
+    <value>플래그</value>
+  </data>
+  <data name="CephFlags_Hint" xml:space="preserve">
+    <value>클러스터 전체 OSD 플래그입니다. 유지 보수 때 noout 등을 켭니다.</value>
+  </data>
+  <data name="CephFlags_Set" xml:space="preserve">
+    <value>켜짐</value>
+  </data>
+  <data name="CephFlags_Change" xml:space="preserve">
+    <value>플래그 변경</value>
+  </data>
+  <data name="CephFlags_Title" xml:space="preserve">
+    <value>Ceph 플래그 변경</value>
+  </data>
+  <data name="CephFlags_ChangeHint" xml:space="preserve">
+    <value>체크한 플래그만 켜지고 나머지는 꺼집니다.</value>
+  </data>
+  <data name="CephFlags_Changed" xml:space="preserve">
+    <value>Ceph 플래그를 바꿨습니다: {0}</value>
+  </data>
+  <data name="CephPool_EditTitle" xml:space="preserve">
+    <value>풀 편집 — {0}</value>
+  </data>
+  <data name="CephPool_TargetRatio" xml:space="preserve">
+    <value>목표 비율</value>
+  </data>
+  <data name="CephPool_Updated" xml:space="preserve">
+    <value>풀 설정을 바꿨습니다: {0}</value>
+  </data>
+  <data name="CephPool_BadNumber" xml:space="preserve">
+    <value>'{0}' 값이 올바르지 않습니다.</value>
+  </data>
+  <data name="NodeApt_Versions" xml:space="preserve">
+    <value>패키지 버전</value>
+  </data>
+  <data name="NodeApt_VersionsTitle" xml:space="preserve">
+    <value>{0} 패키지 버전</value>
+  </data>
+  <data name="NodeApt_VersionsHint" xml:space="preserve">
+    <value>설치된 주요 Proxmox 패키지 버전입니다.</value>
+  </data>
+  <data name="NodeApt_Package" xml:space="preserve">
+    <value>패키지</value>
+  </data>
+  <data name="NodeApt_Version" xml:space="preserve">
+    <value>버전</value>
+  </data>
+  <data name="NodeReport_Action" xml:space="preserve">
+    <value>시스템 보고서</value>
+  </data>
+  <data name="NodeReport_Title" xml:space="preserve">
+    <value>{0} 시스템 보고서</value>
+  </data>
+  <data name="GuestAgent_PasswordShort" xml:space="preserve">
+    <value>암호는 {0}자 이상이어야 합니다.</value>
+  </data>
+  <data name="CephPool_MinOverSize" xml:space="preserve">
+    <value>최소 복제 수가 복제 수보다 클 수 없습니다.</value>
+  </data>
+  <data name="DcAcme_EditContact" xml:space="preserve">
+    <value>연락처 변경</value>
+  </data>
+  <data name="DcAcme_EditContactTitle" xml:space="preserve">
+    <value>ACME 계정 연락처 — {0}</value>
+  </data>
+  <data name="DcAcme_ContactUpdated" xml:space="preserve">
+    <value>계정 연락처를 바꿨습니다: {0}</value>
+  </data>
+  <data name="NodeCert_AcmeRevoke" xml:space="preserve">
+    <value>ACME 인증서 폐기</value>
+  </data>
+  <data name="NodeCert_AcmeRevokeConfirm" xml:space="preserve">
+    <value>{0} 노드의 ACME 인증서를 인증 기관에서 폐기하고 지웁니다. 자체 서명 인증서로 돌아갑니다. 계속할까요?</value>
+  </data>
+  <data name="NodeCert_AcmeRevoked" xml:space="preserve">
+    <value>ACME 인증서를 폐기했습니다: {0}</value>
+  </data>
+  <data name="DcHa_Disarm" xml:space="preserve">
+    <value>HA 무장 해제</value>
+  </data>
+  <data name="DcHa_DisarmMode" xml:space="preserve">
+    <value>자원 처리</value>
+  </data>
+  <data name="DcHa_ModeFreeze" xml:space="preserve">
+    <value>그대로 멈춤(freeze)</value>
+  </data>
+  <data name="DcHa_ModeIgnore" xml:space="preserve">
+    <value>관리 안 함(ignore)</value>
+  </data>
+  <data name="DcHa_DisarmHint" xml:space="preserve">
+    <value>유지 보수 동안 워치독이 노드를 재부팅하지 않도록 클러스터 전체 HA 를 잠시 끕니다.</value>
+  </data>
+  <data name="DcHa_Disarmed" xml:space="preserve">
+    <value>HA 를 무장 해제했습니다: {0}</value>
+  </data>
+  <data name="DcHa_Arm" xml:space="preserve">
+    <value>HA 재무장</value>
+  </data>
+  <data name="DcHa_ArmConfirm" xml:space="preserve">
+    <value>HA 스택을 다시 켤까요? 워치독이 다시 동작합니다.</value>
+  </data>
+  <data name="DcHa_Armed" xml:space="preserve">
+    <value>HA 를 다시 켰습니다: {0}</value>
+  </data>
+  <data name="DcBulk_Start" xml:space="preserve">
+    <value>일괄 시작</value>
+  </data>
+  <data name="DcBulk_Shutdown" xml:space="preserve">
+    <value>일괄 종료</value>
+  </data>
+  <data name="DcBulk_Suspend" xml:space="preserve">
+    <value>일괄 일시 중지</value>
+  </data>
+  <data name="DcBulk_Migrate" xml:space="preserve">
+    <value>일괄 이전</value>
+  </data>
+  <data name="DcBulk_ToDisk" xml:space="preserve">
+    <value>디스크로 최대 절전</value>
+  </data>
+  <data name="DcBulk_NoGuests" xml:space="preserve">
+    <value>대상 게스트가 없습니다.</value>
+  </data>
+  <data name="DcBulk_Started" xml:space="preserve">
+    <value>일괄 작업을 마쳤습니다: {0}</value>
+  </data>
+  <data name="CephDaemon_Confirm" xml:space="preserve">
+    <value>'{1}' — {0}할까요?</value>
+  </data>
+  <data name="CephDaemon_Done" xml:space="preserve">
+    <value>Ceph 데몬 작업을 마쳤습니다: {0}</value>
+  </data>
+  <data name="CephOsd_Details" xml:space="preserve">
+    <value>자세히</value>
+  </data>
+  <data name="CephOsd_DetailsTitle" xml:space="preserve">
+    <value>{0} 자세한 정보</value>
+  </data>
+  <data name="DcSdn_DryRun" xml:space="preserve">
+    <value>적용 미리 보기</value>
+  </data>
+  <data name="DcSdn_Rollback" xml:space="preserve">
+    <value>변경 되돌리기</value>
+  </data>
+  <data name="DcSdn_RollbackConfirm" xml:space="preserve">
+    <value>적용하지 않은 SDN 변경을 모두 버리고 마지막으로 적용한 설정으로 돌아갑니다. 계속할까요?</value>
+  </data>
+  <data name="DcSdn_RolledBack" xml:space="preserve">
+    <value>SDN 변경을 되돌렸습니다: {0}</value>
+  </data>
+  <data name="DcSdn_IpamStatus" xml:space="preserve">
+    <value>주소 현황</value>
+  </data>
+  <data name="DcSdn_IpamStatusTitle" xml:space="preserve">
+    <value>IPAM {0} 주소 현황</value>
+  </data>
+  <data name="DcSdn_IpamStatusHint" xml:space="preserve">
+    <value>PVE IPAM 이 나눠 준 주소입니다.</value>
+  </data>
+  <data name="DcSdn_Vnet" xml:space="preserve">
+    <value>VNet</value>
+  </data>
+  <data name="DcSdn_Subnet" xml:space="preserve">
+    <value>서브넷</value>
+  </data>
+  <data name="DcSdn_Hostname" xml:space="preserve">
+    <value>호스트 이름</value>
+  </data>
+  <data name="DcBulk_MigrateHint" xml:space="preserve">
+    <value>이미 목적지 노드에 있는 게스트는 건너뜁니다. 실행 중인 CT 는 재시작 이전이 필요할 수 있습니다.</value>
+  </data>
+  <data name="DcSdn_IpamStatusPveOnly" xml:space="preserve">
+    <value>주소 현황은 PVE IPAM 에서만 볼 수 있습니다.</value>
+  </data>
+  <data name="StorageDownload_FileNameHint" xml:space="preserve">
+    <value>▼ 를 펼치면 URL 에서 파일 이름을 가져옵니다.</value>
+  </data>
+  <data name="DcHa_ManagerStatus" xml:space="preserve">
+    <value>관리자 상태</value>
+  </data>
+  <data name="DcCluster_Totem" xml:space="preserve">
+    <value>Corosync 설정</value>
+  </data>
+  <data name="DcCluster_QDevice" xml:space="preserve">
+    <value>QDevice 상태</value>
+  </data>
+  <data name="CephTab_Crush" xml:space="preserve">
+    <value>CRUSH 맵</value>
+  </data>
+  <data name="CephTab_CrushHint" xml:space="preserve">
+    <value>장치·버킷·규칙으로 된 CRUSH 맵입니다(읽기 전용).</value>
+  </data>
+  <data name="CephTab_ConfigDb" xml:space="preserve">
+    <value>설정 DB</value>
+  </data>
+  <data name="CephTab_ConfigDbHint" xml:space="preserve">
+    <value>모니터 설정 데이터베이스의 값입니다.</value>
+  </data>
+  <data name="CephCfg_Section" xml:space="preserve">
+    <value>구역</value>
+  </data>
+  <data name="CephCfg_Level" xml:space="preserve">
+    <value>수준</value>
+  </data>
+  <data name="CephCfg_Runtime" xml:space="preserve">
+    <value>바로 적용</value>
+  </data>
+  <data name="CephPool_Status" xml:space="preserve">
+    <value>상태</value>
+  </data>
+  <data name="CephPool_StatusTitle" xml:space="preserve">
+    <value>풀 {0} 상태</value>
+  </data>
+  <data name="CephOsd_LvInfo" xml:space="preserve">
+    <value>볼륨 정보</value>
+  </data>
+  <data name="CephOsd_LvInfoTitle" xml:space="preserve">
+    <value>{0} 볼륨 정보</value>
+  </data>
+  <data name="HwEd_MdevPickDevice" xml:space="preserve">
+    <value>먼저 PCI 장치(또는 매핑)를 고르세요.</value>
+  </data>
+  <data name="HwEd_MdevRawOnly" xml:space="preserve">
+    <value>이 서버(8.2 전)에서는 원시 장치를 골라야 mdev 유형을 볼 수 있습니다.</value>
+  </data>
+  <data name="FileRestore_Action" xml:space="preserve">
+    <value>파일 복원</value>
+  </data>
+  <data name="FileRestore_Title" xml:space="preserve">
+    <value>파일 복원 — {0}</value>
+  </data>
+  <data name="FileRestore_Hint" xml:space="preserve">
+    <value>두 번 눌러 폴더에 들어갑니다. 처음 열 때 서버가 복원용 가상 머신을 띄워 시간이 걸릴 수 있습니다.</value>
+  </data>
+  <data name="FileRestore_PbsOnly" xml:space="preserve">
+    <value>파일 복원은 Proxmox Backup Server 백업에서만 됩니다.</value>
+  </data>
+  <data name="FileRestore_Up" xml:space="preserve">
+    <value>위로</value>
+  </data>
+  <data name="FileRestore_AtTop" xml:space="preserve">
+    <value>맨 위입니다.</value>
+  </data>
+  <data name="FileRestore_Location" xml:space="preserve">
+    <value>위치: {0}</value>
+  </data>
+  <data name="FileRestore_Download" xml:space="preserve">
+    <value>받기</value>
+  </data>
+  <data name="FileRestore_Saved" xml:space="preserve">
+    <value>저장했습니다: {0} ({1})</value>
+  </data>
+  <data name="FileRestore_Modified" xml:space="preserve">
+    <value>수정 시각</value>
+  </data>
+  <data name="FileRestore_Dir" xml:space="preserve">
+    <value>폴더</value>
+  </data>
+  <data name="FileRestore_File" xml:space="preserve">
+    <value>파일</value>
+  </data>
+  <data name="FileRestore_Link" xml:space="preserve">
+    <value>링크</value>
+  </data>
+  <data name="FileRestore_Volume" xml:space="preserve">
+    <value>디스크·볼륨</value>
+  </data>
+  <data name="CephMute_Tab" xml:space="preserve">
+    <value>상태 경고</value>
+  </data>
+  <data name="CephMute_Hint" xml:space="preserve">
+    <value>음소거한 Ceph 상태 경고입니다. 음소거한 경고는 클러스터 상태를 나쁘게 만들지 않습니다.</value>
+  </data>
+  <data name="CephMute_Code" xml:space="preserve">
+    <value>경고 코드</value>
+  </data>
+  <data name="CephMute_CodeHint" xml:space="preserve">
+    <value>예: OSD_NEARFULL, POOL_NO_REDUNDANCY — Ceph 상태 화면의 코드</value>
+  </data>
+  <data name="CephMute_Ttl" xml:space="preserve">
+    <value>유지 시간</value>
+  </data>
+  <data name="CephMute_TtlHint" xml:space="preserve">
+    <value>예: 1h, 30m — 비우면 해제할 때까지</value>
+  </data>
+  <data name="CephMute_Sticky" xml:space="preserve">
+    <value>계속 유지</value>
+  </data>
+  <data name="CephMute_Add" xml:space="preserve">
+    <value>경고 음소거</value>
+  </data>
+  <data name="CephMute_Remove" xml:space="preserve">
+    <value>음소거 해제</value>
+  </data>
+  <data name="CephMute_Done" xml:space="preserve">
+    <value>Ceph 상태 경고를 바꿨습니다: {0}</value>
+  </data>
+  <data name="CephRestart_Cluster" xml:space="preserve">
+    <value>클러스터 순차 재시작</value>
+  </data>
+  <data name="CephRestart_NodeOsd" xml:space="preserve">
+    <value>OSD 순차 재시작</value>
+  </data>
+  <data name="CephRestart_SetNoout" xml:space="preserve">
+    <value>재시작 동안 noout 켜기</value>
+  </data>
+  <data name="CephRestart_OnlyOutdated" xml:space="preserve">
+    <value>오래된 데몬만</value>
+  </data>
+  <data name="CephRestart_DryRun" xml:space="preserve">
+    <value>시험 실행</value>
+  </data>
+  <data name="CephRestart_DryRunHint" xml:space="preserve">
+    <value>실제로 재시작하지 않고 순서만 작업 로그에 적습니다.</value>
+  </data>
+  <data name="CephRestart_Done" xml:space="preserve">
+    <value>순차 재시작을 마쳤습니다: {0}</value>
+  </data>
+  <data name="CephRelease_Show" xml:space="preserve">
+    <value>Ceph 릴리스</value>
+  </data>
+  <data name="CephRelease_Hint" xml:space="preserve">
+    <value>이 노드에 설치할 수 있는 Ceph 릴리스입니다.</value>
+  </data>
+  <data name="CephRelease_Available" xml:space="preserve">
+    <value>설치 가능</value>
+  </data>
+  <data name="CephRelease_Default" xml:space="preserve">
+    <value>기본</value>
+  </data>
+  <data name="CephRelease_Unsupported" xml:space="preserve">
+    <value>지원 끝남</value>
+  </data>
+  <data name="CephFs_DeleteTitle" xml:space="preserve">
+    <value>CephFS 삭제 — {0}</value>
+  </data>
+  <data name="CephFs_RemovePools" xml:space="preserve">
+    <value>데이터·메타데이터 풀도 지우기</value>
+  </data>
+  <data name="CephFs_Deleted" xml:space="preserve">
+    <value>CephFS 를 지웠습니다: {0}</value>
+  </data>
+  <data name="NodeSdn_ZonesHint" xml:space="preserve">
+    <value>영역을 고르고 브리지·IP VRF 를 봅니다.</value>
+  </data>
+  <data name="NodeSdn_VnetsHint" xml:space="preserve">
+    <value>VNet 을 고르고 MAC VRF 를 봅니다(EVPN).</value>
+  </data>
+  <data name="NodeSdn_FabricsHint" xml:space="preserve">
+    <value>패브릭을 고르고 경로·이웃·인터페이스를 봅니다.</value>
+  </data>
+  <data name="NodeSdn_StatusHint" xml:space="preserve">
+    <value>이 노드에서 본 지금 상태입니다.</value>
+  </data>
+  <data name="NodeSdn_Bridges" xml:space="preserve">
+    <value>브리지</value>
+  </data>
+  <data name="NodeSdn_IpVrf" xml:space="preserve">
+    <value>IP VRF</value>
+  </data>
+  <data name="NodeSdn_MacVrf" xml:space="preserve">
+    <value>MAC VRF</value>
+  </data>
+  <data name="NodeSdn_Routes" xml:space="preserve">
+    <value>경로</value>
+  </data>
+  <data name="NodeSdn_Neighbors" xml:space="preserve">
+    <value>이웃</value>
+  </data>
+  <data name="NodeSdn_Interfaces" xml:space="preserve">
+    <value>인터페이스</value>
+  </data>
+  <data name="NodeSdn_Ports" xml:space="preserve">
+    <value>포트</value>
+  </data>
+  <data name="NodeSdn_VlanFiltering" xml:space="preserve">
+    <value>VLAN 필터</value>
+  </data>
+  <data name="NodeSdn_Protocol" xml:space="preserve">
+    <value>프로토콜</value>
+  </data>
+  <data name="NodeSdn_Metric" xml:space="preserve">
+    <value>메트릭</value>
+  </data>
+  <data name="NodeSdn_NextHops" xml:space="preserve">
+    <value>다음 홉</value>
+  </data>
+  <data name="NodeSdn_Route" xml:space="preserve">
+    <value>경로</value>
+  </data>
+  <data name="NodeSdn_Via" xml:space="preserve">
+    <value>경유</value>
+  </data>
+  <data name="NodeSdn_Neighbor" xml:space="preserve">
+    <value>이웃</value>
+  </data>
+  <data name="CpuModel_Tab" xml:space="preserve">
+    <value>CPU 모델</value>
+  </data>
+  <data name="CpuModel_Hint" xml:space="preserve">
+    <value>사용자 CPU 모델입니다. VM 의 CPU 종류에서 custom-이름 으로 고릅니다.</value>
+  </data>
+  <data name="CpuModel_Base" xml:space="preserve">
+    <value>기준 모델</value>
+  </data>
+  <data name="CpuModel_BaseHint" xml:space="preserve">
+    <value>예: x86-64-v2-AES, host, EPYC-Rome — 비우면 kvm64</value>
+  </data>
+  <data name="CpuModel_Flags" xml:space="preserve">
+    <value>CPU 플래그</value>
+  </data>
+  <data name="CpuModel_FlagsHint" xml:space="preserve">
+    <value>세미콜론으로 구분, +켜기 -끄기 — 예: +aes;-pcid</value>
+  </data>
+  <data name="CpuModel_Hidden" xml:space="preserve">
+    <value>숨김</value>
+  </data>
+  <data name="CpuModel_PhysBits" xml:space="preserve">
+    <value>물리 주소 비트</value>
+  </data>
+  <data name="CpuModel_PhysBitsHint" xml:space="preserve">
+    <value>숫자 또는 host</value>
+  </data>
+  <data name="CpuModel_GuestPhysBits" xml:space="preserve">
+    <value>게스트 물리 주소 비트</value>
+  </data>
+  <data name="CpuModel_HvVendor" xml:space="preserve">
+    <value>Hyper-V 공급자 ID</value>
+  </data>
+  <data name="CpuModel_Level" xml:space="preserve">
+    <value>CPUID 수준</value>
+  </data>
+  <data name="CpuModel_NameHint" xml:space="preserve">
+    <value>VM 에서는 custom-이름 으로 씁니다.</value>
+  </data>
+  <data name="CpuModel_AddTitle" xml:space="preserve">
+    <value>CPU 모델 추가</value>
+  </data>
+  <data name="CpuModel_EditTitle" xml:space="preserve">
+    <value>CPU 모델 편집 — {0}</value>
+  </data>
+  <data name="CpuModel_Added" xml:space="preserve">
+    <value>CPU 모델을 추가했습니다.</value>
+  </data>
+  <data name="CpuModel_Updated" xml:space="preserve">
+    <value>CPU 모델을 바꿨습니다.</value>
+  </data>
+  <data name="CpuModel_Deleted" xml:space="preserve">
+    <value>CPU 모델을 지웠습니다.</value>
+  </data>
+  <data name="CpuModel_DeleteConfirm" xml:space="preserve">
+    <value>CPU 모델 '{0}' 을 지울까요? 이 모델을 쓰는 VM 은 시작하지 못합니다.</value>
+  </data>
+  <data name="CephRestart_Timeout" xml:space="preserve">
+    <value>데몬마다 기다릴 시간(초)</value>
+  </data>
+  <data name="CephRestart_TimeoutHint" xml:space="preserve">
+    <value>비우면 서버 기본값</value>
+  </data>
+  <data name="DcNotify_FieldValues" xml:space="preserve">
+    <value>필드 값 보기</value>
+  </data>
+  <data name="DcNotify_FieldValuesHint" xml:space="preserve">
+    <value>규칙의 필드 조건에 exact:필드=값 꼴로 적습니다.</value>
+  </data>
+  <data name="DcNotify_Field" xml:space="preserve">
+    <value>필드</value>
+  </data>
+  <data name="OciPull_Action" xml:space="preserve">
+    <value>OCI 이미지 받기</value>
+  </data>
+  <data name="OciPull_Repository" xml:space="preserve">
+    <value>저장소</value>
+  </data>
+  <data name="OciPull_RepositoryHint" xml:space="preserve">
+    <value>예: docker.io/library/alpine</value>
+  </data>
+  <data name="OciPull_Tag" xml:space="preserve">
+    <value>태그</value>
+  </data>
+  <data name="OciPull_TagHint" xml:space="preserve">
+    <value>▼ 를 펼치면 저장소의 태그를 가져옵니다. 비우면 latest.</value>
+  </data>
+  <data name="OciPull_FileName" xml:space="preserve">
+    <value>파일 이름</value>
+  </data>
+  <data name="OciPull_FileNameHint" xml:space="preserve">
+    <value>비우면 서버가 정합니다.</value>
+  </data>
+  <data name="OciPull_Done" xml:space="preserve">
+    <value>OCI 이미지를 받았습니다: {0}</value>
+  </data>
+  <data name="CephSafety_Unsafe" xml:space="preserve">
+    <value>{0} 을(를) 지금 멈추거나 없애면 안전하지 않을 수 있습니다.
+
+{1}
+
+그래도 계속할까요?</value>
+  </data>
+  <data name="CephInit_Action" xml:space="preserve">
+    <value>Ceph 첫 설정</value>
+  </data>
+  <data name="CephInit_Network" xml:space="preserve">
+    <value>공용 네트워크</value>
+  </data>
+  <data name="CephInit_NetworkHint" xml:space="preserve">
+    <value>예: 10.10.10.0/24 — 비우면 노드의 기본 네트워크</value>
+  </data>
+  <data name="CephInit_ClusterNetwork" xml:space="preserve">
+    <value>클러스터 네트워크</value>
+  </data>
+  <data name="CephInit_ClusterNetworkHint" xml:space="preserve">
+    <value>OSD 복제 전용 네트워크(선택)</value>
+  </data>
+  <data name="CephInit_Done" xml:space="preserve">
+    <value>Ceph 설정(ceph.conf)을 만들었습니다.</value>
+  </data>
+  <data name="DcSdn_VnetFirewallTitle" xml:space="preserve">
+    <value>VNet {0} 방화벽</value>
+  </data>
+  <data name="DcSdn_IpAdd" xml:space="preserve">
+    <value>IP 매핑 추가</value>
+  </data>
+  <data name="DcSdn_IpAdded" xml:space="preserve">
+    <value>IP 매핑을 추가했습니다.</value>
+  </data>
+  <data name="DcSdn_IpDeleteConfirm" xml:space="preserve">
+    <value>IP 매핑 {0} 을(를) 지울까요?</value>
+  </data>
+  <data name="DcSdn_IpDeleted" xml:space="preserve">
+    <value>IP 매핑을 지웠습니다.</value>
+  </data>
+  <data name="CpuFlag_Show" xml:space="preserve">
+    <value>CPU 플래그</value>
+  </data>
+  <data name="CpuFlag_SupportedOn" xml:space="preserve">
+    <value>지원 노드</value>
+  </data>
+  <data name="CephMeta_Show" xml:space="preserve">
+    <value>데몬 메타데이터</value>
+  </data>
+  <data name="SdnRoute_Tab" xml:space="preserve">
+    <value>라우팅 정책</value>
+  </data>
+  <data name="SdnRoute_PrefixLists" xml:space="preserve">
+    <value>접두사 목록</value>
+  </data>
+  <data name="SdnRoute_PrefixListsHint" xml:space="preserve">
+    <value>BGP·EVPN 경로를 고르는 접두사 목록입니다. 바꾼 뒤 SDN 을 적용하세요.</value>
+  </data>
+  <data name="SdnRoute_RouteMaps" xml:space="preserve">
+    <value>라우트 맵</value>
+  </data>
+  <data name="SdnRoute_RouteMapsHint" xml:space="preserve">
+    <value>라우트 맵 항목 — 조건(match)에 맞는 경로에 설정(set)을 적용합니다. 바꾼 뒤 SDN 을 적용하세요.</value>
+  </data>
+  <data name="SdnRoute_Entries" xml:space="preserve">
+    <value>항목</value>
+  </data>
+  <data name="SdnRoute_EntriesTitle" xml:space="preserve">
+    <value>접두사 목록 {0} 항목</value>
+  </data>
+  <data name="SdnRoute_EntriesHint" xml:space="preserve">
+    <value>순서대로 검사해 처음 맞는 항목의 허용·거부를 따릅니다.</value>
+  </data>
+  <data name="SdnRoute_AddList" xml:space="preserve">
+    <value>접두사 목록 추가</value>
+  </data>
+  <data name="SdnRoute_DeleteListConfirm" xml:space="preserve">
+    <value>접두사 목록 {0} 을(를) 지울까요?</value>
+  </data>
+  <data name="SdnRoute_DeleteEntryConfirm" xml:space="preserve">
+    <value>항목 {0} 을(를) 지울까요?</value>
+  </data>
+  <data name="SdnRoute_DeleteMapConfirm" xml:space="preserve">
+    <value>라우트 맵 {0} 의 항목 {1} 을(를) 지울까요?</value>
+  </data>
+  <data name="SdnRoute_Saved" xml:space="preserve">
+    <value>저장했습니다. SDN 을 적용하면 노드에 반영됩니다.</value>
+  </data>
+  <data name="SdnRoute_Deleted" xml:space="preserve">
+    <value>지웠습니다. SDN 을 적용하면 노드에 반영됩니다.</value>
+  </data>
+  <data name="SdnRoute_Seq" xml:space="preserve">
+    <value>순서</value>
+  </data>
+  <data name="SdnRoute_SeqHint" xml:space="preserve">
+    <value>비우면 서버가 정합니다.</value>
+  </data>
+  <data name="SdnRoute_Prefix" xml:space="preserve">
+    <value>접두사</value>
+  </data>
+  <data name="SdnRoute_PrefixHint" xml:space="preserve">
+    <value>예: 10.0.0.0/8</value>
+  </data>
+  <data name="SdnRoute_Ge" xml:space="preserve">
+    <value>최소 길이(ge)</value>
+  </data>
+  <data name="SdnRoute_Le" xml:space="preserve">
+    <value>최대 길이(le)</value>
+  </data>
+  <data name="SdnRoute_AddEntry" xml:space="preserve">
+    <value>항목 추가</value>
+  </data>
+  <data name="SdnRoute_EditEntry" xml:space="preserve">
+    <value>항목 {0} 편집</value>
+  </data>
+  <data name="SdnRoute_Match" xml:space="preserve">
+    <value>조건(match)</value>
+  </data>
+  <data name="SdnRoute_MatchHint" xml:space="preserve">
+    <value>한 줄에 하나 — 예: key=ip-address-prefix-list,value=내부망</value>
+  </data>
+  <data name="SdnRoute_Set" xml:space="preserve">
+    <value>설정(set)</value>
+  </data>
+  <data name="SdnRoute_SetHint" xml:space="preserve">
+    <value>한 줄에 하나 — 예: key=local-preference,value=200</value>
+  </data>
+  <data name="SdnRoute_Call" xml:space="preserve">
+    <value>다른 맵 호출</value>
+  </data>
+  <data name="SdnRoute_ExitAction" xml:space="preserve">
+    <value>끝난 뒤 동작</value>
+  </data>
+  <data name="SdnRoute_AddMap" xml:space="preserve">
+    <value>라우트 맵 항목 추가</value>
+  </data>
+  <data name="SdnRoute_EditMap" xml:space="preserve">
+    <value>라우트 맵 {0} — 항목 {1}</value>
+  </data>
+  <data name="DcSdn_IpNoVnet" xml:space="preserve">
+    <value>VNet 이 없는 줄(게이트웨이 등)은 지울 수 없습니다.</value>
+  </data>
+  <data name="DcSdn_IpNoZone" xml:space="preserve">
+    <value>VNet 의 영역을 찾지 못했습니다.</value>
+  </data>
+  <data name="GuestAgent_Details" xml:space="preserve">
+    <value>에이전트 상세</value>
+  </data>
+  <data name="GuestAgent_DetailsTitle" xml:space="preserve">
+    <value>VM {0} 게스트 에이전트 정보</value>
+  </data>
+  <data name="GuestAgent_DetailsHint" xml:space="preserve">
+    <value>게스트 에이전트가 알려 준 값입니다(읽기 전용).</value>
+  </data>
+  <data name="GuestAgent_Ping" xml:space="preserve">
+    <value>에이전트 확인</value>
+  </data>
+  <data name="GuestAgent_PingOk" xml:space="preserve">
+    <value>게스트 에이전트가 응답했습니다.</value>
+  </data>
+  <data name="GuestAgent_get_fsinfo" xml:space="preserve">
+    <value>파일 시스템</value>
+  </data>
+  <data name="GuestAgent_get_users" xml:space="preserve">
+    <value>로그인 사용자</value>
+  </data>
+  <data name="GuestAgent_get_time" xml:space="preserve">
+    <value>시각</value>
+  </data>
+  <data name="GuestAgent_get_timezone" xml:space="preserve">
+    <value>시간대</value>
+  </data>
+  <data name="GuestAgent_get_vcpus" xml:space="preserve">
+    <value>vCPU</value>
+  </data>
+  <data name="GuestAgent_get_memory_block_info" xml:space="preserve">
+    <value>메모리 블록 정보</value>
+  </data>
+  <data name="GuestAgent_get_memory_blocks" xml:space="preserve">
+    <value>메모리 블록</value>
+  </data>
+  <data name="GuestAgent_info" xml:space="preserve">
+    <value>에이전트 정보</value>
+  </data>
+  <data name="StorageGraph_Tab" xml:space="preserve">
+    <value>사용량 그래프</value>
+  </data>
+  <data name="StorageGraph_Hint" xml:space="preserve">
+    <value>저장소 사용률 변화입니다.</value>
+  </data>
+  <data name="StorageGraph_Usage" xml:space="preserve">
+    <value>사용률</value>
+  </data>
+  <data name="StorageGraph_Loading" xml:space="preserve">
+    <value>불러오는 중…</value>
+  </data>
+  <data name="StorageGraph_Failed" xml:space="preserve">
+    <value>그래프를 불러오지 못했습니다: {0}</value>
+  </data>
+  <data name="StorageGraph_NoData" xml:space="preserve">
+    <value>아직 기록된 값이 없습니다.</value>
+  </data>
+  <data name="AgentTool_Exec" xml:space="preserve">
+    <value>명령 실행</value>
+  </data>
+  <data name="AgentTool_ExecTitle" xml:space="preserve">
+    <value>VM {0} — 게스트 안에서 명령 실행</value>
+  </data>
+  <data name="AgentTool_Command" xml:space="preserve">
+    <value>명령</value>
+  </data>
+  <data name="AgentTool_CommandHint" xml:space="preserve">
+    <value>예: ls -la /var/log — 셸을 거치지 않으므로 파이프·변수를 쓰려면 bash -c "…"</value>
+  </data>
+  <data name="AgentTool_Input" xml:space="preserve">
+    <value>표준 입력</value>
+  </data>
+  <data name="AgentTool_ExecConfirm" xml:space="preserve">
+    <value>VM {0} 안에서 다음 명령을 관리자 권한으로 실행합니다:
+
+{1}
+
+계속할까요?</value>
+  </data>
+  <data name="AgentTool_ExecResultTitle" xml:space="preserve">
+    <value>실행 결과 — {0}</value>
+  </data>
+  <data name="AgentTool_ExecDone" xml:space="preserve">
+    <value>명령이 끝났습니다(종료 코드 {0}).</value>
+  </data>
+  <data name="AgentTool_ExecStillRunning" xml:space="preserve">
+    <value>명령이 아직 실행 중입니다(pid {0}) — 게스트 안에서 계속 돕니다.</value>
+  </data>
+  <data name="AgentTool_ExitCode" xml:space="preserve">
+    <value>종료 코드: {0}{1}</value>
+  </data>
+  <data name="AgentTool_Stdout" xml:space="preserve">
+    <value>표준 출력</value>
+  </data>
+  <data name="AgentTool_Stderr" xml:space="preserve">
+    <value>오류 출력</value>
+  </data>
+  <data name="AgentTool_Truncated" xml:space="preserve">
+    <value>(출력이 길어 잘렸습니다)</value>
+  </data>
+  <data name="AgentTool_Read" xml:space="preserve">
+    <value>파일 읽기</value>
+  </data>
+  <data name="AgentTool_ReadTitle" xml:space="preserve">
+    <value>VM {0} — 게스트 파일 읽기</value>
+  </data>
+  <data name="AgentTool_PathHint" xml:space="preserve">
+    <value>게스트 안의 전체 경로 — 예: /etc/hostname, C:\Windows\win.ini</value>
+  </data>
+  <data name="AgentTool_Write" xml:space="preserve">
+    <value>파일 쓰기</value>
+  </data>
+  <data name="AgentTool_WriteTitle" xml:space="preserve">
+    <value>VM {0} — 게스트 파일 쓰기</value>
+  </data>
+  <data name="AgentTool_Content" xml:space="preserve">
+    <value>내용</value>
+  </data>
+  <data name="AgentTool_WriteHint" xml:space="preserve">
+    <value>파일이 있으면 이 내용으로 바뀝니다.</value>
+  </data>
+  <data name="AgentTool_WriteConfirm" xml:space="preserve">
+    <value>VM {0} 의 {1} 을(를) 이 내용으로 씁니다. 있던 파일은 되돌릴 수 없습니다. 계속할까요?</value>
+  </data>
+  <data name="AgentTool_Written" xml:space="preserve">
+    <value>게스트 파일을 썼습니다: {0}</value>
+  </data>
+  <data name="AgentTool_Freeze" xml:space="preserve">
+    <value>파일 시스템 동결</value>
+  </data>
+  <data name="AgentTool_FreezeConfirm" xml:space="preserve">
+    <value>VM {0} 의 파일 시스템을 동결하면 해제할 때까지 게스트의 디스크 쓰기가 멈춥니다. 계속할까요?</value>
+  </data>
+  <data name="AgentTool_Thaw" xml:space="preserve">
+    <value>동결 해제</value>
+  </data>
+  <data name="AgentTool_FreezeStatus" xml:space="preserve">
+    <value>동결 상태</value>
+  </data>
+  <data name="AgentTool_FreezeResult" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="OpenId_Hint" xml:space="preserve">
+    <value>OpenID 영역 — 로그인을 누르면 브라우저에서 로그인합니다. 인증 기관(IdP)에 {0} 을(를) 리디렉션 주소로 등록해 두어야 합니다.</value>
+  </data>
+  <data name="OpenId_Waiting" xml:space="preserve">
+    <value>브라우저에서 로그인을 마쳐 주세요…</value>
+  </data>
+  <data name="OpenId_NoVpn" xml:space="preserve">
+    <value>VPN 을 쓰는 서버는 아직 OpenID 로그인을 지원하지 않습니다.</value>
+  </data>
+  <data name="OpenId_PortBusy" xml:space="preserve">
+    <value>로그인 응답을 받을 포트 {0} 을(를) 열 수 없습니다: {1}</value>
+  </data>
+  <data name="OpenId_BadUrl" xml:space="preserve">
+    <value>서버가 준 로그인 주소가 올바르지 않습니다: {0}</value>
+  </data>
+  <data name="OpenId_TimedOut" xml:space="preserve">
+    <value>브라우저 로그인을 기다리다 시간이 지났습니다.</value>
+  </data>
+  <data name="OpenId_IdpError" xml:space="preserve">
+    <value>인증 기관이 로그인을 거절했습니다: {0} {1}</value>
+  </data>
+  <data name="OpenId_PageDone" xml:space="preserve">
+    <value>로그인되었습니다. 이 창을 닫고 앱으로 돌아가세요.</value>
+  </data>
+  <data name="OpenId_PageFailed" xml:space="preserve">
+    <value>로그인에 실패했습니다. 앱에서 다시 시도하세요.</value>
+  </data>
+  <data name="StorageContent_ImportTab" xml:space="preserve">
+    <value>가져오기</value>
+  </data>
+  <data name="StorageContent_ImportHint" xml:space="preserve">
+    <value>ESXi·OVA 에서 가져올 수 있는 게스트입니다. 고른 뒤 '가져오기'로 새 VM 을 만듭니다.</value>
+  </data>
+  <data name="Import_Action" xml:space="preserve">
+    <value>가져오기</value>
+  </data>
+  <data name="Import_Title" xml:space="preserve">
+    <value>게스트 가져오기 — {0}</value>
+  </data>
+  <data name="Import_TargetStorage" xml:space="preserve">
+    <value>디스크를 둘 저장소</value>
+  </data>
+  <data name="Import_Bridge" xml:space="preserve">
+    <value>네트워크 브리지</value>
+  </data>
+  <data name="Import_Disks" xml:space="preserve">
+    <value>복사할 디스크:
+{0}</value>
+  </data>
+  <data name="Import_Nics" xml:space="preserve">
+    <value>네트워크 카드 {0}개를 이 브리지에 원래 MAC 으로 붙입니다.</value>
+  </data>
+  <data name="Import_Warnings" xml:space="preserve">
+    <value>주의: {0}</value>
+  </data>
+  <data name="Import_Done" xml:space="preserve">
+    <value>가져오기를 마쳤습니다: {0}</value>
+  </data>
+  <data name="Import_BadVmid" xml:space="preserve">
+    <value>VM ID 는 100 이상의 숫자여야 합니다.</value>
+  </data>
+  <data name="Import_NoStorage" xml:space="preserve">
+    <value>{0} 노드에 디스크 이미지를 둘 저장소가 없습니다.</value>
+  </data>
+  <data name="Import_NoBridge" xml:space="preserve">
+    <value>{0} 노드에 네트워크 브리지가 없습니다.</value>
+  </data>
+  <data name="OpenId_Cancelled" xml:space="preserve">
+    <value>브라우저 로그인을 취소했습니다.</value>
+  </data>
+  <data name="AgentTool_UnbalancedQuote" xml:space="preserve">
+    <value>큰따옴표가 닫히지 않았습니다.</value>
+  </data>
+  <data name="AgentTool_WithInput" xml:space="preserve">
+    <value>(표준 입력 {0}자 함께)</value>
+  </data>
+  <data name="AgentTool_WriteTooLarge" xml:space="preserve">
+    <value>한 번에 쓸 수 있는 크기는 {0} KiB 까지입니다.</value>
+  </data>
+  <data name="Import_NotGuest" xml:space="preserve">
+    <value>게스트(.vmx·.ova·.ovf)만 가져올 수 있습니다.</value>
+  </data>
+  <data name="AllocDisk_Action" xml:space="preserve">
+    <value>디스크 만들기</value>
+  </data>
+  <data name="AllocDisk_VmidHint" xml:space="preserve">
+    <value>디스크 주인 VM ID — 이름에도 이 번호를 씁니다.</value>
+  </data>
+  <data name="AllocDisk_FileName" xml:space="preserve">
+    <value>파일 이름</value>
+  </data>
+  <data name="AllocDisk_FileNameHint" xml:space="preserve">
+    <value>예: vm-100-disk-1 (파일 저장소는 vm-100-disk-1.qcow2)</value>
+  </data>
+  <data name="AllocDisk_SizeHint" xml:space="preserve">
+    <value>예: 32G, 512M</value>
+  </data>
+  <data name="AllocDisk_Done" xml:space="preserve">
+    <value>디스크를 만들었습니다. VM 하드웨어에서 붙이세요.</value>
+  </data>
+  <data name="DcAcme_DirectoryMeta" xml:space="preserve">
+    <value>인증 기관 정보</value>
+  </data>
+  <data name="GuestLife_UnlinkUnused" xml:space="preserve">
+    <value>안 쓰는 디스크 지우기</value>
+  </data>
+  <data name="GuestLife_NoUnused" xml:space="preserve">
+    <value>안 쓰는 디스크가 없습니다.</value>
+  </data>
+  <data name="GuestLife_UnlinkTitle" xml:space="preserve">
+    <value>VM {0} — 안 쓰는 디스크 지우기</value>
+  </data>
+  <data name="GuestLife_UnlinkPick" xml:space="preserve">
+    <value>지울 디스크</value>
+  </data>
+  <data name="GuestLife_UnlinkHint" xml:space="preserve">
+    <value>저장소의 디스크 이미지까지 지웁니다. 되돌릴 수 없습니다.</value>
+  </data>
+  <data name="GuestLife_Unlinked" xml:space="preserve">
+    <value>안 쓰는 디스크를 지웠습니다.</value>
+  </data>
+  <data name="MainWindow_TaskLogHint" xml:space="preserve">
+    <value>행을 더블클릭하면 작업 로그를 봅니다.</value>
+  </data>
+  <data name="CephTab_NotInstalled" xml:space="preserve">
+    <value>이 노드에는 Ceph 가 설치되어 있지 않습니다. 모니터 탭의 'Ceph 설치'로 설치할 수 있습니다(root 권한 필요).</value>
+  </data>
   <data name="CephTab_StatusHint" xml:space="preserve">
     <value>Ceph 클러스터 상태입니다(읽기 전용).</value>
     <comment>CephAgent</comment>
@@ -5121,17 +6236,6 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   </data>
   <data name="DcTfa_SecretTitle" xml:space="preserve">
     <value>인증 앱에 넣을 값</value>
-    <comment>TfaRegistration</comment>
-  </data>
-  <data name="DcTfa_SecretText" xml:space="preserve">
-    <value>인증 앱(Google Authenticator 등)에서 '키 직접 입력'을 고르고 아래 비밀 값을 넣으세요.
-
-비밀 값: {0}
-
-주소(URI)를 받는 앱이면 아래 주소를 써도 됩니다.
-{1}
-
-이 창을 닫으면 앱에 나온 6자리 코드를 입력합니다.</value>
     <comment>TfaRegistration</comment>
   </data>
   <data name="DcTfa_VerifyTitle" xml:space="preserve">
@@ -7163,5 +8267,1681 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   <data name="Wz_NoOnlineNode" xml:space="preserve">
     <value>온라인 노드가 없습니다.</value>
     <comment>Views/Create</comment>
+  </data>
+  <data name="ConsoleSettings_LocalCursor" xml:space="preserve">
+    <value>커서 표시</value>
+    <comment>Views/ConsoleSettingsWindow</comment>
+  </data>
+  <data name="ConsoleSettings_LocalCursorHint" xml:space="preserve">
+    <value>둘 다: PC 화살표와 게스트 커서를 함께 보입니다. PC 커서만: 게스트가 커서 모양을 보내면(VirtIO-GPU·QXL 등) 그 모양을 지연 없는 PC 커서로 쓰고, 안 보내면(표준 VGA 등) 화살표나 점을 씁니다 — 이때 게스트가 화면에 그린 커서도 함께 보입니다.</value>
+    <comment>Views/ConsoleSettingsWindow</comment>
+  </data>
+  <data name="ConsoleSettings_CursorArrow" xml:space="preserve">
+    <value>PC 커서만 (없으면 화살표)</value>
+    <comment>Views/ConsoleSettingsWindow</comment>
+  </data>
+  <data name="ConsoleSettings_CursorDot" xml:space="preserve">
+    <value>PC 커서만 (없으면 점)</value>
+    <comment>Views/ConsoleSettingsWindow</comment>
+  </data>
+  <data name="ConsoleSettings_CursorHidden" xml:space="preserve">
+    <value>게스트 커서만 (PC 커서 숨김)</value>
+    <comment>Views/ConsoleSettingsWindow</comment>
+  </data>
+  <data name="ConsoleSettings_CursorBoth" xml:space="preserve">
+    <value>둘 다 보기 (PC 화살표 + 게스트 커서)</value>
+    <comment>Views/ConsoleSettingsWindow</comment>
+  </data>
+  <data name="DcOpt_AllowNone" xml:space="preserve">
+    <value>없음 — 사용자는 태그를 못 붙임</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_AllowList" xml:space="preserve">
+    <value>목록 — 허용 목록의 태그만</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_AllowExisting" xml:space="preserve">
+    <value>기존 — 목록 + 이미 쓰는 태그</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_AllowFree" xml:space="preserve">
+    <value>자유 — 아무 태그나</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_UserAllowDefault" xml:space="preserve">
+    <value>기본값 (기존)</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_UserAllow" xml:space="preserve">
+    <value>사용자 권한</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_UserAllowList" xml:space="preserve">
+    <value>허용 태그 목록</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_UserTagAccess" xml:space="preserve">
+    <value>사용자 태그 권한</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_RegisteredTags" xml:space="preserve">
+    <value>등록 태그</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_NoTags" xml:space="preserve">
+    <value>없음</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_TagListHint" xml:space="preserve">
+    <value>쉼표·세미콜론·공백으로 구분</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_BadBwlimit" xml:space="preserve">
+    <value>대역폭은 0보다 큰 숫자(MiB/s)여야 합니다.</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_BadEmail" xml:space="preserve">
+    <value>이메일 주소 형식이 아닙니다.</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_BadMacPrefix" xml:space="preserve">
+    <value>MAC 접두사 형식이 아닙니다(예: BC:24:11 — 첫 바이트는 짝수).</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_BadMaxWorkers" xml:space="preserve">
+    <value>최대 작업 수는 1~64 입니다.</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_BadNextId" xml:space="preserve">
+    <value>범위는 {0}~{1} 입니다.</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_NextIdOrder" xml:space="preserve">
+    <value>하한이 상한보다 클 수 없습니다.</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_NextIdLower" xml:space="preserve">
+    <value>하한</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_NextIdUpper" xml:space="preserve">
+    <value>상한</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_BadProxy" xml:space="preserve">
+    <value>http://호스트[:포트] 형식이어야 합니다.</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_ProxyHint" xml:space="preserve">
+    <value>예: http://proxy.example.com:3128 — 비우면 사용 안 함</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_EmailHint" xml:space="preserve">
+    <value>비우면 root@호스트이름</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_MacPrefixHint" xml:space="preserve">
+    <value>비우면 BC:24:11</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_MaxWorkersHint" xml:space="preserve">
+    <value>1~64, 비우면 4</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_Bw_default" xml:space="preserve">
+    <value>기본</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_Bw_restore" xml:space="preserve">
+    <value>복원</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_Bw_migration" xml:space="preserve">
+    <value>이전</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_Bw_clone" xml:space="preserve">
+    <value>복제(클론)</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_Bw_move" xml:space="preserve">
+    <value>디스크 이동</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_NoLimit" xml:space="preserve">
+    <value>제한 없음</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_ConsentText" xml:space="preserve">
+    <value>동의 문구</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_ConsentTooLong" xml:space="preserve">
+    <value>동의 문구는 64KiB 를 넘을 수 없습니다.</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_ConsoleDefault" xml:space="preserve">
+    <value>기본값 (xterm.js)</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_Crs" xml:space="preserve">
+    <value>클러스터 자원 배치</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_CrsHa" xml:space="preserve">
+    <value>HA 배치 방식</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_CrsDefault" xml:space="preserve">
+    <value>기본값 (basic)</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_CrsRebalance" xml:space="preserve">
+    <value>시작 시 재배치</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_MigrationType" xml:space="preserve">
+    <value>유형</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_Network" xml:space="preserve">
+    <value>네트워크</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_NetworkHint" xml:space="preserve">
+    <value>CIDR (예: 10.1.1.0/24) — 비우면 기본 네트워크</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_Replication" xml:space="preserve">
+    <value>복제 설정</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_ShutdownPolicy" xml:space="preserve">
+    <value>종료 정책</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_PolicyDefault" xml:space="preserve">
+    <value>기본값 (conditional)</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_TagShape" xml:space="preserve">
+    <value>모양</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_ShapeFull" xml:space="preserve">
+    <value>전체</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_ShapeCircle" xml:space="preserve">
+    <value>원</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_ShapeDense" xml:space="preserve">
+    <value>좁게</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_ShapeNone" xml:space="preserve">
+    <value>없음</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_TagOrdering" xml:space="preserve">
+    <value>정렬</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_OrderConfig" xml:space="preserve">
+    <value>설정 순서</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_OrderAlpha" xml:space="preserve">
+    <value>가나다순</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_TagCase" xml:space="preserve">
+    <value>대소문자 구분</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_TagColors" xml:space="preserve">
+    <value>색 지정</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_TagColorsHint" xml:space="preserve">
+    <value>태그:배경색[:글자색];… 예: prod:FF0000;dev:00FF00:000000</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_U2f" xml:space="preserve">
+    <value>U2F 설정</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_U2fAppId" xml:space="preserve">
+    <value>AppID</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_WebAuthn" xml:space="preserve">
+    <value>WebAuthn 설정</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_WebAuthnRp" xml:space="preserve">
+    <value>이름 (RP)</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_WebAuthnId" xml:space="preserve">
+    <value>ID (도메인)</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_WebAuthnIdHint" xml:space="preserve">
+    <value>예: pve.example.com</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_Origin" xml:space="preserve">
+    <value>출처 (Origin)</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcOpt_OriginHint" xml:space="preserve">
+    <value>예: https://pve.example.com:8006</value>
+    <comment>Views/Datacenter/DatacenterOptions</comment>
+  </data>
+  <data name="DcAcl_PickWho" xml:space="preserve">
+    <value>권한을 줄 사용자·그룹·토큰을 고르세요.</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcAcl_WhoUser" xml:space="preserve">
+    <value>사용자  {0}</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcAcl_WhoGroup" xml:space="preserve">
+    <value>그룹  {0}</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcAcl_WhoToken" xml:space="preserve">
+    <value>API 토큰  {0}</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcGroups_EditTitle" xml:space="preserve">
+    <value>그룹 수정 — {0}</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcGroups_Updated" xml:space="preserve">
+    <value>그룹을 수정했습니다.</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcRoles_NeedPrivs" xml:space="preserve">
+    <value>권한을 하나 이상 고르세요.</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcRoles_Privs" xml:space="preserve">
+    <value>권한</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_BadExpire" xml:space="preserve">
+    <value>만료일은 {0} 형식입니다(비우면 만료 없음).</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_ExpireHint" xml:space="preserve">
+    <value>{0} — 비우면 만료 없음</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_ConfirmPassword" xml:space="preserve">
+    <value>암호 확인</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_KeyIds" xml:space="preserve">
+    <value>키 ID</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_KeyIdsHint" xml:space="preserve">
+    <value>Yubico 키 ID(쉼표로 구분)</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_MyPasswordHint" xml:space="preserve">
+    <value>지금 로그인한 {0} 의 암호 — root@pam 은 생략 가능</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_NameNoRealm" xml:space="preserve">
+    <value>사용자 이름에 @ 는 넣지 않습니다(영역은 따로 고릅니다).</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_PasswordPveOnly" xml:space="preserve">
+    <value>PVE 영역만 사용 — {0}자 이상</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_PasswordRealmOnly" xml:space="preserve">
+    <value>{0} 영역 사용자의 암호는 그 인증 서버에서 바꿉니다(PAM·PVE 영역만 여기서 변경).</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_PasswordShort" xml:space="preserve">
+    <value>암호는 {0}자 이상이어야 합니다.</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_Permissions" xml:space="preserve">
+    <value>권한 보기</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_PermissionsHint" xml:space="preserve">
+    <value>경로별로 실제 적용되는 권한(그룹·역할·상속 포함)</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_PermissionsTitle" xml:space="preserve">
+    <value>권한 — {0}</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_TfaUnlocked" xml:space="preserve">
+    <value>{0} 의 2단계 인증 잠금을 풀었습니다.</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_UnlockTfa" xml:space="preserve">
+    <value>TFA 잠금 해제</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcUsers_UnlockTfaConfirm" xml:space="preserve">
+    <value>{0} 의 2단계 인증 잠금(실패 횟수 초과)을 풀까요?</value>
+    <comment>Views/Datacenter/UserActions</comment>
+  </data>
+  <data name="DcReplication_RateHint" xml:space="preserve">
+    <value>MB/s — 비우면 제한 없음</value>
+    <comment>Views/Datacenter/ClusterActions</comment>
+  </data>
+  <data name="DcReplication_PickGuest" xml:space="preserve">
+    <value>복제할 게스트를 고르세요.</value>
+    <comment>Views/Datacenter/ClusterActions</comment>
+  </data>
+  <data name="DcReplication_PickTarget" xml:space="preserve">
+    <value>대상 노드를 고르세요.</value>
+    <comment>Views/Datacenter/ClusterActions</comment>
+  </data>
+  <data name="DcReplication_SameNode" xml:space="preserve">
+    <value>게스트가 있는 노드({0})로는 복제할 수 없습니다.</value>
+    <comment>Views/Datacenter/ClusterActions</comment>
+  </data>
+  <data name="DcReplication_BadRate" xml:space="preserve">
+    <value>속도 제한은 1 이상의 숫자(MB/s)입니다.</value>
+    <comment>Views/Datacenter/ClusterActions</comment>
+  </data>
+  <data name="Choice_FwForward" xml:space="preserve">
+    <value>forward (전달)</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_AddressHint" xml:space="preserve">
+    <value>IP·CIDR·별칭·IP 집합(+이름) — 비우면 모두</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_AlreadyTop" xml:space="preserve">
+    <value>이미 맨 위입니다.</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_Copy" xml:space="preserve">
+    <value>복사</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_CopyTitle" xml:space="preserve">
+    <value>규칙 복사 — {0}번</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_Dest" xml:space="preserve">
+    <value>목적지</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_EditTitle" xml:space="preserve">
+    <value>규칙 수정 — {0}번</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_Hint" xml:space="preserve">
+    <value>위에서부터 차례로 적용됩니다. 위/아래로 순서를 바꿀 수 있습니다.</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_IcmpHint" xml:space="preserve">
+    <value>ICMP 프로토콜일 때만(예: echo-request)</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_IcmpType" xml:space="preserve">
+    <value>ICMP 유형</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_Iface" xml:space="preserve">
+    <value>인터페이스</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_IfaceHint" xml:space="preserve">
+    <value>예: net0 — 비우면 모든 인터페이스</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_InsertGroup" xml:space="preserve">
+    <value>보안 그룹 넣기</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_Log" xml:space="preserve">
+    <value>로그 수준</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_LogDefault" xml:space="preserve">
+    <value>기본값 (nolog)</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_MacroHint" xml:space="preserve">
+    <value>매크로를 고르면 프로토콜·포트는 매크로가 정합니다</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_MoveDown" xml:space="preserve">
+    <value>아래로</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_MoveUp" xml:space="preserve">
+    <value>위로</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_Moved" xml:space="preserve">
+    <value>규칙 {0}번을 {1}번 자리로 옮겼습니다.</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_NoGroups" xml:space="preserve">
+    <value>데이터센터에 보안 그룹이 없습니다. 먼저 보안 그룹을 만드세요.</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_NoMacro" xml:space="preserve">
+    <value>없음</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_PickGroup" xml:space="preserve">
+    <value>보안 그룹을 고르세요.</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_PortsNeedProto" xml:space="preserve">
+    <value>포트를 쓰려면 프로토콜을 TCP·UDP·SCTP 중에서 고르세요.</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_SecurityGroup" xml:space="preserve">
+    <value>보안 그룹</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_SourcePort" xml:space="preserve">
+    <value>출발 포트</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="FwRule_Updated" xml:space="preserve">
+    <value>규칙을 수정했습니다.</value>
+    <comment>Views/Guest/Tabs/FirewallRules</comment>
+  </data>
+  <data name="DcFirewall_EditGroup" xml:space="preserve">
+    <value>보안 그룹 수정 — {0}</value>
+    <comment>Views/Datacenter/FirewallTabs</comment>
+  </data>
+  <data name="DcFirewall_EditIpSet" xml:space="preserve">
+    <value>IP 집합 수정 — {0}</value>
+    <comment>Views/Datacenter/FirewallTabs</comment>
+  </data>
+  <data name="DcFirewall_EditEntry" xml:space="preserve">
+    <value>IP 집합 항목 수정 — {0}</value>
+    <comment>Views/Datacenter/FirewallTabs</comment>
+  </data>
+  <data name="DcStorage_BadKeep" xml:space="preserve">
+    <value>보존 개수는 0 이상의 정수입니다.</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="DcStorage_BadPort" xml:space="preserve">
+    <value>포트는 1~65535 입니다.</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="DcStorage_NeedContent" xml:space="preserve">
+    <value>콘텐츠를 하나 이상 고르세요.</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="DcStorage_UnsupportedType" xml:space="preserve">
+    <value>{0} 유형 저장소는 이 앱에서 수정할 수 없습니다.</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageContent_rootdir" xml:space="preserve">
+    <value>컨테이너</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageContent_vztmpl" xml:space="preserve">
+    <value>컨테이너 템플릿</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageContent_backup" xml:space="preserve">
+    <value>VZDump 백업</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageContent_snippets" xml:space="preserve">
+    <value>스니펫</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageContent_import" xml:space="preserve">
+    <value>가져오기</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Base" xml:space="preserve">
+    <value>기반 저장소 (LUN)</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_BlockSize" xml:space="preserve">
+    <value>블록 크기</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_ComstarHg" xml:space="preserve">
+    <value>호스트 그룹 (Comstar)</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_ComstarTg" xml:space="preserve">
+    <value>대상 그룹 (Comstar)</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_DataPool" xml:space="preserve">
+    <value>데이터 풀</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Default" xml:space="preserve">
+    <value>기본값</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_FsName" xml:space="preserve">
+    <value>파일 시스템 이름</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_IscsiProvider" xml:space="preserve">
+    <value>iSCSI 공급자</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_KeepAll" xml:space="preserve">
+    <value>모두 보관</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Keyring" xml:space="preserve">
+    <value>키링</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Krbd" xml:space="preserve">
+    <value>KRBD 사용</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_LioTpg" xml:space="preserve">
+    <value>대상 포털 그룹 (LIO)</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_MaxProtected" xml:space="preserve">
+    <value>보호 백업 최대 수</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Monhost" xml:space="preserve">
+    <value>모니터</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_NfsVersion" xml:space="preserve">
+    <value>NFS 버전</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Port" xml:space="preserve">
+    <value>포트</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Portal" xml:space="preserve">
+    <value>포털</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Preallocation" xml:space="preserve">
+    <value>사전 할당</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Retention" xml:space="preserve">
+    <value>백업 보존</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_SafeRemove" xml:space="preserve">
+    <value>삭제 시 지우기 (wipe)</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Secret" xml:space="preserve">
+    <value>비밀 키</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_SkipCert" xml:space="preserve">
+    <value>인증서 확인 건너뛰기</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_SmbVersion" xml:space="preserve">
+    <value>SMB 버전</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Sparse" xml:space="preserve">
+    <value>씬 프로비전</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_Target" xml:space="preserve">
+    <value>대상</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_UseLuns" xml:space="preserve">
+    <value>LUN 을 직접 사용</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_WriteCacheOff" xml:space="preserve">
+    <value>쓰기 캐시 끔</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_keep_last" xml:space="preserve">
+    <value>최근 보관</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_keep_hourly" xml:space="preserve">
+    <value>시간별 보관</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_keep_daily" xml:space="preserve">
+    <value>일별 보관</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_keep_weekly" xml:space="preserve">
+    <value>주별 보관</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_keep_monthly" xml:space="preserve">
+    <value>월별 보관</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageField_keep_yearly" xml:space="preserve">
+    <value>연별 보관</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_Base" xml:space="preserve">
+    <value>iSCSI LUN 위에 VG 를 만들 때만</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_BlockSize" xml:space="preserve">
+    <value>예: 16k — 비우면 기본값</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_CephUser" xml:space="preserve">
+    <value>비우면 admin</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_External" xml:space="preserve">
+    <value>외부 Ceph 클러스터일 때만 — 이 클러스터의 Ceph 는 비워 둡니다</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_Fingerprint" xml:space="preserve">
+    <value>자체 서명 인증서면 필요(SHA-256)</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_Id" xml:space="preserve">
+    <value>영문자로 시작하고 영문·숫자·- _ . 만(끝은 영문·숫자)</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_KeepAll" xml:space="preserve">
+    <value>켜면 아래 개수는 무시합니다</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_KeepSecret" xml:space="preserve">
+    <value>비우면 그대로 둡니다</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_LioTpg" xml:space="preserve">
+    <value>LIO 공급자일 때 (예: tpg1)</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_MaxProtected" xml:space="preserve">
+    <value>비우면 기본값, -1 은 무제한</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_Monhost" xml:space="preserve">
+    <value>외부 Ceph 모니터 주소(공백 구분) — 이 클러스터의 Ceph 는 비워 둡니다</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_Nodes" xml:space="preserve">
+    <value>고르지 않으면 모든 노드</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_Path" xml:space="preserve">
+    <value>예: /mnt/data</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_PbsPort" xml:space="preserve">
+    <value>비우면 8007</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_PbsUser" xml:space="preserve">
+    <value>사용자@영역 형식 (예: root@pam)</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageHint_Shared" xml:space="preserve">
+    <value>모든 노드가 같은 내용을 보는 저장소(직접 마운트한 공유 경로 등)일 때만</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageType_Btrfs" xml:space="preserve">
+    <value>Btrfs</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageType_CephFs" xml:space="preserve">
+    <value>CephFS</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageType_Esxi" xml:space="preserve">
+    <value>ESXi</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageType_Iscsi" xml:space="preserve">
+    <value>iSCSI</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageType_Lvm" xml:space="preserve">
+    <value>LVM</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageType_Rbd" xml:space="preserve">
+    <value>RBD (Ceph)</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="StorageType_ZfsIscsi" xml:space="preserve">
+    <value>ZFS over iSCSI</value>
+    <comment>Views/Datacenter/StorageActions</comment>
+  </data>
+  <data name="DcRealms_AcrValues" xml:space="preserve">
+    <value>ACR 값</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_BadIssuer" xml:space="preserve">
+    <value>발급자 URL 은 http(s):// 로 시작해야 합니다.</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_BadOath" xml:space="preserve">
+    <value>OATH 는 자릿수 6~8, 간격 10초 이상입니다.</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_BindDnHint" xml:space="preserve">
+    <value>비우면 익명 검색</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_CaseSensitive" xml:space="preserve">
+    <value>대소문자 구분</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_CheckConnection" xml:space="preserve">
+    <value>저장할 때 연결 확인</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_ClassesHint" xml:space="preserve">
+    <value>쉼표로 구분 — 비우면 기본값</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_GroupClasses" xml:space="preserve">
+    <value>그룹 클래스</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_GroupDn" xml:space="preserve">
+    <value>그룹 DN</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_GroupFilter" xml:space="preserve">
+    <value>그룹 필터</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_GroupNameAttr" xml:space="preserve">
+    <value>그룹 이름 속성</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_GroupsAutoCreate" xml:space="preserve">
+    <value>그룹 자동 생성</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_GroupsClaim" xml:space="preserve">
+    <value>그룹 클레임</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_GroupsOverwrite" xml:space="preserve">
+    <value>로그인 때 그룹 덮어쓰기</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_PortHint" xml:space="preserve">
+    <value>비우면 모드의 기본 포트(389/636)</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_Prompt" xml:space="preserve">
+    <value>프롬프트</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_RemoveVanished" xml:space="preserve">
+    <value>사라진 항목 제거</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_SyncOptions" xml:space="preserve">
+    <value>동기화 설정</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_TfaDigits" xml:space="preserve">
+    <value>자릿수</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_TfaDigitsHint" xml:space="preserve">
+    <value>6~8, 비우면 6</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_TfaHint" xml:space="preserve">
+    <value>이 영역의 모든 사용자에게 2단계 인증을 강제합니다</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_TfaNone" xml:space="preserve">
+    <value>없음</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_TfaSection" xml:space="preserve">
+    <value>2단계 인증 강제</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_TfaStep" xml:space="preserve">
+    <value>시간 간격(초)</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_TfaStepHint" xml:space="preserve">
+    <value>비우면 30</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_TfaType" xml:space="preserve">
+    <value>방식</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_UserClasses" xml:space="preserve">
+    <value>사용자 클래스</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_UserFilter" xml:space="preserve">
+    <value>사용자 필터</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_VanishedAcl" xml:space="preserve">
+    <value>ACL</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_VanishedEntry" xml:space="preserve">
+    <value>항목(사용자·그룹)</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_VanishedHint" xml:space="preserve">
+    <value>서버에서 없어진 사용자·그룹을 여기서도 지웁니다</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_VanishedProps" xml:space="preserve">
+    <value>속성</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_YubicoId" xml:space="preserve">
+    <value>Yubico API ID</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_YubicoKey" xml:space="preserve">
+    <value>Yubico API 키</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_YubicoNeeded" xml:space="preserve">
+    <value>Yubico 는 API ID 와 키가 필요합니다.</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcRealms_YubicoUrl" xml:space="preserve">
+    <value>Yubico URL</value>
+    <comment>Views/Datacenter/RealmActions</comment>
+  </data>
+  <data name="DcHa_BadRetries" xml:space="preserve">
+    <value>최대 재시작·재배치 횟수는 0~{0} 입니다.</value>
+    <comment>Views/Datacenter/HaActions</comment>
+  </data>
+  <data name="DcHa_Failback" xml:space="preserve">
+    <value>원래 노드로 되돌아가기</value>
+    <comment>Views/Datacenter/HaActions</comment>
+  </data>
+  <data name="DcHa_FailbackHint" xml:space="preserve">
+    <value>선호 노드가 다시 살아나면 그 노드로 옮깁니다</value>
+    <comment>Views/Datacenter/HaActions</comment>
+  </data>
+  <data name="DcHa_GuestHint" xml:space="preserve">
+    <value>아직 HA 에 없는 게스트만 보입니다</value>
+    <comment>Views/Datacenter/HaActions</comment>
+  </data>
+  <data name="DcHa_NoGroup" xml:space="preserve">
+    <value>없음</value>
+    <comment>Views/Datacenter/HaActions</comment>
+  </data>
+  <data name="DcHa_PickGuest" xml:space="preserve">
+    <value>HA 로 관리할 게스트를 고르세요.</value>
+    <comment>Views/Datacenter/HaActions</comment>
+  </data>
+  <data name="DcCluster_JoinLinks" xml:space="preserve">
+    <value>클러스터 링크 — {0} 에 가입</value>
+    <comment>Views/Datacenter/ClusterTabs</comment>
+  </data>
+  <data name="DcCluster_LinkN" xml:space="preserve">
+    <value>링크 {0}</value>
+    <comment>Views/Datacenter/ClusterTabs</comment>
+  </data>
+  <data name="DcCluster_PeerLinkHint" xml:space="preserve">
+    <value>이 노드의 주소 (상대 노드: {0}) — 같은 네트워크여야 합니다</value>
+    <comment>Views/Datacenter/ClusterTabs</comment>
+  </data>
+  <data name="DcCluster_LinkHint" xml:space="preserve">
+    <value>비우면 이 노드 이름의 IP</value>
+    <comment>Views/Datacenter/ClusterTabs</comment>
+  </data>
+  <data name="DcCluster_Link2" xml:space="preserve">
+    <value>링크 2</value>
+    <comment>Views/Datacenter/ClusterTabs</comment>
+  </data>
+  <data name="DcCluster_Link3" xml:space="preserve">
+    <value>링크 3</value>
+    <comment>Views/Datacenter/ClusterTabs</comment>
+  </data>
+  <data name="DcSdn_AdvertiseSubnets" xml:space="preserve">
+    <value>서브넷 광고</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_AutoDhcp" xml:space="preserve">
+    <value>자동 DHCP</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_DhcpBoth" xml:space="preserve">
+    <value>DHCP 범위는 시작과 끝을 함께 적습니다.</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_DhcpDns" xml:space="preserve">
+    <value>DHCP DNS 서버</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_DhcpHint" xml:space="preserve">
+    <value>영역의 자동 DHCP 가 켜져 있을 때 — 비우면 DHCP 없음</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_DhcpRange" xml:space="preserve">
+    <value>DHCP 범위</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_DnsZone" xml:space="preserve">
+    <value>DNS 영역</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_DnsZonePrefix" xml:space="preserve">
+    <value>DNS 영역 접두어</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_EbgpMultihop" xml:space="preserve">
+    <value>eBGP 멀티홉</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_EditTitle" xml:space="preserve">
+    <value>SDN 수정 — {0}</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_ExitLocalRouting" xml:space="preserve">
+    <value>출구 노드 로컬 라우팅</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_ExitPrimary" xml:space="preserve">
+    <value>주 출구 노드</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_IsolatePorts" xml:space="preserve">
+    <value>포트 격리</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_Loopback" xml:space="preserve">
+    <value>루프백 인터페이스</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_MtuHint" xml:space="preserve">
+    <value>비우면 자동</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_MultipathRelax" xml:space="preserve">
+    <value>BGP 다중 경로 AS-PATH 완화</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_NoArpSuppression" xml:space="preserve">
+    <value>ARP·ND 억제 끄기</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_PeersHint" xml:space="preserve">
+    <value>쉼표로 구분한 노드 IP 주소</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_ReverseDns" xml:space="preserve">
+    <value>역방향 DNS 서버</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_RtImport" xml:space="preserve">
+    <value>라우트 대상 가져오기</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_ServiceVlan" xml:space="preserve">
+    <value>서비스 VLAN</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_TagHint" xml:space="preserve">
+    <value>VLAN·QinQ 영역은 VLAN ID, VXLAN·EVPN 영역은 VNI</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_Updated" xml:space="preserve">
+    <value>SDN 설정을 수정했습니다. 적용해야 반영됩니다.</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_VlanProtocol" xml:space="preserve">
+    <value>VLAN 프로토콜</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_VnetIdHint" xml:space="preserve">
+    <value>영문으로 시작, 최대 8자</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_VnetMac" xml:space="preserve">
+    <value>VNet MAC 주소</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcSdn_ZoneIdHint" xml:space="preserve">
+    <value>영문으로 시작, 최대 8자</value>
+    <comment>Views/Datacenter/SdnActions</comment>
+  </data>
+  <data name="DcMetrics_ApiPrefix" xml:space="preserve">
+    <value>API 경로 접두어</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcMetrics_BadNumber" xml:space="preserve">
+    <value>MTU·제한 시간·최대 크기는 0보다 큰 정수입니다.</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcMetrics_HttpOnly" xml:space="preserve">
+    <value>HTTP(S) 일 때만 (InfluxDB 2.x)</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcMetrics_MaxBody" xml:space="preserve">
+    <value>최대 본문 크기</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcMetrics_MaxBodyHint" xml:space="preserve">
+    <value>바이트 — 비우면 25000000</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcMetrics_MtuHint" xml:space="preserve">
+    <value>UDP 일 때 — 비우면 1500</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcMetrics_Timeout" xml:space="preserve">
+    <value>제한 시간(초)</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcMetrics_TimeoutHint" xml:space="preserve">
+    <value>TCP·HTTP 일 때 — 비우면 1</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_Author" xml:space="preserve">
+    <value>보낸 사람 이름</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_AuthorHint" xml:space="preserve">
+    <value>비우면 Proxmox VE</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_Body" xml:space="preserve">
+    <value>본문 템플릿</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_BodyHint" xml:space="preserve">
+    <value>Handlebars 템플릿 — 예: {{ title }}: {{ message }}</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_EditTarget" xml:space="preserve">
+    <value>알림 대상 수정 — {0}</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_Headers" xml:space="preserve">
+    <value>머리글</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_HeadersHint" xml:space="preserve">
+    <value>줄마다 '이름: 값' (예: Content-Type: application/json)</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_Invert" xml:space="preserve">
+    <value>조건 반전</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_MatchCalendar" xml:space="preserve">
+    <value>일정 조건</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_MatchCalendarHint" xml:space="preserve">
+    <value>줄마다 하나 — 예: mon..fri 8-17</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_MatchField" xml:space="preserve">
+    <value>필드 조건</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_MatchFieldHint" xml:space="preserve">
+    <value>줄마다 하나 — 예: exact:type=vzdump / regex:hostname=^pve</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_Method" xml:space="preserve">
+    <value>HTTP 방식</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_NeedRecipient" xml:space="preserve">
+    <value>받는 사용자나 주소를 하나 이상 적으세요.</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_OnePerLine" xml:space="preserve">
+    <value>줄마다 하나</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_SmtpPortHint" xml:space="preserve">
+    <value>비우면 모드의 기본 포트(465/587/25)</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcNotify_UrlHint" xml:space="preserve">
+    <value>예: https://gotify.example.com</value>
+    <comment>Views/Datacenter/NotificationActions</comment>
+  </data>
+  <data name="DcMapping_EditTitle" xml:space="preserve">
+    <value>매핑 수정 — {0}</value>
+    <comment>Views/Datacenter/ClusterTabs</comment>
+  </data>
+  <data name="DcMapping_Updated" xml:space="preserve">
+    <value>매핑을 수정했습니다.</value>
+    <comment>Views/Datacenter/ClusterTabs</comment>
+  </data>
+  <data name="DcMapping_Mdev" xml:space="preserve">
+    <value>중재 장치 (mdev)</value>
+    <comment>Views/Datacenter/ClusterTabs</comment>
+  </data>
+  <data name="DcMapping_MdevHint" xml:space="preserve">
+    <value>vGPU 처럼 장치를 나눠 쓸 때</value>
+    <comment>Views/Datacenter/ClusterTabs</comment>
+  </data>
+  <data name="DcMapping_LiveMigration" xml:space="preserve">
+    <value>실시간 이전 가능</value>
+    <comment>Views/Datacenter/ClusterTabs</comment>
+  </data>
+  <data name="DcBackup_BadGuests" xml:space="preserve">
+    <value>게스트 ID 는 쉼표로 구분한 100 이상의 숫자입니다.</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_BadNumber" xml:space="preserve">
+    <value>보존 개수·고급 값은 0 이상의 정수입니다.</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_Bwlimit" xml:space="preserve">
+    <value>대역폭 제한</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_BwlimitHint" xml:space="preserve">
+    <value>KiB/s — 비우면 데이터센터 기본값</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_Fleecing" xml:space="preserve">
+    <value>플리싱 사용</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_FleecingHint" xml:space="preserve">
+    <value>백업 중 게스트 쓰기를 임시 이미지에 받아 느린 백업 대상의 영향을 줄입니다</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_FleecingStorage" xml:space="preserve">
+    <value>플리싱 저장소</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_GuestsHint" xml:space="preserve">
+    <value>쉼표로 구분 (예: 100,101)</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_Ionice" xml:space="preserve">
+    <value>I/O 우선순위</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_IoniceHint" xml:space="preserve">
+    <value>0~8, 비우면 7</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_JobId" xml:space="preserve">
+    <value>작업 ID</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_JobIdHint" xml:space="preserve">
+    <value>비우면 자동으로 만듭니다</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_Lockwait" xml:space="preserve">
+    <value>잠금 대기(분)</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_LockwaitHint" xml:space="preserve">
+    <value>비우면 180</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_MailAlways" xml:space="preserve">
+    <value>항상</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_MailFailure" xml:space="preserve">
+    <value>실패했을 때만</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_MailWhen" xml:space="preserve">
+    <value>메일 보낼 때</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_MailtoHint" xml:space="preserve">
+    <value>전자메일 방식일 때 받는 주소(쉼표로 구분)</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_MaxWorkers" xml:space="preserve">
+    <value>동시 IO 작업자</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_MaxWorkersHint" xml:space="preserve">
+    <value>VM 백업의 동시 IO 작업 수 — 비우면 16</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_NotesHint" xml:space="preserve">
+    <value>예: {{guestname}} — 백업 메모로 남습니다</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_NotesTemplate" xml:space="preserve">
+    <value>메모 템플릿</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_NotifyAuto" xml:space="preserve">
+    <value>자동</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_NotifyEmail" xml:space="preserve">
+    <value>전자메일 (기존 방식)</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_NotifyMode" xml:space="preserve">
+    <value>알림 방식</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_NotifySection" xml:space="preserve">
+    <value>알림</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_NotifySystem" xml:space="preserve">
+    <value>알림 시스템</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_PbsDetection" xml:space="preserve">
+    <value>PBS 변경 감지</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_PickStorage" xml:space="preserve">
+    <value>백업 저장소를 고르세요.</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_Protected" xml:space="preserve">
+    <value>보호</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_RepeatMissed" xml:space="preserve">
+    <value>놓친 일정 다시 실행</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_RetentionHint" xml:space="preserve">
+    <value>모두 끄고 비우면 저장소의 보존 설정을 따릅니다</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_ScheduleHint" xml:space="preserve">
+    <value>예: 21:00 / sat 02:00 / mon..fri 22:30</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_ZstdHint" xml:space="preserve">
+    <value>0 이면 코어 절반, 비우면 1</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcBackup_ZstdThreads" xml:space="preserve">
+    <value>Zstd 스레드</value>
+    <comment>Views/Datacenter/BackupJobEditor</comment>
+  </data>
+  <data name="DcPools_EditTitle" xml:space="preserve">
+    <value>풀 수정 — {0}</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcPools_Updated" xml:space="preserve">
+    <value>풀을 수정했습니다.</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcAcme_BadDelay" xml:space="preserve">
+    <value>검증 지연은 0~172800 초입니다.</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcTfa_AddYubico" xml:space="preserve">
+    <value>Yubico 추가</value>
+    <comment>Views/Datacenter/TfaRegistration</comment>
+  </data>
+  <data name="DcTfa_YubicoOtp" xml:space="preserve">
+    <value>Yubico OTP</value>
+    <comment>Views/Datacenter/TfaRegistration</comment>
+  </data>
+  <data name="DcTfa_YubicoHint" xml:space="preserve">
+    <value>입력 칸을 누른 뒤 YubiKey 를 터치하세요 — 영역에 Yubico 설정이 있어야 합니다</value>
+    <comment>Views/Datacenter/TfaRegistration</comment>
+  </data>
+  <data name="DcTfa_YubicoInvalid" xml:space="preserve">
+    <value>YubiKey 를 터치해 나온 OTP 전체(44자 안팎)를 넣으세요.</value>
+    <comment>Views/Datacenter/TfaRegistration</comment>
+  </data>
+  <data name="DcTfa_ScanHint" xml:space="preserve">
+    <value>인증 앱(Google Authenticator 등)으로 이 QR 코드를 찍은 뒤, 창을 닫고 앱이 보여 주는 6자리 코드를 넣으세요.</value>
+    <comment>Views/Datacenter/TfaRegistration</comment>
+  </data>
+  <data name="DcTfa_SecretManual" xml:space="preserve">
+    <value>QR 코드를 찍을 수 없으면 이 비밀 값을 직접 입력하세요</value>
+    <comment>Views/Datacenter/TfaRegistration</comment>
+  </data>
+  <data name="Common_Close" xml:space="preserve">
+    <value>닫기</value>
+    <comment>Views/Datacenter/TfaRegistration</comment>
+  </data>
+  <data name="DcStorage_PathTarget" xml:space="preserve">
+    <value>경로/대상</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcBackup_AllExcept" xml:space="preserve">
+    <value>전체 (제외: {0})</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcBackup_PoolSelection" xml:space="preserve">
+    <value>풀: {0}</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcAcme_ViewAccount" xml:space="preserve">
+    <value>계정 보기</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcUsers_RootProtected" xml:space="preserve">
+    <value>root@pam 은 지울 수 없습니다.</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcSdn_Status" xml:space="preserve">
+    <value>상태</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcSdn_StatusHint" xml:space="preserve">
+    <value>노드마다 SDN 영역이 적용된 상태 — 설정을 바꾼 뒤 '적용'해야 반영됩니다</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcBackup_Simulate" xml:space="preserve">
+    <value>일정 확인</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcBackup_SimulateTitle" xml:space="preserve">
+    <value>다음 실행 시각 — {0}</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcBackup_SimulateHint" xml:space="preserve">
+    <value>서버가 계산한 다음 실행 시각 10개</value>
+    <comment>Views/Datacenter</comment>
+  </data>
+  <data name="DcMetrics_BadMtu" xml:space="preserve">
+    <value>MTU 는 512~65536 입니다.</value>
+    <comment>Views/Datacenter/MonitoringTabs</comment>
+  </data>
+  <data name="DcRealmJob_Tab" xml:space="preserve">
+    <value>동기화 작업</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_Realm" xml:space="preserve">
+    <value>영역</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_Hint" xml:space="preserve">
+    <value>LDAP·AD 영역을 일정에 맞춰 자동으로 동기화합니다(PVE 8 이상). 비운 항목은 영역의 동기화 기본값을 따릅니다.</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_AddTitle" xml:space="preserve">
+    <value>동기화 작업 추가</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_EditTitle" xml:space="preserve">
+    <value>동기화 작업 편집 — {0} ({1})</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_Added" xml:space="preserve">
+    <value>동기화 작업을 추가했습니다.</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_Updated" xml:space="preserve">
+    <value>동기화 작업을 수정했습니다.</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_Deleted" xml:space="preserve">
+    <value>동기화 작업을 삭제했습니다.</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_DeleteConfirm" xml:space="preserve">
+    <value>동기화 작업 '{0}'을(를) 삭제할까요?</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_NoRealm" xml:space="preserve">
+    <value>동기화할 수 있는 LDAP·AD 영역이 없습니다.</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_BadId" xml:space="preserve">
+    <value>ID 는 영문자로 시작하고 영문자·숫자·'-'·'_' 만 쓸 수 있습니다(2자 이상).</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_VanishedHint" xml:space="preserve">
+    <value>아무것도 고르지 않으면 영역의 동기화 기본값을 따릅니다.</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcMetrics_OtelPathHint" xml:space="preserve">
+    <value>비우면 /v1/metrics (OTLP/HTTP 수신 경로)</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcMetrics_OtelHeaders" xml:space="preserve">
+    <value>HTTP 헤더</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcMetrics_OtelAttributes" xml:space="preserve">
+    <value>리소스 속성</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcMetrics_OtelJsonHint" xml:space="preserve">
+    <value>JSON 객체로 적습니다. 예: {"Authorization": "Bearer …"}</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcMetrics_OtelCompression" xml:space="preserve">
+    <value>압축</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcMetrics_OtelTimeoutHint" xml:space="preserve">
+    <value>요청 제한 시간 1~10초(비우면 5초)</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcMetrics_OtelBodyHint" xml:space="preserve">
+    <value>요청 본문 최대 크기(바이트, 1024 이상, 비우면 10000000)</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcMetrics_OtelBadJson" xml:space="preserve">
+    <value>헤더·리소스 속성은 JSON 객체여야 합니다.</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcMetrics_OtelTooLong" xml:space="preserve">
+    <value>헤더·리소스 속성이 너무 깁니다(인코딩 후 1024자까지).</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcTokens_Regenerate" xml:space="preserve">
+    <value>비밀 재발급</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcTokens_RegenerateConfirm" xml:space="preserve">
+    <value>토큰 '{0}'의 비밀 값을 새로 발급할까요? 이전 비밀을 쓰던 곳은 바로 접근이 막힙니다.</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcTokens_RegenerateUnsupported" xml:space="preserve">
+    <value>서버가 새 비밀 값을 돌려주지 않았습니다. 이 PVE 버전은 재발급을 지원하지 않을 수 있습니다.</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcTokens_Regenerated" xml:space="preserve">
+    <value>토큰 비밀 값을 새로 발급했습니다.</value>
+    <comment>Views/Datacenter/MetricOtel.cs</comment>
+  </data>
+  <data name="DcSdn_Fabrics" xml:space="preserve">
+    <value>패브릭</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcSdn_FabricsHint" xml:space="preserve">
+    <value>노드끼리 라우팅으로 잇는 망(OpenFabric·OSPF, PVE 9 이상). 바꾼 뒤 '적용'을 눌러야 노드에 반영됩니다.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Protocol" xml:space="preserve">
+    <value>프로토콜</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Ip4Prefix" xml:space="preserve">
+    <value>IPv4 대역</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Ip6Prefix" xml:space="preserve">
+    <value>IPv6 대역</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Area" xml:space="preserve">
+    <value>영역(Area)</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_AreaHint" xml:space="preserve">
+    <value>OSPF 영역 — 숫자(예: 0) 또는 IPv4 형식(예: 0.0.0.0)</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_PrefixHint" xml:space="preserve">
+    <value>노드 라우터 ID 가 속할 대역(CIDR, 예: 10.15.15.0/24)</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NeedPrefix" xml:space="preserve">
+    <value>IPv4 또는 IPv6 대역 중 하나는 적어야 합니다.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Hello" xml:space="preserve">
+    <value>Hello 간격(초)</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_HelloHint" xml:space="preserve">
+    <value>비우면 3초</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Csnp" xml:space="preserve">
+    <value>CSNP 간격(초)</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_CsnpHint" xml:space="preserve">
+    <value>비우면 10초</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_IdHint" xml:space="preserve">
+    <value>영문자로 시작, 8자 이하(영문자·숫자·'-'·'_')</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_AddTitle" xml:space="preserve">
+    <value>패브릭 추가</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_AddTypeTitle" xml:space="preserve">
+    <value>패브릭 추가 — {0} ({1})</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_EditTitle" xml:space="preserve">
+    <value>패브릭 편집 — {0}</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Added" xml:space="preserve">
+    <value>패브릭을 추가했습니다. '적용'을 눌러 반영하세요.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Updated" xml:space="preserve">
+    <value>패브릭을 수정했습니다. '적용'을 눌러 반영하세요.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Deleted" xml:space="preserve">
+    <value>패브릭을 삭제했습니다. '적용'을 눌러 반영하세요.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_DeleteConfirm" xml:space="preserve">
+    <value>패브릭 '{0}'을(를) 삭제할까요? 노드 설정도 함께 사라집니다.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Unsupported" xml:space="preserve">
+    <value>'{0}' 패브릭은 이 앱에서 편집할 수 없습니다. 웹 UI 를 사용하세요.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Nodes" xml:space="preserve">
+    <value>노드</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NodesTitle" xml:space="preserve">
+    <value>패브릭 노드 — {0}</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NodesHint" xml:space="preserve">
+    <value>패브릭에 참여하는 노드와 이웃을 잇는 인터페이스. 바꾼 뒤 SDN '적용'이 필요합니다.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NodeIp" xml:space="preserve">
+    <value>IPv4 라우터 ID</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NodeIp6" xml:space="preserve">
+    <value>IPv6 라우터 ID</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NodeIpHint" xml:space="preserve">
+    <value>패브릭 대역 안의 이 노드 주소(예: 10.15.15.1)</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_Interfaces" xml:space="preserve">
+    <value>인터페이스</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_InterfacesHint" xml:space="preserve">
+    <value>한 줄에 하나: name=ens19[,ip=10.0.0.1/31][,ip6=…][,hello_multiplier=10] — 이름만 적어도 됩니다.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_InterfacesHintOspf" xml:space="preserve">
+    <value>한 줄에 하나: name=ens19[,ip=10.0.0.1/31] — 이름만 적어도 됩니다.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NeedNodeIp" xml:space="preserve">
+    <value>IPv4 또는 IPv6 라우터 ID 를 적어야 합니다.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_BadInterface" xml:space="preserve">
+    <value>인터페이스 줄 형식이 맞지 않습니다: {0}</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NodeAddTitle" xml:space="preserve">
+    <value>패브릭 노드 추가</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NodeEditTitle" xml:space="preserve">
+    <value>패브릭 노드 편집 — {0}</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NodeAdded" xml:space="preserve">
+    <value>노드를 패브릭에 추가했습니다.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NodeUpdated" xml:space="preserve">
+    <value>패브릭 노드를 수정했습니다.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NodeDeleted" xml:space="preserve">
+    <value>노드를 패브릭에서 뺐습니다.</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcFabric_NodeDeleteConfirm" xml:space="preserve">
+    <value>노드 '{0}'을(를) 패브릭에서 뺄까요?</value>
+    <comment>Views/Datacenter/SdnFabrics.cs</comment>
+  </data>
+  <data name="DcRealmJob_VanishedNone" xml:space="preserve">
+    <value>지우지 않음(none)</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcRealmJob_NoneAlone" xml:space="preserve">
+    <value>'지우지 않음'은 다른 제거 항목과 함께 고를 수 없습니다.</value>
+    <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
+  </data>
+  <data name="DcMapping_LiveMigrationHint" xml:space="preserve">
+    <value>PVE 8.3 이상에서만 적용됩니다.</value>
+    <comment>Views/Datacenter/ClusterTabs.cs</comment>
   </data>
 </root>

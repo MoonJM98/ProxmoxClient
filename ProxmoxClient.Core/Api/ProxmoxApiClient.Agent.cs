@@ -8,6 +8,9 @@ public sealed partial class ProxmoxApiClient
     ///     QEMU 게스트 에이전트가 알려 주는 게스트 안 정보 — 호스트 이름, OS, 네트워크 인터페이스별 MAC·IP.
     ///     (이름, 값) 행으로 돌려준다. 에이전트가 꺼져 있거나 응답이 없으면 서버 오류가 그대로 올라간다.
     /// </summary>
+    [Versioning.PveApi("GET", "/nodes/{node}/qemu/{vmid}/agent/get-host-name")]
+    [Versioning.PveApi("GET", "/nodes/{node}/qemu/{vmid}/agent/get-osinfo")]
+    [Versioning.PveApi("GET", "/nodes/{node}/qemu/{vmid}/agent/network-get-interfaces")]
     public async Task<IReadOnlyList<IReadOnlyDictionary<string, string>>> GetAgentSummaryAsync(
         string node, int vmid, CancellationToken ct = default)
     {
@@ -60,6 +63,7 @@ public sealed partial class ProxmoxApiClient
     ///     Ceph OSD 목록(GET nodes/{node}/ceph/osd) — 서버는 CRUSH 트리(root → host → osd)로 주므로
     ///     OSD 마다 한 행으로 펴고 속한 호스트 이름을 함께 담는다.
     /// </summary>
+    [Versioning.PveApi("GET", "/nodes/{node}/ceph/osd")]
     public async Task<IReadOnlyList<IReadOnlyDictionary<string, string>>> GetCephOsdsAsync(
         string node, CancellationToken ct = default)
     {

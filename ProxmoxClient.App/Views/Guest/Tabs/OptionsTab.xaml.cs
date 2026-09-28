@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using ProxmoxClient.App.Controls;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
+using ProxmoxClient.Core.Api.Versioning;
 using ProxmoxClient.Core.Models;
 
 namespace ProxmoxClient.App.Views.Guest.Tabs;
@@ -32,15 +33,18 @@ public partial class OptionsTab : UserControl
         Func<Task<GuestPendingConfig>> load,
         Func<IReadOnlyDictionary<string, string>, Task> save,
         Func<IReadOnlyList<string>, Task>? revert = null,
-        IReadOnlyList<TableAction>? extraActions = null)
+        IReadOnlyList<TableAction>? extraActions = null,
+        ApiFeature? target = null)
     {
         InitializeComponent();
-        _options = options;
+        // 저장 요청(target)이 지금 서버에서 모르는 옵션은 목록에 두지 않는다
+        _options = options.Where(o => target?.Accepts(o.Key) ?? true).ToList();
         _load = load;
         _save = save;
         _revert = revert;
         BtnRevert.Visibility = revert is null ? Visibility.Collapsed : Visibility.Visible;
-        foreach (var action in extraActions ?? []) AddExtraButton(action);
+        foreach (var action in (extraActions ?? []).Where(a => a.Requires is not { IsAvailable: false }))
+            AddExtraButton(action);
 
         Loaded += async (_, _) => await ReloadAsync();
     }
@@ -49,8 +53,9 @@ public partial class OptionsTab : UserControl
     public OptionsTab(
         IReadOnlyList<GuestOption> options,
         Func<Task<IReadOnlyDictionary<string, string>>> load,
-        Func<IReadOnlyDictionary<string, string>, Task> save)
-        : this(options, async () => GuestPendingConfig.FromConfig(await load()), save)
+        Func<IReadOnlyDictionary<string, string>, Task> save,
+        ApiFeature? target = null)
+        : this(options, async () => GuestPendingConfig.FromConfig(await load()), save, target: target)
     {
     }
 

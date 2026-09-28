@@ -9,17 +9,11 @@ namespace ProxmoxClient.App.Views.Datacenter;
 /// <summary>데이터센터 백업 일정·복제·HA·저장소 화면의 추가/편집/삭제 버튼.</summary>
 internal static class ClusterActions
 {
-    private static readonly IReadOnlyList<(string, string)> BackupModes =
+    internal static readonly IReadOnlyList<(string, string)> BackupModes =
         [("snapshot", "BackupMode_Snapshot"), ("suspend", "BackupMode_Suspend"), ("stop", "BackupMode_Stop")];
 
-    private static readonly IReadOnlyList<(string, string)> CompressTypes =
+    internal static readonly IReadOnlyList<(string, string)> CompressTypes =
         [("zstd", "ZSTD"), ("lzo", "LZO"), ("gzip", "GZIP"), ("0", "Compress_None")];
-
-    private static readonly IReadOnlyList<(string, string)> HaStates =
-    [
-        ("started", "HaState_Started"), ("stopped", "HaState_Stopped"),
-        ("disabled", "HaState_Disabled"), ("ignored", "HaState_Ignored")
-    ];
 
     // ------------------------------------------------------------ 백업 일정
 
@@ -30,15 +24,15 @@ internal static class ClusterActions
             new TableAction
             {
                 LabelKey = "Action_Add", IconKey = "IconPlus",
-                Run = (_, owner) => EditBackupJobAsync(api, null, owner)
+                Run = (_, owner) => BackupJobEditor.EditAsync(api, null, owner)
             },
             new TableAction
             {
                 LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                Run = (row, owner) => EditBackupJobAsync(api, row, owner)
+                Run = (row, owner) => BackupJobEditor.EditAsync(api, row!["id"], owner)
             },
             DeleteAction(row => Loc.T("DcBackup_DeleteConfirm", row["id"]),
-                row => api.DeleteActionAsync($"cluster/backup/{Seg(row["id"])}"), "DcBackup_Deleted"),
+                row => api.Jobs.DeleteBackupJobAsync(row["id"]), "DcBackup_Deleted"),
             new TableAction
             {
                 LabelKey = "DcBackup_RunNow", IconKey = "IconPlay", NeedsSelection = true,
@@ -49,7 +43,9 @@ internal static class ClusterActions
                         .Where(n => string.Equals(n.Status, "online", StringComparison.OrdinalIgnoreCase))
                         .Select(n => n.Node)
                         .ToList();
-                    var started = await api.RunBackupJobNowAsync(row!, online);
+                    // 표 행은 배열을 ", " 로 이어 경로 안의 쉼표와 구분할 수 없다 — 설정을 다시 읽는다
+                    var job = await api.Jobs.GetBackupJobAsync(row!["id"]);
+                    var started = await api.RunBackupJobNowAsync(job, online);
                     return Loc.T("DcBackup_RunNowStarted", started.Count);
                 }
             },
@@ -63,12 +59,39 @@ internal static class ClusterActions
             },
             new TableAction
             {
+                LabelKey = "DcBackup_Simulate", IconKey = "IconRefresh",
+                Run = (row, owner) => SimulateScheduleAsync(api, row is null ? "21:00" : Value(row, "schedule"), owner)
+            },
+            new TableAction
+            {
                 LabelKey = "DcBackup_NotBackedUp", IconKey = "IconSearch",
                 Run = (_, owner) => Task.FromResult(TableWindow.ShowModal(owner, Loc.T("DcBackup_NotBackedUp"),
-                    new TableTab(() => api.GetTableAsync("cluster/backup-info/not-backed-up"), NotBackedUpColumns,
+                    new TableTab(() => api.Jobs.NotBackedUpAsync(), NotBackedUpColumns,
                         "DcBackup_NotBackedUpHint")))
             }
         ];
+    }
+
+    private static readonly IReadOnlyList<TableColumn> ScheduleColumns =
+    [
+        new() { Key = "timestamp", HeaderKey = "Table_NextRun", Width = 0, Format = TableFormats.EpochDate }
+    ];
+
+    /// <summary>
+    ///     일정 확인(웹 UI 의 Schedule Simulator) — 일정 식을 서버에 물어 다음 실행 시각 10개를 보여 준다.
+    /// </summary>
+    private static async Task<string?> SimulateScheduleAsync(ProxmoxApiClient api, string schedule, Window? owner)
+    {
+        var dialog = new FormDialog(Loc.T("DcBackup_Simulate"),
+        [
+            new FormField { Key = "schedule", LabelKey = "Table_Schedule", Required = true, Initial = schedule,
+                Trim = true, Hint = Loc.T("DcBackup_ScheduleHint") }
+        ]) { Owner = owner };
+        if (dialog.ShowDialog() != true || dialog.Result is not { } values) return null;
+
+        return TableWindow.ShowModal(owner, Loc.T("DcBackup_SimulateTitle", values["schedule"]),
+            new TableTab(() => api.Jobs.AnalyzeScheduleAsync(values["schedule"]), ScheduleColumns,
+                "DcBackup_SimulateHint"));
     }
 
     private static readonly IReadOnlyList<TableColumn> IncludedColumns =
@@ -91,88 +114,6 @@ internal static class ClusterActions
         new() { Key = "name", HeaderKey = "Table_Name", Width = 0 },
         new() { Key = "type", HeaderKey = "Table_Type", Width = 80 }
     ];
-
-    /// <summary>row 가 null 이면 새 일정, 아니면 그 일정을 고친다. 대상 게스트를 비우면 모든 게스트.</summary>
-    private static async Task<string?> EditBackupJobAsync(ProxmoxApiClient api,
-        IReadOnlyDictionary<string, string>? row, Window? owner)
-    {
-        var storages = (await api.GetTableAsync("storage"))
-            .Where(s => Value(s, "content").Split(',').Contains("backup"))
-            .Select(s => (s["storage"], s["storage"]))
-            .ToList();
-        var nodes = await NodeChoicesAsync(api, "DcBackup_AllNodes");
-        string Initial(string key, string fallback = "") => row is null ? fallback : Value(row, key);
-
-        var pools = (await api.GetTableAsync("pools"))
-            .Select(p => (Value(p, "poolid"), Value(p, "poolid")))
-            .ToList();
-        // 대상 고르는 방식: 전체(+제외 목록) · 지정한 게스트 · 풀 — 서버는 이 셋을 섞어 쓰면 거절한다
-        var selection = Initial("pool").Length > 0 ? "pool" : Initial("vmid").Length > 0 ? "vmid" : "all";
-
-        var title = row is null ? Loc.T("DcBackup_AddTitle") : Loc.T("DcBackup_EditTitle", row["id"]);
-
-        return await SubmitAsync(owner, title,
-        [
-            new FormField
-            {
-                Key = "schedule", LabelKey = "Table_Schedule", Required = true, Initial = Initial("schedule", "21:00")
-            },
-            new FormField
-            {
-                Key = "storage", LabelKey = "Table_Storage", Kind = FormFieldKind.Choice, Choices = storages,
-                Initial = Initial("storage")
-            },
-            new FormField
-            {
-                Key = "node", LabelKey = "Table_Node", Kind = FormFieldKind.Choice, Choices = nodes,
-                Initial = Initial("node")
-            },
-            new FormField
-            {
-                Key = "selection", LabelKey = "DcBackup_Selection", Kind = FormFieldKind.Choice, Initial = selection,
-                Choices =
-                [
-                    ("all", "DcBackup_SelectAll"), ("vmid", "DcBackup_SelectGuests"), ("pool", "DcBackup_SelectPool")
-                ]
-            },
-            new FormField { Key = "vmid", LabelKey = "DcBackup_Guests", Initial = Initial("vmid") },
-            new FormField
-            {
-                Key = "pool", LabelKey = "DcTab_Pools", Kind = FormFieldKind.Choice, Initial = Initial("pool"),
-                Choices = [("", "GuestOptions_NotSet"), ..pools]
-            },
-            new FormField { Key = "exclude", LabelKey = "DcBackup_Exclude", Initial = Initial("exclude") },
-            new FormField
-            {
-                Key = "mode", LabelKey = "Table_Mode", Kind = FormFieldKind.Choice, Choices = BackupModes,
-                Initial = Initial("mode", "snapshot")
-            },
-            new FormField
-            {
-                Key = "compress", LabelKey = "DcBackup_Compress", Kind = FormFieldKind.Choice, Choices = CompressTypes,
-                Initial = Initial("compress", "zstd")
-            },
-            new FormField { Key = "comment", LabelKey = "Table_Comment", Initial = Initial("comment") },
-            new FormField
-            {
-                Key = "enabled", LabelKey = "Table_Enabled", Kind = FormFieldKind.Bool,
-                Initial = Initial("enabled", "1") is "0" ? "0" : "1"
-            }
-        ], values =>
-        {
-            var edited = BackupSelection(values);
-            if (row is null) return api.PostActionAsync("cluster/backup", NonEmpty(edited));
-
-            // 고치기에서는 고른 방식에 해당하지 않는 칸을 빈 값으로 넘겨 서버 설정에서 지운다(UpdateForm)
-            return api.PutActionAsync($"cluster/backup/{Seg(row["id"])}", UpdateForm(edited));
-        }, row is null ? "DcBackup_Added" : "DcBackup_Updated", titleIsKey: false,
-            validate: values => values["selection"] switch
-            {
-                "vmid" when values["vmid"].Length == 0 => Loc.T("DcBackup_GuestsRequired"),
-                "pool" when values["pool"].Length == 0 => Loc.T("DcBackup_PoolRequired"),
-                _ => null
-            });
-    }
 
     /// <summary>
     ///     대상 방식에 맞춰 all·vmid·pool·exclude 를 정리한다 — 쓰지 않는 칸은 빈 값(고치기에서는 지우기)으로 만든다.
@@ -207,30 +148,63 @@ internal static class ClusterActions
                 Run = (row, owner) => EditReplicationAsync(api, row!, owner)
             },
             DeleteAction(row => Loc.T("DcReplication_DeleteConfirm", row["id"]),
-                row => api.DeleteActionAsync($"cluster/replication/{Seg(row["id"])}"), "DcReplication_Deleted")
+                row => api.Jobs.DeleteReplicationAsync(row["id"]), "DcReplication_Deleted")
         ];
     }
 
     private static async Task<string?> AddReplicationAsync(ProxmoxApiClient api, Window? owner)
     {
         var nodes = await NodeChoicesAsync(api, null);
-        var existing = await api.GetTableAsync("cluster/replication");
+        var existing = await api.Jobs.ListReplicationAsync();
+        // 게스트는 목록에서 — 그 게스트가 있는 노드는 대상이 될 수 없다(웹 UI 도 막는다)
+        var guests = (await api.Cluster.ResourcesAsync("vm"))
+            .Where(r => Value(r, "vmid").Length > 0 && Value(r, "template") is not "1")
+            .OrderBy(r => int.TryParse(Value(r, "vmid"), out var id) ? id : int.MaxValue)
+            .ToList();
+        var guestNode = guests.ToDictionary(r => Value(r, "vmid"), r => Value(r, "node"));
 
         return await SubmitAsync(owner, "DcReplication_AddTitle",
         [
-            new FormField { Key = "guest", LabelKey = "Table_Guest", Required = true },
-            new FormField { Key = "target", LabelKey = "Table_Target", Kind = FormFieldKind.Choice, Choices = nodes },
-            new FormField { Key = "schedule", LabelKey = "Table_Schedule", Initial = "*/15" },
-            new FormField { Key = "rate", LabelKey = "DcReplication_Rate" },
-            new FormField { Key = "comment", LabelKey = "Table_Comment" }
+            new FormField
+            {
+                Key = "guest", LabelKey = "Table_Guest", Kind = FormFieldKind.Choice, Required = true,
+                Choices = guests.Select(r => (Value(r, "vmid"),
+                    $"{Value(r, "vmid")} ({Value(r, "name")}) — {Value(r, "node")}")).ToList()
+            },
+            new FormField { Key = "target", LabelKey = "Table_Target", Kind = FormFieldKind.Choice, Choices = nodes,
+                Required = true },
+            new FormField { Key = "schedule", LabelKey = "Table_Schedule", Initial = "*/15", Trim = true },
+            new FormField { Key = "rate", LabelKey = "DcReplication_Rate", Trim = true,
+                Hint = Loc.T("DcReplication_RateHint") },
+            new FormField { Key = "comment", LabelKey = "Table_Comment" },
+            new FormField { Key = "enabled", LabelKey = "Table_Enabled", Kind = FormFieldKind.Bool, Initial = "1" }
         ], values =>
         {
             var form = NonEmpty(values);
             form.Remove("guest");
+            form.Remove("enabled");
             form["id"] = NextReplicationId(existing, values["guest"]);
             form["type"] = "local";
-            return api.PostActionAsync("cluster/replication", form);
-        }, "DcReplication_Added");
+            if (values["enabled"] != "1") form["disable"] = "1";
+            return api.Jobs.CreateReplicationAsync(form);
+        }, "DcReplication_Added", validate: values =>
+        {
+            if (values["guest"].Length == 0) return Loc.T("DcReplication_PickGuest");
+            if (values["target"].Length == 0) return Loc.T("DcReplication_PickTarget");
+            if (guestNode.TryGetValue(values["guest"], out var source) && source == values["target"])
+                return Loc.T("DcReplication_SameNode", source);
+            return RateProblem(values["rate"]);
+        });
+    }
+
+    /// <summary>속도 제한(MB/s) — 비우면 제한 없음, 있으면 1 이상의 숫자.</summary>
+    private static string? RateProblem(string rate)
+    {
+        return rate.Trim().Length == 0
+               || double.TryParse(rate, System.Globalization.NumberStyles.Float,
+                   System.Globalization.CultureInfo.InvariantCulture, out var r) && r >= 1
+            ? null
+            : Loc.T("DcReplication_BadRate");
     }
 
     /// <summary>복제 작업 ID 는 "게스트-번호" — 그 게스트가 아직 쓰지 않은 가장 작은 번호를 고른다.</summary>
@@ -252,7 +226,7 @@ internal static class ClusterActions
         return SubmitAsync(owner, Loc.T("DcReplication_EditTitle", row["id"]),
         [
             new FormField { Key = "schedule", LabelKey = "Table_Schedule", Initial = Value(row, "schedule") },
-            new FormField { Key = "rate", LabelKey = "DcReplication_Rate", Initial = Value(row, "rate") },
+            new FormField { Key = "rate", LabelKey = "DcReplication_Rate", Initial = Value(row, "rate"), Trim = true },
             new FormField { Key = "comment", LabelKey = "Table_Comment", Initial = Value(row, "comment") },
             new FormField
             {
@@ -264,132 +238,11 @@ internal static class ClusterActions
             var edited = values.Where(kv => kv.Key != "enabled")
                 .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
             edited["disable"] = values["enabled"] == "1" ? "0" : "1";
-            return api.PutActionAsync($"cluster/replication/{Seg(row["id"])}", UpdateForm(edited));
-        }, "DcReplication_Updated", titleIsKey: false);
+            return api.Jobs.UpdateReplicationAsync(row["id"], UpdateForm(edited));
+        }, "DcReplication_Updated", titleIsKey: false, validate: values => RateProblem(values["rate"]));
     }
 
     // ------------------------------------------------------------ HA
-
-    public static IReadOnlyList<TableAction> HaResources(ProxmoxApiClient api)
-    {
-        return
-        [
-            new TableAction
-            {
-                LabelKey = "Action_Add", IconKey = "IconPlus",
-                Run = (_, owner) => SubmitAsync(owner, "DcHa_AddTitle",
-                [
-                    new FormField
-                    {
-                        Key = "type", LabelKey = "Table_Type", Kind = FormFieldKind.Choice, Initial = "vm",
-                        Choices = [("vm", "VM"), ("ct", "CT")]
-                    },
-                    new FormField { Key = "vmid", LabelKey = "Table_Guest", Required = true },
-                    ..HaFields(null)
-                ], values =>
-                {
-                    var form = NonEmpty(values);
-                    form.Remove("type");
-                    form.Remove("vmid");
-                    form["sid"] = $"{values["type"]}:{values["vmid"]}";
-                    return api.PostActionAsync("cluster/ha/resources", form);
-                }, "DcHa_Added")
-            },
-            new TableAction
-            {
-                LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                Run = (row, owner) => SubmitAsync(owner, Loc.T("DcHa_EditTitle", row!["sid"]), HaFields(row),
-                    values => api.PutActionAsync($"cluster/ha/resources/{Seg(row["sid"])}", UpdateForm(values)),
-                    "DcHa_Updated", titleIsKey: false)
-            },
-            DeleteAction(row => Loc.T("DcHa_DeleteConfirm", row["sid"]),
-                row => api.DeleteActionAsync($"cluster/ha/resources/{Seg(row["sid"])}"), "DcHa_Deleted")
-        ];
-    }
-
-    private static List<FormField> HaFields(IReadOnlyDictionary<string, string>? row)
-    {
-        string Initial(string key, string fallback = "") => row is null ? fallback : Value(row, key);
-
-        return
-        [
-            new FormField
-            {
-                Key = "state", LabelKey = "Table_State", Kind = FormFieldKind.Choice, Choices = HaStates,
-                Initial = Initial("state", "started")
-            },
-            new FormField { Key = "group", LabelKey = "Table_Group", Initial = Initial("group") },
-            new FormField { Key = "max_restart", LabelKey = "Table_MaxRestart", Initial = Initial("max_restart", "1") },
-            new FormField
-            {
-                Key = "max_relocate", LabelKey = "Table_MaxRelocate", Initial = Initial("max_relocate", "1")
-            },
-            new FormField { Key = "comment", LabelKey = "Table_Comment", Initial = Initial("comment") }
-        ];
-    }
-
-    // ------------------------------------------------------------ 저장소
-
-    public static IReadOnlyList<TableAction> Storage(ProxmoxApiClient api)
-    {
-        return
-        [
-            new TableAction
-            {
-                LabelKey = "Action_Add", IconKey = "IconPlus", Run = (_, owner) => AddStorageAsync(api, owner)
-            },
-            new TableAction
-            {
-                LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                Run = (row, owner) => SubmitAsync(owner, Loc.T("DcStorage_EditTitle", row!["storage"]),
-                [
-                    new FormField { Key = "content", LabelKey = "Table_Content", Initial = Value(row, "content") },
-                    new FormField { Key = "nodes", LabelKey = "DcStorage_Nodes", Initial = Value(row, "nodes") },
-                    new FormField
-                    {
-                        Key = "enabled", LabelKey = "Table_Enabled", Kind = FormFieldKind.Bool,
-                        Initial = Value(row, "disable") is "1" ? "0" : "1"
-                    }
-                ], values =>
-                {
-                    var edited = values.Where(kv => kv.Key != "enabled")
-                        .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
-                    edited["disable"] = values["enabled"] == "1" ? "0" : "1";
-                    return api.PutActionAsync($"storage/{Seg(row["storage"])}", UpdateForm(edited));
-                }, "DcStorage_Updated", titleIsKey: false)
-            },
-            DeleteAction(row => Loc.T("DcStorage_DeleteConfirm", row["storage"]),
-                row => api.DeleteActionAsync($"storage/{Seg(row["storage"])}"), "DcStorage_Deleted")
-        ];
-    }
-
-    /// <summary>유형을 먼저 고른 뒤, 그 유형에 필요한 칸만 받는다.</summary>
-    private static async Task<string?> AddStorageAsync(ProxmoxApiClient api, Window? owner)
-    {
-        var choose = new FormDialog(Loc.T("DcStorage_ChooseType"),
-        [
-            new FormField
-            {
-                Key = "type", LabelKey = "Table_Type", Kind = FormFieldKind.Choice, Initial = "dir",
-                Choices = StorageType.All.Select(t => (t.Type, t.LabelKey)).ToList()
-            }
-        ]) { Owner = owner };
-        if (choose.ShowDialog() != true || choose.Result is not { } picked) return null;
-
-        var type = StorageType.All.First(t => t.Type == picked["type"]);
-        return await SubmitAsync(owner, Loc.T("DcStorage_AddTitle", Loc.T(type.LabelKey)),
-        [
-            new FormField { Key = "storage", LabelKey = "Table_Id", Required = true },
-            ..type.Fields,
-            new FormField { Key = "content", LabelKey = "Table_Content", Initial = type.DefaultContent },
-            new FormField { Key = "nodes", LabelKey = "DcStorage_Nodes" }
-        ], values =>
-        {
-            var form = NonEmpty(values);
-            form["type"] = type.Type;
-            return api.PostActionAsync("storage", form);
-        }, "DcStorage_Added", titleIsKey: false);
-    }
 
     /// <summary>노드 선택지. allLabelKey 가 있으면 맨 앞에 '모든 노드'(빈 값)를 둔다.</summary>
     private static async Task<List<(string, string)>> NodeChoicesAsync(ProxmoxApiClient api, string? allLabelKey)

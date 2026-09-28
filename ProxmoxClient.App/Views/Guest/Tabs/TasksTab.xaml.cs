@@ -12,9 +12,6 @@ namespace ProxmoxClient.App.Views.Guest.Tabs;
 /// </summary>
 public partial class TasksTab : UserControl
 {
-    /// <summary>로그 창에 가져올 최대 줄 수 — 긴 백업 작업도 끝부분까지 보이도록 넉넉히.</summary>
-    private const int LogLines = 5000;
-
     private readonly ProxmoxApiClient? _api;
     private readonly string _emptyKey;
     private readonly Func<Task<IReadOnlyList<PveTask>>> _load;
@@ -38,19 +35,25 @@ public partial class TasksTab : UserControl
 
     private async void OnLog(object sender, RoutedEventArgs e)
     {
-        if (_api is null || TaskGrid.SelectedItem is not PveTask task) return;
+        if (TaskGrid.SelectedItem is PveTask task) await ShowLogAsync(task);
+    }
 
-        try
-        {
-            var lines = await _api.GetTableAsync($"{TaskPath(task)}/log?limit={LogLines}");
-            var text = string.Join(Environment.NewLine,
-                lines.Select(l => l.TryGetValue("t", out var t) ? t : string.Empty));
-            TextViewWindow.ShowModal(Window.GetWindow(this), Loc.T("TasksTab_LogTitle", task.Type, task.Id), text);
-        }
-        catch (Exception ex)
-        {
-            StatusText.Text = Loc.T("TableTab_ActionFailed", ex.Message);
-        }
+    /// <summary>행 더블클릭 → 그 작업의 로그(헤더·빈 영역 더블클릭은 무시).</summary>
+    private async void OnRowDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (TaskLogViewer.RowTask(e) is not { } task) return;
+
+        e.Handled = true;
+        await ShowLogAsync(task);
+    }
+
+    /// <summary>로그 창(중지·다운로드 포함) — 닫으면 목록을 다시 읽어 바뀐 상태를 보여 준다.</summary>
+    private async Task ShowLogAsync(PveTask task)
+    {
+        if (_api is null) return;
+
+        TaskLogViewer.Show(_api, task, Window.GetWindow(this));
+        await ReloadAsync();
     }
 
     /// <summary>실행 중인 작업을 멈춘다 — 끝난 작업은 멈출 게 없으므로 알려만 준다.</summary>
@@ -66,7 +69,7 @@ public partial class TasksTab : UserControl
 
         try
         {
-            await _api.DeleteActionAsync(TaskPath(task));
+            await _api.Tasks.StopAsync(task.Node, task.Upid);
             StatusText.Text = Loc.T("TasksTab_Stopped");
             await ReloadAsync();
         }
@@ -74,11 +77,6 @@ public partial class TasksTab : UserControl
         {
             StatusText.Text = Loc.T("TableTab_ActionFailed", ex.Message);
         }
-    }
-
-    private static string TaskPath(PveTask task)
-    {
-        return $"nodes/{ProxmoxApiClient.PathSegment(task.Node)}/tasks/{ProxmoxApiClient.PathSegment(task.Upid)}";
     }
 
     private async void OnRefresh(object sender, RoutedEventArgs e)

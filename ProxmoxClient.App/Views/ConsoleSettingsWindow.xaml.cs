@@ -17,6 +17,14 @@ public partial class ConsoleSettingsWindow : Window
         (nameof(ConsoleSettings.VncEncoding.Raw), "ConsoleSettings_EncRaw")
     ];
 
+    private static readonly (string Value, string Label)[] CursorChoices =
+    [
+        (nameof(ConsoleSettings.LocalCursorMode.Both), "ConsoleSettings_CursorBoth"),
+        (nameof(ConsoleSettings.LocalCursorMode.Arrow), "ConsoleSettings_CursorArrow"),
+        (nameof(ConsoleSettings.LocalCursorMode.Dot), "ConsoleSettings_CursorDot"),
+        (nameof(ConsoleSettings.LocalCursorMode.Hidden), "ConsoleSettings_CursorHidden")
+    ];
+
     private static readonly string[] FontChoices =
         ["Cascadia Mono", "Consolas", "D2Coding", "NanumGothicCoding", "Lucida Console", "Courier New"];
 
@@ -29,6 +37,7 @@ public partial class ConsoleSettingsWindow : Window
         WindowTheme.ApplyDarkTitleBar(this);
 
         ComboChoices.Fill(EncodingBox, EncodingChoices);
+        ComboChoices.Fill(CursorBox, CursorChoices);
         FontBox.ItemsSource = FontChoices;
         RowFontSize.Hint = $"{ConsoleSettings.MinFontSize}–{ConsoleSettings.MaxFontSize}";
         QualitySlider.Minimum = CompressionSlider.Minimum = ConsoleSettings.MinLevel;
@@ -52,6 +61,7 @@ public partial class ConsoleSettingsWindow : Window
         CompressionSlider.Value = settings.CompressionLevel;
         ExtendedKeysCheck.IsChecked = settings.UseQemuExtendedKeys;
         SmoothScalingCheck.IsChecked = settings.SmoothScaling;
+        ComboChoices.Select(CursorBox, settings.LocalCursor.ToString());
         FontBox.Text = settings.TerminalFontFamily;
         FontSizeBox.Text = settings.TerminalFontSize.ToString();
         UpdateEncodingRows();
@@ -89,6 +99,9 @@ public partial class ConsoleSettingsWindow : Window
             CompressionLevel = (int)Math.Round(CompressionSlider.Value),
             UseQemuExtendedKeys = ExtendedKeysCheck.IsChecked == true,
             SmoothScaling = SmoothScalingCheck.IsChecked == true,
+            LocalCursor = Enum.TryParse<ConsoleSettings.LocalCursorMode>(ComboChoices.Selected(CursorBox), out var mode)
+                ? mode
+                : ConsoleSettings.LocalCursorMode.Both,
             TerminalFontFamily = FontBox.Text,
             TerminalFontSize = fontSize
         }.Normalize();

@@ -54,10 +54,10 @@ public static class StorageNavigator
         ("used", "NodeDisks_Used", TableFormats.Bytes), ("avail", "NodeDisks_Free", TableFormats.Bytes)
     ];
 
+    /// <param name="pluginType">저장소 유형(pbs 면 백업 속 파일 복원) — 모르면 null(버튼을 두고 눌렀을 때 판단).</param>
     public static NavWindow Create(ProxmoxApiClient api, string node, string storage, string content,
-        PermissionsInfo permissions)
+        PermissionsInfo permissions, string? pluginType = null)
     {
-        var basePath = $"nodes/{Seg(node)}/storage/{Seg(storage)}";
         var kinds = content.Split(',', StringSplitOptions.TrimEntries).ToHashSet(StringComparer.Ordinal);
         var canTemplate = permissions.Has("Datastore.AllocateTemplate");
         var canDelete = permissions.Has("Datastore.Allocate") || canTemplate;
@@ -68,31 +68,37 @@ public static class StorageNavigator
             if (visible) tabs.Add(new NavTab { Id = id, LabelKey = labelKey, IconKey = iconKey, Create = create });
         }
 
-        Add("summary", "GuestTab_Summary", "IconList", true, () => Summary(api, basePath));
+        Add("summary", "GuestTab_Summary", "IconList", true, () => Summary(api, node, storage));
+        Add("graph", "StorageGraph_Tab", "IconSwitch", true, () => new StorageGraphTab(api, node, storage));
         Add("backup", "GuestTab_Backup", "IconArchive", kinds.Contains("backup"),
-            () => Content(api, basePath, "backup", BackupColumns, "StorageContent_BackupHint",
+            () => Content(api, node, storage, "backup", BackupColumns, "StorageContent_BackupHint",
                 canDelete
-                    ? [BackupConfigAction(api, node), ..DeleteActions(api, basePath)]
-                    : [BackupConfigAction(api, node)]));
+                    ? [BackupConfigAction(api, node), ..RestoreActions(api, node, storage, pluginType),
+                        ..DeleteActions(api, node, storage), PruneAction.Create(api, node, storage)]
+                    : [BackupConfigAction(api, node), ..RestoreActions(api, node, storage, pluginType)]));
         Add("iso", "StorageContent_Iso", "IconDownload", kinds.Contains("iso"),
-            () => Content(api, basePath, "iso", FileColumns, "StorageContent_IsoHint",
-                FileActions(api, node, storage, basePath, "iso", canTemplate, canDelete)));
+            () => Content(api, node, storage, "iso", FileColumns, "StorageContent_IsoHint",
+                FileActions(api, node, storage, "iso", canTemplate, canDelete)));
         Add("vztmpl", "StorageContent_Templates", "IconBox", kinds.Contains("vztmpl"),
-            () => Content(api, basePath, "vztmpl", FileColumns, "StorageContent_TemplatesHint",
-                FileActions(api, node, storage, basePath, "vztmpl", canTemplate, canDelete)));
+            () => Content(api, node, storage, "vztmpl", FileColumns, "StorageContent_TemplatesHint",
+                FileActions(api, node, storage, "vztmpl", canTemplate, canDelete)));
+        Add("import", "StorageContent_ImportTab", "IconDownload", kinds.Contains("import"),
+            () => Content(api, node, storage, "import", FileColumns, "StorageContent_ImportHint",
+                [ImportGuestAction.Create(api, node, storage)]));
         Add("images", "StorageContent_Images", "IconDatabase", kinds.Contains("images") || kinds.Contains("rootdir"),
-            () => Content(api, basePath, null, DiskColumns, "StorageContent_ImagesHint",
-                canDelete ? DeleteActions(api, basePath) : null));
+            () => Content(api, node, storage, null, DiskColumns, "StorageContent_ImagesHint",
+                canDelete ? [AllocateDiskAction.Create(api, node, storage), ..DeleteActions(api, node, storage)]
+                    : null));
 
         return new NavWindow(Loc.T("StorageWindow_Title", storage, node), Loc.T("StorageWindow_Title", storage, node),
             "IconDatabase", tabs, null);
     }
 
-    private static TableTab Summary(ProxmoxApiClient api, string basePath)
+    private static TableTab Summary(ProxmoxApiClient api, string node, string storage)
     {
         return new TableTab(async () =>
         {
-            var status = await api.GetObjectAsync($"{basePath}/status");
+            var status = await api.Storage.StatusAsync(node, storage);
             return StatusFields
                 .Where(f => Value(status, f.Key).Length > 0)
                 .Select(f => (IReadOnlyDictionary<string, string>)new Dictionary<string, string>
@@ -105,17 +111,24 @@ public static class StorageNavigator
     }
 
     /// <summary>콘텐츠 목록. content 가 null 이면 디스크 이미지(images·rootdir) 전체.</summary>
-    private static TableTab Content(ProxmoxApiClient api, string basePath, string? content,
+    private static TableTab Content(ProxmoxApiClient api, string node, string storage, string? content,
         IReadOnlyList<TableColumn> columns, string hintKey, IReadOnlyList<TableAction>? actions)
     {
         return new TableTab(async () =>
         {
-            if (content is not null) return await api.GetTableAsync($"{basePath}/content?content={content}");
+            if (content is not null) return await api.Storage.ContentAsync(node, storage, content);
 
-            var images = await api.GetTableAsync($"{basePath}/content?content=images");
-            var rootdirs = await api.GetTableAsync($"{basePath}/content?content=rootdir");
+            var images = await api.Storage.ContentAsync(node, storage, "images");
+            var rootdirs = await api.Storage.ContentAsync(node, storage, "rootdir");
             return images.Concat(rootdirs).ToList();
         }, columns, hintKey, actions);
+    }
+
+    /// <summary>PBS 백업 속 파일 복원 — PBS 가 아닌 것이 확실한 저장소에는 두지 않는다.</summary>
+    private static IEnumerable<TableAction> RestoreActions(ProxmoxApiClient api, string node, string storage,
+        string? pluginType)
+    {
+        if (pluginType is null or "pbs") yield return FileRestoreBrowser.Create(api, node, storage);
     }
 
     private static TableAction BackupConfigAction(ProxmoxApiClient api, string node)
@@ -125,14 +138,13 @@ public static class StorageNavigator
             LabelKey = "BackupList_ShowConfig", IconKey = "IconList", NeedsSelection = true,
             Run = async (row, owner) =>
             {
-                var text = await api.GetTextAsync(
-                    $"nodes/{Seg(node)}/vzdump/extractconfig?volume={Uri.EscapeDataString(row!["volid"])}");
+                var text = await api.Guests.BackupConfigAsync(node, row!["volid"]);
                 return TextViewWindow.ShowModal(owner, Loc.T("BackupList_ConfigTitle", row["volid"]), text);
             }
         };
     }
 
-    private static IReadOnlyList<TableAction> DeleteActions(ProxmoxApiClient api, string basePath)
+    private static IReadOnlyList<TableAction> DeleteActions(ProxmoxApiClient api, string node, string storage)
     {
         return
         [
@@ -141,14 +153,72 @@ public static class StorageNavigator
                 LabelKey = "Action_Delete", IconKey = "IconTrash", NeedsSelection = true,
                 Confirm = row => Loc.T("BackupList_DeleteConfirm", row!["volid"]),
                 Run = async (row, _) => await RunTaskAsync(api,
-                    api.DeleteActionAsync($"{basePath}/content/{Seg(row!["volid"])}"), "StorageContent_Deleted")
+                    api.Storage.DeleteVolumeAsync(node, storage, row!["volid"]), "StorageContent_Deleted")
             }
         ];
     }
 
+    /// <summary>URL 에서 받기 — 파일 이름은 URL 에서 찾아 채울 수 있다(7.1+), 체크섬은 고르면 검증한다.</summary>
+    private static TableAction DownloadUrlAction(ProxmoxApiClient api, string node, string storage, string content)
+    {
+        var fileName = UrlFileName(api, node);
+        return new TableAction
+        {
+            LabelKey = "StorageDownload_Button", IconKey = "IconExternal",
+            Run = (_, owner) => SubmitTaskAsync(api, owner, Loc.T("StorageDownload_Button"),
+            [
+                new FormField { Key = "url", LabelKey = "StorageDownload_Url", Required = true },
+                new FormField
+                {
+                    Key = "filename", LabelKey = "StorageDownload_FileName", Required = true,
+                    Suggest = fileName, Hint = fileName is null ? null : Loc.T("StorageDownload_FileNameHint")
+                },
+                new FormField
+                {
+                    Key = "checksum-algorithm", LabelKey = "StorageDownload_ChecksumAlgorithm",
+                    Kind = FormFieldKind.Choice, Initial = "",
+                    Choices =
+                    [
+                        ("", "StorageDownload_NoChecksum"), ("sha256", "SHA-256"), ("sha512", "SHA-512"),
+                        ("md5", "MD5")
+                    ]
+                },
+                new FormField { Key = "checksum", LabelKey = "StorageDownload_Checksum" }
+            ], values =>
+            {
+                var form = NonEmpty(values);
+                form["content"] = content;
+                return api.Storage.DownloadUrlAsync(node, storage, form);
+            }, "StorageDownload_Done",
+                values => values["url"].StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                          || values["url"].StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : Loc.T("StorageDownload_UrlInvalid"))
+        };
+    }
+
+    /// <summary>URL 의 파일 이름을 서버에 물어 채운다(7.1+ — 그 전 서버는 직접 입력).</summary>
+    private static Func<IReadOnlyDictionary<string, string>, Task<IReadOnlyList<(string, string)>>>? UrlFileName(
+        ProxmoxApiClient api, string node)
+    {
+        if (!api.Storage.Feature(nameof(Core.Api.Domains.StorageApi.QueryUrlMetadataAsync)).IsAvailable) return null;
+
+        return async values =>
+        {
+            var url = values.TryGetValue("url", out var u) ? u.Trim() : string.Empty;
+            if (url.Length == 0) throw new InvalidOperationException(Loc.T("StorageScan_NeedField",
+                Loc.T("StorageDownload_Url")));
+
+            var meta = await api.Storage.QueryUrlMetadataAsync(node, url);
+            var name = Value(meta, "filename");
+            var size = Value(meta, "size") is { Length: > 0 } raw ? TableFormats.Bytes(raw) : "";
+            return name.Length == 0 ? [] : [(name, $"{size} {Value(meta, "mimetype")}".Trim())];
+        };
+    }
+
     /// <summary>ISO·CT 템플릿 — 올리기, URL 에서 받기, (템플릿은) 공식 템플릿 받기, 삭제.</summary>
     private static IReadOnlyList<TableAction>? FileActions(ProxmoxApiClient api, string node, string storage,
-        string basePath, string content, bool canTemplate, bool canDelete)
+        string content, bool canTemplate, bool canDelete)
     {
         var actions = new List<TableAction>();
         if (canTemplate)
@@ -158,44 +228,19 @@ public static class StorageNavigator
                 LabelKey = "StorageUpload_Button", IconKey = "IconDownload",
                 Run = (_, owner) => UploadAsync(api, node, storage, content, owner)
             });
-            actions.Add(new TableAction
-            {
-                LabelKey = "StorageDownload_Button", IconKey = "IconExternal",
-                Run = (_, owner) => SubmitTaskAsync(api, owner, Loc.T("StorageDownload_Button"),
-                [
-                    new FormField { Key = "url", LabelKey = "StorageDownload_Url", Required = true },
-                    new FormField { Key = "filename", LabelKey = "StorageDownload_FileName", Required = true },
-                    new FormField
-                    {
-                        Key = "checksum-algorithm", LabelKey = "StorageDownload_ChecksumAlgorithm",
-                        Kind = FormFieldKind.Choice, Initial = "",
-                        Choices =
-                        [
-                            ("", "StorageDownload_NoChecksum"), ("sha256", "SHA-256"), ("sha512", "SHA-512"),
-                            ("md5", "MD5")
-                        ]
-                    },
-                    new FormField { Key = "checksum", LabelKey = "StorageDownload_Checksum" }
-                ], values =>
-                {
-                    var form = NonEmpty(values);
-                    form["content"] = content;
-                    return api.PostActionAsync($"{basePath}/download-url", form);
-                }, "StorageDownload_Done",
-                    values => values["url"].StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-                              || values["url"].StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-                        ? null
-                        : Loc.T("StorageDownload_UrlInvalid"))
-            });
+            actions.Add(DownloadUrlAction(api, node, storage, content));
             if (content == "vztmpl")
+            {
                 actions.Add(new TableAction
                 {
                     LabelKey = "StorageTemplates_Button", IconKey = "IconBox",
                     Run = (_, owner) => DownloadTemplateAsync(api, node, storage, owner)
                 });
+                actions.Add(OciPullAction.Create(api, node, storage));
+            }
         }
 
-        if (canDelete) actions.AddRange(DeleteActions(api, basePath));
+        if (canDelete) actions.AddRange(DeleteActions(api, node, storage));
         return actions.Count > 0 ? actions : null;
     }
 
@@ -232,7 +277,7 @@ public static class StorageNavigator
     private static async Task<string?> DownloadTemplateAsync(ProxmoxApiClient api, string node, string storage,
         Window? owner)
     {
-        var templates = (await api.GetTableAsync($"nodes/{Seg(node)}/aplinfo"))
+        var templates = (await api.Storage.TemplatesAsync(node))
             .OrderBy(t => Value(t, "section"), StringComparer.Ordinal)
             .ThenBy(t => Value(t, "template"), StringComparer.Ordinal)
             .Select(t => (Value(t, "template"), $"{Value(t, "template")}  {Value(t, "headline")}".Trim()))
@@ -245,9 +290,6 @@ public static class StorageNavigator
                 Key = "template", LabelKey = "StorageTemplates_Template", Kind = FormFieldKind.Choice,
                 Choices = templates, Required = true
             }
-        ], values => api.PostActionAsync($"nodes/{Seg(node)}/aplinfo", new Dictionary<string, string>
-        {
-            ["storage"] = storage, ["template"] = values["template"]
-        }), "StorageTemplates_Done");
+        ], values => api.Storage.DownloadTemplateAsync(node, storage, values["template"]), "StorageTemplates_Done");
     }
 }

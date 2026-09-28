@@ -11,6 +11,8 @@ public sealed partial class ProxmoxApiClient
     ///     Lists a guest's snapshots (GET .../snapshot), excluding the "!current"
     ///     pseudo-entry.
     /// </summary>
+    [Versioning.PveApi("GET", "/nodes/{node}/qemu/{vmid}/snapshot")]
+    [Versioning.PveApi("GET", "/nodes/{node}/lxc/{vmid}/snapshot")]
     public Task<IReadOnlyList<PveSnapshot>> GetSnapshotsAsync(string node, ResourceKind kind, int vmid,
         CancellationToken ct = default)
     {
@@ -23,6 +25,8 @@ public sealed partial class ProxmoxApiClient
     ///     Creates a snapshot (POST .../snapshot, form: vmid, name, description,
     ///     vmstate=1 when <paramref name="includeRam" />). Returns the task UPID.
     /// </summary>
+    [Versioning.PveApi("POST", "/nodes/{node}/qemu/{vmid}/snapshot")]
+    [Versioning.PveApi("POST", "/nodes/{node}/lxc/{vmid}/snapshot")]
     public Task<string> CreateSnapshotAsync(
         string node,
         ResourceKind kind,
@@ -45,6 +49,8 @@ public sealed partial class ProxmoxApiClient
         return PostWriteAsync($"nodes/{Escape(node)}/{kind.ApiSegment()}/{vmid}/snapshot", form, ct);
     }
     /// <summary>Rolls a guest back to a snapshot (POST .../snapshot/{name}/rollback). Returns the task UPID.</summary>
+    [Versioning.PveApi("POST", "/nodes/{node}/qemu/{vmid}/snapshot/{snapname}/rollback")]
+    [Versioning.PveApi("POST", "/nodes/{node}/lxc/{vmid}/snapshot/{snapname}/rollback")]
     public Task<string> RollbackSnapshotAsync(string node, ResourceKind kind, int vmid, string name,
         CancellationToken ct = default)
     {
@@ -54,10 +60,21 @@ public sealed partial class ProxmoxApiClient
             ct);
     }
     /// <summary>Deletes a snapshot (DELETE .../snapshot/{name}). Returns the task UPID.</summary>
+    [Versioning.PveApi("DELETE", "/nodes/{node}/qemu/{vmid}/snapshot/{snapname}")]
+    [Versioning.PveApi("DELETE", "/nodes/{node}/lxc/{vmid}/snapshot/{snapname}")]
     public Task<string> DeleteSnapshotAsync(string node, ResourceKind kind, int vmid, string name,
         CancellationToken ct = default)
     {
         return DeleteWriteAsync($"nodes/{Escape(node)}/{kind.ApiSegment()}/{vmid}/snapshot/{Escape(name)}", ct);
+    }
+    /// <summary>스냅숏 설명 바꾸기(PUT .../snapshot/{name}/config) — 스냅숏 내용은 그대로, 메모만 바뀐다.</summary>
+    [Versioning.PveApi("PUT", "/nodes/{node}/qemu/{vmid}/snapshot/{snapname}/config")]
+    [Versioning.PveApi("PUT", "/nodes/{node}/lxc/{vmid}/snapshot/{snapname}/config")]
+    public Task<string> UpdateSnapshotDescriptionAsync(string node, ResourceKind kind, int vmid, string name,
+        string description, CancellationToken ct = default)
+    {
+        var path = $"nodes/{Escape(node)}/{kind.ApiSegment()}/{vmid}/snapshot/{Escape(name)}/config";
+        return PutActionAsync(path, new Dictionary<string, string> { ["description"] = description }, ct);
     }
     private static PveSnapshot MapSnapshot(SnapshotDto dto)
     {

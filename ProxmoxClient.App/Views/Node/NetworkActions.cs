@@ -21,33 +21,32 @@ internal static class NetworkActions
 
     public static IReadOnlyList<TableAction> Actions(ProxmoxApiClient api, string node)
     {
-        var basePath = $"nodes/{Seg(node)}/network";
         return
         [
             new TableAction
             {
                 LabelKey = "NodeNetwork_AddBridge", IconKey = "IconPlus",
-                Run = (_, owner) => EditAsync(api, basePath, "bridge", null, owner)
+                Run = (_, owner) => EditAsync(api, node, "bridge", null, owner)
             },
             new TableAction
             {
                 LabelKey = "NodeNetwork_AddBond", IconKey = "IconPlus",
-                Run = (_, owner) => EditAsync(api, basePath, "bond", null, owner)
+                Run = (_, owner) => EditAsync(api, node, "bond", null, owner)
             },
             new TableAction
             {
                 LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                Run = (row, owner) => EditAsync(api, basePath, Value(row!, "type"), row, owner)
+                Run = (row, owner) => EditAsync(api, node, Value(row!, "type"), row, owner)
             },
             DeleteAction(row => Loc.T("NodeNetwork_DeleteConfirm", row["iface"]),
-                row => api.DeleteActionAsync($"{basePath}/{Seg(row["iface"])}"), "NodeNetwork_Deleted"),
+                row => api.Nodes.DeleteInterfaceAsync(node, row["iface"]), "NodeNetwork_Deleted"),
             new TableAction
             {
                 LabelKey = "NodeNetwork_Apply", IconKey = "IconCheck",
                 Confirm = _ => Loc.T("NodeNetwork_ApplyConfirm"),
                 Run = async (_, _) =>
                 {
-                    var upid = await api.PutActionAsync(basePath, new Dictionary<string, string>());
+                    var upid = await api.Nodes.ApplyNetworkAsync(node);
                     if (upid.Length == 0) return Loc.T("NodeNetwork_Applied", "OK");
 
                     var task = await api.WaitTaskAsync(upid);
@@ -60,7 +59,7 @@ internal static class NetworkActions
                 Confirm = _ => Loc.T("NodeNetwork_RevertConfirm"),
                 Run = async (_, _) =>
                 {
-                    await api.DeleteActionAsync(basePath);
+                    await api.Nodes.RevertNetworkAsync(node);
                     return Loc.T("NodeNetwork_Reverted");
                 }
             }
@@ -68,7 +67,7 @@ internal static class NetworkActions
     }
 
     /// <summary>row 가 null 이면 새 인터페이스. 유형마다 필요한 칸만 보인다.</summary>
-    private static Task<string?> EditAsync(ProxmoxApiClient api, string basePath, string type,
+    private static Task<string?> EditAsync(ProxmoxApiClient api, string node, string type,
         IReadOnlyDictionary<string, string>? row, Window? owner)
     {
         string Initial(string key, string fallback = "") => row is null ? fallback : Value(row, key);
@@ -123,12 +122,12 @@ internal static class NetworkActions
             {
                 var form = NonEmpty(values);
                 form["type"] = type;
-                return api.PostActionAsync(basePath, form);
+                return api.Nodes.CreateInterfaceAsync(node, form);
             }
 
             var update = UpdateForm(values);
             update["type"] = type;
-            return api.PutActionAsync($"{basePath}/{Seg(row["iface"])}", update);
+            return api.Nodes.UpdateInterfaceAsync(node, row["iface"], update);
         }, row is null ? "NodeNetwork_Added" : "NodeNetwork_Updated", titleIsKey: false);
     }
 }

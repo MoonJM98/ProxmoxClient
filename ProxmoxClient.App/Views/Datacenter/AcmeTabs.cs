@@ -29,9 +29,9 @@ internal static class AcmeTabs
     {
         return new SubTabsView(
         [
-            ("DcAcme_Accounts", () => new TableTab(() => api.GetTableAsync("cluster/acme/account"), AccountColumns,
+            ("DcAcme_Accounts", () => new TableTab(() => api.Acme.ListAccountsAsync(), AccountColumns,
                 "DcAcme_AccountsHint", canEdit ? AccountActions(api) : null)),
-            ("DcAcme_Plugins", () => new TableTab(() => api.GetTableAsync("cluster/acme/plugins"), PluginColumns,
+            ("DcAcme_Plugins", () => new TableTab(() => api.Acme.ListPluginsAsync(), PluginColumns,
                 "DcAcme_PluginsHint", canEdit ? PluginActions(api) : null))
         ]);
     }
@@ -49,7 +49,45 @@ internal static class AcmeTabs
                 LabelKey = "Action_Delete", IconKey = "IconTrash", NeedsSelection = true,
                 Confirm = row => Loc.T("DcAcme_DeleteAccountConfirm", row!["name"]),
                 Run = async (row, _) => await RunTaskAsync(api,
-                    api.DeleteActionAsync($"cluster/acme/account/{Seg(row!["name"])}"), "DcAcme_AccountDeleted")
+                    api.Acme.DeactivateAccountAsync(row!["name"]), "DcAcme_AccountDeleted")
+            },
+            new TableAction
+            {
+                LabelKey = "DcAcme_EditContact", IconKey = "IconPencil", NeedsSelection = true,
+                Run = (row, owner) => SubmitTaskAsync(api, owner, Loc.T("DcAcme_EditContactTitle", row!["name"]),
+                [
+                    new FormField { Key = "contact", LabelKey = "Table_Email", Required = true, Trim = true }
+                ], values => api.Acme.UpdateAccountAsync(row["name"], values["contact"]), "DcAcme_ContactUpdated")
+            },
+            new TableAction
+            {
+                LabelKey = "DcAcme_DirectoryMeta", IconKey = "IconSearch",
+                Requires = api.Acme.Feature(nameof(Core.Api.Domains.AcmeApi.DirectoryMetaJsonAsync)),
+                Run = async (_, owner) =>
+                {
+                    var directories = (await api.Acme.DirectoriesAsync())
+                        .Select(d => (Value(d, "url"), Value(d, "name"))).ToList();
+                    string? json = null;
+                    var picked = await SubmitAsync(owner, "DcAcme_DirectoryMeta",
+                    [
+                        new FormField { Key = "directory", LabelKey = "DcAcme_Directory", Kind = FormFieldKind.Choice,
+                            Choices = directories, Required = true }
+                    ], async values =>
+                    {
+                        json = await api.Acme.DirectoryMetaJsonAsync(values["directory"]);
+                        return string.Empty;
+                    }, "DcAcme_DirectoryMeta");
+                    return picked is null || json is null
+                        ? null
+                        : TextViewWindow.ShowModal(owner, Loc.T("DcAcme_DirectoryMeta"), json);
+                }
+            },
+            // 계정 정보 보기(연락처·상태·약관 등) — 웹 UI 의 View 버튼
+            new TableAction
+            {
+                LabelKey = "DcAcme_ViewAccount", IconKey = "IconList", NeedsSelection = true,
+                Run = async (row, owner) => TextViewWindow.ShowModal(owner, Loc.T("DcAcme_ViewAccount"),
+                    await api.Acme.AccountJsonAsync(row!["name"]))
             }
         ];
     }
@@ -59,7 +97,7 @@ internal static class AcmeTabs
     /// </summary>
     private static async Task<string?> RegisterAsync(ProxmoxApiClient api, Window? owner)
     {
-        var directories = (await api.GetTableAsync("cluster/acme/directories"))
+        var directories = (await api.Acme.DirectoriesAsync())
             .Select(d => (Value(d, "url"), Value(d, "name")))
             .ToList();
 
@@ -75,7 +113,7 @@ internal static class AcmeTabs
         ]) { Owner = owner };
         if (pick.ShowDialog() != true || pick.Result is not { } account) return null;
 
-        var tos = await api.GetTextAsync($"cluster/acme/tos?directory={Uri.EscapeDataString(account["directory"])}");
+        var tos = await api.Acme.TermsOfServiceAsync(account["directory"]);
         var fields = new List<FormField>();
         if (tos.Length > 0)
             fields.Add(new FormField
@@ -88,7 +126,7 @@ internal static class AcmeTabs
             {
                 var form = new Dictionary<string, string>(account, StringComparer.Ordinal);
                 if (tos.Length > 0) form["tos_url"] = tos;
-                return api.PostActionAsync("cluster/acme/account", form);
+                return api.Acme.RegisterAccountAsync(form);
             },
             "DcAcme_Registered",
             values => tos.Length == 0 || values["accept"] == "1" ? null : Loc.T("DcAcme_TosRequired"));
@@ -109,7 +147,7 @@ internal static class AcmeTabs
                 Run = (row, owner) => EditPluginAsync(api, row, owner)
             },
             DeleteAction(row => Loc.T("DcAcme_DeletePluginConfirm", row["plugin"]),
-                row => api.DeleteActionAsync($"cluster/acme/plugins/{Seg(row["plugin"])}"), "DcAcme_PluginDeleted")
+                row => api.Acme.DeletePluginAsync(row["plugin"]), "DcAcme_PluginDeleted")
         ];
     }
 
@@ -129,8 +167,8 @@ internal static class AcmeTabs
     }
 
     /// <summary>DNS 플러그인 — 인증 정보는 "KEY=값" 줄 형식으로 받아 서버가 요구하는 base64 로 보낸다.</summary>
-    private static Task<string?> EditPluginAsync(ProxmoxApiClient api, IReadOnlyDictionary<string, string>? row,
-        Window? owner)
+    private static async Task<string?> EditPluginAsync(ProxmoxApiClient api,
+        IReadOnlyDictionary<string, string>? row, Window? owner)
     {
         string Initial(string key, string fallback = "") => row is null ? fallback : Value(row, key);
 
@@ -138,7 +176,12 @@ internal static class AcmeTabs
         var currentData = DecodeData(Initial("data"));
         var fields = new List<FormField>();
         if (row is null) fields.Add(new FormField { Key = "id", LabelKey = "Table_Name", Required = true });
-        fields.Add(new FormField { Key = "api", LabelKey = "DcAcme_Api", Required = true, Initial = Initial("api") });
+        // DNS API 는 서버가 지원하는 목록(challenge-schema)에서 고른다 — 못 읽으면 직접 입력
+        var apis = await DnsApiChoicesAsync(api);
+        fields.Add(apis.Count > 0
+            ? new FormField { Key = "api", LabelKey = "DcAcme_Api", Kind = FormFieldKind.Choice, Choices = apis,
+                Required = true, Initial = Initial("api") }
+            : new FormField { Key = "api", LabelKey = "DcAcme_Api", Required = true, Initial = Initial("api") });
         fields.Add(new FormField
         {
             Key = "data", LabelKey = "DcAcme_Data", Kind = FormFieldKind.Multiline, Initial = currentData
@@ -150,7 +193,7 @@ internal static class AcmeTabs
         fields.Add(new FormField { Key = "nodes", LabelKey = "DcStorage_Nodes", Initial = Initial("nodes") });
 
         var title = row is null ? Loc.T("DcAcme_AddPlugin") : Loc.T("DcAcme_EditPlugin", row["plugin"]);
-        return SubmitAsync(owner, title, fields, values =>
+        return await SubmitAsync(owner, title, fields, values =>
         {
             var data = values["data"].Replace("\r\n", "\n");
             var edited = new Dictionary<string, string>(values, StringComparer.Ordinal)
@@ -165,10 +208,31 @@ internal static class AcmeTabs
             {
                 var form = NonEmpty(edited);
                 form["type"] = "dns";
-                return api.PostActionAsync("cluster/acme/plugins", form);
+                return api.Acme.CreatePluginAsync(form);
             }
 
-            return api.PutActionAsync($"cluster/acme/plugins/{Seg(row["plugin"])}", UpdateForm(edited));
-        }, row is null ? "DcAcme_PluginAdded" : "DcAcme_PluginUpdated", titleIsKey: false);
+            return api.Acme.UpdatePluginAsync(row["plugin"], UpdateForm(edited));
+        }, row is null ? "DcAcme_PluginAdded" : "DcAcme_PluginUpdated", titleIsKey: false,
+            validate: values => int.TryParse(values["validation-delay"], out var d) && d is >= 0 and <= 172800
+                ? null
+                : Loc.T("DcAcme_BadDelay"));
+    }
+
+    private static async Task<IReadOnlyList<(string, string)>> DnsApiChoicesAsync(ProxmoxApiClient api)
+    {
+        try
+        {
+            return (await api.Acme.ChallengeSchemaAsync())
+                .Where(s => Value(s, "type") is "" or "dns")
+                .Select(s => (Value(s, "id"),
+                    Value(s, "name") is { Length: > 0 } n ? $"{n} ({Value(s, "id")})" : Value(s, "id")))
+                .Where(s => s.Item1.Length > 0)
+                .OrderBy(s => s.Item2, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (ProxmoxApiException)
+        {
+            return [];
+        }
     }
 }

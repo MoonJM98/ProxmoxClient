@@ -10,12 +10,18 @@ public partial class SubTabsView : UserControl
     private readonly Dictionary<int, UIElement> _built = [];
     private readonly IReadOnlyList<(string LabelKey, Func<UIElement> Create)> _tabs;
 
+    /// <summary>하위 탭마다 쓰는 API 기능을 알리면, 서버가 못 쓰는 탭은 두지 않는다.</summary>
+    public SubTabsView(IReadOnlyList<SubTab> tabs)
+        : this(tabs.Where(t => t.Requires is not { IsAvailable: false }).Select(t => (t.LabelKey, t.Create)).ToList())
+    {
+    }
+
     public SubTabsView(IReadOnlyList<(string LabelKey, Func<UIElement> Create)> tabs)
     {
         InitializeComponent();
         _tabs = tabs;
         foreach (var (labelKey, _) in tabs)
-            TabBar.Items.Add(new ListBoxItem { Content = Loc.T(labelKey), MinWidth = 80 });
+            TabBar.Items.Add(new ListBoxItem { Content = Loc.T(labelKey) });
         TabBar.SelectedIndex = 0;
     }
 

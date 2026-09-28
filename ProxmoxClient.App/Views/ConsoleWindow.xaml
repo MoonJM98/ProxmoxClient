@@ -67,13 +67,15 @@
         <ScrollViewer Grid.Row="1" x:Name="ConsoleScroll" Background="#000000"
                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                       VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-            <Grid>
-                <Image x:Name="ScreenImage" Stretch="Uniform" StretchDirection="DownOnly" Cursor="None"
+            <Grid x:Name="ScreenHost">
+                <Image x:Name="ScreenImage" Stretch="Uniform" StretchDirection="DownOnly"
                        RenderOptions.BitmapScalingMode="NearestNeighbor"
                        MouseEnter="OnImageMouseEnter" MouseLeave="OnImageMouseLeave"
                        MouseDown="OnImageMouseDown" MouseUp="OnImageMouseUp"
                        MouseMove="OnImageMouseMove" MouseWheel="OnImageMouseWheel" />
-                <Image x:Name="CursorImage" IsHitTestVisible="False" Visibility="Collapsed">
+                <!-- "둘 다 보기" 에서 게스트가 보낸 커서 모양 — PC 화살표 아래 마우스 위치에 겹쳐 그린다 -->
+                <Image x:Name="CursorImage" IsHitTestVisible="False" Visibility="Collapsed" Stretch="Fill"
+                       HorizontalAlignment="Left" VerticalAlignment="Top">
                     <Image.RenderTransform>
                         <TranslateTransform x:Name="CursorTransform" />
                     </Image.RenderTransform>

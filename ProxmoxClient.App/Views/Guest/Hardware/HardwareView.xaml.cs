@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Api.Domains;
 using ProxmoxClient.Core.Models;
 
 namespace ProxmoxClient.App.Views.Guest.Hardware;
@@ -94,7 +95,9 @@ public partial class HardwareView : UserControl
         BtnDisk.IsEnabled = !_busy && row is { HasPending: false, IsDeleted: false } && diskLike;
         // CT: 미사용 볼륨은 이동 불가, 루트 디스크는 소유자 변경 불가(웹 UI 와 같이)
         MenuMove.IsEnabled = BtnDisk.IsEnabled && !(_isCt && row?.Item == HardwareItem.Unused);
+        // 다른 게스트에 넘기기(target-vmid)는 7.1+
         MenuReassign.IsEnabled = BtnDisk.IsEnabled
+                                 && _api.Guests.Feature(nameof(GuestsApi.MoveDiskAsync), "target-vmid").IsAvailable
                                  && row?.Item is HardwareItem.Disk or HardwareItem.Unused or HardwareItem.MountPoint;
         MenuResize.IsEnabled = BtnDisk.IsEnabled && row is { IsUsedDisk: true };
         MenuEnroll.Visibility = row?.Item == HardwareItem.Efi ? Visibility.Visible : Visibility.Collapsed;
@@ -162,7 +165,7 @@ public partial class HardwareView : UserControl
             }
 
             form["background_delay"] = "5";
-            var status = await ActionHelpers.RunTaskAsync(_api, _api.PostActionAsync($"{_ctx!.GuestPath}/config", form),
+            var status = await ActionHelpers.RunTaskAsync(_api, _api.Guests.UpdateConfigAsync(_guest, form),
                 "Hw_TaskDone");
             return $"{doneText} ({status})";
         });
@@ -197,7 +200,9 @@ public partial class HardwareView : UserControl
     /// </summary>
     private async Task ApplyEditAsync(HardwareEdit edit)
     {
-        var dialog = new FormDialog(edit.Title, edit.Fields, edit.Validate) { Owner = Window.GetWindow(this) };
+        // 설정 저장 요청을 알리면 서버가 모르는 설정 칸(예: 9.0 전의 allow-ksm)은 창이 뺀다
+        var dialog = new FormDialog(edit.Title, edit.Fields, edit.Validate,
+            _api.Guests.Feature(nameof(GuestsApi.SetConfigAsync))) { Owner = Window.GetWindow(this) };
         if (dialog.ShowDialog() != true || dialog.Result is not { } values || _ctx is null) return;
 
         var changes = edit.Build(values)
@@ -216,12 +221,11 @@ public partial class HardwareView : UserControl
     private async Task ApplyDiskActionAsync(HardwareEdit edit,
         Func<IReadOnlyDictionary<string, string>, DiskActions.DiskRequest> request)
     {
-        var dialog = new FormDialog(edit.Title, edit.Fields, edit.Validate) { Owner = Window.GetWindow(this) };
+        var dialog = new FormDialog(edit.Title, edit.Fields, edit.Validate,
+            _api.Guests.Feature(nameof(GuestsApi.MoveDiskAsync))) { Owner = Window.GetWindow(this) };
         if (dialog.ShowDialog() != true || dialog.Result is not { } values) return;
 
         var r = request(values);
-        await RunAsync(() => ActionHelpers.RunTaskAsync(_api,
-            r.Method == HttpMethod.Put ? _api.PutActionAsync(r.Path, r.Form) : _api.PostActionAsync(r.Path, r.Form),
-            "Hw_TaskDone"));
+        await RunAsync(() => ActionHelpers.RunTaskAsync(_api, r.Send(_api), "Hw_TaskDone"));
     }
 }

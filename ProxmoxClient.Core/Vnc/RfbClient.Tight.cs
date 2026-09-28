@@ -135,10 +135,9 @@ public sealed partial class RfbClient
                 throw new IOException(Res.T("RfbClient_18", filter));
         }
     }
-    /// <summary>RGB 바이트 → 프레임버퍼 픽셀(uint, 메모리 순서 B,G,R,A).</summary>
     private static uint ToBgrx(byte r, byte g, byte b)
     {
-        return 0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | b;
+        return PixelConvert.ToBgrx(r, g, b);
     }
     /// <summary>
     ///     팔레트 인덱스 → 픽셀. 팔레트를 한 번만 uint 색으로 변환(스택)해 픽셀당 바이트 4회 쓰기를 uint 1회로 줄인다.
@@ -159,8 +158,7 @@ public sealed partial class RfbClient
             var src = data.AsSpan(r * rowSize, rowSize);
             var dst = pixels.Slice((y + r) * FramebufferWidth + x, w);
             if (bitsPerPixel == 1)
-                for (var px = 0; px < dst.Length; px++)
-                    dst[px] = colors[(src[px >> 3] >> (7 - (px & 7))) & 1];
+                PixelConvert.Expand1Bit(src, dst, colors[0], colors[1]);
             else
                 for (var px = 0; px < dst.Length; px++)
                     dst[px] = colors[src[px]];
@@ -201,13 +199,9 @@ public sealed partial class RfbClient
         var srcStride = w * 3;
         for (var r = 0; r < h; r++)
         {
-            var src = rgb.AsSpan(r * srcStride, srcStride);
-            var dst = pixels.Slice((y + r) * FramebufferWidth + x, w);
-            for (var px = 0; px < dst.Length; px++)
-            {
-                var s = px * 3;
-                dst[px] = ToBgrx(src[s], src[s + 1], src[s + 2]);
-            }
+            // 행 끝까지 넘겨 벡터 경로가 다음 행 앞 바이트까지 읽을 수 있게 한다(쓰기는 w 픽셀만)
+            var src = rgb.AsSpan(r * srcStride);
+            PixelConvert.RgbToBgrx(src, pixels.Slice((y + r) * FramebufferWidth + x, w));
         }
     }
 }

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 
@@ -17,12 +18,24 @@ public partial class ConsoleWindow
     private static extern IntPtr GetModuleHandle(string? lpModuleName);
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
+    /// <summary>
+    ///     키를 가로채도 되는 상태 — 이 창이 활성(WPF IsActive)이고, Windows 포어그라운드 창이며, 최소화되지 않았을 때만.
+    ///     셋 중 하나라도 아니면 키는 호스트(다른 창)로 그대로 간다.
+    /// </summary>
+    private bool CanCaptureKeyboard()
+    {
+        return IsActive && WindowState != WindowState.Minimized
+                        && GetForegroundWindow() == new WindowInteropHelper(this).Handle;
+    }
+
     private void InstallKeyboardHook()
     {
-        if (_keyboardHook != IntPtr.Zero) return;
+        // 활성화 알림 순간엔 포어그라운드가 아직 안 바뀌었을 수 있다 — 설치는 활성·최소화 아님만 보고, 키마다 모두 확인한다
+        if (_keyboardHook != IntPtr.Zero || !IsActive || WindowState == WindowState.Minimized) return;
 
         _hookProc = KeyboardHookCallback;
         _keyboardHook = SetWindowsHookEx(WhKeyboardLL, _hookProc, GetModuleHandle(null), 0);
+        if (_keyboardHook != IntPtr.Zero) OnKeyboardCaptured();
     }
     private void RemoveKeyboardHook()
     {
@@ -32,6 +45,7 @@ public partial class ConsoleWindow
         _keyboardHook = IntPtr.Zero;
         _heldModifiers.Clear();
         ReleasePressedKeys();
+        OnKeyboardReleased(); // 잠금 키를 잡기 전 PC 상태로
     }
     /// <summary>
     ///     포커스를 잃는 순간 눌려 있던 키의 key-up 을 게스트에 보낸다.
@@ -80,8 +94,20 @@ public partial class ConsoleWindow
         var up = msg is WmKeyup or WmSyskeyup;
         if (!down && !up) return CallNextHookEx(_keyboardHook, code, wParam, lParam);
 
-        var hwnd = new WindowInteropHelper(this).Handle;
-        if (GetForegroundWindow() != hwnd) return CallNextHookEx(_keyboardHook, code, wParam, lParam);
+        // 잠금 키 맞추기로 우리가 흉내 낸 입력 — PC 상태만 바꾸고 게스트에는 보내지 않는다
+        const int ExtraInfoOffset = 16; // KBDLLHOOKSTRUCT.dwExtraInfo(x86·x64 모두)
+        if (Marshal.ReadIntPtr(lParam, ExtraInfoOffset) == SyntheticKeyMarker)
+            return CallNextHookEx(_keyboardHook, code, wParam, lParam);
+
+        if (!CanCaptureKeyboard())
+        {
+            // 키는 호스트로 넘긴다. 비활성·최소화인데 훅이 남았으면(알림을 놓친 경우) 훅을 걷고 눌린 키도 뗀다 —
+            // 포어그라운드만 잠깐 다른 경우(활성화 직후)는 훅을 둔다
+            var next = CallNextHookEx(_keyboardHook, code, wParam, lParam);
+            if (!IsActive || WindowState == WindowState.Minimized)
+                Dispatcher.BeginInvoke(new Action(RemoveKeyboardHook));
+            return next;
+        }
 
         // PtrToStructure<T> 는 내부적으로 박싱 할당 — 키 입력마다 호출되는 훅이므로 필요한 필드만 오프셋으로 직접 읽는다
         var hook = new KbdLlHookStruct
@@ -154,9 +180,14 @@ public partial class ConsoleWindow
     }
     private void SendKey(KeyEventArgs e, bool down)
     {
-        if (_session?.IsConnected != true) return;
+        if (_session?.IsConnected != true || !CanCaptureKeyboard()) return;
 
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        if (ConsumeSyntheticLockKey(KeyInterop.VirtualKeyFromKey(key)))
+        {
+            e.Handled = true; // 잠금 키 맞추기로 흉내 낸 입력 — 게스트로 보내지 않는다
+            return;
+        }
         if (key == Key.F4 && Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) return; // Alt+F4 창 닫기 허용
 
         var virtualKey = KeyInterop.VirtualKeyFromKey(key);

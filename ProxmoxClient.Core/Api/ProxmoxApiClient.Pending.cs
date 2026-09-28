@@ -6,6 +6,8 @@ namespace ProxmoxClient.Core.Api;
 public sealed partial class ProxmoxApiClient
 {
     /// <summary>현재 값·대기 중 변경을 함께 읽는다(GET nodes/{node}/{kind}/{vmid}/pending).</summary>
+    [Versioning.PveApi("GET", "/nodes/{node}/qemu/{vmid}/pending")]
+    [Versioning.PveApi("GET", "/nodes/{node}/lxc/{vmid}/pending")]
     public async Task<GuestPendingConfig> GetGuestPendingAsync(string node, ResourceKind kind, int vmid,
         CancellationToken ct = default)
     {
@@ -15,6 +17,8 @@ public sealed partial class ProxmoxApiClient
     }
 
     /// <summary>대기 중 변경을 취소한다(PUT …/config revert=키1,키2).</summary>
+    [Versioning.PveApi("PUT", "/nodes/{node}/qemu/{vmid}/config")]
+    [Versioning.PveApi("PUT", "/nodes/{node}/lxc/{vmid}/config")]
     public Task<string> RevertGuestPendingAsync(string node, ResourceKind kind, int vmid,
         IReadOnlyList<string> keys, CancellationToken ct = default)
     {

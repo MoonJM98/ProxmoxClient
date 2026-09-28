@@ -9,7 +9,6 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <DockPanel Grid.Row="0" x:Name="OptionsRow" Margin="0,0,0,10">
@@ -19,88 +18,9 @@
                 <CheckBox x:Name="FirewallToggle" Content="{loc:Tr FirewallWindow_03}" VerticalAlignment="Center" />
             </DockPanel>
 
-            <DataGrid Grid.Row="1" x:Name="RulesGrid" AutoGenerateColumns="False" IsReadOnly="True"
-                      GridLinesVisibility="Horizontal" HeadersVisibility="Column"
-                      PreviewMouseRightButtonDown="OnRuleRightClick">
-                <DataGrid.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem ic:IconAssist.Icon="{StaticResource IconTrash}"
-                                  ic:IconAssist.Brush="{StaticResource BrushErr}" Header="{loc:Tr FirewallWindow_04}"
-                                  Click="OnDeleteRule" />
-                    </ContextMenu>
-                </DataGrid.ContextMenu>
-                <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Header="{loc:Tr FirewallWindow_05}"
-                                            Binding="{Binding Enabled, Mode=OneWay}" Width="56" />
-                    <DataGridTextColumn Header="{loc:Tr FirewallWindow_06}" Binding="{Binding Pos, Mode=OneWay}"
-                                        Width="56" />
-                    <DataGridTextColumn Header="{loc:Tr FirewallWindow_07}" Binding="{Binding Direction, Mode=OneWay}"
-                                        Width="60" />
-                    <DataGridTextColumn Header="{loc:Tr FirewallWindow_08}" Binding="{Binding Action, Mode=OneWay}"
-                                        Width="80" />
-                    <DataGridTextColumn Header="{loc:Tr FirewallWindow_09}" Binding="{Binding Macro, Mode=OneWay}"
-                                        Width="90" />
-                    <DataGridTextColumn Header="{loc:Tr FirewallWindow_10}" Binding="{Binding Proto, Mode=OneWay}"
-                                        Width="80" />
-                    <DataGridTextColumn Header="{loc:Tr FirewallWindow_11}" Binding="{Binding DPort, Mode=OneWay}"
-                                        Width="110" />
-                    <DataGridTextColumn Header="{loc:Tr FirewallWindow_12}" Binding="{Binding Source, Mode=OneWay}"
-                                        Width="150" />
-                    <DataGridTextColumn Header="{loc:Tr FirewallWindow_13}" Binding="{Binding Comment, Mode=OneWay}"
-                                        Width="*" />
-                </DataGrid.Columns>
-            </DataGrid>
+            <!-- 규칙 목록·버튼(FirewallRules) — 웹 UI 의 방화벽 규칙 표 -->
+            <ContentControl Grid.Row="1" x:Name="RulesHost" />
 
-            <Border Grid.Row="2" Style="{StaticResource FormPanel}" Margin="0,12,0,0">
-                <StackPanel>
-                    <TextBlock Text="{loc:Tr FirewallWindow_14}" Style="{StaticResource FormSection}" />
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-
-                        <ic:FormRow Grid.Row="0" Grid.Column="0" Label="{loc:Tr FirewallWindow_08}" LabelWidth="64"
-                                    Margin="0,0,14,10">
-                            <ComboBox x:Name="RuleActionBox" />
-                        </ic:FormRow>
-                        <ic:FormRow Grid.Row="0" Grid.Column="1" Label="{loc:Tr FirewallWindow_07}" LabelWidth="64"
-                                    Margin="0,0,14,10">
-                            <ComboBox x:Name="RuleDirectionBox" />
-                        </ic:FormRow>
-                        <ic:FormRow Grid.Row="0" Grid.Column="2" Label="{loc:Tr FirewallWindow_10}" LabelWidth="64">
-                            <ComboBox x:Name="RuleProtoBox" />
-                        </ic:FormRow>
-
-                        <ic:FormRow Grid.Row="1" Grid.Column="0" Label="{loc:Tr FirewallWindow_11}" LabelWidth="64"
-                                    Margin="0,0,14,10"
-                                    Hint="{loc:Tr FirewallWindow_15}">
-                            <TextBox x:Name="RulePortBox" ic:InputFilter.Mode="PortList" />
-                        </ic:FormRow>
-                        <ic:FormRow Grid.Row="1" Grid.Column="1" Label="{loc:Tr FirewallWindow_12}" LabelWidth="64"
-                                    Margin="0,0,14,10"
-                                    Hint="{loc:Tr FirewallWindow_16}">
-                            <TextBox x:Name="RuleSourceBox" />
-                        </ic:FormRow>
-                        <ic:FormRow Grid.Row="1" Grid.Column="2" Label="{loc:Tr FirewallWindow_13}" LabelWidth="64">
-                            <TextBox x:Name="RuleCommentBox" />
-                        </ic:FormRow>
-                    </Grid>
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconPlus}"
-                                Content="{loc:Tr FirewallWindow_14}"
-                                Style="{StaticResource AccentButton}" MinWidth="110" Click="OnAddRule" />
-                        <CheckBox x:Name="RuleEnabled" Content="{loc:Tr FirewallWindow_17}" IsChecked="True"
-                                  VerticalAlignment="Center" />
-                    </DockPanel>
-                </StackPanel>
-            </Border>
-        
-            <TextBlock Grid.Row="3" x:Name="StatusText" Style="{StaticResource DialogStatus}" Margin="0,10,0,0" />
+            <TextBlock Grid.Row="2" x:Name="StatusText" Style="{StaticResource DialogStatus}" Margin="0,10,0,0" />
         </Grid>
 </UserControl>

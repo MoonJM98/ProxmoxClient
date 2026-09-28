@@ -5,6 +5,7 @@ using ProxmoxClient.App.Views.Guest.Hardware;
 using ProxmoxClient.App.Views.Guest.Tabs;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Models;
 
 namespace ProxmoxClient.App.Views.Create;
 
@@ -55,7 +56,7 @@ internal sealed class VmWizard
 
     private async Task<string> CreateAsync()
     {
-        return await WizardData.CreateAsync(_api, $"nodes/{ActionHelpers.Seg(_d.Node)}/qemu",
+        return await WizardData.CreateAsync(_api, _d.Node, ResourceKind.Qemu,
             _d.BuildParams(_data.FormatOf), _d.VmId.Trim());
     }
 

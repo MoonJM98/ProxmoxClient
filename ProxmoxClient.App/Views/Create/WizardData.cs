@@ -2,6 +2,7 @@ using ProxmoxClient.App.Views.Guest.Hardware;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Models;
 
 namespace ProxmoxClient.App.Views.Create;
 
@@ -24,19 +25,18 @@ internal sealed class WizardData
 
     public static async Task<WizardData> LoadAsync(ProxmoxApiClient api, string node)
     {
-        var seg = ActionHelpers.Seg(node);
         var host = await TryAsync<Core.Models.PveNodeStatus?>(async () => await api.GetNodeStatusAsync(node), null);
         return new WizardData
         {
             NextId = (await TryAsync<int?>(() => api.GetNextVmIdAsync(), null))?.ToString() ?? string.Empty,
-            ImageStorages = await StoragesAsync(api, seg, "images"),
-            RootStorages = await StoragesAsync(api, seg, "rootdir"),
-            Isos = await ContentAsync(api, node, seg, "iso"),
-            Templates = await ContentAsync(api, node, seg, "vztmpl"),
+            ImageStorages = await StoragesAsync(api, node, "images"),
+            RootStorages = await StoragesAsync(api, node, "rootdir"),
+            Isos = await ContentAsync(api, node, "iso"),
+            Templates = await ContentAsync(api, node, "vztmpl"),
             Bridges = (await TryAsync(() => api.GetNodeBridgesAsync(node), [])).Select(b => (b, b)).ToList(),
-            Pools = (await TryAsync(() => api.GetTableAsync("pools"), []))
+            Pools = (await TryAsync(() => api.Pools.ListAsync(), []))
                 .Select(r => ActionHelpers.Value(r, "poolid")).Where(p => p.Length > 0).Select(p => (p, p)).ToList(),
-            CpuModels = (await TryAsync(() => api.GetTableAsync($"nodes/{seg}/capabilities/qemu/cpu"), []))
+            CpuModels = (await TryAsync(() => api.Guests.CpuModelsAsync(node), []))
                 .Select(r => ActionHelpers.Value(r, "name")).Where(n => n.Length > 0)
                 .OrderBy(n => n, StringComparer.OrdinalIgnoreCase).Select(n => (n, n)).ToList(),
             HostCpus = host?.CpuCores ?? 0,
@@ -63,20 +63,20 @@ internal sealed class WizardData
         }
     }
 
-    private static async Task<IReadOnlyList<StorageInfo>> StoragesAsync(ProxmoxApiClient api, string seg,
+    private static async Task<IReadOnlyList<StorageInfo>> StoragesAsync(ProxmoxApiClient api, string node,
         string content)
     {
-        var rows = await TryAsync(() => api.GetTableAsync($"nodes/{seg}/storage?content={content}&enabled=1"), []);
+        var rows = await TryAsync(() => api.Storage.NodeStoragesAsync(node, content), []);
         return rows.Select(r => new StorageInfo(ActionHelpers.Value(r, "storage"), ActionHelpers.Value(r, "type")))
             .Where(s => s.Id.Length > 0).OrderBy(s => s.Id, StringComparer.Ordinal).ToList();
     }
 
     /// <summary>이 콘텐츠를 담는 모든 저장소의 파일(볼륨 ID, 파일 이름).</summary>
     private static async Task<IReadOnlyList<(string, string)>> ContentAsync(ProxmoxApiClient api, string node,
-        string seg, string content)
+        string content)
     {
         var result = new List<(string, string)>();
-        foreach (var storage in await StoragesAsync(api, seg, content))
+        foreach (var storage in await StoragesAsync(api, node, content))
             result.AddRange((await TryAsync(() => api.GetStorageContentAsync(node, storage.Id, content), []))
                 .Select(f => (f.Volid, f.Volid)));
         return result;
@@ -85,10 +85,10 @@ internal sealed class WizardData
     /// <summary>
     ///     만들기 요청을 보내고 작업이 끝날 때까지 기다린다 — 작업이 실패하면 예외(마법사 창은 열린 채 상태 줄에 남는다).
     /// </summary>
-    public static async Task<string> CreateAsync(ProxmoxApiClient api, string path,
+    public static async Task<string> CreateAsync(ProxmoxApiClient api, string node, ResourceKind kind,
         IReadOnlyDictionary<string, string> values, string id)
     {
-        var upid = await api.PostActionAsync(path, values);
+        var upid = await api.Guests.CreateAsync(node, kind, values);
         var status = upid.Length == 0 ? "OK" : (await api.WaitTaskAsync(upid)).Status;
         // "WARNINGS: n" 은 끝까지 성공한 작업이다(게스트는 만들어졌다)
         if (status != "OK" && !status.StartsWith("WARNINGS", StringComparison.Ordinal))

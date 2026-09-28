@@ -93,9 +93,18 @@ public partial class ConsoleWindow : Window
         _runState = new GuestRunStateMonitor(guest, OnGuestStoppedChanged);
         _title = Loc.T("ConsoleWindow_Header", guestTitle);
         Title = _title;
+        // 키보드는 이 창이 활성일 때만 가로챈다 — 비활성·최소화되면 곧바로 풀고 눌린 키를 뗀다
         Activated += (_, _) => InstallKeyboardHook();
         Deactivated += (_, _) => RemoveKeyboardHook();
+        StateChanged += (_, _) =>
+        {
+            if (WindowState == WindowState.Minimized) RemoveKeyboardHook();
+            else InstallKeyboardHook();
+        };
         ScreenImage.LostMouseCapture += (_, _) => _pointerMask = 0; // 캡처를 잃으면 눌림 상태가 남지 않게
+        // 화면 크기(맞춤 배율)·모니터 DPI 가 바뀌면 커서 크기도 게스트 화면과 같은 비율로 다시 만든다
+        ScreenImage.SizeChanged += (_, _) => RefreshCursor();
+        DpiChanged += (_, _) => RefreshCursor();
         Loaded += async (_, _) =>
         {
             _settings = await _settingsStore.LoadAsync();
@@ -117,6 +126,7 @@ public partial class ConsoleWindow : Window
             RemoveKeyboardHook();
             _session?.Dispose();
         };
+        Closed += (_, _) => _cursorHandle?.Dispose(); // 창이 사라진 뒤 — 쓰는 중인 커서 핸들을 먼저 지우지 않게
     }
     private void ShowStopped()
     {
@@ -165,6 +175,7 @@ public partial class ConsoleWindow : Window
     {
         _session?.Dispose();
         _session = null;
+        ResetCursor();
         SetState(Loc.T("ConsoleWindow_M03"));
         UpdateButtons(false);
         BtnConnect.IsEnabled = false; // 연결 시도 중 중복 재연결 방지
@@ -201,8 +212,14 @@ public partial class ConsoleWindow : Window
             StartStatsTicker();
         });
         session.FrameReceived += QueueFrameFlush;
-        session.CursorShape += (pixels, w, h) => Dispatcher.BeginInvoke(() => ApplyCursorShape(pixels, w, h));
-        session.CursorPosition += (x, y) => Dispatcher.BeginInvoke(() => MoveCursorOverlay(x, y));
+        session.LedState += leds => Dispatcher.BeginInvoke(() =>
+        {
+            if (IsCurrent()) OnGuestLeds(leds);
+        });
+        session.CursorShape += cursor => Dispatcher.BeginInvoke(() =>
+        {
+            if (IsCurrent()) ApplyCursorShape(cursor);
+        });
         session.Closed += ex =>
         {
             App.Log($"[콘솔 {_vmid}] 연결 종료: {(ex is null ? "정상" : ex.ToString())}");
@@ -363,52 +380,19 @@ public partial class ConsoleWindow : Window
         if (x < 0 || y < 0 || x + w > framebufferWidth || lastRowEnd > framebuffer.Length)
             throw new IOException(Loc.T("ConsoleWindow_TightOutOfRange"));
 
-        // rect 폭을 stride 로 풀 버퍼에 받은 뒤 행 단위 복사 — WIC 가 행마다 stride 전체를 쓰더라도
-        // 프레임버퍼의 이웃 픽셀(rect 오른쪽·다음 행 왼쪽)을 덮지 않도록 한다
-        var scratch = ArrayPool<byte>.Shared.Rent(rowBytes * h);
+        // 프레임버퍼의 rect 위치에 행 간격(프레임버퍼 폭)으로 바로 디코드 — 중간 버퍼·행 복사 없음.
+        // WIC 는 행마다 rect 폭만큼만 쓰고, 버퍼 크기를 마지막 행 끝까지로 넘겨 그 밖은 건드릴 수 없다
+        var start = (y * framebufferWidth + x) * 4;
+        var handle = GCHandle.Alloc(framebuffer, GCHandleType.Pinned);
         try
         {
-            frame.CopyPixels(new Int32Rect(0, 0, w, h), scratch, rowBytes, 0);
-            for (var row = 0; row < h; row++)
-                Buffer.BlockCopy(scratch, row * rowBytes, framebuffer, ((y + row) * framebufferWidth + x) * 4,
-                    rowBytes);
+            var target = Marshal.UnsafeAddrOfPinnedArrayElement(framebuffer, start);
+            frame.CopyPixels(new Int32Rect(0, 0, w, h), target, lastRowEnd - start, framebufferWidth * 4);
         }
         finally
         {
-            ArrayPool<byte>.Shared.Return(scratch);
+            handle.Free();
         }
-    }
-    private void ApplyCursorShape(byte[] bgra, int w, int h)
-    {
-        var bitmap = new WriteableBitmap(w, h, 96, 96, PixelFormats.Bgra32, null);
-        bitmap.WritePixels(new Int32Rect(0, 0, w, h), bgra, w * 4, 0);
-        CursorImage.Source = bitmap;
-        CursorImage.Width = w;
-        CursorImage.Height = h;
-        CursorImage.Visibility = Visibility.Visible;
-    }
-    private void MoveCursorOverlay(int guestX, int guestY)
-    {
-        if (_bitmap is null || _fbWidth == 0 || _fbHeight == 0) return;
-
-        double scale;
-        double offsetX;
-        double offsetY;
-        if (_fitMode)
-        {
-            scale = Math.Min(ScreenImage.ActualWidth / _fbWidth, ScreenImage.ActualHeight / _fbHeight);
-            offsetX = (ScreenImage.ActualWidth - _fbWidth * scale) / 2;
-            offsetY = (ScreenImage.ActualHeight - _fbHeight * scale) / 2;
-        }
-        else
-        {
-            scale = 1;
-            offsetX = 0;
-            offsetY = 0;
-        }
-
-        CursorTransform.X = offsetX + guestX * scale;
-        CursorTransform.Y = offsetY + guestY * scale;
     }
     private void StartStatsTicker()
     {
@@ -501,6 +485,7 @@ public partial class ConsoleWindow : Window
         RenderOptions.SetBitmapScalingMode(ScreenImage, _fitMode && _settings.SmoothScaling
             ? BitmapScalingMode.Linear
             : BitmapScalingMode.NearestNeighbor);
+        RefreshCursor(); // 맞춤 전환·설정 변경 — 커서 크기·대체 커서를 다시 맞춘다
     }
     private async void OnPowerAction(object sender, RoutedEventArgs e)
     {

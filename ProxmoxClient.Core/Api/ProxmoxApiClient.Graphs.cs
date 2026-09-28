@@ -4,35 +4,14 @@ using ProxmoxClient.Core.Models;
 
 namespace ProxmoxClient.Core.Api;
 
-/// <summary>노드·게스트 사용량 그래프(RRD) — PNG 와 수치.</summary>
+/// <summary>노드·게스트 사용량 그래프(RRD) 수치.</summary>
 public sealed partial class ProxmoxApiClient
 {
     /// <summary>
-    ///     Fetches a node RRD graph as PNG bytes
-    ///     (GET /nodes/{node}/rrdtool?cf=AVERAGE&amp;timeframe={tf}&amp;ds={ds}).
+    ///     게스트 시계열 데이터(GET .../rrddata?timeframe=hour|day|week|month|year) — 앱이 직접 그래프로 그린다.
     /// </summary>
-    public Task<byte[]> GetNodeRrdPngAsync(string node, string timeframe = "hour", string ds = "cpu",
-        CancellationToken ct = default)
-    {
-        return GetPngAsync($"nodes/{Escape(node)}/rrdtool?cf=AVERAGE&timeframe={Escape(timeframe)}&ds={Escape(ds)}",
-            ct);
-    }
-    /// <summary>
-    ///     Fetches a guest (VM/CT) RRD graph as PNG bytes
-    ///     (GET /nodes/{node}/{qemu|lxc}/{vmid}/rrdtool?...).
-    /// </summary>
-    public Task<byte[]> GetGuestRrdPngAsync(string node, ResourceKind kind, int vmid, string timeframe = "hour",
-        string ds = "cpu", CancellationToken ct = default)
-    {
-        return GetPngAsync(
-            $"nodes/{Escape(node)}/{kind.ApiSegment()}/{vmid}/rrdtool"
-            + $"?cf=AVERAGE&timeframe={Escape(timeframe)}&ds={Escape(ds)}",
-            ct);
-    }
-    /// <summary>
-    ///     게스트 시계열 데이터(GET .../rrddata?timeframe=hour|day|week|month|year).
-    ///     PVE 8.2+에서 rrdtool PNG 엔드포인트가 제거되어 JSON 데이터 기반 렌더링에 사용.
-    /// </summary>
+    [Versioning.PveApi("GET", "/nodes/{node}/qemu/{vmid}/rrddata")]
+    [Versioning.PveApi("GET", "/nodes/{node}/lxc/{vmid}/rrddata")]
     public async Task<IReadOnlyList<RrdSample>> GetGuestRrdDataAsync(
         string node, ResourceKind kind, int vmid, string timeframe = "hour", CancellationToken ct = default)
     {
@@ -43,6 +22,7 @@ public sealed partial class ProxmoxApiClient
         return ParseRrdSamples(data);
     }
     /// <summary>노드 시계열 데이터(GET nodes/{node}/rrddata).</summary>
+    [Versioning.PveApi("GET", "/nodes/{node}/rrddata")]
     public async Task<IReadOnlyList<RrdSample>> GetNodeRrdDataAsync(
         string node, string timeframe = "hour", CancellationToken ct = default)
     {

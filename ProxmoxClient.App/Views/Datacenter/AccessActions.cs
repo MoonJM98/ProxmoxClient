@@ -12,30 +12,6 @@ namespace ProxmoxClient.App.Views.Datacenter;
 /// </summary>
 internal static class AccessActions
 {
-    public static IReadOnlyList<TableAction> Users(ProxmoxApiClient api)
-    {
-        return
-        [
-            new TableAction
-            {
-                LabelKey = "Action_Add", IconKey = "IconPlus", Run = (_, owner) => AddUserAsync(api, owner)
-            },
-            new TableAction
-            {
-                LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                Run = (row, owner) => EditUserAsync(api, row!, owner)
-            },
-            new TableAction
-            {
-                LabelKey = "DcUsers_Password", IconKey = "IconKeyboard", NeedsSelection = true,
-                Run = (row, owner) => ChangePasswordAsync(api, row!["userid"], owner)
-            },
-            DeleteAction(row => Loc.T("DcUsers_DeleteConfirm", row["userid"]),
-                row => api.DeleteActionAsync($"access/users/{Seg(row["userid"])}"), "DcUsers_Deleted"),
-            AccessExtras.TokensAction(api)
-        ];
-    }
-
     public static IReadOnlyList<TableAction> Groups(ProxmoxApiClient api)
     {
         return
@@ -47,10 +23,20 @@ internal static class AccessActions
                 [
                     new FormField { Key = "groupid", LabelKey = "Table_Name", Required = true },
                     new FormField { Key = "comment", LabelKey = "Table_Comment" }
-                ], values => api.PostActionAsync("access/groups", NonEmpty(values)), "DcGroups_Added")
+                ], values => api.Access.CreateGroupAsync(NonEmpty(values)), "DcGroups_Added")
+            },
+            new TableAction
+            {
+                LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
+                Run = (row, owner) => SubmitAsync(owner, Loc.T("DcGroups_EditTitle", row!["groupid"]),
+                [
+                    new FormField { Key = "comment", LabelKey = "Table_Comment",
+                        Initial = row.TryGetValue("comment", out var c) ? c : "" }
+                ], values => api.Access.UpdateGroupAsync(row["groupid"], values), // delete 없음
+                    "DcGroups_Updated", titleIsKey: false)
             },
             DeleteAction(row => Loc.T("DcGroups_DeleteConfirm", row["groupid"]),
-                row => api.DeleteActionAsync($"access/groups/{Seg(row["groupid"])}"), "DcGroups_Deleted")
+                row => api.Access.DeleteGroupAsync(row["groupid"]), "DcGroups_Deleted")
         ];
     }
 
@@ -65,10 +51,22 @@ internal static class AccessActions
                 [
                     new FormField { Key = "poolid", LabelKey = "Table_Name", Required = true },
                     new FormField { Key = "comment", LabelKey = "Table_Comment" }
-                ], values => api.PostActionAsync("pools", NonEmpty(values)), "DcPools_Added")
+                ], values => api.Pools.CreateAsync(NonEmpty(values)), "DcPools_Added")
+            },
+            new TableAction
+            {
+                LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
+                // 설명만 바꾼다 — 구성원 추가·삭제와 같은 수정 요청(서버 버전에 맞는 경로는 Core 가 고른다)
+                Run = (row, owner) => SubmitAsync(owner, Loc.T("DcPools_EditTitle", row!["poolid"]),
+                [
+                    new FormField { Key = "comment", LabelKey = "Table_Comment",
+                        Initial = row.TryGetValue("comment", out var c) ? c : "" }
+                ], values => api.Pools.UpdateAsync(row["poolid"],
+                    new Dictionary<string, string> { ["comment"] = values["comment"] }), "DcPools_Updated",
+                    titleIsKey: false)
             },
             DeleteAction(row => Loc.T("DcPools_DeleteConfirm", row["poolid"]),
-                row => api.DeleteActionAsync($"pools/{Seg(row["poolid"])}"), "DcPools_Deleted"),
+                row => api.Pools.DeleteAsync(row["poolid"]), "DcPools_Deleted"),
             new TableAction
             {
                 LabelKey = "DcPools_Members", IconKey = "IconList", NeedsSelection = true,
@@ -88,7 +86,7 @@ internal static class AccessActions
                 LabelKey = "Action_Add", IconKey = "IconPlus", Run = (_, owner) => AddAclAsync(api, owner, fixedPath)
             },
             DeleteAction(row => Loc.T("DcAcl_DeleteConfirm", row["path"], row["ugid"], row["roleid"]),
-                row => api.PutActionAsync("access/acl", new Dictionary<string, string>
+                row => api.Access.UpdateAclAsync(new Dictionary<string, string>
                 {
                     ["path"] = row["path"],
                     ["roles"] = row["roleid"],
@@ -98,108 +96,51 @@ internal static class AccessActions
         ];
     }
 
-    private static async Task<string?> AddUserAsync(ProxmoxApiClient api, Window? owner)
-    {
-        var realms = (await api.GetTableAsync("access/domains"))
-            .Select(r => (r["realm"], r["realm"]))
-            .ToList();
-
-        return await SubmitAsync(owner, "DcUsers_AddTitle",
-        [
-            new FormField { Key = "name", LabelKey = "DcUsers_UserName", Required = true },
-            new FormField
-            {
-                Key = "realm", LabelKey = "DcTab_Realms", Kind = FormFieldKind.Choice, Choices = realms,
-                Initial = "pve"
-            },
-            new FormField { Key = "password", LabelKey = "DcUsers_InitialPassword", Kind = FormFieldKind.Password },
-            new FormField { Key = "firstname", LabelKey = "Table_FirstName" },
-            new FormField { Key = "lastname", LabelKey = "Table_LastName" },
-            new FormField { Key = "email", LabelKey = "Table_Email" },
-            new FormField { Key = "groups", LabelKey = "DcTab_Groups" },
-            new FormField { Key = "comment", LabelKey = "Table_Comment" },
-            new FormField { Key = "enable", LabelKey = "Table_Enabled", Kind = FormFieldKind.Bool, Initial = "1" }
-        ], values =>
-        {
-            var form = NonEmpty(values);
-            form.Remove("name");
-            form.Remove("realm");
-            form["userid"] = $"{values["name"]}@{values["realm"]}";
-            form["enable"] = values["enable"];
-            return api.PostActionAsync("access/users", form);
-        }, "DcUsers_Added");
-    }
-
-    private static Task<string?> EditUserAsync(ProxmoxApiClient api, IReadOnlyDictionary<string, string> row,
-        Window? owner)
-    {
-        string Value(string key) => row.TryGetValue(key, out var v) ? v : string.Empty;
-
-        return SubmitAsync(owner, Loc.T("DcUsers_EditTitle", Value("userid")),
-        [
-            new FormField { Key = "firstname", LabelKey = "Table_FirstName", Initial = Value("firstname") },
-            new FormField { Key = "lastname", LabelKey = "Table_LastName", Initial = Value("lastname") },
-            new FormField { Key = "email", LabelKey = "Table_Email", Initial = Value("email") },
-            new FormField { Key = "groups", LabelKey = "DcTab_Groups", Initial = Value("groups").Replace(" ", "") },
-            new FormField { Key = "comment", LabelKey = "Table_Comment", Initial = Value("comment") },
-            new FormField
-            {
-                Key = "enable", LabelKey = "Table_Enabled", Kind = FormFieldKind.Bool,
-                Initial = Value("enable") is "0" ? "0" : "1"
-            }
-        ], values => api.PutActionAsync($"access/users/{Seg(Value("userid"))}", values), "DcUsers_Updated",
-            titleIsKey: false);
-    }
-
-    private static Task<string?> ChangePasswordAsync(ProxmoxApiClient api, string userId, Window? owner)
-    {
-        return SubmitAsync(owner, Loc.T("DcUsers_PasswordTitle", userId),
-        [
-            new FormField
-            {
-                Key = "password", LabelKey = "DcUsers_NewPassword", Kind = FormFieldKind.Password, Required = true
-            },
-            new FormField
-            {
-                Key = "confirmation-password", LabelKey = "DcUsers_MyPassword", Kind = FormFieldKind.Password
-            }
-        ], values =>
-        {
-            var form = NonEmpty(values);
-            form["userid"] = userId;
-            return api.PutActionAsync("access/password", form);
-        }, "DcUsers_PasswordChanged", titleIsKey: false);
-    }
-
+    /// <summary>
+    ///     권한 추가(PUT access/acl) — 웹 UI 처럼 사용자·그룹·API 토큰 중 고르고(목록), 경로도 목록에서 고른다.
+    ///     역할은 NoAccess 로 시작한다(첫 항목 Administrator 가 실수로 부여되지 않게).
+    /// </summary>
     private static async Task<string?> AddAclAsync(ProxmoxApiClient api, Window? owner, string? fixedPath)
     {
-        var roles = (await api.GetTableAsync("access/roles"))
+        var roles = (await api.Access.ListRolesAsync())
             .Select(r => (r["roleid"], r["roleid"]))
             .OrderBy(r => r.Item1, StringComparer.OrdinalIgnoreCase)
             .ToList();
+        var principals = await AclChoices.PrincipalsAsync(api);
 
         var fields = new List<FormField>();
         if (fixedPath is null)
-            fields.Add(new FormField { Key = "path", LabelKey = "Table_Path", Required = true, Initial = "/" });
+            fields.Add(new FormField
+            {
+                Key = "path", LabelKey = "Table_Path", Kind = FormFieldKind.Choice, Initial = "/",
+                Choices = await AclChoices.PathsAsync(api)
+            });
 
         return await SubmitAsync(owner, "DcAcl_AddTitle",
         [
             ..fields,
             new FormField
             {
-                Key = "type", LabelKey = "Table_Type", Kind = FormFieldKind.Choice, Initial = "user",
-                Choices = [("user", "DcAcl_TypeUser"), ("group", "DcAcl_TypeGroup")]
+                Key = "who", LabelKey = "Table_UserOrGroup", Kind = FormFieldKind.Choice, Choices = principals,
+                Required = true
             },
-            new FormField { Key = "ugid", LabelKey = "Table_UserOrGroup", Required = true },
-            new FormField { Key = "roles", LabelKey = "Table_Role", Kind = FormFieldKind.Choice, Choices = roles },
+            new FormField
+            {
+                Key = "roles", LabelKey = "Table_Role", Kind = FormFieldKind.Choice, Choices = roles,
+                Initial = roles.Any(r => r.Item1 == "NoAccess") ? "NoAccess" : ""
+            },
             new FormField { Key = "propagate", LabelKey = "Table_Propagate", Kind = FormFieldKind.Bool, Initial = "1" }
-        ], values => api.PutActionAsync("access/acl", new Dictionary<string, string>
+        ], values =>
         {
-            ["path"] = fixedPath ?? values["path"],
-            ["roles"] = values["roles"],
-            [AclTargetKey(values["type"])] = values["ugid"],
-            ["propagate"] = values["propagate"]
-        }), "DcAcl_Added");
+            var (type, id) = AclChoices.Split(values["who"]);
+            return api.Access.UpdateAclAsync(new Dictionary<string, string>
+            {
+                ["path"] = fixedPath ?? values["path"],
+                ["roles"] = values["roles"],
+                [AclTargetKey(type)] = id,
+                ["propagate"] = values["propagate"]
+            });
+        }, "DcAcl_Added", validate: values => values["who"].Length == 0 ? Loc.T("DcAcl_PickWho") : null);
     }
 
     private static string AclTargetKey(string type)

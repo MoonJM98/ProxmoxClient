@@ -38,11 +38,12 @@
 
     <!--
         앱을 자체 포함으로 게시한 뒤 그 결과를 MSI 에 담는다.
+        ReadyToRun: 앱 코드를 미리 기계어로 컴파일해 첫 실행 JIT 를 줄인다(.NET·WPF 는 이미 미리 컴파일돼 있다).
         게시를 깜빡해 옛 산출물이 들어가는 일이 없도록 빌드에 묶어 둔다.
     -->
     <Target Name="PublishApp" BeforeTargets="BeforeBuild">
         <RemoveDir Directories="$(PublishDir)"/>
-        <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)..\ProxmoxClient.App\ProxmoxClient.App.csproj&quot; -c Release -r $(RuntimeIdentifier) --self-contained true -p:DebugType=None -p:DebugSymbols=false -o &quot;$(PublishDir)&quot;"
+        <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)..\ProxmoxClient.App\ProxmoxClient.App.csproj&quot; -c Release -r $(RuntimeIdentifier) --self-contained true -p:PublishReadyToRun=true -p:DebugType=None -p:DebugSymbols=false -o &quot;$(PublishDir)&quot;"
               WorkingDirectory="$(MSBuildThisFileDirectory).."/>
     </Target>
 

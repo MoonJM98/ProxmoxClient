@@ -14,6 +14,27 @@ internal static partial class PassthroughEditors
         "vendor-id", "x-vga"
     ];
 
+    /// <summary>고른 PCI 장치(또는 매핑)가 제공하는 mdev 유형 — 남은 개수와 설명을 함께 보인다.</summary>
+    private static Func<IReadOnlyDictionary<string, string>, Task<IReadOnlyList<(string, string)>>> MdevTypes(
+        HardwareContext ctx)
+    {
+        return async values =>
+        {
+            var mapped = values.TryGetValue("mode", out var mode) && mode == "mapped";
+            var device = mapped ? values.GetValueOrDefault("mapping", "") : values.GetValueOrDefault("host", "");
+            if (device.Length == 0) throw new InvalidOperationException(Loc.T("HwEd_MdevPickDevice"));
+            // 매핑 이름으로 찾기는 8.2 부터 — 그 전 서버는 원시 장치만 된다
+            if (mapped && !ctx.Api.Nodes.Feature(nameof(Core.Api.Domains.NodesApi.MdevTypesAsync)).IsAvailable)
+                throw new InvalidOperationException(Loc.T("HwEd_MdevRawOnly"));
+
+            return (await ctx.Api.Nodes.MdevTypesAsync(ctx.Guest.Node, device))
+                .Select(r => (ActionHelpers.Value(r, "type"),
+                    $"{ActionHelpers.Value(r, "available")} · {ActionHelpers.Value(r, "description")}".Trim(' ', '·')))
+                .Where(r => r.Item1.Length > 0)
+                .ToList();
+        };
+    }
+
     /// <summary>
     ///     PCI 장치 — 매핑된 장치 또는 원시 장치(모든 기능), MDev·주 GPU, 고급: ROM-Bar(기본 켬)·ID 들·PCI-Express(q35 만).
     ///     예: hostpci0=0000:01:00,pcie=1,x-vga=1 / hostpci1=mapping=gpu1,mdev=nvidia-63,rombar=0
@@ -25,7 +46,7 @@ internal static partial class PassthroughEditors
         var host = pci.Get("host");
         if (host.Length > 0 && host.Count(c => c == ':') == 1) host = "0000:" + host; // 도메인 없는 옛 값
         var multifunction = host.Length > 0 && !host.Contains('.');
-        var devices = (await TryTableAsync(ctx, $"{ctx.NodePath}/hardware/pci"))
+        var devices = (await HostDevicesAsync(ctx, "pci"))
             .Select(d => (ActionHelpers.Value(d, "id"),
                 $"{ActionHelpers.Value(d, "id")} — {ActionHelpers.Value(d, "vendor_name")} "
                 + ActionHelpers.Value(d, "device_name")))
@@ -48,7 +69,7 @@ internal static partial class PassthroughEditors
                     Initial = hostChoice },
                 Check("multifunction", "HwEd_AllFunctions", multifunction, Loc.T("HwEd_AllFunctionsHint")),
                 new FormField { Key = "mdev", LabelKey = "HwEd_Mdev", Initial = pci.Get("mdev"),
-                    Hint = Loc.T("HwEd_MdevHint") },
+                    Hint = Loc.T("HwEd_MdevHint"), Suggest = MdevTypes(ctx) },
                 Check("x-vga", "HwEd_PrimaryGpu", pci.IsOn("x-vga")),
                 Check("rombar", "HwEd_RomBar", pci.Get("rombar") != "0", advanced: true),
                 new FormField { Key = "vendor-id", LabelKey = "HwEd_VendorId", Advanced = true,

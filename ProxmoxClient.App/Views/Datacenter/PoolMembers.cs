@@ -1,6 +1,7 @@
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Api.Domains;
 using ProxmoxClient.Core.Models;
 using static ProxmoxClient.App.Views.Shared.ActionHelpers;
 
@@ -20,8 +21,8 @@ internal static class PoolMembers
     /// <param name="canEdit">false 면 구성원 목록만 보인다(Pool.Allocate 가 없는 사용자).</param>
     public static TableTab Create(ProxmoxApiClient api, string pool, bool canEdit = true)
     {
-        return new TableTab(() => api.GetFlattenedTableAsync($"pools?poolid={Uri.EscapeDataString(pool)}", "members"),
-            Columns, "DcPools_MembersHint", canEdit ? Actions(api, pool) : null);
+        return new TableTab(() => api.Pools.MembersAsync(pool), Columns, "DcPools_MembersHint",
+            canEdit ? Actions(api, pool) : null);
     }
 
     private static IReadOnlyList<TableAction> Actions(ProxmoxApiClient api, string pool)
@@ -45,11 +46,10 @@ internal static class PoolMembers
                             Key = "vms", LabelKey = "NodePower_Guests", Kind = FormFieldKind.MultiChoice,
                             Choices = guests, Required = true
                         },
+                        // 다른 풀에서 옮겨 오기(allow-move)는 8.1+ — 낮은 서버엔 입력 창이 빼 준다
                         new FormField { Key = "allow-move", LabelKey = "DcPools_AllowMove", Kind = FormFieldKind.Bool }
-                    ], values => api.PutActionAsync("pools", new Dictionary<string, string>(values)
-                    {
-                        ["poolid"] = pool
-                    }), "DcPools_MembersUpdated");
+                    ], values => api.Pools.UpdateAsync(pool, values), "DcPools_MembersUpdated",
+                        target: api.Pools.Feature(nameof(PoolsApi.UpdateAsync)));
                 }
             },
             new TableAction
@@ -57,7 +57,7 @@ internal static class PoolMembers
                 LabelKey = "DcPools_AddStorage", IconKey = "IconDatabase",
                 Run = async (_, owner) =>
                 {
-                    var storages = (await api.GetTableAsync("storage"))
+                    var storages = (await api.Storage.ListAsync())
                         .Select(s => (Value(s, "storage"), Value(s, "storage")))
                         .ToList();
                     return await SubmitAsync(owner, "DcPools_AddStorage",
@@ -67,10 +67,7 @@ internal static class PoolMembers
                             Key = "storage", LabelKey = "Table_Storage", Kind = FormFieldKind.MultiChoice,
                             Choices = storages, Required = true
                         }
-                    ], values => api.PutActionAsync("pools", new Dictionary<string, string>(values)
-                    {
-                        ["poolid"] = pool
-                    }), "DcPools_MembersUpdated");
+                    ], values => api.Pools.UpdateAsync(pool, values), "DcPools_MembersUpdated");
                 }
             },
             new TableAction
@@ -80,10 +77,10 @@ internal static class PoolMembers
                 Run = async (row, _) =>
                 {
                     var member = row!;
-                    var form = new Dictionary<string, string> { ["poolid"] = pool, ["delete"] = "1" };
+                    var form = new Dictionary<string, string> { ["delete"] = "1" };
                     if (Value(member, "type") == "storage") form["storage"] = Value(member, "storage");
                     else form["vms"] = Value(member, "vmid");
-                    await api.PutActionAsync("pools", form);
+                    await api.Pools.UpdateAsync(pool, form);
                     return Loc.T("DcPools_MembersUpdated");
                 }
             }

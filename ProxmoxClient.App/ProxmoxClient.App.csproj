@@ -11,6 +11,8 @@
         -->
         <PackageReference Include="ProxmoxClient.Vendored.Terminal.Wpf" Version="1.25.2603.3002"/>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2"/>
+        <!-- 2단계 인증(TOTP) QR 코드 — 의존성 없는 MIT 라이브러리(Project Nayuki QR 생성기 C# 이식) -->
+        <PackageReference Include="Net.Codecrete.QrCodeGenerator" Version="3.2.1"/>
     </ItemGroup>
 
     <!-- 고지 의무 — 배포 폴더에 라이선스와 서드파티 고지 원문을 함께 둔다 -->
@@ -42,6 +44,11 @@
         <Version>1.0.0</Version>
         <Copyright>Copyright (c) 2026 ProxmoxClient Contributors</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <!--
+            앱이 제공하는 언어(한국어·영어)의 WPF 리소스만 배포한다 — 나머지 12개 언어 폴더(약 8MB)는 쓰이지 않는다.
+            언어를 추가하면 여기에도 넣어야 그 언어의 WPF 기본 문구(대화상자 등)가 번역된다.
+        -->
+        <SatelliteResourceLanguages>ko;en</SatelliteResourceLanguages>
     </PropertyGroup>
 
 </Project>

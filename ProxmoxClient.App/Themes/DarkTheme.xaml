@@ -237,7 +237,7 @@
         </Setter>
     </Style>
 
-    <Style TargetType="CheckBox">
+    <Style x:Key="ThemedCheckBox" TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource BrushText}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -255,9 +255,14 @@
                                   Stroke="{StaticResource BrushAccent}" StrokeThickness="2"
                                   Visibility="Collapsed" />
                         </Border>
-                        <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True" />
+                        <ContentPresenter x:Name="content" Margin="6,0,0,0" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True" />
                     </StackPanel>
                     <ControlTemplate.Triggers>
+                        <!-- 글 없는 체크박스(표 칸)는 상자만 — 가운데 정렬이 어긋나지 않게 -->
+                        <Trigger Property="HasContent" Value="False">
+                            <Setter TargetName="content" Property="Margin" Value="0" />
+                        </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="check" Property="Visibility" Value="Visible" />
                             <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource BrushAccent}" />
@@ -273,6 +278,17 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style TargetType="CheckBox" BasedOn="{StaticResource ThemedCheckBox}" />
+
+    <!-- 표(DataGridCheckBoxColumn) 칸 — 같은 모양, 가운데·읽기 전용 -->
+    <Style x:Key="GridCheckBox" TargetType="CheckBox" BasedOn="{StaticResource ThemedCheckBox}">
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Focusable" Value="False" />
     </Style>
 
     <Style TargetType="RadioButton">
@@ -335,6 +351,34 @@
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="{StaticResource BrushSelection}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 하위 탭(SubTabsView) — 밑줄 탭: 고른 탭은 굵은 글씨·강조색 밑줄, 나머지는 흐린 글씨 -->
+    <Style x:Key="SubTabItem" TargetType="ListBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource BrushDim}" />
+        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2"
+                            Padding="{TemplateBinding Padding}" Margin="0,0,2,-1">
+                        <ContentPresenter HorizontalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrushAccent}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

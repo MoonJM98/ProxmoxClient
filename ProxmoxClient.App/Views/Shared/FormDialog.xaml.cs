@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using ProxmoxClient.App.Controls;
 using ProxmoxClient.App.Localization;
+using ProxmoxClient.Core.Api.Versioning;
 
 namespace ProxmoxClient.App.Views.Shared;
 
@@ -19,9 +20,13 @@ public partial class FormDialog : Window
     private readonly Func<IReadOnlyDictionary<string, string>, string?>? _validate;
 
     /// <param name="validate">추가 검사 — 문제가 있으면 보여 줄 문구, 없으면 null.</param>
+    /// <param name="target">
+    ///     입력을 보낼 API 요청 — 지금 서버가 모르는 파라미터(키 이름이 같은 칸)는 창에 두지 않는다.
+    /// </param>
     public FormDialog(string title, IReadOnlyList<FormField> fields,
-        Func<IReadOnlyDictionary<string, string>, string?>? validate = null)
+        Func<IReadOnlyDictionary<string, string>, string?>? validate = null, ApiFeature? target = null)
     {
+        fields = Available(fields, target);
         _validate = validate;
         InitializeComponent();
         WindowTheme.ApplyDarkTitleBar(this);
@@ -35,6 +40,13 @@ public partial class FormDialog : Window
 
         Loaded += (_, _) => FieldPanel.Children.OfType<FrameworkElement>().FirstOrDefault()?.MoveFocus(
             new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.First));
+    }
+
+    /// <summary>서버가 쓸 수 있는 칸만 — 칸의 Requires, 그리고 보낼 요청(target)이 받는 파라미터인지.</summary>
+    internal static IReadOnlyList<FormField> Available(IReadOnlyList<FormField> fields, ApiFeature? target)
+    {
+        return fields.Where(f => f.Requires is not { IsAvailable: false } && (target?.Accepts(f.Key) ?? true))
+            .ToList();
     }
 
     /// <summary>확인을 눌렀을 때의 값(취소면 null). 빈 칸도 키는 들어 있다.</summary>
@@ -116,6 +128,8 @@ public partial class FormDialog : Window
                 AddRow(label, box);
                 return () => box.Password;
             }
+            case FormFieldKind.Text when field.Suggest is not null:
+                return AddSuggest(label, field);
             default:
             {
                 var box = new TextBox { Text = field.Initial };
@@ -125,13 +139,75 @@ public partial class FormDialog : Window
         }
     }
 
+    /// <summary>직접 적거나 서버에서 찾은 목록에서 고르는 칸 — 목록은 펼칠 때마다 지금 입력한 값으로 다시 불러온다.</summary>
+    private Func<string> AddSuggest(string label, FormField field)
+    {
+        var combo = new ComboBox { IsEditable = true, IsTextSearchEnabled = false, Text = field.Initial };
+        var loading = false;
+        combo.DropDownOpened += async (_, _) =>
+        {
+            if (loading) return;
+
+            loading = true;
+            try
+            {
+                await LoadSuggestionsAsync(combo, field.Suggest!);
+            }
+            finally
+            {
+                loading = false;
+            }
+        };
+        AddRow(label, combo);
+        return () => field.Trim ? combo.Text.Trim() : combo.Text;
+    }
+
+    private async Task LoadSuggestionsAsync(ComboBox combo,
+        Func<IReadOnlyDictionary<string, string>, Task<IReadOnlyList<(string Value, string Description)>>> suggest)
+    {
+        var typed = combo.Text;
+        ErrorText.Text = Loc.T("FormDialog_Scanning");
+        try
+        {
+            var found = await suggest(CurrentValues());
+            combo.Items.Clear();
+            foreach (var (value, description) in found)
+            {
+                var item = new ComboBoxItem
+                {
+                    Content = description.Length > 0 ? $"{value}  —  {description}" : value
+                };
+                TextSearch.SetText(item, value); // 고르면 칸에는 설명 없이 값만
+                combo.Items.Add(item);
+            }
+
+            combo.Text = typed;
+            ErrorText.Text = found.Count == 0 ? Loc.T("FormDialog_NothingFound") : string.Empty;
+        }
+        catch (Exception ex)
+        {
+            combo.IsDropDownOpen = false;
+            ErrorText.Text = Loc.T("FormDialog_ScanFailed", ex.Message);
+        }
+    }
+
+    /// <summary>지금 창에 입력된 값 — 찾아보기가 서버 주소·계정 같은 앞 칸 값을 쓴다.</summary>
+    private Dictionary<string, string> CurrentValues()
+    {
+        return _inputs.Where(i => i.Field.Kind != FormFieldKind.Section)
+            .ToDictionary(i => i.Field.Key, i => i.Read(), StringComparer.Ordinal);
+    }
+
     private Func<string> AddMultiChoice(string label, FormField field)
     {
         var selected = field.Initial.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToHashSet(StringComparer.Ordinal);
         var panel = new StackPanel();
         var checks = new List<(CheckBox Box, string Value)>();
-        foreach (var (value, text) in field.Choices ?? [])
+        var choices = (field.Choices ?? []).ToList();
+        choices.AddRange(selected.Where(v => choices.All(c => c.Value != v)).Order(StringComparer.Ordinal)
+            .Select(v => (v, v)));
+        foreach (var (value, text) in choices)
         {
             var check = new CheckBox
             {

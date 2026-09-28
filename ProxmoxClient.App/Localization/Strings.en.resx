@@ -492,9 +492,6 @@
     <data name="FirewallWindow_15" xml:space="preserve">
     <value>e.g. 22, 80,443, 2000:3000 (empty = any)</value>
   </data>
-    <data name="FirewallWindow_16" xml:space="preserve">
-    <value>CIDR or alias (empty = any)</value>
-  </data>
     <data name="FirewallWindow_17" xml:space="preserve">
     <value>Rule enabled</value>
   </data>
@@ -1090,9 +1087,6 @@ The setup window downloads the Windows installer (about 80 MB) from the official
     <data name="FirewallWindow_M05" xml:space="preserve">
     <value>The rule was added.</value>
   </data>
-    <data name="FirewallWindow_M06" xml:space="preserve">
-    <value>Could not add the rule: {0}</value>
-  </data>
     <data name="FirewallWindow_M07" xml:space="preserve">
     <value>Delete rule #{0} ({1} {2} {3})?</value>
   </data>
@@ -1101,9 +1095,6 @@ The setup window downloads the Windows installer (about 80 MB) from the official
   </data>
     <data name="FirewallWindow_M09" xml:space="preserve">
     <value>The rule was deleted.</value>
-  </data>
-    <data name="FirewallWindow_M10" xml:space="preserve">
-    <value>Could not delete: {0}</value>
   </data>
     <data name="GuestSettingsWindow_M02" xml:space="preserve">
     <value>Settings loaded.</value>
@@ -1987,12 +1978,6 @@ Try again, or install it yourself with [Open download page].</value>
   </data>
   <data name="DcAcl_AddTitle" xml:space="preserve">
     <value>Add permission</value>
-  </data>
-  <data name="DcAcl_TypeUser" xml:space="preserve">
-    <value>User</value>
-  </data>
-  <data name="DcAcl_TypeGroup" xml:space="preserve">
-    <value>Group</value>
   </data>
   <data name="DcAcl_Added" xml:space="preserve">
     <value>Permission added.</value>
@@ -3775,6 +3760,1141 @@ Paste the join information below into 'Join cluster' on the new node (same forma
   <data name="GuestLife_AgentKernel" xml:space="preserve">
     <value>Kernel</value>
   </data>
+  <data name="TaskLog_Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="TaskLog_Running" xml:space="preserve">
+    <value>Running — new log lines every second.</value>
+  </data>
+  <data name="TaskLog_Finished" xml:space="preserve">
+    <value>Finished: {0}</value>
+  </data>
+  <data name="TaskLog_StopRequested" xml:space="preserve">
+    <value>Stop requested.</value>
+  </data>
+  <data name="TaskLog_Saved" xml:space="preserve">
+    <value>Log saved: {0}</value>
+  </data>
+  <data name="FormDialog_Scanning" xml:space="preserve">
+    <value>Searching on the server…</value>
+  </data>
+  <data name="FormDialog_NothingFound" xml:space="preserve">
+    <value>Nothing found — check the fields above or type a value.</value>
+  </data>
+  <data name="FormDialog_ScanFailed" xml:space="preserve">
+    <value>Search failed: {0}</value>
+  </data>
+  <data name="StorageScan_Hint" xml:space="preserve">
+    <value>Open ▼ to search the server.</value>
+  </data>
+  <data name="StorageScan_NeedField" xml:space="preserve">
+    <value>Fill in '{0}' first.</value>
+  </data>
+  <data name="GuestPower_Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="Prune_Action" xml:space="preserve">
+    <value>Prune</value>
+  </data>
+  <data name="Prune_Title" xml:space="preserve">
+    <value>Prune backups — {0} ({1})</value>
+  </data>
+  <data name="Prune_NoGuest" xml:space="preserve">
+    <value>This backup has no guest ID, so it can't be pruned.</value>
+  </data>
+  <data name="Prune_NothingToRemove" xml:space="preserve">
+    <value>Nothing to remove (all {0} backups are kept).</value>
+  </data>
+  <data name="Prune_More" xml:space="preserve">
+    <value>… and {0} more</value>
+  </data>
+  <data name="Prune_Confirm" xml:space="preserve">
+    <value>{0} backups will be removed and {1} kept. Removed backups can't be restored.
+
+{2}
+
+Continue?</value>
+  </data>
+  <data name="Prune_Done" xml:space="preserve">
+    <value>Prune finished: {0}</value>
+  </data>
+  <data name="NodeTab_Services" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="NodeServices_Hint" xml:space="preserve">
+    <value>System services of this node. Stopping or restarting pveproxy/pvedaemon briefly disconnects this app.</value>
+  </data>
+  <data name="NodeServices_UnitState" xml:space="preserve">
+    <value>Unit state</value>
+  </data>
+  <data name="NodeServices_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="NodeServices_Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="NodeServices_Restart" xml:space="preserve">
+    <value>Restart</value>
+  </data>
+  <data name="NodeServices_Reload" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="NodeServices_Confirm" xml:space="preserve">
+    <value>{0} service '{1}'?</value>
+  </data>
+  <data name="NodeServices_Done" xml:space="preserve">
+    <value>Service action finished: {0}</value>
+  </data>
+  <data name="NodePower_SuspendAll" xml:space="preserve">
+    <value>Suspend all</value>
+  </data>
+  <data name="ClusterLog_Tab" xml:space="preserve">
+    <value>Cluster log</value>
+  </data>
+  <data name="ClusterLog_Hint" xml:space="preserve">
+    <value>Recent cluster-wide log entries (newest first).</value>
+  </data>
+  <data name="ClusterLog_Time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="ClusterLog_Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="ClusterLog_User" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="ClusterLog_Message" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="SnapshotDialog_EditNote" xml:space="preserve">
+    <value>Edit notes</value>
+  </data>
+  <data name="SnapshotDialog_EditNoteTitle" xml:space="preserve">
+    <value>Snapshot notes — {0}</value>
+  </data>
+  <data name="SnapshotDialog_NoteSaved" xml:space="preserve">
+    <value>Saved notes of snapshot '{0}'.</value>
+  </data>
+  <data name="NodeWake_Button" xml:space="preserve">
+    <value>Wake</value>
+  </data>
+  <data name="NodeWake_Hint" xml:space="preserve">
+    <value>Power on this node with Wake-on-LAN (needs the MAC address in the node options).</value>
+  </data>
+  <data name="NodeWake_Sent" xml:space="preserve">
+    <value>Sent a Wake-on-LAN packet to node {0}.</value>
+  </data>
+  <data name="NodeWake_Failed" xml:space="preserve">
+    <value>Waking node {0} failed: {1}</value>
+  </data>
+  <data name="Migrate_NoTarget" xml:space="preserve">
+    <value>No node can take this guest.
+{0}</value>
+  </data>
+  <data name="Migrate_Blocked" xml:space="preserve">
+    <value>Nodes that can't take it:
+{0}</value>
+  </data>
+  <data name="Migrate_LocalResources" xml:space="preserve">
+    <value>Local resources may block online migration: {0}</value>
+  </data>
+  <data name="Migrate_LocalDisks" xml:space="preserve">
+    <value>Local disks to migrate along:
+{0}</value>
+  </data>
+  <data name="GuestAgent_CtNetwork" xml:space="preserve">
+    <value>Network info</value>
+  </data>
+  <data name="GuestAgent_CtNetworkTitle" xml:space="preserve">
+    <value>CT {0} network</value>
+  </data>
+  <data name="GuestAgent_CtNetworkHint" xml:space="preserve">
+    <value>Interfaces and IPs inside the container (running only).</value>
+  </data>
+  <data name="GuestAgent_Mac" xml:space="preserve">
+    <value>MAC</value>
+  </data>
+  <data name="GuestAgent_Ipv4" xml:space="preserve">
+    <value>IPv4</value>
+  </data>
+  <data name="GuestAgent_Ipv6" xml:space="preserve">
+    <value>IPv6</value>
+  </data>
+  <data name="GuestAgent_FsTrim" xml:space="preserve">
+    <value>Trim disks</value>
+  </data>
+  <data name="GuestAgent_FsTrimDone" xml:space="preserve">
+    <value>Guest filesystem trim finished: {0}</value>
+  </data>
+  <data name="GuestAgent_SetPassword" xml:space="preserve">
+    <value>Set guest password</value>
+  </data>
+  <data name="GuestAgent_SetPasswordTitle" xml:space="preserve">
+    <value>VM {0} — guest user password</value>
+  </data>
+  <data name="GuestAgent_PasswordConfirm" xml:space="preserve">
+    <value>Confirm password</value>
+  </data>
+  <data name="GuestAgent_PasswordMismatch" xml:space="preserve">
+    <value>The passwords don't match.</value>
+  </data>
+  <data name="GuestAgent_PasswordSet" xml:space="preserve">
+    <value>Changed the guest user password.</value>
+  </data>
+  <data name="CloudInit_ShowPending" xml:space="preserve">
+    <value>Pending values</value>
+  </data>
+  <data name="CloudInit_PendingTitle" xml:space="preserve">
+    <value>VM {0} Cloud-Init pending values</value>
+  </data>
+  <data name="CloudInit_PendingHint" xml:space="preserve">
+    <value>Pending values reach the drive after regenerating the Cloud-Init image.</value>
+  </data>
+  <data name="CloudInit_Current" xml:space="preserve">
+    <value>Current</value>
+  </data>
+  <data name="CloudInit_Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="CloudInit_Deleted" xml:space="preserve">
+    <value>To delete</value>
+  </data>
+  <data name="CloudInit_ShowDump" xml:space="preserve">
+    <value>Generated config</value>
+  </data>
+  <data name="CloudInit_DumpTitle" xml:space="preserve">
+    <value>VM {0} generated Cloud-Init config</value>
+  </data>
+  <data name="CloudInit_DumpUser" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="CloudInit_DumpNetwork" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="CloudInit_DumpMeta" xml:space="preserve">
+    <value>Meta</value>
+  </data>
+  <data name="CloudInit_DumpHint" xml:space="preserve">
+    <value>Raw config the server hands to the guest (read-only).</value>
+  </data>
+  <data name="DcHa_Migrate" xml:space="preserve">
+    <value>Migrate</value>
+  </data>
+  <data name="DcHa_Relocate" xml:space="preserve">
+    <value>Relocate</value>
+  </data>
+  <data name="DcHa_MoveTitle" xml:space="preserve">
+    <value>HA {0} — {1}</value>
+  </data>
+  <data name="DcHa_MoveRequested" xml:space="preserve">
+    <value>Requested from the HA manager: {0} (the move shows up shortly)</value>
+  </data>
+  <data name="CephFlags_Tab" xml:space="preserve">
+    <value>Flags</value>
+  </data>
+  <data name="CephFlags_Hint" xml:space="preserve">
+    <value>Cluster-wide OSD flags. Set noout and similar during maintenance.</value>
+  </data>
+  <data name="CephFlags_Set" xml:space="preserve">
+    <value>Set</value>
+  </data>
+  <data name="CephFlags_Change" xml:space="preserve">
+    <value>Change flags</value>
+  </data>
+  <data name="CephFlags_Title" xml:space="preserve">
+    <value>Change Ceph flags</value>
+  </data>
+  <data name="CephFlags_ChangeHint" xml:space="preserve">
+    <value>Checked flags are set, the rest are unset.</value>
+  </data>
+  <data name="CephFlags_Changed" xml:space="preserve">
+    <value>Changed Ceph flags: {0}</value>
+  </data>
+  <data name="CephPool_EditTitle" xml:space="preserve">
+    <value>Edit pool — {0}</value>
+  </data>
+  <data name="CephPool_TargetRatio" xml:space="preserve">
+    <value>Target ratio</value>
+  </data>
+  <data name="CephPool_Updated" xml:space="preserve">
+    <value>Pool settings changed: {0}</value>
+  </data>
+  <data name="CephPool_BadNumber" xml:space="preserve">
+    <value>Invalid value for '{0}'.</value>
+  </data>
+  <data name="NodeApt_Versions" xml:space="preserve">
+    <value>Package versions</value>
+  </data>
+  <data name="NodeApt_VersionsTitle" xml:space="preserve">
+    <value>{0} package versions</value>
+  </data>
+  <data name="NodeApt_VersionsHint" xml:space="preserve">
+    <value>Installed versions of key Proxmox packages.</value>
+  </data>
+  <data name="NodeApt_Package" xml:space="preserve">
+    <value>Package</value>
+  </data>
+  <data name="NodeApt_Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="NodeReport_Action" xml:space="preserve">
+    <value>System report</value>
+  </data>
+  <data name="NodeReport_Title" xml:space="preserve">
+    <value>{0} system report</value>
+  </data>
+  <data name="GuestAgent_PasswordShort" xml:space="preserve">
+    <value>The password needs at least {0} characters.</value>
+  </data>
+  <data name="CephPool_MinOverSize" xml:space="preserve">
+    <value>Min. size can't exceed size.</value>
+  </data>
+  <data name="DcAcme_EditContact" xml:space="preserve">
+    <value>Change contact</value>
+  </data>
+  <data name="DcAcme_EditContactTitle" xml:space="preserve">
+    <value>ACME account contact — {0}</value>
+  </data>
+  <data name="DcAcme_ContactUpdated" xml:space="preserve">
+    <value>Account contact updated: {0}</value>
+  </data>
+  <data name="NodeCert_AcmeRevoke" xml:space="preserve">
+    <value>Revoke ACME certificate</value>
+  </data>
+  <data name="NodeCert_AcmeRevokeConfirm" xml:space="preserve">
+    <value>Revoke node {0}'s ACME certificate with the CA and remove it? The node falls back to its self-signed certificate.</value>
+  </data>
+  <data name="NodeCert_AcmeRevoked" xml:space="preserve">
+    <value>ACME certificate revoked: {0}</value>
+  </data>
+  <data name="DcHa_Disarm" xml:space="preserve">
+    <value>Disarm HA</value>
+  </data>
+  <data name="DcHa_DisarmMode" xml:space="preserve">
+    <value>Resource mode</value>
+  </data>
+  <data name="DcHa_ModeFreeze" xml:space="preserve">
+    <value>Freeze</value>
+  </data>
+  <data name="DcHa_ModeIgnore" xml:space="preserve">
+    <value>Ignore</value>
+  </data>
+  <data name="DcHa_DisarmHint" xml:space="preserve">
+    <value>Temporarily turns off cluster-wide HA so watchdogs don't reboot nodes during maintenance.</value>
+  </data>
+  <data name="DcHa_Disarmed" xml:space="preserve">
+    <value>HA disarmed: {0}</value>
+  </data>
+  <data name="DcHa_Arm" xml:space="preserve">
+    <value>Arm HA</value>
+  </data>
+  <data name="DcHa_ArmConfirm" xml:space="preserve">
+    <value>Re-arm the HA stack? Watchdogs become active again.</value>
+  </data>
+  <data name="DcHa_Armed" xml:space="preserve">
+    <value>HA re-armed: {0}</value>
+  </data>
+  <data name="DcBulk_Start" xml:space="preserve">
+    <value>Bulk start</value>
+  </data>
+  <data name="DcBulk_Shutdown" xml:space="preserve">
+    <value>Bulk shutdown</value>
+  </data>
+  <data name="DcBulk_Suspend" xml:space="preserve">
+    <value>Bulk suspend</value>
+  </data>
+  <data name="DcBulk_Migrate" xml:space="preserve">
+    <value>Bulk migrate</value>
+  </data>
+  <data name="DcBulk_ToDisk" xml:space="preserve">
+    <value>Hibernate to disk</value>
+  </data>
+  <data name="DcBulk_NoGuests" xml:space="preserve">
+    <value>No guests to act on.</value>
+  </data>
+  <data name="DcBulk_Started" xml:space="preserve">
+    <value>Bulk action finished: {0}</value>
+  </data>
+  <data name="CephDaemon_Confirm" xml:space="preserve">
+    <value>{0} '{1}'?</value>
+  </data>
+  <data name="CephDaemon_Done" xml:space="preserve">
+    <value>Ceph daemon action finished: {0}</value>
+  </data>
+  <data name="CephOsd_Details" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="CephOsd_DetailsTitle" xml:space="preserve">
+    <value>{0} details</value>
+  </data>
+  <data name="DcSdn_DryRun" xml:space="preserve">
+    <value>Preview apply</value>
+  </data>
+  <data name="DcSdn_Rollback" xml:space="preserve">
+    <value>Roll back changes</value>
+  </data>
+  <data name="DcSdn_RollbackConfirm" xml:space="preserve">
+    <value>Discard all unapplied SDN changes and return to the last applied config?</value>
+  </data>
+  <data name="DcSdn_RolledBack" xml:space="preserve">
+    <value>SDN changes rolled back: {0}</value>
+  </data>
+  <data name="DcSdn_IpamStatus" xml:space="preserve">
+    <value>Allocations</value>
+  </data>
+  <data name="DcSdn_IpamStatusTitle" xml:space="preserve">
+    <value>IPAM {0} allocations</value>
+  </data>
+  <data name="DcSdn_IpamStatusHint" xml:space="preserve">
+    <value>Addresses handed out by the PVE IPAM.</value>
+  </data>
+  <data name="DcSdn_Vnet" xml:space="preserve">
+    <value>VNet</value>
+  </data>
+  <data name="DcSdn_Subnet" xml:space="preserve">
+    <value>Subnet</value>
+  </data>
+  <data name="DcSdn_Hostname" xml:space="preserve">
+    <value>Hostname</value>
+  </data>
+  <data name="DcBulk_MigrateHint" xml:space="preserve">
+    <value>Guests already on the target are skipped. Running CTs may need restart migration.</value>
+  </data>
+  <data name="DcSdn_IpamStatusPveOnly" xml:space="preserve">
+    <value>Allocations are only available for the PVE IPAM.</value>
+  </data>
+  <data name="StorageDownload_FileNameHint" xml:space="preserve">
+    <value>Open ▼ to take the file name from the URL.</value>
+  </data>
+  <data name="DcHa_ManagerStatus" xml:space="preserve">
+    <value>Manager status</value>
+  </data>
+  <data name="DcCluster_Totem" xml:space="preserve">
+    <value>Corosync settings</value>
+  </data>
+  <data name="DcCluster_QDevice" xml:space="preserve">
+    <value>QDevice status</value>
+  </data>
+  <data name="CephTab_Crush" xml:space="preserve">
+    <value>CRUSH map</value>
+  </data>
+  <data name="CephTab_CrushHint" xml:space="preserve">
+    <value>The CRUSH map of devices, buckets and rules (read-only).</value>
+  </data>
+  <data name="CephTab_ConfigDb" xml:space="preserve">
+    <value>Config DB</value>
+  </data>
+  <data name="CephTab_ConfigDbHint" xml:space="preserve">
+    <value>Values in the monitor configuration database.</value>
+  </data>
+  <data name="CephCfg_Section" xml:space="preserve">
+    <value>Section</value>
+  </data>
+  <data name="CephCfg_Level" xml:space="preserve">
+    <value>Level</value>
+  </data>
+  <data name="CephCfg_Runtime" xml:space="preserve">
+    <value>Runtime</value>
+  </data>
+  <data name="CephPool_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="CephPool_StatusTitle" xml:space="preserve">
+    <value>Pool {0} status</value>
+  </data>
+  <data name="CephOsd_LvInfo" xml:space="preserve">
+    <value>Volume info</value>
+  </data>
+  <data name="CephOsd_LvInfoTitle" xml:space="preserve">
+    <value>{0} volume info</value>
+  </data>
+  <data name="HwEd_MdevPickDevice" xml:space="preserve">
+    <value>Pick the PCI device (or mapping) first.</value>
+  </data>
+  <data name="HwEd_MdevRawOnly" xml:space="preserve">
+    <value>On this server (before 8.2) mdev types can only be listed for a raw device.</value>
+  </data>
+  <data name="FileRestore_Action" xml:space="preserve">
+    <value>File restore</value>
+  </data>
+  <data name="FileRestore_Title" xml:space="preserve">
+    <value>File restore — {0}</value>
+  </data>
+  <data name="FileRestore_Hint" xml:space="preserve">
+    <value>Double-click to open a folder. The first listing can take a while while the server starts a restore VM.</value>
+  </data>
+  <data name="FileRestore_PbsOnly" xml:space="preserve">
+    <value>File restore only works for Proxmox Backup Server backups.</value>
+  </data>
+  <data name="FileRestore_Up" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="FileRestore_AtTop" xml:space="preserve">
+    <value>Already at the top.</value>
+  </data>
+  <data name="FileRestore_Location" xml:space="preserve">
+    <value>Location: {0}</value>
+  </data>
+  <data name="FileRestore_Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="FileRestore_Saved" xml:space="preserve">
+    <value>Saved: {0} ({1})</value>
+  </data>
+  <data name="FileRestore_Modified" xml:space="preserve">
+    <value>Modified</value>
+  </data>
+  <data name="FileRestore_Dir" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="FileRestore_File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="FileRestore_Link" xml:space="preserve">
+    <value>Link</value>
+  </data>
+  <data name="FileRestore_Volume" xml:space="preserve">
+    <value>Disk/volume</value>
+  </data>
+  <data name="CephMute_Tab" xml:space="preserve">
+    <value>Health mutes</value>
+  </data>
+  <data name="CephMute_Hint" xml:space="preserve">
+    <value>Muted Ceph health checks. A muted check no longer degrades the cluster health.</value>
+  </data>
+  <data name="CephMute_Code" xml:space="preserve">
+    <value>Check code</value>
+  </data>
+  <data name="CephMute_CodeHint" xml:space="preserve">
+    <value>E.g. OSD_NEARFULL — the code from Ceph status</value>
+  </data>
+  <data name="CephMute_Ttl" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="CephMute_TtlHint" xml:space="preserve">
+    <value>E.g. 1h, 30m — empty keeps it until unmuted</value>
+  </data>
+  <data name="CephMute_Sticky" xml:space="preserve">
+    <value>Sticky</value>
+  </data>
+  <data name="CephMute_Add" xml:space="preserve">
+    <value>Mute check</value>
+  </data>
+  <data name="CephMute_Remove" xml:space="preserve">
+    <value>Unmute</value>
+  </data>
+  <data name="CephMute_Done" xml:space="preserve">
+    <value>Ceph health mute updated: {0}</value>
+  </data>
+  <data name="CephRestart_Cluster" xml:space="preserve">
+    <value>Rolling restart (cluster)</value>
+  </data>
+  <data name="CephRestart_NodeOsd" xml:space="preserve">
+    <value>Rolling OSD restart</value>
+  </data>
+  <data name="CephRestart_SetNoout" xml:space="preserve">
+    <value>Set noout while restarting</value>
+  </data>
+  <data name="CephRestart_OnlyOutdated" xml:space="preserve">
+    <value>Only outdated daemons</value>
+  </data>
+  <data name="CephRestart_DryRun" xml:space="preserve">
+    <value>Dry run</value>
+  </data>
+  <data name="CephRestart_DryRunHint" xml:space="preserve">
+    <value>Only log the plan without restarting.</value>
+  </data>
+  <data name="CephRestart_Done" xml:space="preserve">
+    <value>Rolling restart finished: {0}</value>
+  </data>
+  <data name="CephRelease_Show" xml:space="preserve">
+    <value>Ceph releases</value>
+  </data>
+  <data name="CephRelease_Hint" xml:space="preserve">
+    <value>Ceph releases this node can install.</value>
+  </data>
+  <data name="CephRelease_Available" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="CephRelease_Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="CephRelease_Unsupported" xml:space="preserve">
+    <value>Unsupported</value>
+  </data>
+  <data name="CephFs_DeleteTitle" xml:space="preserve">
+    <value>Delete CephFS — {0}</value>
+  </data>
+  <data name="CephFs_RemovePools" xml:space="preserve">
+    <value>Also remove data and metadata pools</value>
+  </data>
+  <data name="CephFs_Deleted" xml:space="preserve">
+    <value>CephFS deleted: {0}</value>
+  </data>
+  <data name="NodeSdn_ZonesHint" xml:space="preserve">
+    <value>Pick a zone to see its bridges or IP VRF.</value>
+  </data>
+  <data name="NodeSdn_VnetsHint" xml:space="preserve">
+    <value>Pick a VNet to see its MAC VRF (EVPN).</value>
+  </data>
+  <data name="NodeSdn_FabricsHint" xml:space="preserve">
+    <value>Pick a fabric to see routes, neighbors or interfaces.</value>
+  </data>
+  <data name="NodeSdn_StatusHint" xml:space="preserve">
+    <value>Current state as seen by this node.</value>
+  </data>
+  <data name="NodeSdn_Bridges" xml:space="preserve">
+    <value>Bridges</value>
+  </data>
+  <data name="NodeSdn_IpVrf" xml:space="preserve">
+    <value>IP VRF</value>
+  </data>
+  <data name="NodeSdn_MacVrf" xml:space="preserve">
+    <value>MAC VRF</value>
+  </data>
+  <data name="NodeSdn_Routes" xml:space="preserve">
+    <value>Routes</value>
+  </data>
+  <data name="NodeSdn_Neighbors" xml:space="preserve">
+    <value>Neighbors</value>
+  </data>
+  <data name="NodeSdn_Interfaces" xml:space="preserve">
+    <value>Interfaces</value>
+  </data>
+  <data name="NodeSdn_Ports" xml:space="preserve">
+    <value>Ports</value>
+  </data>
+  <data name="NodeSdn_VlanFiltering" xml:space="preserve">
+    <value>VLAN filtering</value>
+  </data>
+  <data name="NodeSdn_Protocol" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="NodeSdn_Metric" xml:space="preserve">
+    <value>Metric</value>
+  </data>
+  <data name="NodeSdn_NextHops" xml:space="preserve">
+    <value>Next hops</value>
+  </data>
+  <data name="NodeSdn_Route" xml:space="preserve">
+    <value>Route</value>
+  </data>
+  <data name="NodeSdn_Via" xml:space="preserve">
+    <value>Via</value>
+  </data>
+  <data name="NodeSdn_Neighbor" xml:space="preserve">
+    <value>Neighbor</value>
+  </data>
+  <data name="CpuModel_Tab" xml:space="preserve">
+    <value>CPU models</value>
+  </data>
+  <data name="CpuModel_Hint" xml:space="preserve">
+    <value>Custom CPU models. Pick them as custom-&lt;name&gt; in a VM's CPU type.</value>
+  </data>
+  <data name="CpuModel_Base" xml:space="preserve">
+    <value>Reported model</value>
+  </data>
+  <data name="CpuModel_BaseHint" xml:space="preserve">
+    <value>E.g. x86-64-v2-AES, host — empty means kvm64</value>
+  </data>
+  <data name="CpuModel_Flags" xml:space="preserve">
+    <value>CPU flags</value>
+  </data>
+  <data name="CpuModel_FlagsHint" xml:space="preserve">
+    <value>Semicolon separated, +on -off — e.g. +aes;-pcid</value>
+  </data>
+  <data name="CpuModel_Hidden" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="CpuModel_PhysBits" xml:space="preserve">
+    <value>Physical bits</value>
+  </data>
+  <data name="CpuModel_PhysBitsHint" xml:space="preserve">
+    <value>A number or host</value>
+  </data>
+  <data name="CpuModel_GuestPhysBits" xml:space="preserve">
+    <value>Guest physical bits</value>
+  </data>
+  <data name="CpuModel_HvVendor" xml:space="preserve">
+    <value>Hyper-V vendor ID</value>
+  </data>
+  <data name="CpuModel_Level" xml:space="preserve">
+    <value>CPUID level</value>
+  </data>
+  <data name="CpuModel_NameHint" xml:space="preserve">
+    <value>VMs refer to it as custom-&lt;name&gt;.</value>
+  </data>
+  <data name="CpuModel_AddTitle" xml:space="preserve">
+    <value>Add CPU model</value>
+  </data>
+  <data name="CpuModel_EditTitle" xml:space="preserve">
+    <value>Edit CPU model — {0}</value>
+  </data>
+  <data name="CpuModel_Added" xml:space="preserve">
+    <value>CPU model added.</value>
+  </data>
+  <data name="CpuModel_Updated" xml:space="preserve">
+    <value>CPU model updated.</value>
+  </data>
+  <data name="CpuModel_Deleted" xml:space="preserve">
+    <value>CPU model deleted.</value>
+  </data>
+  <data name="CpuModel_DeleteConfirm" xml:space="preserve">
+    <value>Delete CPU model '{0}'? VMs using it won't start.</value>
+  </data>
+  <data name="CephRestart_Timeout" xml:space="preserve">
+    <value>Wait per daemon (s)</value>
+  </data>
+  <data name="CephRestart_TimeoutHint" xml:space="preserve">
+    <value>Empty uses the server default</value>
+  </data>
+  <data name="DcNotify_FieldValues" xml:space="preserve">
+    <value>Known field values</value>
+  </data>
+  <data name="DcNotify_FieldValuesHint" xml:space="preserve">
+    <value>Use them as exact:field=value in a matcher.</value>
+  </data>
+  <data name="DcNotify_Field" xml:space="preserve">
+    <value>Field</value>
+  </data>
+  <data name="OciPull_Action" xml:space="preserve">
+    <value>Pull OCI image</value>
+  </data>
+  <data name="OciPull_Repository" xml:space="preserve">
+    <value>Repository</value>
+  </data>
+  <data name="OciPull_RepositoryHint" xml:space="preserve">
+    <value>E.g. docker.io/library/alpine</value>
+  </data>
+  <data name="OciPull_Tag" xml:space="preserve">
+    <value>Tag</value>
+  </data>
+  <data name="OciPull_TagHint" xml:space="preserve">
+    <value>Open ▼ to list the repository's tags. Empty means latest.</value>
+  </data>
+  <data name="OciPull_FileName" xml:space="preserve">
+    <value>File name</value>
+  </data>
+  <data name="OciPull_FileNameHint" xml:space="preserve">
+    <value>Empty lets the server choose.</value>
+  </data>
+  <data name="OciPull_Done" xml:space="preserve">
+    <value>OCI image pulled: {0}</value>
+  </data>
+  <data name="CephSafety_Unsafe" xml:space="preserve">
+    <value>Stopping or destroying {0} now may not be safe.
+
+{1}
+
+Continue anyway?</value>
+  </data>
+  <data name="CephInit_Action" xml:space="preserve">
+    <value>Initialize Ceph</value>
+  </data>
+  <data name="CephInit_Network" xml:space="preserve">
+    <value>Public network</value>
+  </data>
+  <data name="CephInit_NetworkHint" xml:space="preserve">
+    <value>E.g. 10.10.10.0/24 — empty uses the node's default</value>
+  </data>
+  <data name="CephInit_ClusterNetwork" xml:space="preserve">
+    <value>Cluster network</value>
+  </data>
+  <data name="CephInit_ClusterNetworkHint" xml:space="preserve">
+    <value>Optional network for OSD replication</value>
+  </data>
+  <data name="CephInit_Done" xml:space="preserve">
+    <value>Created the Ceph configuration (ceph.conf).</value>
+  </data>
+  <data name="DcSdn_VnetFirewallTitle" xml:space="preserve">
+    <value>VNet {0} firewall</value>
+  </data>
+  <data name="DcSdn_IpAdd" xml:space="preserve">
+    <value>Add IP mapping</value>
+  </data>
+  <data name="DcSdn_IpAdded" xml:space="preserve">
+    <value>IP mapping added.</value>
+  </data>
+  <data name="DcSdn_IpDeleteConfirm" xml:space="preserve">
+    <value>Delete IP mapping {0}?</value>
+  </data>
+  <data name="DcSdn_IpDeleted" xml:space="preserve">
+    <value>IP mapping deleted.</value>
+  </data>
+  <data name="CpuFlag_Show" xml:space="preserve">
+    <value>CPU flags</value>
+  </data>
+  <data name="CpuFlag_SupportedOn" xml:space="preserve">
+    <value>Supported on</value>
+  </data>
+  <data name="CephMeta_Show" xml:space="preserve">
+    <value>Daemon metadata</value>
+  </data>
+  <data name="SdnRoute_Tab" xml:space="preserve">
+    <value>Routing policy</value>
+  </data>
+  <data name="SdnRoute_PrefixLists" xml:space="preserve">
+    <value>Prefix lists</value>
+  </data>
+  <data name="SdnRoute_PrefixListsHint" xml:space="preserve">
+    <value>Prefix lists that select BGP/EVPN routes. Apply SDN after changes.</value>
+  </data>
+  <data name="SdnRoute_RouteMaps" xml:space="preserve">
+    <value>Route maps</value>
+  </data>
+  <data name="SdnRoute_RouteMapsHint" xml:space="preserve">
+    <value>Route map entries apply 'set' to routes matching 'match'. Apply SDN after changes.</value>
+  </data>
+  <data name="SdnRoute_Entries" xml:space="preserve">
+    <value>Entries</value>
+  </data>
+  <data name="SdnRoute_EntriesTitle" xml:space="preserve">
+    <value>Prefix list {0} entries</value>
+  </data>
+  <data name="SdnRoute_EntriesHint" xml:space="preserve">
+    <value>Checked in order; the first match decides permit or deny.</value>
+  </data>
+  <data name="SdnRoute_AddList" xml:space="preserve">
+    <value>Add prefix list</value>
+  </data>
+  <data name="SdnRoute_DeleteListConfirm" xml:space="preserve">
+    <value>Delete prefix list {0}?</value>
+  </data>
+  <data name="SdnRoute_DeleteEntryConfirm" xml:space="preserve">
+    <value>Delete entry {0}?</value>
+  </data>
+  <data name="SdnRoute_DeleteMapConfirm" xml:space="preserve">
+    <value>Delete entry {1} of route map {0}?</value>
+  </data>
+  <data name="SdnRoute_Saved" xml:space="preserve">
+    <value>Saved. Apply SDN to push it to the nodes.</value>
+  </data>
+  <data name="SdnRoute_Deleted" xml:space="preserve">
+    <value>Deleted. Apply SDN to push it to the nodes.</value>
+  </data>
+  <data name="SdnRoute_Seq" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="SdnRoute_SeqHint" xml:space="preserve">
+    <value>Empty lets the server choose.</value>
+  </data>
+  <data name="SdnRoute_Prefix" xml:space="preserve">
+    <value>Prefix</value>
+  </data>
+  <data name="SdnRoute_PrefixHint" xml:space="preserve">
+    <value>E.g. 10.0.0.0/8</value>
+  </data>
+  <data name="SdnRoute_Ge" xml:space="preserve">
+    <value>Min length (ge)</value>
+  </data>
+  <data name="SdnRoute_Le" xml:space="preserve">
+    <value>Max length (le)</value>
+  </data>
+  <data name="SdnRoute_AddEntry" xml:space="preserve">
+    <value>Add entry</value>
+  </data>
+  <data name="SdnRoute_EditEntry" xml:space="preserve">
+    <value>Edit entry {0}</value>
+  </data>
+  <data name="SdnRoute_Match" xml:space="preserve">
+    <value>Match</value>
+  </data>
+  <data name="SdnRoute_MatchHint" xml:space="preserve">
+    <value>One per line — e.g. key=ip-address-prefix-list,value=internal</value>
+  </data>
+  <data name="SdnRoute_Set" xml:space="preserve">
+    <value>Set</value>
+  </data>
+  <data name="SdnRoute_SetHint" xml:space="preserve">
+    <value>One per line — e.g. key=local-preference,value=200</value>
+  </data>
+  <data name="SdnRoute_Call" xml:space="preserve">
+    <value>Call</value>
+  </data>
+  <data name="SdnRoute_ExitAction" xml:space="preserve">
+    <value>Exit action</value>
+  </data>
+  <data name="SdnRoute_AddMap" xml:space="preserve">
+    <value>Add route map entry</value>
+  </data>
+  <data name="SdnRoute_EditMap" xml:space="preserve">
+    <value>Route map {0} — entry {1}</value>
+  </data>
+  <data name="DcSdn_IpNoVnet" xml:space="preserve">
+    <value>Rows without a VNet (e.g. gateways) can't be deleted.</value>
+  </data>
+  <data name="DcSdn_IpNoZone" xml:space="preserve">
+    <value>Couldn't find the VNet's zone.</value>
+  </data>
+  <data name="GuestAgent_Details" xml:space="preserve">
+    <value>Agent details</value>
+  </data>
+  <data name="GuestAgent_DetailsTitle" xml:space="preserve">
+    <value>VM {0} guest agent info</value>
+  </data>
+  <data name="GuestAgent_DetailsHint" xml:space="preserve">
+    <value>Values reported by the guest agent (read-only).</value>
+  </data>
+  <data name="GuestAgent_Ping" xml:space="preserve">
+    <value>Ping agent</value>
+  </data>
+  <data name="GuestAgent_PingOk" xml:space="preserve">
+    <value>The guest agent responded.</value>
+  </data>
+  <data name="GuestAgent_get_fsinfo" xml:space="preserve">
+    <value>File systems</value>
+  </data>
+  <data name="GuestAgent_get_users" xml:space="preserve">
+    <value>Logged-in users</value>
+  </data>
+  <data name="GuestAgent_get_time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="GuestAgent_get_timezone" xml:space="preserve">
+    <value>Time zone</value>
+  </data>
+  <data name="GuestAgent_get_vcpus" xml:space="preserve">
+    <value>vCPUs</value>
+  </data>
+  <data name="GuestAgent_get_memory_block_info" xml:space="preserve">
+    <value>Memory block info</value>
+  </data>
+  <data name="GuestAgent_get_memory_blocks" xml:space="preserve">
+    <value>Memory blocks</value>
+  </data>
+  <data name="GuestAgent_info" xml:space="preserve">
+    <value>Agent info</value>
+  </data>
+  <data name="StorageGraph_Tab" xml:space="preserve">
+    <value>Usage graph</value>
+  </data>
+  <data name="StorageGraph_Hint" xml:space="preserve">
+    <value>Storage usage over time.</value>
+  </data>
+  <data name="StorageGraph_Usage" xml:space="preserve">
+    <value>Usage</value>
+  </data>
+  <data name="StorageGraph_Loading" xml:space="preserve">
+    <value>Loading…</value>
+  </data>
+  <data name="StorageGraph_Failed" xml:space="preserve">
+    <value>Couldn't load the graph: {0}</value>
+  </data>
+  <data name="StorageGraph_NoData" xml:space="preserve">
+    <value>No data recorded yet.</value>
+  </data>
+  <data name="AgentTool_Exec" xml:space="preserve">
+    <value>Run command</value>
+  </data>
+  <data name="AgentTool_ExecTitle" xml:space="preserve">
+    <value>VM {0} — run a command in the guest</value>
+  </data>
+  <data name="AgentTool_Command" xml:space="preserve">
+    <value>Command</value>
+  </data>
+  <data name="AgentTool_CommandHint" xml:space="preserve">
+    <value>E.g. ls -la /var/log — no shell, so use bash -c "…" for pipes or variables</value>
+  </data>
+  <data name="AgentTool_Input" xml:space="preserve">
+    <value>Standard input</value>
+  </data>
+  <data name="AgentTool_ExecConfirm" xml:space="preserve">
+    <value>This runs the following command with administrator rights inside VM {0}:
+
+{1}
+
+Continue?</value>
+  </data>
+  <data name="AgentTool_ExecResultTitle" xml:space="preserve">
+    <value>Result — {0}</value>
+  </data>
+  <data name="AgentTool_ExecDone" xml:space="preserve">
+    <value>Command finished (exit code {0}).</value>
+  </data>
+  <data name="AgentTool_ExecStillRunning" xml:space="preserve">
+    <value>The command is still running (pid {0}) — it keeps running in the guest.</value>
+  </data>
+  <data name="AgentTool_ExitCode" xml:space="preserve">
+    <value>Exit code: {0}{1}</value>
+  </data>
+  <data name="AgentTool_Stdout" xml:space="preserve">
+    <value>Standard output</value>
+  </data>
+  <data name="AgentTool_Stderr" xml:space="preserve">
+    <value>Standard error</value>
+  </data>
+  <data name="AgentTool_Truncated" xml:space="preserve">
+    <value>(output truncated)</value>
+  </data>
+  <data name="AgentTool_Read" xml:space="preserve">
+    <value>Read file</value>
+  </data>
+  <data name="AgentTool_ReadTitle" xml:space="preserve">
+    <value>VM {0} — read a guest file</value>
+  </data>
+  <data name="AgentTool_PathHint" xml:space="preserve">
+    <value>Full path inside the guest — e.g. /etc/hostname, C:\Windows\win.ini</value>
+  </data>
+  <data name="AgentTool_Write" xml:space="preserve">
+    <value>Write file</value>
+  </data>
+  <data name="AgentTool_WriteTitle" xml:space="preserve">
+    <value>VM {0} — write a guest file</value>
+  </data>
+  <data name="AgentTool_Content" xml:space="preserve">
+    <value>Content</value>
+  </data>
+  <data name="AgentTool_WriteHint" xml:space="preserve">
+    <value>An existing file is replaced with this content.</value>
+  </data>
+  <data name="AgentTool_WriteConfirm" xml:space="preserve">
+    <value>Write this content to {1} in VM {0}? An existing file can't be restored. Continue?</value>
+  </data>
+  <data name="AgentTool_Written" xml:space="preserve">
+    <value>Wrote guest file: {0}</value>
+  </data>
+  <data name="AgentTool_Freeze" xml:space="preserve">
+    <value>Freeze file systems</value>
+  </data>
+  <data name="AgentTool_FreezeConfirm" xml:space="preserve">
+    <value>Freezing VM {0}'s file systems stops all guest disk writes until thawed. Continue?</value>
+  </data>
+  <data name="AgentTool_Thaw" xml:space="preserve">
+    <value>Thaw file systems</value>
+  </data>
+  <data name="AgentTool_FreezeStatus" xml:space="preserve">
+    <value>Freeze status</value>
+  </data>
+  <data name="AgentTool_FreezeResult" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="OpenId_Hint" xml:space="preserve">
+    <value>OpenID realm — Login opens your browser. The identity provider must allow {0} as a redirect URL.</value>
+  </data>
+  <data name="OpenId_Waiting" xml:space="preserve">
+    <value>Finish signing in in your browser…</value>
+  </data>
+  <data name="OpenId_NoVpn" xml:space="preserve">
+    <value>OpenID login isn't supported yet for servers that use a VPN.</value>
+  </data>
+  <data name="OpenId_PortBusy" xml:space="preserve">
+    <value>Can't open port {0} for the login response: {1}</value>
+  </data>
+  <data name="OpenId_BadUrl" xml:space="preserve">
+    <value>The server returned an invalid login URL: {0}</value>
+  </data>
+  <data name="OpenId_TimedOut" xml:space="preserve">
+    <value>Timed out waiting for the browser sign-in.</value>
+  </data>
+  <data name="OpenId_IdpError" xml:space="preserve">
+    <value>The identity provider rejected the sign-in: {0} {1}</value>
+  </data>
+  <data name="OpenId_PageDone" xml:space="preserve">
+    <value>Signed in. You can close this tab and return to the app.</value>
+  </data>
+  <data name="OpenId_PageFailed" xml:space="preserve">
+    <value>Sign-in failed. Please try again in the app.</value>
+  </data>
+  <data name="StorageContent_ImportTab" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="StorageContent_ImportHint" xml:space="preserve">
+    <value>Guests you can import from ESXi or OVA. Pick one and choose Import to create a new VM.</value>
+  </data>
+  <data name="Import_Action" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="Import_Title" xml:space="preserve">
+    <value>Import guest — {0}</value>
+  </data>
+  <data name="Import_TargetStorage" xml:space="preserve">
+    <value>Target storage</value>
+  </data>
+  <data name="Import_Bridge" xml:space="preserve">
+    <value>Network bridge</value>
+  </data>
+  <data name="Import_Disks" xml:space="preserve">
+    <value>Disks to copy:
+{0}</value>
+  </data>
+  <data name="Import_Nics" xml:space="preserve">
+    <value>Attaches {0} network card(s) to this bridge with their original MAC.</value>
+  </data>
+  <data name="Import_Warnings" xml:space="preserve">
+    <value>Warnings: {0}</value>
+  </data>
+  <data name="Import_Done" xml:space="preserve">
+    <value>Import finished: {0}</value>
+  </data>
+  <data name="Import_BadVmid" xml:space="preserve">
+    <value>The VM ID must be a number of 100 or more.</value>
+  </data>
+  <data name="Import_NoStorage" xml:space="preserve">
+    <value>Node {0} has no storage for disk images.</value>
+  </data>
+  <data name="Import_NoBridge" xml:space="preserve">
+    <value>Node {0} has no network bridge.</value>
+  </data>
+  <data name="OpenId_Cancelled" xml:space="preserve">
+    <value>Browser sign-in cancelled.</value>
+  </data>
+  <data name="AgentTool_UnbalancedQuote" xml:space="preserve">
+    <value>A double quote isn't closed.</value>
+  </data>
+  <data name="AgentTool_WithInput" xml:space="preserve">
+    <value>(with {0} characters of standard input)</value>
+  </data>
+  <data name="AgentTool_WriteTooLarge" xml:space="preserve">
+    <value>At most {0} KiB can be written at once.</value>
+  </data>
+  <data name="Import_NotGuest" xml:space="preserve">
+    <value>Only guests (.vmx, .ova, .ovf) can be imported.</value>
+  </data>
+  <data name="AllocDisk_Action" xml:space="preserve">
+    <value>Create disk</value>
+  </data>
+  <data name="AllocDisk_VmidHint" xml:space="preserve">
+    <value>Owner VM ID — also used in the name.</value>
+  </data>
+  <data name="AllocDisk_FileName" xml:space="preserve">
+    <value>File name</value>
+  </data>
+  <data name="AllocDisk_FileNameHint" xml:space="preserve">
+    <value>E.g. vm-100-disk-1 (file storage: vm-100-disk-1.qcow2)</value>
+  </data>
+  <data name="AllocDisk_SizeHint" xml:space="preserve">
+    <value>E.g. 32G, 512M</value>
+  </data>
+  <data name="AllocDisk_Done" xml:space="preserve">
+    <value>Disk created. Attach it in the VM hardware.</value>
+  </data>
+  <data name="DcAcme_DirectoryMeta" xml:space="preserve">
+    <value>CA info</value>
+  </data>
+  <data name="GuestLife_UnlinkUnused" xml:space="preserve">
+    <value>Delete unused disks</value>
+  </data>
+  <data name="GuestLife_NoUnused" xml:space="preserve">
+    <value>No unused disks.</value>
+  </data>
+  <data name="GuestLife_UnlinkTitle" xml:space="preserve">
+    <value>VM {0} — delete unused disks</value>
+  </data>
+  <data name="GuestLife_UnlinkPick" xml:space="preserve">
+    <value>Disks to delete</value>
+  </data>
+  <data name="GuestLife_UnlinkHint" xml:space="preserve">
+    <value>Deletes the disk images from storage too. This can't be undone.</value>
+  </data>
+  <data name="GuestLife_Unlinked" xml:space="preserve">
+    <value>Unused disks deleted.</value>
+  </data>
+  <data name="MainWindow_TaskLogHint" xml:space="preserve">
+    <value>Double-click a row to view the task log.</value>
+  </data>
+  <data name="CephTab_NotInstalled" xml:space="preserve">
+    <value>Ceph is not installed on this node. Use 'Install Ceph' on the Monitor tab to install it (requires root).</value>
+  </data>
   <data name="CephTab_StatusHint" xml:space="preserve">
     <value>Ceph cluster status (read-only).</value>
   </data>
@@ -3867,16 +4987,6 @@ Paste the join information below into 'Join cluster' on the new node (same forma
   </data>
   <data name="DcTfa_SecretTitle" xml:space="preserve">
     <value>Authenticator app setup</value>
-  </data>
-  <data name="DcTfa_SecretText" xml:space="preserve">
-    <value>In your authenticator app choose 'enter a setup key' and type the secret below.
-
-Secret: {0}
-
-Apps that accept a URI can use this instead:
-{1}
-
-Close this window, then enter the 6-digit code shown by the app.</value>
   </data>
   <data name="DcTfa_VerifyTitle" xml:space="preserve">
     <value>Verify TOTP: {0}</value>
@@ -5400,5 +6510,1262 @@ Close this window, then enter the 6-digit code shown by the app.</value>
   </data>
   <data name="Wz_NoOnlineNode" xml:space="preserve">
     <value>No online node.</value>
+  </data>
+  <data name="ConsoleSettings_LocalCursor" xml:space="preserve">
+    <value>Cursor display</value>
+  </data>
+  <data name="ConsoleSettings_LocalCursorHint" xml:space="preserve">
+    <value>Both: shows the PC arrow and the guest cursor. PC cursor only: guests that send a cursor shape (VirtIO-GPU, QXL, …) get it as a lag-free PC cursor; otherwise (standard VGA, …) an arrow or dot is used — the cursor the guest draws on screen stays visible too.</value>
+  </data>
+  <data name="ConsoleSettings_CursorArrow" xml:space="preserve">
+    <value>PC cursor only (arrow fallback)</value>
+  </data>
+  <data name="ConsoleSettings_CursorDot" xml:space="preserve">
+    <value>PC cursor only (dot fallback)</value>
+  </data>
+  <data name="ConsoleSettings_CursorHidden" xml:space="preserve">
+    <value>Guest cursor only (hide PC cursor)</value>
+  </data>
+  <data name="ConsoleSettings_CursorBoth" xml:space="preserve">
+    <value>Show both (PC arrow + guest cursor)</value>
+  </data>
+  <data name="DcOpt_AllowNone" xml:space="preserve">
+    <value>none — users cannot set tags</value>
+  </data>
+  <data name="DcOpt_AllowList" xml:space="preserve">
+    <value>list — only tags from the allow list</value>
+  </data>
+  <data name="DcOpt_AllowExisting" xml:space="preserve">
+    <value>existing — list plus tags already in use</value>
+  </data>
+  <data name="DcOpt_AllowFree" xml:space="preserve">
+    <value>free — any tag</value>
+  </data>
+  <data name="DcOpt_UserAllowDefault" xml:space="preserve">
+    <value>Default (existing)</value>
+  </data>
+  <data name="DcOpt_UserAllow" xml:space="preserve">
+    <value>User permission</value>
+  </data>
+  <data name="DcOpt_UserAllowList" xml:space="preserve">
+    <value>Allowed tags</value>
+  </data>
+  <data name="DcOpt_UserTagAccess" xml:space="preserve">
+    <value>User Tag Access</value>
+  </data>
+  <data name="DcOpt_RegisteredTags" xml:space="preserve">
+    <value>Registered Tags</value>
+  </data>
+  <data name="DcOpt_NoTags" xml:space="preserve">
+    <value>none</value>
+  </data>
+  <data name="DcOpt_TagListHint" xml:space="preserve">
+    <value>Separate with commas, semicolons or spaces</value>
+  </data>
+  <data name="DcOpt_BadBwlimit" xml:space="preserve">
+    <value>Bandwidth must be a number greater than 0 (MiB/s).</value>
+  </data>
+  <data name="DcOpt_BadEmail" xml:space="preserve">
+    <value>Not a valid email address.</value>
+  </data>
+  <data name="DcOpt_BadMacPrefix" xml:space="preserve">
+    <value>Not a valid MAC prefix (e.g. BC:24:11 — first byte must be even).</value>
+  </data>
+  <data name="DcOpt_BadMaxWorkers" xml:space="preserve">
+    <value>Max workers must be 1–64.</value>
+  </data>
+  <data name="DcOpt_BadNextId" xml:space="preserve">
+    <value>Range is {0}–{1}.</value>
+  </data>
+  <data name="DcOpt_NextIdOrder" xml:space="preserve">
+    <value>Lower cannot be greater than upper.</value>
+  </data>
+  <data name="DcOpt_NextIdLower" xml:space="preserve">
+    <value>Lower</value>
+  </data>
+  <data name="DcOpt_NextIdUpper" xml:space="preserve">
+    <value>Upper</value>
+  </data>
+  <data name="DcOpt_BadProxy" xml:space="preserve">
+    <value>Must be http://host[:port].</value>
+  </data>
+  <data name="DcOpt_ProxyHint" xml:space="preserve">
+    <value>e.g. http://proxy.example.com:3128 — empty = none</value>
+  </data>
+  <data name="DcOpt_EmailHint" xml:space="preserve">
+    <value>Empty = root@hostname</value>
+  </data>
+  <data name="DcOpt_MacPrefixHint" xml:space="preserve">
+    <value>Empty = BC:24:11</value>
+  </data>
+  <data name="DcOpt_MaxWorkersHint" xml:space="preserve">
+    <value>1–64, empty = 4</value>
+  </data>
+  <data name="DcOpt_Bw_default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="DcOpt_Bw_restore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="DcOpt_Bw_migration" xml:space="preserve">
+    <value>Migration</value>
+  </data>
+  <data name="DcOpt_Bw_clone" xml:space="preserve">
+    <value>Clone</value>
+  </data>
+  <data name="DcOpt_Bw_move" xml:space="preserve">
+    <value>Disk Move</value>
+  </data>
+  <data name="DcOpt_NoLimit" xml:space="preserve">
+    <value>none</value>
+  </data>
+  <data name="DcOpt_ConsentText" xml:space="preserve">
+    <value>Consent Text</value>
+  </data>
+  <data name="DcOpt_ConsentTooLong" xml:space="preserve">
+    <value>Consent text cannot exceed 64 KiB.</value>
+  </data>
+  <data name="DcOpt_ConsoleDefault" xml:space="preserve">
+    <value>Default (xterm.js)</value>
+  </data>
+  <data name="DcOpt_Crs" xml:space="preserve">
+    <value>Cluster Resource Scheduling</value>
+  </data>
+  <data name="DcOpt_CrsHa" xml:space="preserve">
+    <value>HA Scheduling</value>
+  </data>
+  <data name="DcOpt_CrsDefault" xml:space="preserve">
+    <value>Default (basic)</value>
+  </data>
+  <data name="DcOpt_CrsRebalance" xml:space="preserve">
+    <value>Rebalance on Start</value>
+  </data>
+  <data name="DcOpt_MigrationType" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="DcOpt_Network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="DcOpt_NetworkHint" xml:space="preserve">
+    <value>CIDR (e.g. 10.1.1.0/24) — empty = default network</value>
+  </data>
+  <data name="DcOpt_Replication" xml:space="preserve">
+    <value>Replication Settings</value>
+  </data>
+  <data name="DcOpt_ShutdownPolicy" xml:space="preserve">
+    <value>Shutdown Policy</value>
+  </data>
+  <data name="DcOpt_PolicyDefault" xml:space="preserve">
+    <value>Default (conditional)</value>
+  </data>
+  <data name="DcOpt_TagShape" xml:space="preserve">
+    <value>Shape</value>
+  </data>
+  <data name="DcOpt_ShapeFull" xml:space="preserve">
+    <value>Full</value>
+  </data>
+  <data name="DcOpt_ShapeCircle" xml:space="preserve">
+    <value>Circle</value>
+  </data>
+  <data name="DcOpt_ShapeDense" xml:space="preserve">
+    <value>Dense</value>
+  </data>
+  <data name="DcOpt_ShapeNone" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="DcOpt_TagOrdering" xml:space="preserve">
+    <value>Ordering</value>
+  </data>
+  <data name="DcOpt_OrderConfig" xml:space="preserve">
+    <value>Configuration</value>
+  </data>
+  <data name="DcOpt_OrderAlpha" xml:space="preserve">
+    <value>Alphabetical</value>
+  </data>
+  <data name="DcOpt_TagCase" xml:space="preserve">
+    <value>Case-Sensitive</value>
+  </data>
+  <data name="DcOpt_TagColors" xml:space="preserve">
+    <value>Color Overrides</value>
+  </data>
+  <data name="DcOpt_TagColorsHint" xml:space="preserve">
+    <value>tag:background[:text];… e.g. prod:FF0000;dev:00FF00:000000</value>
+  </data>
+  <data name="DcOpt_U2f" xml:space="preserve">
+    <value>U2F Settings</value>
+  </data>
+  <data name="DcOpt_U2fAppId" xml:space="preserve">
+    <value>AppID</value>
+  </data>
+  <data name="DcOpt_WebAuthn" xml:space="preserve">
+    <value>WebAuthn Settings</value>
+  </data>
+  <data name="DcOpt_WebAuthnRp" xml:space="preserve">
+    <value>Name (RP)</value>
+  </data>
+  <data name="DcOpt_WebAuthnId" xml:space="preserve">
+    <value>ID (domain)</value>
+  </data>
+  <data name="DcOpt_WebAuthnIdHint" xml:space="preserve">
+    <value>e.g. pve.example.com</value>
+  </data>
+  <data name="DcOpt_Origin" xml:space="preserve">
+    <value>Origin</value>
+  </data>
+  <data name="DcOpt_OriginHint" xml:space="preserve">
+    <value>e.g. https://pve.example.com:8006</value>
+  </data>
+  <data name="DcAcl_PickWho" xml:space="preserve">
+    <value>Select a user, group or token.</value>
+  </data>
+  <data name="DcAcl_WhoUser" xml:space="preserve">
+    <value>User  {0}</value>
+  </data>
+  <data name="DcAcl_WhoGroup" xml:space="preserve">
+    <value>Group  {0}</value>
+  </data>
+  <data name="DcAcl_WhoToken" xml:space="preserve">
+    <value>API Token  {0}</value>
+  </data>
+  <data name="DcGroups_EditTitle" xml:space="preserve">
+    <value>Edit Group — {0}</value>
+  </data>
+  <data name="DcGroups_Updated" xml:space="preserve">
+    <value>Group updated.</value>
+  </data>
+  <data name="DcRoles_NeedPrivs" xml:space="preserve">
+    <value>Select at least one privilege.</value>
+  </data>
+  <data name="DcRoles_Privs" xml:space="preserve">
+    <value>Privileges</value>
+  </data>
+  <data name="DcUsers_BadExpire" xml:space="preserve">
+    <value>Expiry must be {0} (empty = never).</value>
+  </data>
+  <data name="DcUsers_ExpireHint" xml:space="preserve">
+    <value>{0} — empty = never</value>
+  </data>
+  <data name="DcUsers_ConfirmPassword" xml:space="preserve">
+    <value>Confirm Password</value>
+  </data>
+  <data name="DcUsers_KeyIds" xml:space="preserve">
+    <value>Key IDs</value>
+  </data>
+  <data name="DcUsers_KeyIdsHint" xml:space="preserve">
+    <value>Yubico key IDs (comma-separated)</value>
+  </data>
+  <data name="DcUsers_MyPasswordHint" xml:space="preserve">
+    <value>Password of the logged-in {0} — optional for root@pam</value>
+  </data>
+  <data name="DcUsers_NameNoRealm" xml:space="preserve">
+    <value>Do not include @ in the user name (pick the realm separately).</value>
+  </data>
+  <data name="DcUsers_PasswordPveOnly" xml:space="preserve">
+    <value>Proxmox VE realm only — at least {0} characters</value>
+  </data>
+  <data name="DcUsers_PasswordRealmOnly" xml:space="preserve">
+    <value>Passwords of {0} realm users are changed on that authentication server (only PAM and PVE realms here).</value>
+  </data>
+  <data name="DcUsers_PasswordShort" xml:space="preserve">
+    <value>Password must be at least {0} characters.</value>
+  </data>
+  <data name="DcUsers_Permissions" xml:space="preserve">
+    <value>Permissions</value>
+  </data>
+  <data name="DcUsers_PermissionsHint" xml:space="preserve">
+    <value>Effective privileges per path (including groups, roles and propagation)</value>
+  </data>
+  <data name="DcUsers_PermissionsTitle" xml:space="preserve">
+    <value>Permissions — {0}</value>
+  </data>
+  <data name="DcUsers_TfaUnlocked" xml:space="preserve">
+    <value>Unlocked TFA for {0}.</value>
+  </data>
+  <data name="DcUsers_UnlockTfa" xml:space="preserve">
+    <value>Unlock TFA</value>
+  </data>
+  <data name="DcUsers_UnlockTfaConfirm" xml:space="preserve">
+    <value>Unlock TFA for {0} (locked after too many failures)?</value>
+  </data>
+  <data name="DcReplication_RateHint" xml:space="preserve">
+    <value>MB/s — empty = unlimited</value>
+  </data>
+  <data name="DcReplication_PickGuest" xml:space="preserve">
+    <value>Select a guest to replicate.</value>
+  </data>
+  <data name="DcReplication_PickTarget" xml:space="preserve">
+    <value>Select a target node.</value>
+  </data>
+  <data name="DcReplication_SameNode" xml:space="preserve">
+    <value>Cannot replicate to the guest's own node ({0}).</value>
+  </data>
+  <data name="DcReplication_BadRate" xml:space="preserve">
+    <value>Rate limit must be a number of at least 1 (MB/s).</value>
+  </data>
+  <data name="Choice_FwForward" xml:space="preserve">
+    <value>forward</value>
+  </data>
+  <data name="FwRule_AddressHint" xml:space="preserve">
+    <value>IP, CIDR, alias or IPSet (+name) — empty = any</value>
+  </data>
+  <data name="FwRule_AlreadyTop" xml:space="preserve">
+    <value>Already at the top.</value>
+  </data>
+  <data name="FwRule_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="FwRule_CopyTitle" xml:space="preserve">
+    <value>Copy Rule — #{0}</value>
+  </data>
+  <data name="FwRule_Dest" xml:space="preserve">
+    <value>Destination</value>
+  </data>
+  <data name="FwRule_EditTitle" xml:space="preserve">
+    <value>Edit Rule — #{0}</value>
+  </data>
+  <data name="FwRule_Hint" xml:space="preserve">
+    <value>Rules are applied top to bottom. Use up/down to reorder.</value>
+  </data>
+  <data name="FwRule_IcmpHint" xml:space="preserve">
+    <value>Only for ICMP protocols (e.g. echo-request)</value>
+  </data>
+  <data name="FwRule_IcmpType" xml:space="preserve">
+    <value>ICMP type</value>
+  </data>
+  <data name="FwRule_Iface" xml:space="preserve">
+    <value>Interface</value>
+  </data>
+  <data name="FwRule_IfaceHint" xml:space="preserve">
+    <value>e.g. net0 — empty = all interfaces</value>
+  </data>
+  <data name="FwRule_InsertGroup" xml:space="preserve">
+    <value>Insert: Security Group</value>
+  </data>
+  <data name="FwRule_Log" xml:space="preserve">
+    <value>Log level</value>
+  </data>
+  <data name="FwRule_LogDefault" xml:space="preserve">
+    <value>Default (nolog)</value>
+  </data>
+  <data name="FwRule_MacroHint" xml:space="preserve">
+    <value>When a macro is selected it defines protocol and ports</value>
+  </data>
+  <data name="FwRule_MoveDown" xml:space="preserve">
+    <value>Move Down</value>
+  </data>
+  <data name="FwRule_MoveUp" xml:space="preserve">
+    <value>Move Up</value>
+  </data>
+  <data name="FwRule_Moved" xml:space="preserve">
+    <value>Moved rule #{0} to position #{1}.</value>
+  </data>
+  <data name="FwRule_NoGroups" xml:space="preserve">
+    <value>There are no security groups. Create one in the datacenter first.</value>
+  </data>
+  <data name="FwRule_NoMacro" xml:space="preserve">
+    <value>none</value>
+  </data>
+  <data name="FwRule_PickGroup" xml:space="preserve">
+    <value>Select a security group.</value>
+  </data>
+  <data name="FwRule_PortsNeedProto" xml:space="preserve">
+    <value>Ports require the TCP, UDP or SCTP protocol.</value>
+  </data>
+  <data name="FwRule_SecurityGroup" xml:space="preserve">
+    <value>Security Group</value>
+  </data>
+  <data name="FwRule_SourcePort" xml:space="preserve">
+    <value>Source port</value>
+  </data>
+  <data name="FwRule_Updated" xml:space="preserve">
+    <value>Rule updated.</value>
+  </data>
+  <data name="DcFirewall_EditGroup" xml:space="preserve">
+    <value>Edit Security Group — {0}</value>
+  </data>
+  <data name="DcFirewall_EditIpSet" xml:space="preserve">
+    <value>Edit IPSet — {0}</value>
+  </data>
+  <data name="DcFirewall_EditEntry" xml:space="preserve">
+    <value>Edit IPSet Entry — {0}</value>
+  </data>
+  <data name="DcStorage_BadKeep" xml:space="preserve">
+    <value>Retention counts must be whole numbers of 0 or more.</value>
+  </data>
+  <data name="DcStorage_BadPort" xml:space="preserve">
+    <value>Port must be 1–65535.</value>
+  </data>
+  <data name="DcStorage_NeedContent" xml:space="preserve">
+    <value>Select at least one content type.</value>
+  </data>
+  <data name="DcStorage_UnsupportedType" xml:space="preserve">
+    <value>Storage of type {0} cannot be edited in this app.</value>
+  </data>
+  <data name="StorageContent_rootdir" xml:space="preserve">
+    <value>Container</value>
+  </data>
+  <data name="StorageContent_vztmpl" xml:space="preserve">
+    <value>Container template</value>
+  </data>
+  <data name="StorageContent_backup" xml:space="preserve">
+    <value>VZDump backup file</value>
+  </data>
+  <data name="StorageContent_snippets" xml:space="preserve">
+    <value>Snippets</value>
+  </data>
+  <data name="StorageContent_import" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="StorageField_Base" xml:space="preserve">
+    <value>Base storage (LUN)</value>
+  </data>
+  <data name="StorageField_BlockSize" xml:space="preserve">
+    <value>Block Size</value>
+  </data>
+  <data name="StorageField_ComstarHg" xml:space="preserve">
+    <value>Host group (Comstar)</value>
+  </data>
+  <data name="StorageField_ComstarTg" xml:space="preserve">
+    <value>Target group (Comstar)</value>
+  </data>
+  <data name="StorageField_DataPool" xml:space="preserve">
+    <value>Data Pool</value>
+  </data>
+  <data name="StorageField_Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="StorageField_FsName" xml:space="preserve">
+    <value>FS Name</value>
+  </data>
+  <data name="StorageField_IscsiProvider" xml:space="preserve">
+    <value>iSCSI Provider</value>
+  </data>
+  <data name="StorageField_KeepAll" xml:space="preserve">
+    <value>Keep all backups</value>
+  </data>
+  <data name="StorageField_Keyring" xml:space="preserve">
+    <value>Keyring</value>
+  </data>
+  <data name="StorageField_Krbd" xml:space="preserve">
+    <value>KRBD</value>
+  </data>
+  <data name="StorageField_LioTpg" xml:space="preserve">
+    <value>Target portal group (LIO)</value>
+  </data>
+  <data name="StorageField_MaxProtected" xml:space="preserve">
+    <value>Maximum Protected</value>
+  </data>
+  <data name="StorageField_Monhost" xml:space="preserve">
+    <value>Monitor(s)</value>
+  </data>
+  <data name="StorageField_NfsVersion" xml:space="preserve">
+    <value>NFS Version</value>
+  </data>
+  <data name="StorageField_Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="StorageField_Portal" xml:space="preserve">
+    <value>Portal</value>
+  </data>
+  <data name="StorageField_Preallocation" xml:space="preserve">
+    <value>Preallocation</value>
+  </data>
+  <data name="StorageField_Retention" xml:space="preserve">
+    <value>Backup Retention</value>
+  </data>
+  <data name="StorageField_SafeRemove" xml:space="preserve">
+    <value>Wipe Removed Volumes</value>
+  </data>
+  <data name="StorageField_Secret" xml:space="preserve">
+    <value>Secret Key</value>
+  </data>
+  <data name="StorageField_SkipCert" xml:space="preserve">
+    <value>Skip Certificate Verification</value>
+  </data>
+  <data name="StorageField_SmbVersion" xml:space="preserve">
+    <value>SMB Version</value>
+  </data>
+  <data name="StorageField_Sparse" xml:space="preserve">
+    <value>Thin provision</value>
+  </data>
+  <data name="StorageField_Target" xml:space="preserve">
+    <value>Target</value>
+  </data>
+  <data name="StorageField_UseLuns" xml:space="preserve">
+    <value>Use LUNs directly</value>
+  </data>
+  <data name="StorageField_WriteCacheOff" xml:space="preserve">
+    <value>Write cache off</value>
+  </data>
+  <data name="StorageField_keep_last" xml:space="preserve">
+    <value>Keep Last</value>
+  </data>
+  <data name="StorageField_keep_hourly" xml:space="preserve">
+    <value>Keep Hourly</value>
+  </data>
+  <data name="StorageField_keep_daily" xml:space="preserve">
+    <value>Keep Daily</value>
+  </data>
+  <data name="StorageField_keep_weekly" xml:space="preserve">
+    <value>Keep Weekly</value>
+  </data>
+  <data name="StorageField_keep_monthly" xml:space="preserve">
+    <value>Keep Monthly</value>
+  </data>
+  <data name="StorageField_keep_yearly" xml:space="preserve">
+    <value>Keep Yearly</value>
+  </data>
+  <data name="StorageHint_Base" xml:space="preserve">
+    <value>Only when creating the VG on an iSCSI LUN</value>
+  </data>
+  <data name="StorageHint_BlockSize" xml:space="preserve">
+    <value>e.g. 16k — empty = default</value>
+  </data>
+  <data name="StorageHint_CephUser" xml:space="preserve">
+    <value>Empty = admin</value>
+  </data>
+  <data name="StorageHint_External" xml:space="preserve">
+    <value>Only for an external Ceph cluster — leave empty for this cluster's Ceph</value>
+  </data>
+  <data name="StorageHint_Fingerprint" xml:space="preserve">
+    <value>Needed for self-signed certificates (SHA-256)</value>
+  </data>
+  <data name="StorageHint_Id" xml:space="preserve">
+    <value>Starts with a letter; letters, digits, - _ . only (ends with letter or digit)</value>
+  </data>
+  <data name="StorageHint_KeepAll" xml:space="preserve">
+    <value>When on, the counts below are ignored</value>
+  </data>
+  <data name="StorageHint_KeepSecret" xml:space="preserve">
+    <value>Leave empty to keep</value>
+  </data>
+  <data name="StorageHint_LioTpg" xml:space="preserve">
+    <value>For the LIO provider (e.g. tpg1)</value>
+  </data>
+  <data name="StorageHint_MaxProtected" xml:space="preserve">
+    <value>Empty = default, -1 = unlimited</value>
+  </data>
+  <data name="StorageHint_Monhost" xml:space="preserve">
+    <value>External Ceph monitor addresses (space-separated) — leave empty for this cluster's Ceph</value>
+  </data>
+  <data name="StorageHint_Nodes" xml:space="preserve">
+    <value>None selected = all nodes</value>
+  </data>
+  <data name="StorageHint_Path" xml:space="preserve">
+    <value>e.g. /mnt/data</value>
+  </data>
+  <data name="StorageHint_PbsPort" xml:space="preserve">
+    <value>Empty = 8007</value>
+  </data>
+  <data name="StorageHint_PbsUser" xml:space="preserve">
+    <value>user@realm (e.g. root@pam)</value>
+  </data>
+  <data name="StorageHint_Shared" xml:space="preserve">
+    <value>Only if every node sees the same content (e.g. a manually mounted shared path)</value>
+  </data>
+  <data name="StorageType_Btrfs" xml:space="preserve">
+    <value>Btrfs</value>
+  </data>
+  <data name="StorageType_CephFs" xml:space="preserve">
+    <value>CephFS</value>
+  </data>
+  <data name="StorageType_Esxi" xml:space="preserve">
+    <value>ESXi</value>
+  </data>
+  <data name="StorageType_Iscsi" xml:space="preserve">
+    <value>iSCSI</value>
+  </data>
+  <data name="StorageType_Lvm" xml:space="preserve">
+    <value>LVM</value>
+  </data>
+  <data name="StorageType_Rbd" xml:space="preserve">
+    <value>RBD</value>
+  </data>
+  <data name="StorageType_ZfsIscsi" xml:space="preserve">
+    <value>ZFS over iSCSI</value>
+  </data>
+  <data name="DcRealms_AcrValues" xml:space="preserve">
+    <value>ACR Values</value>
+  </data>
+  <data name="DcRealms_BadIssuer" xml:space="preserve">
+    <value>Issuer URL must start with http(s)://.</value>
+  </data>
+  <data name="DcRealms_BadOath" xml:space="preserve">
+    <value>OATH digits must be 6–8 and step at least 10 seconds.</value>
+  </data>
+  <data name="DcRealms_BindDnHint" xml:space="preserve">
+    <value>Empty = anonymous search</value>
+  </data>
+  <data name="DcRealms_CaseSensitive" xml:space="preserve">
+    <value>Case-Sensitive</value>
+  </data>
+  <data name="DcRealms_CheckConnection" xml:space="preserve">
+    <value>Check connection on save</value>
+  </data>
+  <data name="DcRealms_ClassesHint" xml:space="preserve">
+    <value>Comma-separated — empty = default</value>
+  </data>
+  <data name="DcRealms_GroupClasses" xml:space="preserve">
+    <value>Group Classes</value>
+  </data>
+  <data name="DcRealms_GroupDn" xml:space="preserve">
+    <value>Group DN</value>
+  </data>
+  <data name="DcRealms_GroupFilter" xml:space="preserve">
+    <value>Group Filter</value>
+  </data>
+  <data name="DcRealms_GroupNameAttr" xml:space="preserve">
+    <value>Group Name Attribute</value>
+  </data>
+  <data name="DcRealms_GroupsAutoCreate" xml:space="preserve">
+    <value>Autocreate Groups</value>
+  </data>
+  <data name="DcRealms_GroupsClaim" xml:space="preserve">
+    <value>Groups Claim</value>
+  </data>
+  <data name="DcRealms_GroupsOverwrite" xml:space="preserve">
+    <value>Overwrite Groups</value>
+  </data>
+  <data name="DcRealms_PortHint" xml:space="preserve">
+    <value>Empty = mode default (389/636)</value>
+  </data>
+  <data name="DcRealms_Prompt" xml:space="preserve">
+    <value>Prompt</value>
+  </data>
+  <data name="DcRealms_RemoveVanished" xml:space="preserve">
+    <value>Remove Vanished</value>
+  </data>
+  <data name="DcRealms_SyncOptions" xml:space="preserve">
+    <value>Sync Options</value>
+  </data>
+  <data name="DcRealms_TfaDigits" xml:space="preserve">
+    <value>Digits</value>
+  </data>
+  <data name="DcRealms_TfaDigitsHint" xml:space="preserve">
+    <value>6–8, empty = 6</value>
+  </data>
+  <data name="DcRealms_TfaHint" xml:space="preserve">
+    <value>Require two-factor authentication for every user of this realm</value>
+  </data>
+  <data name="DcRealms_TfaNone" xml:space="preserve">
+    <value>none</value>
+  </data>
+  <data name="DcRealms_TfaSection" xml:space="preserve">
+    <value>Require TFA</value>
+  </data>
+  <data name="DcRealms_TfaStep" xml:space="preserve">
+    <value>Time Step (s)</value>
+  </data>
+  <data name="DcRealms_TfaStepHint" xml:space="preserve">
+    <value>Empty = 30</value>
+  </data>
+  <data name="DcRealms_TfaType" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="DcRealms_UserClasses" xml:space="preserve">
+    <value>User Classes</value>
+  </data>
+  <data name="DcRealms_UserFilter" xml:space="preserve">
+    <value>User Filter</value>
+  </data>
+  <data name="DcRealms_VanishedAcl" xml:space="preserve">
+    <value>ACL</value>
+  </data>
+  <data name="DcRealms_VanishedEntry" xml:space="preserve">
+    <value>Entry (users/groups)</value>
+  </data>
+  <data name="DcRealms_VanishedHint" xml:space="preserve">
+    <value>Remove users/groups that no longer exist on the server</value>
+  </data>
+  <data name="DcRealms_VanishedProps" xml:space="preserve">
+    <value>Properties</value>
+  </data>
+  <data name="DcRealms_YubicoId" xml:space="preserve">
+    <value>Yubico API ID</value>
+  </data>
+  <data name="DcRealms_YubicoKey" xml:space="preserve">
+    <value>Yubico API Key</value>
+  </data>
+  <data name="DcRealms_YubicoNeeded" xml:space="preserve">
+    <value>Yubico requires an API ID and key.</value>
+  </data>
+  <data name="DcRealms_YubicoUrl" xml:space="preserve">
+    <value>Yubico URL</value>
+  </data>
+  <data name="DcHa_BadRetries" xml:space="preserve">
+    <value>Max restart/relocate must be 0–{0}.</value>
+  </data>
+  <data name="DcHa_Failback" xml:space="preserve">
+    <value>Failback</value>
+  </data>
+  <data name="DcHa_FailbackHint" xml:space="preserve">
+    <value>Move back to the preferred node when it comes back online</value>
+  </data>
+  <data name="DcHa_GuestHint" xml:space="preserve">
+    <value>Only guests not yet managed by HA are listed</value>
+  </data>
+  <data name="DcHa_NoGroup" xml:space="preserve">
+    <value>none</value>
+  </data>
+  <data name="DcHa_PickGuest" xml:space="preserve">
+    <value>Select a guest to manage with HA.</value>
+  </data>
+  <data name="DcCluster_JoinLinks" xml:space="preserve">
+    <value>Cluster links — join {0}</value>
+  </data>
+  <data name="DcCluster_LinkN" xml:space="preserve">
+    <value>Link {0}</value>
+  </data>
+  <data name="DcCluster_PeerLinkHint" xml:space="preserve">
+    <value>This node's address (peer: {0}) — must be on the same network</value>
+  </data>
+  <data name="DcCluster_LinkHint" xml:space="preserve">
+    <value>Empty = IP of this node's hostname</value>
+  </data>
+  <data name="DcCluster_Link2" xml:space="preserve">
+    <value>Link 2</value>
+  </data>
+  <data name="DcCluster_Link3" xml:space="preserve">
+    <value>Link 3</value>
+  </data>
+  <data name="DcSdn_AdvertiseSubnets" xml:space="preserve">
+    <value>Advertise Subnets</value>
+  </data>
+  <data name="DcSdn_AutoDhcp" xml:space="preserve">
+    <value>Automatic DHCP</value>
+  </data>
+  <data name="DcSdn_DhcpBoth" xml:space="preserve">
+    <value>Enter both the DHCP start and end address.</value>
+  </data>
+  <data name="DcSdn_DhcpDns" xml:space="preserve">
+    <value>DHCP DNS Server</value>
+  </data>
+  <data name="DcSdn_DhcpHint" xml:space="preserve">
+    <value>When the zone's automatic DHCP is on — empty = no DHCP</value>
+  </data>
+  <data name="DcSdn_DhcpRange" xml:space="preserve">
+    <value>DHCP Ranges</value>
+  </data>
+  <data name="DcSdn_DnsZone" xml:space="preserve">
+    <value>DNS Zone</value>
+  </data>
+  <data name="DcSdn_DnsZonePrefix" xml:space="preserve">
+    <value>DNS Zone Prefix</value>
+  </data>
+  <data name="DcSdn_EbgpMultihop" xml:space="preserve">
+    <value>EBGP Multihop</value>
+  </data>
+  <data name="DcSdn_EditTitle" xml:space="preserve">
+    <value>Edit SDN — {0}</value>
+  </data>
+  <data name="DcSdn_ExitLocalRouting" xml:space="preserve">
+    <value>Exit Nodes Local Routing</value>
+  </data>
+  <data name="DcSdn_ExitPrimary" xml:space="preserve">
+    <value>Primary Exit Node</value>
+  </data>
+  <data name="DcSdn_IsolatePorts" xml:space="preserve">
+    <value>Isolate Ports</value>
+  </data>
+  <data name="DcSdn_Loopback" xml:space="preserve">
+    <value>Loopback Interface</value>
+  </data>
+  <data name="DcSdn_MtuHint" xml:space="preserve">
+    <value>Empty = auto</value>
+  </data>
+  <data name="DcSdn_MultipathRelax" xml:space="preserve">
+    <value>BGP Multipath AS-Path Relax</value>
+  </data>
+  <data name="DcSdn_NoArpSuppression" xml:space="preserve">
+    <value>Disable ARP-nd Suppression</value>
+  </data>
+  <data name="DcSdn_PeersHint" xml:space="preserve">
+    <value>Comma-separated node IP addresses</value>
+  </data>
+  <data name="DcSdn_ReverseDns" xml:space="preserve">
+    <value>Reverse DNS Server</value>
+  </data>
+  <data name="DcSdn_RtImport" xml:space="preserve">
+    <value>Route Target Import</value>
+  </data>
+  <data name="DcSdn_ServiceVlan" xml:space="preserve">
+    <value>Service VLAN</value>
+  </data>
+  <data name="DcSdn_TagHint" xml:space="preserve">
+    <value>VLAN ID for VLAN/QinQ zones, VNI for VXLAN/EVPN zones</value>
+  </data>
+  <data name="DcSdn_Updated" xml:space="preserve">
+    <value>SDN configuration updated. Apply to activate.</value>
+  </data>
+  <data name="DcSdn_VlanProtocol" xml:space="preserve">
+    <value>Service VLAN Protocol</value>
+  </data>
+  <data name="DcSdn_VnetIdHint" xml:space="preserve">
+    <value>Starts with a letter, up to 8 characters</value>
+  </data>
+  <data name="DcSdn_VnetMac" xml:space="preserve">
+    <value>VNet MAC Address</value>
+  </data>
+  <data name="DcSdn_ZoneIdHint" xml:space="preserve">
+    <value>Starts with a letter, up to 8 characters</value>
+  </data>
+  <data name="DcMetrics_ApiPrefix" xml:space="preserve">
+    <value>API Path Prefix</value>
+  </data>
+  <data name="DcMetrics_BadNumber" xml:space="preserve">
+    <value>MTU, timeout and max body size must be whole numbers greater than 0.</value>
+  </data>
+  <data name="DcMetrics_HttpOnly" xml:space="preserve">
+    <value>Only for HTTP(S) (InfluxDB 2.x)</value>
+  </data>
+  <data name="DcMetrics_MaxBody" xml:space="preserve">
+    <value>Max Body Size</value>
+  </data>
+  <data name="DcMetrics_MaxBodyHint" xml:space="preserve">
+    <value>bytes — empty = 25000000</value>
+  </data>
+  <data name="DcMetrics_MtuHint" xml:space="preserve">
+    <value>For UDP — empty = 1500</value>
+  </data>
+  <data name="DcMetrics_Timeout" xml:space="preserve">
+    <value>Timeout (s)</value>
+  </data>
+  <data name="DcMetrics_TimeoutHint" xml:space="preserve">
+    <value>For TCP/HTTP — empty = 1</value>
+  </data>
+  <data name="DcNotify_Author" xml:space="preserve">
+    <value>Author</value>
+  </data>
+  <data name="DcNotify_AuthorHint" xml:space="preserve">
+    <value>Empty = Proxmox VE</value>
+  </data>
+  <data name="DcNotify_Body" xml:space="preserve">
+    <value>Body</value>
+  </data>
+  <data name="DcNotify_BodyHint" xml:space="preserve">
+    <value>Handlebars template — e.g. {{ title }}: {{ message }}</value>
+  </data>
+  <data name="DcNotify_EditTarget" xml:space="preserve">
+    <value>Edit Notification Target — {0}</value>
+  </data>
+  <data name="DcNotify_Headers" xml:space="preserve">
+    <value>Headers</value>
+  </data>
+  <data name="DcNotify_HeadersHint" xml:space="preserve">
+    <value>One 'Name: value' per line (e.g. Content-Type: application/json)</value>
+  </data>
+  <data name="DcNotify_Invert" xml:space="preserve">
+    <value>Invert match</value>
+  </data>
+  <data name="DcNotify_MatchCalendar" xml:space="preserve">
+    <value>Match Calendar</value>
+  </data>
+  <data name="DcNotify_MatchCalendarHint" xml:space="preserve">
+    <value>One per line — e.g. mon..fri 8-17</value>
+  </data>
+  <data name="DcNotify_MatchField" xml:space="preserve">
+    <value>Match Field</value>
+  </data>
+  <data name="DcNotify_MatchFieldHint" xml:space="preserve">
+    <value>One per line — e.g. exact:type=vzdump / regex:hostname=^pve</value>
+  </data>
+  <data name="DcNotify_Method" xml:space="preserve">
+    <value>Method</value>
+  </data>
+  <data name="DcNotify_NeedRecipient" xml:space="preserve">
+    <value>Enter at least one recipient user or address.</value>
+  </data>
+  <data name="DcNotify_OnePerLine" xml:space="preserve">
+    <value>One per line</value>
+  </data>
+  <data name="DcNotify_SmtpPortHint" xml:space="preserve">
+    <value>Empty = mode default (465/587/25)</value>
+  </data>
+  <data name="DcNotify_UrlHint" xml:space="preserve">
+    <value>e.g. https://gotify.example.com</value>
+  </data>
+  <data name="DcMapping_EditTitle" xml:space="preserve">
+    <value>Edit Mapping — {0}</value>
+  </data>
+  <data name="DcMapping_Updated" xml:space="preserve">
+    <value>Mapping updated.</value>
+  </data>
+  <data name="DcMapping_Mdev" xml:space="preserve">
+    <value>Use with Mediated Devices</value>
+  </data>
+  <data name="DcMapping_MdevHint" xml:space="preserve">
+    <value>When the device is split (e.g. vGPU)</value>
+  </data>
+  <data name="DcMapping_LiveMigration" xml:space="preserve">
+    <value>Live Migration Capable</value>
+  </data>
+  <data name="DcBackup_BadGuests" xml:space="preserve">
+    <value>Guest IDs must be comma-separated numbers of 100 or more.</value>
+  </data>
+  <data name="DcBackup_BadNumber" xml:space="preserve">
+    <value>Retention counts and advanced values must be whole numbers of 0 or more.</value>
+  </data>
+  <data name="DcBackup_Bwlimit" xml:space="preserve">
+    <value>Bandwidth Limit</value>
+  </data>
+  <data name="DcBackup_BwlimitHint" xml:space="preserve">
+    <value>KiB/s — empty = datacenter default</value>
+  </data>
+  <data name="DcBackup_Fleecing" xml:space="preserve">
+    <value>Fleecing</value>
+  </data>
+  <data name="DcBackup_FleecingHint" xml:space="preserve">
+    <value>Buffers guest writes in a temporary image to reduce the impact of a slow backup target</value>
+  </data>
+  <data name="DcBackup_FleecingStorage" xml:space="preserve">
+    <value>Fleecing Storage</value>
+  </data>
+  <data name="DcBackup_GuestsHint" xml:space="preserve">
+    <value>Comma-separated (e.g. 100,101)</value>
+  </data>
+  <data name="DcBackup_Ionice" xml:space="preserve">
+    <value>IO-Priority</value>
+  </data>
+  <data name="DcBackup_IoniceHint" xml:space="preserve">
+    <value>0–8, empty = 7</value>
+  </data>
+  <data name="DcBackup_JobId" xml:space="preserve">
+    <value>Job ID</value>
+  </data>
+  <data name="DcBackup_JobIdHint" xml:space="preserve">
+    <value>Empty = generated automatically</value>
+  </data>
+  <data name="DcBackup_Lockwait" xml:space="preserve">
+    <value>Lock Wait (min)</value>
+  </data>
+  <data name="DcBackup_LockwaitHint" xml:space="preserve">
+    <value>Empty = 180</value>
+  </data>
+  <data name="DcBackup_MailAlways" xml:space="preserve">
+    <value>Always</value>
+  </data>
+  <data name="DcBackup_MailFailure" xml:space="preserve">
+    <value>On failure only</value>
+  </data>
+  <data name="DcBackup_MailWhen" xml:space="preserve">
+    <value>Send email</value>
+  </data>
+  <data name="DcBackup_MailtoHint" xml:space="preserve">
+    <value>Recipients for the email mode (comma-separated)</value>
+  </data>
+  <data name="DcBackup_MaxWorkers" xml:space="preserve">
+    <value>Max Workers</value>
+  </data>
+  <data name="DcBackup_MaxWorkersHint" xml:space="preserve">
+    <value>Concurrent IO workers for VM backups — empty = 16</value>
+  </data>
+  <data name="DcBackup_NotesHint" xml:space="preserve">
+    <value>e.g. {{guestname}} — stored as the backup note</value>
+  </data>
+  <data name="DcBackup_NotesTemplate" xml:space="preserve">
+    <value>Note Template</value>
+  </data>
+  <data name="DcBackup_NotifyAuto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="DcBackup_NotifyEmail" xml:space="preserve">
+    <value>Email (legacy)</value>
+  </data>
+  <data name="DcBackup_NotifyMode" xml:space="preserve">
+    <value>Notification mode</value>
+  </data>
+  <data name="DcBackup_NotifySection" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="DcBackup_NotifySystem" xml:space="preserve">
+    <value>Notification system</value>
+  </data>
+  <data name="DcBackup_PbsDetection" xml:space="preserve">
+    <value>PBS change detection mode</value>
+  </data>
+  <data name="DcBackup_PickStorage" xml:space="preserve">
+    <value>Select a backup storage.</value>
+  </data>
+  <data name="DcBackup_Protected" xml:space="preserve">
+    <value>Protected</value>
+  </data>
+  <data name="DcBackup_RepeatMissed" xml:space="preserve">
+    <value>Repeat missed</value>
+  </data>
+  <data name="DcBackup_RetentionHint" xml:space="preserve">
+    <value>All off and empty = use the storage's retention</value>
+  </data>
+  <data name="DcBackup_ScheduleHint" xml:space="preserve">
+    <value>e.g. 21:00 / sat 02:00 / mon..fri 22:30</value>
+  </data>
+  <data name="DcBackup_ZstdHint" xml:space="preserve">
+    <value>0 = half of the cores, empty = 1</value>
+  </data>
+  <data name="DcBackup_ZstdThreads" xml:space="preserve">
+    <value>Zstd Threads</value>
+  </data>
+  <data name="DcPools_EditTitle" xml:space="preserve">
+    <value>Edit Pool — {0}</value>
+  </data>
+  <data name="DcPools_Updated" xml:space="preserve">
+    <value>Pool updated.</value>
+  </data>
+  <data name="DcAcme_BadDelay" xml:space="preserve">
+    <value>Validation delay must be 0–172800 seconds.</value>
+  </data>
+  <data name="DcTfa_AddYubico" xml:space="preserve">
+    <value>Add Yubico</value>
+  </data>
+  <data name="DcTfa_YubicoOtp" xml:space="preserve">
+    <value>Yubico OTP</value>
+  </data>
+  <data name="DcTfa_YubicoHint" xml:space="preserve">
+    <value>Click the field, then touch your YubiKey — the realm needs a Yubico configuration</value>
+  </data>
+  <data name="DcTfa_YubicoInvalid" xml:space="preserve">
+    <value>Enter the full OTP produced by touching the YubiKey (about 44 characters).</value>
+  </data>
+  <data name="DcTfa_ScanHint" xml:space="preserve">
+    <value>Scan this QR code with an authenticator app (e.g. Google Authenticator), close this window and enter the 6-digit code it shows.</value>
+  </data>
+  <data name="DcTfa_SecretManual" xml:space="preserve">
+    <value>If you cannot scan it, enter this secret manually</value>
+  </data>
+  <data name="Common_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="DcStorage_PathTarget" xml:space="preserve">
+    <value>Path/Target</value>
+  </data>
+  <data name="DcBackup_AllExcept" xml:space="preserve">
+    <value>All (excluding {0})</value>
+  </data>
+  <data name="DcBackup_PoolSelection" xml:space="preserve">
+    <value>Pool: {0}</value>
+  </data>
+  <data name="DcAcme_ViewAccount" xml:space="preserve">
+    <value>View Account</value>
+  </data>
+  <data name="DcUsers_RootProtected" xml:space="preserve">
+    <value>root@pam cannot be deleted.</value>
+  </data>
+  <data name="DcSdn_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="DcSdn_StatusHint" xml:space="preserve">
+    <value>SDN zone state per node — changes take effect after Apply</value>
+  </data>
+  <data name="DcBackup_Simulate" xml:space="preserve">
+    <value>Schedule Simulator</value>
+  </data>
+  <data name="DcBackup_SimulateTitle" xml:space="preserve">
+    <value>Next runs — {0}</value>
+  </data>
+  <data name="DcBackup_SimulateHint" xml:space="preserve">
+    <value>The next 10 run times computed by the server</value>
+  </data>
+  <data name="DcMetrics_BadMtu" xml:space="preserve">
+    <value>MTU must be 512–65536.</value>
+  </data>
+  <data name="DcRealmJob_Tab" xml:space="preserve">
+    <value>Sync Jobs</value>
+  </data>
+  <data name="DcRealmJob_Realm" xml:space="preserve">
+    <value>Realm</value>
+  </data>
+  <data name="DcRealmJob_Hint" xml:space="preserve">
+    <value>Synchronize LDAP/AD realms on a schedule (PVE 8+). Empty options fall back to the realm's sync defaults.</value>
+  </data>
+  <data name="DcRealmJob_AddTitle" xml:space="preserve">
+    <value>Add Sync Job</value>
+  </data>
+  <data name="DcRealmJob_EditTitle" xml:space="preserve">
+    <value>Edit Sync Job — {0} ({1})</value>
+  </data>
+  <data name="DcRealmJob_Added" xml:space="preserve">
+    <value>Sync job added.</value>
+  </data>
+  <data name="DcRealmJob_Updated" xml:space="preserve">
+    <value>Sync job updated.</value>
+  </data>
+  <data name="DcRealmJob_Deleted" xml:space="preserve">
+    <value>Sync job deleted.</value>
+  </data>
+  <data name="DcRealmJob_DeleteConfirm" xml:space="preserve">
+    <value>Delete sync job '{0}'?</value>
+  </data>
+  <data name="DcRealmJob_NoRealm" xml:space="preserve">
+    <value>There is no LDAP or AD realm to synchronize.</value>
+  </data>
+  <data name="DcRealmJob_BadId" xml:space="preserve">
+    <value>The ID must start with a letter and contain only letters, digits, '-' and '_' (at least 2 characters).</value>
+  </data>
+  <data name="DcRealmJob_VanishedHint" xml:space="preserve">
+    <value>If nothing is selected, the realm's sync defaults apply.</value>
+  </data>
+  <data name="DcMetrics_OtelPathHint" xml:space="preserve">
+    <value>Empty = /v1/metrics (OTLP/HTTP endpoint path)</value>
+  </data>
+  <data name="DcMetrics_OtelHeaders" xml:space="preserve">
+    <value>HTTP Headers</value>
+  </data>
+  <data name="DcMetrics_OtelAttributes" xml:space="preserve">
+    <value>Resource Attributes</value>
+  </data>
+  <data name="DcMetrics_OtelJsonHint" xml:space="preserve">
+    <value>Enter a JSON object, e.g. {"Authorization": "Bearer …"}</value>
+  </data>
+  <data name="DcMetrics_OtelCompression" xml:space="preserve">
+    <value>Compression</value>
+  </data>
+  <data name="DcMetrics_OtelTimeoutHint" xml:space="preserve">
+    <value>Request timeout 1–10 seconds (empty = 5)</value>
+  </data>
+  <data name="DcMetrics_OtelBodyHint" xml:space="preserve">
+    <value>Maximum request body size in bytes (at least 1024, empty = 10000000)</value>
+  </data>
+  <data name="DcMetrics_OtelBadJson" xml:space="preserve">
+    <value>Headers and resource attributes must be JSON objects.</value>
+  </data>
+  <data name="DcMetrics_OtelTooLong" xml:space="preserve">
+    <value>Headers or resource attributes are too long (1024 characters after encoding).</value>
+  </data>
+  <data name="DcTokens_Regenerate" xml:space="preserve">
+    <value>Regenerate Secret</value>
+  </data>
+  <data name="DcTokens_RegenerateConfirm" xml:space="preserve">
+    <value>Regenerate the secret of token '{0}'? Anything using the previous secret will lose access immediately.</value>
+  </data>
+  <data name="DcTokens_RegenerateUnsupported" xml:space="preserve">
+    <value>The server did not return a new secret. This PVE version may not support regenerating tokens.</value>
+  </data>
+  <data name="DcTokens_Regenerated" xml:space="preserve">
+    <value>Token secret regenerated.</value>
+  </data>
+  <data name="DcSdn_Fabrics" xml:space="preserve">
+    <value>Fabrics</value>
+  </data>
+  <data name="DcSdn_FabricsHint" xml:space="preserve">
+    <value>Routed networks between nodes (OpenFabric/OSPF, PVE 9+). Press 'Apply' to push changes to the nodes.</value>
+  </data>
+  <data name="DcFabric_Protocol" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="DcFabric_Ip4Prefix" xml:space="preserve">
+    <value>IPv4 Prefix</value>
+  </data>
+  <data name="DcFabric_Ip6Prefix" xml:space="preserve">
+    <value>IPv6 Prefix</value>
+  </data>
+  <data name="DcFabric_Area" xml:space="preserve">
+    <value>Area</value>
+  </data>
+  <data name="DcFabric_AreaHint" xml:space="preserve">
+    <value>OSPF area — a number (e.g. 0) or IPv4 notation (e.g. 0.0.0.0)</value>
+  </data>
+  <data name="DcFabric_PrefixHint" xml:space="preserve">
+    <value>Range the node router IDs must belong to (CIDR, e.g. 10.15.15.0/24)</value>
+  </data>
+  <data name="DcFabric_NeedPrefix" xml:space="preserve">
+    <value>Enter an IPv4 or IPv6 prefix.</value>
+  </data>
+  <data name="DcFabric_Hello" xml:space="preserve">
+    <value>Hello Interval (s)</value>
+  </data>
+  <data name="DcFabric_HelloHint" xml:space="preserve">
+    <value>Empty = 3 seconds</value>
+  </data>
+  <data name="DcFabric_Csnp" xml:space="preserve">
+    <value>CSNP Interval (s)</value>
+  </data>
+  <data name="DcFabric_CsnpHint" xml:space="preserve">
+    <value>Empty = 10 seconds</value>
+  </data>
+  <data name="DcFabric_IdHint" xml:space="preserve">
+    <value>Starts with a letter, up to 8 characters (letters, digits, '-', '_')</value>
+  </data>
+  <data name="DcFabric_AddTitle" xml:space="preserve">
+    <value>Add Fabric</value>
+  </data>
+  <data name="DcFabric_AddTypeTitle" xml:space="preserve">
+    <value>Add Fabric — {0} ({1})</value>
+  </data>
+  <data name="DcFabric_EditTitle" xml:space="preserve">
+    <value>Edit Fabric — {0}</value>
+  </data>
+  <data name="DcFabric_Added" xml:space="preserve">
+    <value>Fabric added. Press 'Apply' to activate it.</value>
+  </data>
+  <data name="DcFabric_Updated" xml:space="preserve">
+    <value>Fabric updated. Press 'Apply' to activate it.</value>
+  </data>
+  <data name="DcFabric_Deleted" xml:space="preserve">
+    <value>Fabric deleted. Press 'Apply' to activate it.</value>
+  </data>
+  <data name="DcFabric_DeleteConfirm" xml:space="preserve">
+    <value>Delete fabric '{0}'? Its node settings are removed too.</value>
+  </data>
+  <data name="DcFabric_Unsupported" xml:space="preserve">
+    <value>Fabrics of type '{0}' cannot be edited in this app. Use the web UI.</value>
+  </data>
+  <data name="DcFabric_Nodes" xml:space="preserve">
+    <value>Nodes</value>
+  </data>
+  <data name="DcFabric_NodesTitle" xml:space="preserve">
+    <value>Fabric Nodes — {0}</value>
+  </data>
+  <data name="DcFabric_NodesHint" xml:space="preserve">
+    <value>Nodes in this fabric and the interfaces that connect them. SDN 'Apply' is needed afterwards.</value>
+  </data>
+  <data name="DcFabric_NodeIp" xml:space="preserve">
+    <value>IPv4 Router ID</value>
+  </data>
+  <data name="DcFabric_NodeIp6" xml:space="preserve">
+    <value>IPv6 Router ID</value>
+  </data>
+  <data name="DcFabric_NodeIpHint" xml:space="preserve">
+    <value>This node's address within the fabric prefix (e.g. 10.15.15.1)</value>
+  </data>
+  <data name="DcFabric_Interfaces" xml:space="preserve">
+    <value>Interfaces</value>
+  </data>
+  <data name="DcFabric_InterfacesHint" xml:space="preserve">
+    <value>One per line: name=ens19[,ip=10.0.0.1/31][,ip6=…][,hello_multiplier=10] — a bare name is fine.</value>
+  </data>
+  <data name="DcFabric_InterfacesHintOspf" xml:space="preserve">
+    <value>One per line: name=ens19[,ip=10.0.0.1/31] — a bare name is fine.</value>
+  </data>
+  <data name="DcFabric_NeedNodeIp" xml:space="preserve">
+    <value>Enter an IPv4 or IPv6 router ID.</value>
+  </data>
+  <data name="DcFabric_BadInterface" xml:space="preserve">
+    <value>Invalid interface line: {0}</value>
+  </data>
+  <data name="DcFabric_NodeAddTitle" xml:space="preserve">
+    <value>Add Fabric Node</value>
+  </data>
+  <data name="DcFabric_NodeEditTitle" xml:space="preserve">
+    <value>Edit Fabric Node — {0}</value>
+  </data>
+  <data name="DcFabric_NodeAdded" xml:space="preserve">
+    <value>Node added to the fabric.</value>
+  </data>
+  <data name="DcFabric_NodeUpdated" xml:space="preserve">
+    <value>Fabric node updated.</value>
+  </data>
+  <data name="DcFabric_NodeDeleted" xml:space="preserve">
+    <value>Node removed from the fabric.</value>
+  </data>
+  <data name="DcFabric_NodeDeleteConfirm" xml:space="preserve">
+    <value>Remove node '{0}' from the fabric?</value>
+  </data>
+  <data name="DcRealmJob_VanishedNone" xml:space="preserve">
+    <value>Nothing (none)</value>
+  </data>
+  <data name="DcRealmJob_NoneAlone" xml:space="preserve">
+    <value>'Nothing' cannot be combined with other removal options.</value>
+  </data>
+  <data name="DcMapping_LiveMigrationHint" xml:space="preserve">
+    <value>Applies to PVE 8.3 or later only.</value>
   </data>
 </root>

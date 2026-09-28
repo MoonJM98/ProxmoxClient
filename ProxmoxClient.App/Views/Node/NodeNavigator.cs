@@ -54,45 +54,10 @@ public static class NodeNavigator
     public static NavWindow Create(ProxmoxApiClient api, string node, PermissionsInfo permissions,
         string? initialTabId = null)
     {
-        var tabs = new List<NavTab>();
-
-        void Add(string id, string labelKey, string iconKey, bool visible, Func<UIElement> create)
-        {
-            if (visible) tabs.Add(new NavTab { Id = id, LabelKey = labelKey, IconKey = iconKey, Create = create });
-        }
-
-        // 조회는 Sys.Audit, 바꾸기는 서버가 Sys.Modify 로 다시 확인한다(업데이트 목록은 조회부터 Sys.Modify)
-        var audit = permissions.CanSysAudit;
-
         // 웹 UI 노드 메뉴 순서: 요약·메모·셸 → 시스템(네트워크…시스템 로그) → 업데이트·방화벽·디스크 → 복제·작업·구독
-        Add("summary", "GuestTab_Summary", "IconList", audit,
-            () => new NodeSummaryTab(api, node, NodePowerActions.Create(api, node, permissions)));
-        Add("notes", "NodeTab_Notes", "IconPencil", audit, () => CreateSectionTab(api, node, Notes));
-        Add("shell", "NodeTab_Shell", "IconTerminal", permissions.CanSysConsole, () => new NodeShellTab(api, node));
-        Add("network", "NodeTab_Network", "IconSwitch", audit,
-            () => NodeTables.Network(api, node, permissions.CanSysModify));
-        Add("certificates", "NodeTab_Certificates", "IconShield", audit,
-            () => NodeTables.Certificates(api, node, permissions.CanSysModify));
-        Add("dns", "NodeTab_Dns", "IconServer", audit, () => CreateSectionTab(api, node, Dns));
-        Add("hosts", "NodeTab_Hosts", "IconList", audit,
-            () => NodeSystemTabs.Hosts(api, node, permissions.CanSysModify));
-        Add("options", "GuestTab_Options", "IconSettings", audit, () => NodeSystemTabs.NodeOptions(api, node));
-        Add("time", "NodeTab_Time", "IconRotate", audit, () => CreateSectionTab(api, node, Time));
-        Add("syslog", "NodeTab_Syslog", "IconList", audit, () => new SyslogTab(api, node));
-        Add("updates", "NodeTab_Updates", "IconDownload", permissions.CanSysModify,
-            () => UpdateTabs.Create(api, node, permissions.CanSysConsole));
-        Add("firewall", "GuestTab_Firewall", "IconShield", audit,
-            () => Datacenter.FirewallTabs.ForNode(api, node));
-        Add("disks", "NodeTab_Disks", "IconDatabase", audit,
-            () => DiskTabs.Create(api, node, permissions.CanSysModify));
-        Add("ceph", "DcTab_Ceph", "IconDatabase", audit,
-            () => CephTabs.Create(api, node, permissions.CanSysModify, permissions.CanSysConsole));
-        Add("replication", "DcTab_Replication", "IconCopy", audit, () => NodeSystemTabs.Replication(api, node));
-        Add("tasks", "GuestTab_Tasks", "IconArchive", true, () => new TasksTab(
-            async () => await api.GetNodeTasksAsync(node),
-            "NodeTasks_Hint", "NodeTasks_Empty", api));
-        Add("subscription", "NodeTab_Subscription", "IconCheck", audit,
-            () => NodeSystemTabs.Subscription(api, node, permissions.CanSysModify));
+        var tabs = new NavTabList();
+        AddSystem(tabs, api, node, permissions);
+        AddServices(tabs, api, node, permissions);
 
         return new NavWindow(
             Loc.T("NodeWindow_Title", node),
@@ -100,6 +65,66 @@ public static class NodeNavigator
             "IconServer",
             tabs,
             initialTabId);
+    }
+
+    /// <summary>요약·메모·셸·네트워크·인증서·DNS·hosts·옵션·시간·서비스·시스템 로그.</summary>
+    private static void AddSystem(NavTabList tabs, ProxmoxApiClient api, string node, PermissionsInfo permissions)
+    {
+        // 조회는 Sys.Audit, 바꾸기는 서버가 Sys.Modify 로 다시 확인한다(업데이트 목록은 조회부터 Sys.Modify)
+        var audit = permissions.CanSysAudit;
+        tabs.Add("summary", "GuestTab_Summary", "IconList", audit,
+            () => new NodeSummaryTab(api, node,
+                [..NodePowerActions.Create(api, node, permissions), ..ReportAction(api, node, audit)]));
+        tabs.Add("notes", "NodeTab_Notes", "IconPencil", audit, () => CreateSectionTab(api, node, Notes));
+        tabs.Add("shell", "NodeTab_Shell", "IconTerminal", permissions.CanSysConsole,
+            () => new NodeShellTab(api, node));
+        tabs.Add("network", "NodeTab_Network", "IconSwitch", audit,
+            () => NodeTables.Network(api, node, permissions.CanSysModify));
+        tabs.Add("certificates", "NodeTab_Certificates", "IconShield", audit,
+            () => NodeTables.Certificates(api, node, permissions.CanSysModify));
+        tabs.Add("dns", "NodeTab_Dns", "IconServer", audit, () => CreateSectionTab(api, node, Dns));
+        tabs.Add("hosts", "NodeTab_Hosts", "IconList", audit,
+            () => NodeSystemTabs.Hosts(api, node, permissions.CanSysModify));
+        tabs.Add("options", "GuestTab_Options", "IconSettings", audit, () => NodeSystemTabs.NodeOptions(api, node));
+        tabs.Add("time", "NodeTab_Time", "IconRotate", audit, () => CreateSectionTab(api, node, Time));
+        tabs.Add("services", "NodeTab_Services", "IconSettings", audit,
+            () => NodeServices.Create(api, node, permissions.CanSysModify));
+        tabs.Add("syslog", "NodeTab_Syslog", "IconList", audit, () => new SyslogTab(api, node));
+    }
+
+    /// <summary>업데이트·방화벽·디스크·Ceph·SDN·복제·작업·구독.</summary>
+    private static void AddServices(NavTabList tabs, ProxmoxApiClient api, string node, PermissionsInfo permissions)
+    {
+        var audit = permissions.CanSysAudit;
+        tabs.Add("updates", "NodeTab_Updates", "IconDownload", permissions.CanSysModify,
+            () => UpdateTabs.Create(api, node, permissions.CanSysConsole));
+        tabs.Add("firewall", "GuestTab_Firewall", "IconShield", audit,
+            () => Datacenter.FirewallTabs.ForNode(api, node, permissions.CanSysModify));
+        tabs.Add("disks", "NodeTab_Disks", "IconDatabase", audit,
+            () => DiskTabs.Create(api, node, permissions.CanSysModify));
+        tabs.Add("ceph", "DcTab_Ceph", "IconDatabase", audit,
+            () => CephTabs.Create(api, node, permissions.CanSysModify, permissions.CanSysConsole));
+        tabs.Add("sdn", "DcTab_Sdn", "IconSwitch", audit, () => NodeSdnTab.Create(api, node),
+            api.Sdn.Feature(nameof(Core.Api.Domains.SdnApi.ZoneBridgesAsync)));
+        tabs.Add("replication", "DcTab_Replication", "IconCopy", audit, () => NodeSystemTabs.Replication(api, node));
+        tabs.Add("tasks", "GuestTab_Tasks", "IconArchive", true, () => new TasksTab(
+            async () => await api.GetNodeTasksAsync(node),
+            "NodeTasks_Hint", "NodeTasks_Empty", api));
+        tabs.Add("subscription", "NodeTab_Subscription", "IconCheck", audit,
+            () => NodeSystemTabs.Subscription(api, node, permissions.CanSysModify));
+    }
+
+    /// <summary>시스템 보고서(pvereport) — 지원 문의용 긴 글. 모으는 데 수십 초 걸릴 수 있다.</summary>
+    private static IEnumerable<TableAction> ReportAction(ProxmoxApiClient api, string node, bool audit)
+    {
+        if (!audit) yield break;
+
+        yield return new TableAction
+        {
+            LabelKey = "NodeReport_Action", IconKey = "IconList",
+            Run = async (_, owner) => TextViewWindow.ShowModal(owner, Loc.T("NodeReport_Title", node),
+                await api.Nodes.ReportAsync(node))
+        };
     }
 
     private static OptionsTab CreateSectionTab(ProxmoxApiClient api, string node, Section section)

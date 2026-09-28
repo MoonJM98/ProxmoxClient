@@ -33,14 +33,17 @@ public partial class ConsoleWindow
     private void OnImageMouseEnter(object sender, MouseEventArgs e)
     {
         if (_session?.IsConnected == true) SendPointer(_pointerMask); // 진입 시점 위치 동기화
+        MoveCursorOverlay(e.GetPosition(ScreenHost));
     }
     private void OnImageMouseLeave(object sender, MouseEventArgs e)
     {
         // 영역을 벗어나도 캡처 중(드래그)이면 계속 전송 — CaptureMouse 유지
+        MoveCursorOverlay(e.GetPosition(ScreenHost));
     }
     private void OnImageMouseMove(object sender, MouseEventArgs e)
     {
         // VNC는 절대 좌표 방식 — 호버 이동도 항상 전송해야 게스트 커서가 따라온다
+        MoveCursorOverlay(e.GetPosition(ScreenHost));
         SendPointer(_pointerMask);
         e.Handled = true;
     }

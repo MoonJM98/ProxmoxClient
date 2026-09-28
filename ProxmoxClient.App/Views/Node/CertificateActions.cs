@@ -17,7 +17,6 @@ internal static class CertificateActions
 
     public static IReadOnlyList<TableAction> Actions(ProxmoxApiClient api, string node)
     {
-        var basePath = $"nodes/{Seg(node)}";
         return
         [
             new TableAction
@@ -33,10 +32,7 @@ internal static class CertificateActions
                     new FormField { Key = "key", LabelKey = "NodeCert_Key", Kind = FormFieldKind.Multiline }
                 ], values =>
                 {
-                    var form = NonEmpty(values);
-                    form["force"] = "1";
-                    form["restart"] = "1";
-                    return api.PostActionAsync($"{basePath}/certificates/custom", form);
+                    return api.Nodes.UploadCertificateAsync(node, NonEmpty(values));
                 }, "NodeCert_Uploaded")
             },
             new TableAction
@@ -45,41 +41,46 @@ internal static class CertificateActions
                 Confirm = _ => Loc.T("NodeCert_DeleteCustomConfirm"),
                 Run = async (_, _) =>
                 {
-                    await api.DeleteActionAsync($"{basePath}/certificates/custom?restart=1");
+                    await api.Nodes.DeleteCustomCertificateAsync(node);
                     return Loc.T("NodeCert_CustomDeleted");
                 }
             },
             new TableAction
             {
                 LabelKey = "NodeCert_AcmeSettings", IconKey = "IconSettings",
-                Run = (_, owner) => EditAcmeAsync(api, basePath, owner)
+                Run = (_, owner) => EditAcmeAsync(api, node, owner)
             },
             new TableAction
             {
                 LabelKey = "NodeCert_AcmeOrder", IconKey = "IconShield",
                 Confirm = _ => Loc.T("NodeCert_AcmeOrderConfirm"),
                 Run = async (_, _) => await RunTaskAsync(api,
-                    api.PostActionAsync($"{basePath}/certificates/acme/certificate",
-                        new Dictionary<string, string> { ["force"] = "1" }), "NodeCert_AcmeOrdered")
+                    api.Nodes.OrderAcmeCertificateAsync(node), "NodeCert_AcmeOrdered")
             },
             new TableAction
             {
                 LabelKey = "NodeCert_AcmeRenew", IconKey = "IconRefresh",
                 Run = async (_, _) => await RunTaskAsync(api,
-                    api.PutActionAsync($"{basePath}/certificates/acme/certificate",
-                        new Dictionary<string, string> { ["force"] = "1" }), "NodeCert_AcmeRenewed")
+                    api.Nodes.RenewAcmeCertificateAsync(node), "NodeCert_AcmeRenewed")
+            },
+            new TableAction
+            {
+                LabelKey = "NodeCert_AcmeRevoke", IconKey = "IconTrash",
+                Confirm = _ => Loc.T("NodeCert_AcmeRevokeConfirm", node),
+                Run = async (_, _) => await RunTaskAsync(api,
+                    api.Nodes.RevokeAcmeCertificateAsync(node), "NodeCert_AcmeRevoked")
             }
         ];
     }
 
     /// <summary>ACME 계정·도메인·검증 방식(플러그인) 설정 — 노드 설정의 acme, acmedomain0.. 항목.</summary>
-    private static async Task<string?> EditAcmeAsync(ProxmoxApiClient api, string basePath, Window? owner)
+    private static async Task<string?> EditAcmeAsync(ProxmoxApiClient api, string node, Window? owner)
     {
-        var config = await api.GetObjectAsync($"{basePath}/config");
-        var accounts = (await api.GetTableAsync("cluster/acme/account"))
+        var config = await api.Nodes.GetConfigAsync(node);
+        var accounts = (await api.Acme.ListAccountsAsync())
             .Select(a => (Value(a, "name"), Value(a, "name")))
             .ToList();
-        var plugins = (await api.GetTableAsync("cluster/acme/plugins"))
+        var plugins = (await api.Acme.ListPluginsAsync())
             .Where(p => Value(p, "type") == "dns")
             .Select(p => (Value(p, "plugin"), Value(p, "plugin")))
             .Prepend((string.Empty, "NodeCert_Standalone"))
@@ -128,7 +129,7 @@ internal static class CertificateActions
             }
 
             if (cleared.Count > 0) form["delete"] = string.Join(",", cleared);
-            return api.PutActionAsync($"{basePath}/config", form);
+            return api.Nodes.UpdateConfigAsync(node, form);
         }, "NodeCert_AcmeSaved");
     }
 }

@@ -65,6 +65,7 @@ internal static partial class SystemEditors
                     Key = "ballooning", LabelKey = "HwEd_Ballooning", Kind = FormFieldKind.Bool, Advanced = true,
                     Initial = balloon == "0" ? "0" : "1"
                 },
+                // KSM 끄기(allow-ksm)는 9.0+ — 낮은 서버엔 편집 창이 설정 저장 요청을 보고 이 칸을 뺀다
                 new FormField
                 {
                     Key = "allow-ksm", LabelKey = "HwEd_AllowKsm", Kind = FormFieldKind.Bool, Advanced = true,
@@ -115,8 +116,9 @@ internal static partial class SystemEditors
             changes["shares"] = V(values, "shares");
         }
 
-        // KSM 은 켜진 게 기본 — 끌 때만 0, 켜면 삭제
-        changes["allow-ksm"] = V(values, "allow-ksm") == "1" ? string.Empty : "0";
+        // KSM 은 켜진 게 기본 — 끌 때만 0, 켜면 삭제(칸이 없는 낮은 서버는 건드리지 않는다)
+        if (values.ContainsKey("allow-ksm"))
+            changes["allow-ksm"] = V(values, "allow-ksm") == "1" ? string.Empty : "0";
         return changes;
     }
 
@@ -222,8 +224,8 @@ internal static partial class SystemEditors
     {
         try
         {
-            var arch = ctx.Get("arch") is { Length: > 0 } a ? $"?arch={a}" : string.Empty;
-            var rows = await ctx.Api.GetTableAsync($"{ctx.NodePath}/capabilities/qemu/cpu{arch}");
+            // arch 는 9.1+ 서버만 안다 — Core 가 낮은 서버엔 보내지 않는다
+            var rows = await ctx.Api.Guests.CpuModelsAsync(ctx.Guest.Node, ctx.Get("arch"));
             return rows.Select(r => (Name: ActionHelpers.Value(r, "name"), Vendor: CpuVendor(r)))
                 .Where(r => r.Name.Length > 0)
                 .OrderBy(r => VendorOrder(r.Vendor)).ThenBy(r => r.Name, StringComparer.OrdinalIgnoreCase)

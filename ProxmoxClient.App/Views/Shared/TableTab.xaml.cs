@@ -44,7 +44,8 @@ public partial class TableTab : UserControl
                     : new DataGridLength(1, DataGridLengthUnitType.Star)
             });
 
-        foreach (var action in actions ?? [])
+        // 서버 버전이 못 쓰는 기능의 버튼은 두지 않는다(버튼마다 Requires 로 알린다)
+        foreach (var action in (actions ?? []).Where(a => a.Requires is not { IsAvailable: false }))
             AddActionButton(action);
 
         UpdateActionState();
@@ -121,9 +122,10 @@ public partial class TableTab : UserControl
             button.IsEnabled = !_busy && (!action.NeedsSelection || hasSelection);
     }
 
-    private async Task ReloadAsync()
+    /// <summary>목록을 다시 읽는다 — 실패하면 상태줄에 오류를 두고 false.</summary>
+    private async Task<bool> ReloadAsync()
     {
-        if (_busy) return;
+        if (_busy) return false;
 
         SetBusy(true);
         try
@@ -133,10 +135,12 @@ public partial class TableTab : UserControl
             var view = CollectionViewSource.GetDefaultView(TableGrid.ItemsSource);
             view.Filter = item => item is TableRow row && Matches(row, _columns, FilterBox.Text);
             StatusText.Text = CountText(view.Cast<object>().Count(), rows.Count, FilterBox.Text);
+            return true;
         }
         catch (Exception ex)
         {
             StatusText.Text = Loc.T("MainViewModel_M07", ex.Message);
+            return false;
         }
         finally
         {
@@ -170,8 +174,7 @@ public partial class TableTab : UserControl
 
         if (result is null) return;
 
-        await ReloadAsync();
-        StatusText.Text = result;
+        if (await ReloadAsync()) StatusText.Text = result;
     }
 
     private bool Confirm(string text)

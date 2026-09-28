@@ -7,6 +7,10 @@ namespace ProxmoxClient.Core.Api;
 public sealed partial class ProxmoxApiClient
 {
     /// <summary>방화벽 옵션(GET {scope}/options)을 문자열 맵으로 읽는다.</summary>
+    [Versioning.PveApi("GET", "/cluster/firewall/options")]
+    [Versioning.PveApi("GET", "/nodes/{node}/firewall/options")]
+    [Versioning.PveApi("GET", "/nodes/{node}/qemu/{vmid}/firewall/options")]
+    [Versioning.PveApi("GET", "/nodes/{node}/lxc/{vmid}/firewall/options")]
     public async Task<IReadOnlyDictionary<string, string>> GetFirewallOptionsAsync(
         FirewallScope scope, CancellationToken ct = default)
     {
@@ -19,6 +23,10 @@ public sealed partial class ProxmoxApiClient
         return map;
     }
     /// <summary>방화벽을 켜거나 끈다(PUT {scope}/options).</summary>
+    [Versioning.PveApi("PUT", "/cluster/firewall/options")]
+    [Versioning.PveApi("PUT", "/nodes/{node}/firewall/options")]
+    [Versioning.PveApi("PUT", "/nodes/{node}/qemu/{vmid}/firewall/options")]
+    [Versioning.PveApi("PUT", "/nodes/{node}/lxc/{vmid}/firewall/options")]
     public Task<string> SetFirewallEnabledAsync(FirewallScope scope, bool enabled, CancellationToken ct = default)
     {
         return SendWriteAsync(
@@ -28,6 +36,11 @@ public sealed partial class ProxmoxApiClient
             ct);
     }
     /// <summary>방화벽 규칙 목록(GET {scope}/rules).</summary>
+    [Versioning.PveApi("GET", "/cluster/firewall/rules")]
+    [Versioning.PveApi("GET", "/nodes/{node}/firewall/rules")]
+    [Versioning.PveApi("GET", "/nodes/{node}/qemu/{vmid}/firewall/rules")]
+    [Versioning.PveApi("GET", "/nodes/{node}/lxc/{vmid}/firewall/rules")]
+    [Versioning.PveApi("GET", "/cluster/firewall/groups/{group}")]
     public async Task<IReadOnlyList<PveFirewallRule>> GetFirewallRulesAsync(
         FirewallScope scope, CancellationToken ct = default)
     {
@@ -56,6 +69,11 @@ public sealed partial class ProxmoxApiClient
         return list;
     }
     /// <summary>규칙 추가(POST {scope}/rules). pos는 서버가 정한다.</summary>
+    [Versioning.PveApi("POST", "/cluster/firewall/rules")]
+    [Versioning.PveApi("POST", "/nodes/{node}/firewall/rules")]
+    [Versioning.PveApi("POST", "/nodes/{node}/qemu/{vmid}/firewall/rules")]
+    [Versioning.PveApi("POST", "/nodes/{node}/lxc/{vmid}/firewall/rules")]
+    [Versioning.PveApi("POST", "/cluster/firewall/groups/{group}")]
     public Task<string> AddFirewallRuleAsync(FirewallScope scope, PveFirewallRule rule, CancellationToken ct = default)
     {
         return PostWriteAsync(
@@ -64,6 +82,11 @@ public sealed partial class ProxmoxApiClient
             ct);
     }
     /// <summary>pos 위치의 규칙을 바꾼다(PUT {scope}/rules/{pos}).</summary>
+    [Versioning.PveApi("PUT", "/cluster/firewall/rules/{pos}")]
+    [Versioning.PveApi("PUT", "/nodes/{node}/firewall/rules/{pos}")]
+    [Versioning.PveApi("PUT", "/nodes/{node}/qemu/{vmid}/firewall/rules/{pos}")]
+    [Versioning.PveApi("PUT", "/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}")]
+    [Versioning.PveApi("PUT", "/cluster/firewall/groups/{group}/{pos}")]
     public Task<string> UpdateFirewallRuleAsync(
         FirewallScope scope, int pos, PveFirewallRule rule, CancellationToken ct = default)
     {
@@ -74,6 +97,11 @@ public sealed partial class ProxmoxApiClient
             ct);
     }
     /// <summary>pos 위치의 규칙을 지운다(DELETE {scope}/rules/{pos}).</summary>
+    [Versioning.PveApi("DELETE", "/cluster/firewall/rules/{pos}")]
+    [Versioning.PveApi("DELETE", "/nodes/{node}/firewall/rules/{pos}")]
+    [Versioning.PveApi("DELETE", "/nodes/{node}/qemu/{vmid}/firewall/rules/{pos}")]
+    [Versioning.PveApi("DELETE", "/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}")]
+    [Versioning.PveApi("DELETE", "/cluster/firewall/groups/{group}/{pos}")]
     public Task<string> DeleteFirewallRuleAsync(FirewallScope scope, int pos, CancellationToken ct = default)
     {
         return SendWriteAsync(HttpMethod.Delete, $"{scope.RulesPath}/{pos}", null, ct);

@@ -24,7 +24,8 @@ public partial class NavWindow : Window
         HeaderText.Text = header;
         HeaderIcon.Data = TryFindResource(headerIconKey) as Geometry;
 
-        var entries = tabs.Select(tab => new TabEntry(tab)).ToList();
+        var entries = tabs.Where(tab => tab.Requires is not { IsAvailable: false })
+            .Select(tab => new TabEntry(tab)).ToList();
         TabList.ItemsSource = entries;
         TabList.SelectedItem = entries.FirstOrDefault(t => t.Tab.Id == initialTabId) ?? entries.FirstOrDefault();
     }
