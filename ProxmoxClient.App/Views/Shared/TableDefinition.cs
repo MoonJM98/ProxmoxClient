@@ -20,7 +20,7 @@ public sealed class TableColumn
 }
 
 /// <summary>표 위에 놓이는 작업 버튼.</summary>
-public sealed class TableAction
+public sealed record TableAction
 {
     public required string LabelKey { get; init; }
 
@@ -39,6 +39,12 @@ public sealed class TableAction
 
     /// <summary>이 버튼이 쓰는 API 기능 — 서버가 못 쓰면 버튼을 두지 않는다(표·옵션 화면이 알아서 뺀다).</summary>
     public ApiFeature? Requires { get; init; }
+
+    /// <summary>
+    ///     작업 버튼 줄(<see cref="ActionBar" />)에서 같은 키끼리 드롭다운 버튼 하나(라벨 = 이 키)에 모은다.
+    ///     자주 쓰지 않는 작업으로 버튼 줄이 길어지지 않게 한다. null 이면 제 버튼을 갖는다.
+    /// </summary>
+    public string? MenuKey { get; init; }
 }
 
 /// <summary>표에 보여 줄 한 행 — 없는 필드는 빈칸, 형식은 미리 적용해 둔다.</summary>

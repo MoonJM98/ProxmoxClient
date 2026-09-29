@@ -29,71 +29,88 @@ internal static class GuestLifecycleActions
         };
     }
 
+    /// <summary>게스트 에이전트 작업을 모으는 드롭다운 버튼 라벨.</summary>
+    private const string AgentMenu = "GuestLife_AgentMenu";
+
+    /// <summary>자주 쓰지 않거나 되돌릴 수 없는 작업(템플릿 변환·디스크 정리·삭제)을 모으는 드롭다운 버튼 라벨.</summary>
+    private const string MoreMenu = "GuestLife_MoreMenu";
+
     public static IReadOnlyList<TableAction> Create(ProxmoxApiClient api, PveResource guest,
         PermissionsInfo permissions)
     {
-        var vmid = guest.VmId.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var actions = new List<TableAction>();
+        if (permissions.CanMigrate) actions.Add(GuestMigrateAction.Create(api, guest));
 
         // 게스트 안의 IP·OS — QEMU 게스트 에이전트가 켜진 실행 중 VM 에서만 답이 온다
-        if (guest.Kind == ResourceKind.Qemu)
-            actions.Add(new TableAction
-            {
-                LabelKey = "GuestLife_AgentInfo", IconKey = "IconMonitor",
-                Run = (_, owner) => Task.FromResult(TableWindow.ShowModal(owner,
-                    Loc.T("GuestLife_AgentInfoTitle", vmid), new TableTab(async () =>
-                        (await api.GetAgentSummaryAsync(guest.Node, guest.VmId))
-                        .Select(row => (IReadOnlyDictionary<string, string>)new Dictionary<string, string>
-                        {
-                            ["name"] = AgentLabel(row["name"]), ["value"] = row["value"]
-                        })
-                        .ToList(), AgentColumns, "GuestLife_AgentInfoHint")))
-            });
+        if (guest.Kind == ResourceKind.Qemu) actions.Add(AgentInfo(api, guest));
+        actions.AddRange(GuestAgentActions.Create(api, guest, permissions)
+            .Select(action => action with { MenuKey = AgentMenu }));
 
-        actions.AddRange(GuestAgentActions.Create(api, guest, permissions));
-
-        if (permissions.CanMigrate) actions.Add(GuestMigrateAction.Create(api, guest));
-        if (guest.Kind == ResourceKind.Qemu && permissions.CanConfigure) actions.Add(UnlinkUnusedDisks(api, guest));
-
-        if (permissions.CanAllocate)
-        {
-            actions.Add(new TableAction
-            {
-                LabelKey = "GuestLife_Template", IconKey = "IconCopy",
-                Confirm = _ => Loc.T("GuestLife_TemplateConfirm", vmid),
-                Run = async (_, _) =>
-                {
-                    // 실행 중인 게스트는 템플릿으로 바꿀 수 없다 — 서버 오류 대신 먼저 알려 준다
-                    if (guest.IsRunning) return Loc.T("GuestLife_StopFirst");
-
-                    await api.Guests.ConvertToTemplateAsync(guest);
-                    return Loc.T("GuestLife_Templated");
-                }
-            });
-            actions.Add(new TableAction
-            {
-                LabelKey = "GuestLife_Delete", IconKey = "IconTrash",
-                Run = (_, owner) => guest.IsRunning
-                    ? Task.FromResult<string?>(Loc.T("GuestLife_StopFirst"))
-                    : SubmitTaskAsync(api, owner, Loc.T("GuestLife_DeleteTitle", vmid, guest.Name),
-                    [
-                        new FormField
-                        {
-                            Key = "purge", LabelKey = "GuestLife_Purge", Kind = FormFieldKind.Bool, Initial = "1"
-                        },
-                        new FormField
-                        {
-                            Key = "destroy-unreferenced-disks", LabelKey = "GuestLife_DestroyUnreferenced",
-                            Kind = FormFieldKind.Bool, Initial = "1"
-                        },
-                        TypeToConfirmField()
-                    ], values => api.Guests.DestroyAsync(guest, values["purge"] == "1",
-                        values["destroy-unreferenced-disks"] == "1"),
-                        "GuestLife_Deleted", TypedMatches(vmid))
-            });
-        }
-
+        var more = new List<TableAction>();
+        if (guest.Kind == ResourceKind.Qemu && permissions.CanConfigure) more.Add(UnlinkUnusedDisks(api, guest));
+        if (permissions.CanAllocate) more.AddRange([ConvertToTemplate(api, guest), Delete(api, guest)]);
+        actions.AddRange(more.Select(action => action with { MenuKey = MoreMenu }));
         return actions;
+    }
+
+    private static TableAction AgentInfo(ProxmoxApiClient api, PveResource guest)
+    {
+        var vmid = guest.VmId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return new TableAction
+        {
+            LabelKey = "GuestLife_AgentInfo", IconKey = "IconMonitor", MenuKey = AgentMenu,
+            Run = (_, owner) => Task.FromResult(TableWindow.ShowModal(owner,
+                Loc.T("GuestLife_AgentInfoTitle", vmid), new TableTab(async () =>
+                    (await api.GetAgentSummaryAsync(guest.Node, guest.VmId))
+                    .Select(row => (IReadOnlyDictionary<string, string>)new Dictionary<string, string>
+                    {
+                        ["name"] = AgentLabel(row["name"]), ["value"] = row["value"]
+                    })
+                    .ToList(), AgentColumns, "GuestLife_AgentInfoHint")))
+        };
+    }
+
+    private static TableAction ConvertToTemplate(ProxmoxApiClient api, PveResource guest)
+    {
+        return new TableAction
+        {
+            LabelKey = "GuestLife_Template", IconKey = "IconCopy",
+            Confirm = _ => Loc.T("GuestLife_TemplateConfirm", guest.VmId),
+            Run = async (_, _) =>
+            {
+                // 실행 중인 게스트는 템플릿으로 바꿀 수 없다 — 서버 오류 대신 먼저 알려 준다
+                if (guest.IsRunning) return Loc.T("GuestLife_StopFirst");
+
+                await api.Guests.ConvertToTemplateAsync(guest);
+                return Loc.T("GuestLife_Templated");
+            }
+        };
+    }
+
+    private static TableAction Delete(ProxmoxApiClient api, PveResource guest)
+    {
+        var vmid = guest.VmId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return new TableAction
+        {
+            LabelKey = "GuestLife_Delete", IconKey = "IconTrash",
+            Run = (_, owner) => guest.IsRunning
+                ? Task.FromResult<string?>(Loc.T("GuestLife_StopFirst"))
+                : SubmitTaskAsync(api, owner, Loc.T("GuestLife_DeleteTitle", vmid, guest.Name),
+                [
+                    new FormField
+                    {
+                        Key = "purge", LabelKey = "GuestLife_Purge", Kind = FormFieldKind.Bool, Initial = "1"
+                    },
+                    new FormField
+                    {
+                        Key = "destroy-unreferenced-disks", LabelKey = "GuestLife_DestroyUnreferenced",
+                        Kind = FormFieldKind.Bool, Initial = "1"
+                    },
+                    TypeToConfirmField()
+                ], values => api.Guests.DestroyAsync(guest, values["purge"] == "1",
+                    values["destroy-unreferenced-disks"] == "1"),
+                    "GuestLife_Deleted", TypedMatches(vmid))
+        };
     }
 
     /// <summary>

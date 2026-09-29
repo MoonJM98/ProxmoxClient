@@ -43,6 +43,9 @@ public partial class TerminalWindow : Window
     private ProxmoxTerminalConnection? _connection;
 
     private ImeResultForwarder? _imeForwarder;
+
+    /// <summary>Tab·방향키와 마우스 클릭이 WPF 에 빼앗기지 않고 터미널로 가게 한다.</summary>
+    private TerminalInputGuard? _inputGuard;
     private ProxmoxTerminalSession? _session;
 
     private ConsoleSettings _settings = new();
@@ -90,6 +93,7 @@ public partial class TerminalWindow : Window
         Loaded += async (_, _) =>
         {
             _settings = await _settingsStore.LoadAsync();
+            if (_closed) return; // 설정을 읽는 사이 창을 닫았으면 전역 키 필터를 새로 걸지 않는다
             Terminal.AutoResize = true;
             ApplyTheme();
             AttachImeForwarder();
@@ -107,6 +111,8 @@ public partial class TerminalWindow : Window
             _runState?.Dispose();
             _imeForwarder?.Dispose();
             _imeForwarder = null;
+            _inputGuard?.Dispose();
+            _inputGuard = null;
             DisposeSession(true);
         };
     }
@@ -117,6 +123,9 @@ public partial class TerminalWindow : Window
         _imeForwarder?.Dispose();
         _imeForwarder = ImeResultForwarder.Attach(Terminal, text => _session?.SendInput(text));
         if (_imeForwarder is null) App.Log($"[터미널 {_target.DisplayName}] IME 입력 연결 실패: 터미널 네이티브 창을 찾지 못했습니다.");
+
+        _inputGuard?.Dispose();
+        _inputGuard = TerminalInputGuard.Attach(Terminal);
     }
 
     /// <summary>Win32 COLORREF(0x00BBGGRR).</summary>
@@ -200,6 +209,15 @@ public partial class TerminalWindow : Window
         }
     }
 
+    /// <summary>
+    ///     컨트롤이 이미 계산한 행·열을 서버 PTY 에 알린다. 컨트롤은 창 크기가 바뀔 때만 연결에 크기를 알리는데,
+    ///     창 배치는 연결을 붙이기 전에 끝나므로 이대로 두면 서버는 창을 다시 조절할 때까지 기본 80×24 로 그린다.
+    /// </summary>
+    private void SyncTerminalSize(ProxmoxTerminalSession session)
+    {
+        if (Terminal.Columns > 0 && Terminal.Rows > 0) session.Resize(Terminal.Columns, Terminal.Rows);
+    }
+
     /// <summary>연결 시도(termproxy 생성·웹소켓·인증 전송). 성공하면 true — 최종 인증 결과는 Connected/Closed 이벤트.</summary>
     private async Task<bool> ConnectAsync()
     {
@@ -225,6 +243,7 @@ public partial class TerminalWindow : Window
             if (!IsCurrent()) return;
 
             SetStoppedView(false);
+            SyncTerminalSize(session);
             SetState(Loc.T("TerminalWindow_M01"));
             UpdateButtons(true);
             Terminal.Focus();
@@ -244,6 +263,7 @@ public partial class TerminalWindow : Window
         _session = session;
         _connection = connection;
         Terminal.Connection = connection;
+        SyncTerminalSize(session);
 
         try
         {

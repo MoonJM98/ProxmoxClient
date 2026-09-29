@@ -16,13 +16,18 @@ internal sealed class ProxmoxTerminalConnection : ITerminalConnection, IDisposab
     /// <summary>대량 출력 뒤 버퍼가 이 크기를 넘게 커졌으면 비운 뒤 줄여 메모리를 계속 붙잡지 않는다.</summary>
     private const int MaxRetainedBufferCapacity = 256 * 1024;
 
+    /// <summary>창 크기를 끄는 동안 쏟아지는 크기 변경을 모으는 시간 — 멈춘 뒤 마지막 크기만 서버에 보낸다.</summary>
+    private static readonly TimeSpan ResizeDebounce = TimeSpan.FromMilliseconds(100);
+
     private readonly Dispatcher _dispatcher;
     private readonly Action _flushOutput;
     private readonly object _gate = new();
     private readonly StringBuilder _outputQueue = new();
 
+    private readonly DispatcherTimer _resizeTimer;
     private readonly ProxmoxTerminalSession _session;
     private bool _flushScheduled;
+    private (int Columns, int Rows) _pendingSize;
 
     /// <summary>컨트롤이 Start 를 부르기 전 출력(로그인 배너 등)은 버퍼에만 쌓는다.</summary>
     private bool _started;
@@ -33,10 +38,13 @@ internal sealed class ProxmoxTerminalConnection : ITerminalConnection, IDisposab
         _dispatcher = dispatcher;
         _flushOutput = FlushOutput;
         _session.Output += OnSessionOutput;
+        _resizeTimer = new DispatcherTimer(DispatcherPriority.Normal, dispatcher) { Interval = ResizeDebounce };
+        _resizeTimer.Tick += OnResizeTimer;
     }
 
     public void Dispose()
     {
+        _resizeTimer.Stop();
         _session.Output -= OnSessionOutput;
     }
 
@@ -58,9 +66,18 @@ internal sealed class ProxmoxTerminalConnection : ITerminalConnection, IDisposab
         _session.SendInput(data);
     }
 
+    /// <summary>컨트롤이 UI 스레드에서 부른다 — 바로 보내지 않고 크기 변경이 멈출 때까지 기다린다.</summary>
     public void Resize(uint rows, uint columns)
     {
-        _session.Resize((int)columns, (int)rows);
+        _pendingSize = ((int)columns, (int)rows);
+        _resizeTimer.Stop();
+        _resizeTimer.Start();
+    }
+
+    private void OnResizeTimer(object? sender, EventArgs e)
+    {
+        _resizeTimer.Stop();
+        _session.Resize(_pendingSize.Columns, _pendingSize.Rows);
     }
 
     /// <summary>세션 수명은 창이 관리한다(재연결 시 새 연결 객체로 교체).</summary>

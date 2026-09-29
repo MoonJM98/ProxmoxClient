@@ -4,7 +4,7 @@
         <!-- 기본 아키텍처. 다른 것을 만들려면 -p:Platform=x86 처럼 넘긴다 -->
         <Platform Condition="'$(Platform)' == '' OR '$(Platform)' == 'AnyCPU'">x64</Platform>
         <!-- OutputName 이 참조하므로 버전을 먼저 정의한다(MSBuild 는 순차 평가) -->
-        <ProductVersion>1.0.0</ProductVersion>
+        <ProductVersion>1.0.1</ProductVersion>
         <OutputName>ProxmoxClient-$(ProductVersion)-$(Platform)</OutputName>
         <OutputType>Package</OutputType>
         <!-- 아키텍처마다 게시 폴더를 나눠 산출물이 섞이지 않게 한다 -->

@@ -4889,6 +4889,12 @@ Continue?</value>
   <data name="GuestLife_Unlinked" xml:space="preserve">
     <value>Unused disks deleted.</value>
   </data>
+  <data name="GuestLife_AgentMenu" xml:space="preserve">
+    <value>Guest agent</value>
+  </data>
+  <data name="GuestLife_MoreMenu" xml:space="preserve">
+    <value>More</value>
+  </data>
   <data name="MainWindow_TaskLogHint" xml:space="preserve">
     <value>Double-click a row to view the task log.</value>
   </data>

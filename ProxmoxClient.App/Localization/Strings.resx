@@ -6108,6 +6108,12 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   <data name="GuestLife_Unlinked" xml:space="preserve">
     <value>안 쓰는 디스크를 지웠습니다.</value>
   </data>
+  <data name="GuestLife_AgentMenu" xml:space="preserve">
+    <value>게스트 에이전트</value>
+  </data>
+  <data name="GuestLife_MoreMenu" xml:space="preserve">
+    <value>더보기</value>
+  </data>
   <data name="MainWindow_TaskLogHint" xml:space="preserve">
     <value>행을 더블클릭하면 작업 로그를 봅니다.</value>
   </data>
