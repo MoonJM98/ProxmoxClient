@@ -84,7 +84,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private PveNodeStatus? _nodeStatus;
     [ObservableProperty] private string _nodeTimeframe = "hour";
     [ObservableProperty] private ObservableCollection<PveNode> _nodes = [];
-    [ObservableProperty] private PermissionsInfo? _permissions;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanOpenConsole))]
+    [NotifyPropertyChangedFor(nameof(CanChooseConsole))]
+    [NotifyPropertyChangedFor(nameof(CanOpenSnapshots))]
+    private PermissionsInfo? _permissions;
     [ObservableProperty] private ObservableCollection<ConnectionProfile> _profiles = [];
     private bool _refreshing;
     /// <summary>rrddata(JSON) 미지원 서버로 확인됨 — 이후 PNG 경로만 사용(매 조회마다 실패 요청 생략). 연결마다 초기화.</summary>
@@ -99,6 +103,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [NotifyCanExecuteChangedFor(nameof(ResumeGuestCommand))]
     [NotifyCanExecuteChangedFor(nameof(HibernateGuestCommand))]
     [NotifyCanExecuteChangedFor(nameof(ResetGuestCommand))]
+    [NotifyPropertyChangedFor(nameof(CanOpenConsole))]
+    [NotifyPropertyChangedFor(nameof(CanChooseConsole))]
+    [NotifyPropertyChangedFor(nameof(CanOpenSnapshots))]
     private PveResource? _selectedGuest;
     [ObservableProperty] private PveNode? _selectedNode;
     [ObservableProperty]
@@ -410,8 +417,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     .ThenBy(s => s.Id, StringComparer.Ordinal).ToList(),
                 s => s.Id, (oldItem, fresh) => oldItem.CopyFrom(fresh));
 
+            // 템플릿을 숨긴 채 템플릿이 된 게스트는 표에 없으므로 다시 고르지 않는다
             if (selectedVmId is { } vmId && SelectedGuest?.VmId != vmId)
-                SelectedGuest = Guests.FirstOrDefault(g => g.VmId == vmId);
+                SelectedGuest = Guests.FirstOrDefault(g => g.VmId == vmId && (ShowTemplates || !g.IsTemplate));
 
             if (selectedNodeName is { } nodeName && SelectedNode?.Node != nodeName)
                 SelectedNode = Nodes.FirstOrDefault(n => n.Node == nodeName);

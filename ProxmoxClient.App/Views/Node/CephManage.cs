@@ -36,7 +36,7 @@ internal static class CephManage
             LabelKey = "CephTab_Install", IconKey = "IconTerminal",
             Run = (_, _) =>
             {
-                new TerminalWindow(api, node, "ceph_install").Show();
+                Services.ConsoleWindows.ShowNodeShell(api, node, "ceph_install");
                 return Task.FromResult<string?>(Loc.T("CephTab_InstallOpened"));
             }
         };

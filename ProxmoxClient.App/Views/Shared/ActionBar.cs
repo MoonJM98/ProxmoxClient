@@ -62,6 +62,7 @@ public static class ActionBar
             ToolTip = $"{label}: {string.Join(", ", actions.Select(action => Loc.T(action.LabelKey)))}"
         };
         if (host.TryFindResource("IconMore") is Geometry icon) IconAssist.SetIcon(button, icon);
+        IconAssist.SetDropdown(button, true);
 
         var menu = new ContextMenu { PlacementTarget = button, Placement = PlacementMode.Bottom };
         foreach (var action in actions)

@@ -45,8 +45,7 @@ public static class GuestNavigator
                 // 웹 UI 와 같은 하드웨어(VM)·리소스(CT) 화면
                 ("GuestHardware_All", () => new Hardware.HardwareView(api, guest))
             ]),
-            "cloudinit" => CreateOptionsTab(api, guest, Tabs.CloudInitOptions.All,
-                [RegenerateCloudInit(api, guest), ..CloudInitViews.Actions(api, guest)]),
+            "cloudinit" => CloudInitTab(api, guest),
             "options" => CreateOptionsTab(api, guest, Tabs.GuestOptions.All),
             "network" => Hardware.CtNetwork.Create(api, guest),
             "dns" => CreateOptionsTab(api, guest, Tabs.GuestOptions.CtDns),
@@ -96,6 +95,24 @@ public static class GuestNavigator
                 Shared.ActionHelpers.UpdateForm(changes)),
             async keys => await api.RevertGuestPendingAsync(guest.Node, guest.Kind, guest.VmId, keys),
             extraActions, api.Guests.Feature(nameof(Core.Api.Domains.GuestsApi.SetConfigAsync)));
+    }
+
+    /// <summary>
+    ///     Cloud-Init 탭 — 웹 UI 처럼 Cloud-Init 드라이브(ide/sata/scsi N = …:cloudinit)가 있어야 고칠 수 있다.
+    ///     없으면 목록을 흐리게 두고 하드웨어에서 드라이브를 추가하라고 알린다.
+    /// </summary>
+    private static Tabs.OptionsTab CloudInitTab(ProxmoxApiClient api, PveResource guest)
+    {
+        var tab = CreateOptionsTab(api, guest, Tabs.CloudInitOptions.All,
+            [RegenerateCloudInit(api, guest), ..CloudInitViews.Actions(api, guest)]);
+        tab.LockedReason = config => HasCloudInitDrive(config) ? null : Loc.T("CloudInit_NoDrive");
+        return tab;
+    }
+
+    private static bool HasCloudInitDrive(IReadOnlyDictionary<string, string> config)
+    {
+        return config.Any(kv => kv.Key.TrimEnd("0123456789".ToCharArray()) is "ide" or "sata" or "scsi"
+                                && kv.Value.Contains("cloudinit", StringComparison.Ordinal));
     }
 
     /// <summary>Cloud-Init 이미지 다시 만들기(PUT …/cloudinit) — 바꾼 설정을 드라이브에 바로 반영한다.</summary>

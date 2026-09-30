@@ -41,10 +41,7 @@ internal sealed class StorageGraphTab : UserControl
         _frames.SelectionChanged += async (_, _) => await LoadAsync();
 
         var panel = new StackPanel { Margin = new Thickness(20, 16, 20, 16) };
-        panel.Children.Add(new TextBlock
-        {
-            Text = Loc.T("StorageGraph_Hint"), FontSize = 11, Opacity = 0.7, TextWrapping = TextWrapping.Wrap
-        });
+        panel.Children.Add(new InfoTip { Text = Loc.T("StorageGraph_Hint"), Margin = new Thickness(0, 0, 0, 6) });
         panel.Children.Add(_frames);
         panel.Children.Add(_graph);
         panel.Children.Add(_status);

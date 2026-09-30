@@ -984,7 +984,7 @@
         <comment>창 제목 · 로그인 화면 머리말</comment>
   </data>
     <data name="Tab_Guests" xml:space="preserve">
-    <value>게스트 (VM/CT)</value>
+    <value>게스트</value>
         <comment>MainWindow · 내비게이션</comment>
   </data>
     <data name="Tab_Nodes" xml:space="preserve">
@@ -3732,7 +3732,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>DatacenterExtras</comment>
   </data>
   <data name="DcFirewall_IpSetsHint" xml:space="preserve">
-    <value>규칙에서 한 번에 쓸 주소 목록입니다. '항목'으로 주소를 고칩니다.</value>
+    <value>규칙에서 한 번에 쓸 주소 목록입니다. 목록을 두 번 누르면 주소(IP/CIDR)를 보고 고칠 수 있습니다.</value>
     <comment>DatacenterExtras</comment>
   </data>
   <data name="DcFirewall_Cidr" xml:space="preserve">
@@ -5004,7 +5004,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>찾아보기 실패: {0}</value>
   </data>
   <data name="StorageScan_Hint" xml:space="preserve">
-    <value>▼ 를 펼치면 서버에서 찾아봅니다.</value>
+    <value>목록을 펼치면 서버에서 찾아봅니다.</value>
   </data>
   <data name="StorageScan_NeedField" xml:space="preserve">
     <value>먼저 '{0}' 칸을 채우세요.</value>
@@ -5383,7 +5383,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>주소 현황은 PVE IPAM 에서만 볼 수 있습니다.</value>
   </data>
   <data name="StorageDownload_FileNameHint" xml:space="preserve">
-    <value>▼ 를 펼치면 URL 에서 파일 이름을 가져옵니다.</value>
+    <value>목록을 펼치면 URL 에서 파일 이름을 가져옵니다.</value>
   </data>
   <data name="DcHa_ManagerStatus" xml:space="preserve">
     <value>관리자 상태</value>
@@ -5689,7 +5689,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>태그</value>
   </data>
   <data name="OciPull_TagHint" xml:space="preserve">
-    <value>▼ 를 펼치면 저장소의 태그를 가져옵니다. 비우면 latest.</value>
+    <value>목록을 펼치면 저장소의 태그를 가져옵니다. 비우면 latest.</value>
   </data>
   <data name="OciPull_FileName" xml:space="preserve">
     <value>파일 이름</value>
@@ -6113,6 +6113,132 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   </data>
   <data name="GuestLife_MoreMenu" xml:space="preserve">
     <value>더보기</value>
+  </data>
+  <data name="BackupTab_NotesHint" xml:space="preserve">
+    <value>백업 목록에 남길 메모. 사용 가능한 변수: {{cluster}}, {{guestname}}, {{node}}, {{vmid}}</value>
+  </data>
+  <data name="BackupTab_ProtectedHint" xml:space="preserve">
+    <value>보호된 백업은 보존 정책(prune)이나 수동 삭제로 지워지지 않습니다.</value>
+  </data>
+  <data name="BackupTab_CompressZstd" xml:space="preserve">
+    <value>ZSTD (빠르고 좋음)</value>
+  </data>
+  <data name="BackupTab_CompressLzo" xml:space="preserve">
+    <value>LZO (빠름)</value>
+  </data>
+  <data name="BackupTab_CompressGzip" xml:space="preserve">
+    <value>GZIP (좋음)</value>
+  </data>
+  <data name="MainWindow_ShowTemplates" xml:space="preserve">
+    <value>템플릿 표시</value>
+  </data>
+  <data name="MainWindow_PowerMore" xml:space="preserve">
+    <value>재부팅·일시 정지·정지 등 전원 동작</value>
+  </data>
+  <data name="MainWindow_ConsoleKinds" xml:space="preserve">
+    <value>콘솔 종류 선택</value>
+  </data>
+  <data name="Console_KindVnc" xml:space="preserve">
+    <value>그래픽 콘솔 (VNC)</value>
+  </data>
+  <data name="Console_KindSpice" xml:space="preserve">
+    <value>SPICE (virt-viewer)</value>
+  </data>
+  <data name="Console_KindSerial" xml:space="preserve">
+    <value>직렬 터미널</value>
+  </data>
+  <data name="GuestPower_Confirm" xml:space="preserve">
+    <value>{0} {1} ({2}) — '{3}' 을(를) 실행할까요?</value>
+  </data>
+  <data name="NodePower_BulkMenu" xml:space="preserve">
+    <value>일괄 작업</value>
+  </data>
+  <data name="CloudInit_NoDrive" xml:space="preserve">
+    <value>Cloud-Init 드라이브가 없습니다. 하드웨어 → 추가 → CloudInit 드라이브를 먼저 추가하세요.</value>
+  </data>
+  <data name="CephGate_NotInstalledRoot" xml:space="preserve">
+    <value>Ceph 가 설치되지 않았습니다. 지금 설치할까요?</value>
+  </data>
+  <data name="CephGate_NotInstalledUser" xml:space="preserve">
+    <value>Ceph 가 설치되지 않았습니다. 설치하려면 root 로 로그인하세요.</value>
+  </data>
+  <data name="GuestPower_ShutdownNeedsRunning" xml:space="preserve">
+    <value>{0} 은(는) 실행 중이 아닙니다 — 일시 정지 상태면 ▾ 에서 재개하거나 정지하세요.</value>
+  </data>
+  <data name="Console_SpecialKeys" xml:space="preserve">
+    <value>특수 키</value>
+  </data>
+  <data name="Console_SpecialKeysHint" xml:space="preserve">
+    <value>Ctrl·Alt·Shift·Win 은 누르면 게스트에서 눌린 채로 남고 다시 누르면 뗍니다. Tab·Esc·Ctrl+Alt+Del 은 한 번 누릅니다.</value>
+  </data>
+  <data name="Console_ClipShared" xml:space="preserve">
+    <value>PC 클립보드를 게스트로 보냅니다. 게스트에서 복사한 글은 PC 클립보드로 자동으로 옵니다.</value>
+  </data>
+  <data name="Console_ClipNeedsVnc" xml:space="preserve">
+    <value>클립보드 공유가 꺼져 있습니다 — VM 하드웨어 → 디스플레이에서 클립보드를 VNC 로 설정하고(게스트에 spice-vdagent 필요) VM 을 다시 시작하세요.</value>
+  </data>
+  <data name="Console_ClipFromGuest" xml:space="preserve">
+    <value>게스트에서 복사한 글을 PC 클립보드에 넣었습니다.</value>
+  </data>
+  <data name="ConsoleSettings_Clipboard" xml:space="preserve">
+    <value>클립보드</value>
+  </data>
+  <data name="ConsoleSettings_ClipboardAuto" xml:space="preserve">
+    <value>자동 동기화 (창 전환 시)</value>
+  </data>
+  <data name="ConsoleSettings_ClipboardHint" xml:space="preserve">
+    <value>VM 이 VNC 클립보드(디스플레이 clipboard=vnc, 게스트에 spice-vdagent)를 쓸 때만 동작합니다. 콘솔 창으로 돌아오면 PC 클립보드를 게스트로 보내고, 떠나면 게스트 클립보드를 PC 로 가져옵니다.</value>
+  </data>
+  <data name="Console_ModifiersHint" xml:space="preserve">
+    <value>게스트에 눌려 있는 조합키 — 특수 키로 누른 채 둔 키와 키보드로 누르고 있는 키</value>
+  </data>
+  <data name="NavWindow_Refresh" xml:space="preserve">
+    <value>새로고침 (F5) — 지금 보는 탭을 다시 읽습니다</value>
+  </data>
+  <data name="Console_NoCursorShape" xml:space="preserve">
+    <value>이 VM 화면(표준 VGA 등)은 커서 모양을 보내지 않아 게스트가 그린 커서도 함께 보입니다. 하드웨어 → 디스플레이를 VirtIO-GPU 또는 SPICE(qxl)로 바꾸면 PC 커서 하나만 보입니다.</value>
+  </data>
+  <data name="ConsoleSettings_TabVnc" xml:space="preserve">
+    <value>VNC</value>
+  </data>
+  <data name="ConsoleSettings_TabRdp" xml:space="preserve">
+    <value>RDP</value>
+  </data>
+  <data name="ConsoleSettings_TabTerminal" xml:space="preserve">
+    <value>터미널</value>
+  </data>
+  <data name="ConsoleSettings_RdpNote" xml:space="preserve">
+    <value>VM 디스플레이가 RDP 일 때 쓰는 콘솔입니다. PVE 개발 목록에 올라온 기능(qemu-rdp·pve-rdpproxy)이라 그 패치를 설치한 서버에서만 동작합니다.</value>
+  </data>
+  <data name="ConsoleSettings_RdpResolution" xml:space="preserve">
+    <value>해상도</value>
+  </data>
+  <data name="ConsoleSettings_RdpResolutionFit" xml:space="preserve">
+    <value>창 크기에 맞춰 게스트 해상도 바꾸기</value>
+  </data>
+  <data name="ConsoleSettings_RdpResolutionHint" xml:space="preserve">
+    <value>맞춤 모드에서 콘솔 창 크기를 바꾸면 게스트 화면 해상도도 따라 바뀝니다. 끄면 게스트 해상도 그대로 창에 맞춰 축소해 보입니다.</value>
+  </data>
+  <data name="ConsoleSettings_RdpCursorHint" xml:space="preserve">
+    <value>RDP 서버는 게스트 커서 모양을 늘 보내므로 'PC 커서만'이면 지연 없는 커서 하나만 보입니다. '둘 다'는 PC 화살표를 함께 보입니다.</value>
+  </data>
+  <data name="Console_KindRdp" xml:space="preserve">
+    <value>그래픽 콘솔 (RDP)</value>
+  </data>
+  <data name="Console_ClipRdp" xml:space="preserve">
+    <value>RDP 클립보드는 자동으로 공유됩니다 — 한쪽에서 복사하면 다른 쪽에서 바로 붙여 넣을 수 있습니다.</value>
+  </data>
+  <data name="ConsoleWindow_HeaderRdp" xml:space="preserve">
+    <value>RDP 콘솔 — {0}</value>
+  </data>
+  <data name="Console_ClipRdpOff" xml:space="preserve">
+    <value>RDP 클립보드 공유가 꺼져 있습니다 — 콘솔 설정의 RDP 탭에서 켜고 다시 연결하세요.</value>
+  </data>
+  <data name="ConsoleSettings_RdpClipboardAuto" xml:space="preserve">
+    <value>PC 와 게스트 클립보드 자동 공유</value>
+  </data>
+  <data name="ConsoleSettings_RdpClipboardHint" xml:space="preserve">
+    <value>한쪽에서 복사하면 다른 쪽에서 바로 붙여 넣을 수 있습니다(텍스트·이미지 등 표준 형식). 게스트에 클립보드 에이전트(spice-vdagent 등)가 필요할 수 있습니다. 다시 연결하면 적용됩니다.</value>
   </data>
   <data name="MainWindow_TaskLogHint" xml:space="preserve">
     <value>행을 더블클릭하면 작업 로그를 봅니다.</value>
@@ -6899,7 +7025,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Guest/Tabs/OptionEditors.cs</comment>
   </data>
   <data name="Hw_AddMenu" xml:space="preserve">
-    <value>추가 ▾</value>
+    <value>추가</value>
     <comment>Views/Guest/Hardware</comment>
   </data>
   <data name="Hw_Remove" xml:space="preserve">
@@ -6911,7 +7037,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Guest/Hardware</comment>
   </data>
   <data name="Hw_DiskMenu" xml:space="preserve">
-    <value>디스크 작업 ▾</value>
+    <value>디스크 작업</value>
     <comment>Views/Guest/Hardware</comment>
   </data>
   <data name="Hw_DiskMove" xml:space="preserve">
@@ -7783,7 +7909,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Guest/Hardware</comment>
   </data>
   <data name="Ct_VolumeMenu" xml:space="preserve">
-    <value>볼륨 작업 ▾</value>
+    <value>볼륨 작업</value>
     <comment>Views/Guest/Hardware</comment>
   </data>
   <data name="Ct_Swap" xml:space="preserve">

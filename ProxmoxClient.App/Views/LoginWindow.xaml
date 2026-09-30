@@ -85,8 +85,9 @@
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </DockPanel>
+                    <!-- 로그인 때마다 보여 안심시키는 안내라 아이콘 툴팁 대신 글로 둔다 -->
                     <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11" Margin="0,6,0,0"
-                               Text="{loc:Tr LoginWindow_09}" />
+                               TextWrapping="Wrap" Text="{loc:Tr LoginWindow_09}" />
                 </StackPanel>
             </Border>
 

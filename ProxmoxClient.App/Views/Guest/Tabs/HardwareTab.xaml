@@ -52,15 +52,15 @@
                     <CheckBox x:Name="NicFirewallCheck" Margin="0,6,0,0" />
                 </ic:FormRow>
 
-                <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"
-                           Text="{loc:Tr GuestSettingsWindow_26}" />
+
             </StackPanel>
         </ScrollViewer>
 
-        <DockPanel Grid.Row="1" Margin="20,0,20,16">
+        <DockPanel Grid.Row="1" Margin="20,0,20,16" ic:WindowFooter.Move="True">
             <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconSave}" x:Name="BtnSave"
                     Content="{loc:Tr AppSettingsWindow_12}"
                     Style="{StaticResource AccentButton}" Click="OnSave" MinWidth="120" />
+            <ic:InfoTip DockPanel.Dock="Right" Compact="True" Text="{loc:Tr GuestSettingsWindow_26}" />
             <TextBlock x:Name="StatusText" Style="{StaticResource DialogStatus}" />
         </DockPanel>
     </Grid>

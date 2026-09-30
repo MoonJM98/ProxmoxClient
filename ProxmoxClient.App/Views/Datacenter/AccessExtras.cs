@@ -25,7 +25,7 @@ internal static class AccessExtras
         new() { Key = "type", HeaderKey = "Table_Type", Width = 90 },
         new() { Key = "description", HeaderKey = "Table_Description", Width = 0 },
         // enable 이 없으면 켜진 상태(서버 기본값)
-        new() { Key = "enable", HeaderKey = "Table_Enabled", Width = 60, Format = v => v is "0" or "false" ? "" : "✓" },
+        new() { Key = "enable", HeaderKey = "Table_Enabled", Width = 60, Format = TableFormats.EnabledFlag },
         new() { Key = "created", HeaderKey = "DcTfa_Created", Width = 140, Format = TableFormats.EpochDate }
     ];
 

@@ -9,7 +9,7 @@ namespace ProxmoxClient.App.Controls;
 /// </summary>
 public sealed class FormRow : ContentControl
 {
-    public const double DefaultLabelWidth = 150;
+    public const double DefaultLabelWidth = 170;
 
     public static readonly DependencyProperty LabelProperty = DependencyProperty.Register(
         nameof(Label), typeof(string), typeof(FormRow), new PropertyMetadata(string.Empty));

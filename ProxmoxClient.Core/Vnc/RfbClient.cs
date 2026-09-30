@@ -428,10 +428,12 @@ public sealed partial class RfbClient
                 case 2:
                     Bell?.Invoke();
                     break;
-                case 3: // ServerCutText
-                    await ReadExactlyAsync(_scratch, 0, 4, ct).ConfigureAwait(false);
-                    var length = BinaryPrimitives.ReadInt32BigEndian(_scratch);
-                    if (length > 0 && length < 1_000_000)
+                case 3: // ServerCutText — 종류(1) 뒤에 빈칸 3바이트, 그다음 길이(4)
+                    await ReadExactlyAsync(_scratch, 0, 7, ct).ConfigureAwait(false);
+                    var length = BinaryPrimitives.ReadInt32BigEndian(_scratch.AsSpan(3, 4));
+                    if (length < 0) // 확장 클립보드(UTF-8) — RfbClient.Clipboard.cs
+                        await HandleExtendedClipboardAsync(-length, ct).ConfigureAwait(false);
+                    else if (length > 0 && length < 1_000_000)
                         ServerCutText?.Invoke(await ReadStringAsciiAsync(length, ct).ConfigureAwait(false));
                     else if (length > 0) await SkipAsync(length, ct).ConfigureAwait(false); // 본문을 버려야 스트림 동기가 유지된다
                     break;
@@ -723,6 +725,7 @@ public sealed partial class RfbClient
         // 게스트 잠금 키(LED) 상태를 받아 창이 키보드를 잡은 동안 PC 키보드에 똑같이 보인다
         encodings.Add(EncQemuLedState);
         if (s.UseQemuExtendedKeys) encodings.Add(EncQemuExtendedKeyEvent);
+        encodings.Add(EncExtendedClipboard); // 게스트 클립보드(clipboard=vnc)를 UTF-8 로 주고받는다
 
         encodings.Add(EncRaw);
 

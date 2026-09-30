@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -12,7 +13,8 @@ namespace ProxmoxClient.App.Views.Shared;
 /// </summary>
 public partial class TableTab : UserControl
 {
-    private readonly List<(Button Button, TableAction Action)> _actions = [];
+    /// <summary>버튼과 그 동작 — 메뉴로 묶은 드롭다운 버튼은 Action 이 null(바쁠 때만 막는다).</summary>
+    private readonly List<(Button Button, TableAction? Action)> _actions = [];
     private readonly IReadOnlyList<TableColumn> _columns;
     private readonly Func<Task<IReadOnlyList<IReadOnlyDictionary<string, string>>>> _load;
     private readonly Action<IReadOnlyDictionary<string, string>, Window?>? _open;
@@ -34,27 +36,121 @@ public partial class TableTab : UserControl
         HintText.Text = Loc.T(hintKey);
         FilterPanel.Visibility = filterable ? Visibility.Visible : Visibility.Collapsed;
 
-        foreach (var column in columns)
-            TableGrid.Columns.Add(new DataGridTextColumn
-            {
-                Header = Loc.T(column.HeaderKey),
-                Binding = new Binding($"[{column.Key}]") { Mode = BindingMode.OneWay },
-                Width = column.Width > 0
-                    ? new DataGridLength(column.Width)
-                    : new DataGridLength(1, DataGridLengthUnitType.Star)
-            });
+        foreach (var column in columns) TableGrid.Columns.Add(CreateColumn(column));
 
         // 서버 버전이 못 쓰는 기능의 버튼은 두지 않는다(버튼마다 Requires 로 알린다)
-        foreach (var action in (actions ?? []).Where(a => a.Requires is not { IsAvailable: false }))
-            AddActionButton(action);
+        AddActions((actions ?? []).Where(a => a.Requires is not { IsAvailable: false }).ToList());
+        // 새로고침·필터는 작업 버튼 뒤에 이어 놓는다 — 버튼이 두 줄로 넘어가도 새로고침이 세로로 늘어나지 않게
+        if (BtnRefresh.Parent is Panel toolbar)
+        {
+            toolbar.Children.Remove(BtnRefresh);
+            toolbar.Children.Remove(FilterPanel);
+            ActionPanel.Children.Add(BtnRefresh);
+            ActionPanel.Children.Add(FilterPanel);
+        }
 
         UpdateActionState();
         Loaded += async (_, _) => await ReloadAsync();
     }
 
+    /// <summary>자동 너비 열의 상한 — 이보다 긴 값(긴 설명·경로 등)은 말줄임(…)으로 줄인다.</summary>
+    private const double MaxAutoColumnWidth = 400;
+
+    /// <summary>채움 열(너비 0)이 가로 스크롤 때 줄어드는 하한.</summary>
+    private const double MinFillColumnWidth = 140;
+
+    /// <summary>
+    ///     글자 열, 켜짐 표시 열(<see cref="TableFormats.IsCheck" />)은 체크 아이콘 열.
+    ///     정한 너비는 처음 모양 — 데이터가 오면 <see cref="FitColumns" /> 가 내용에 맞춰 넓힌다(넘치면 가로 스크롤).
+    /// </summary>
+    private static DataGridColumn CreateColumn(TableColumn column)
+    {
+        var path = $"[{column.Key}]";
+        var fill = column.Width <= 0;
+        var width = fill
+            ? new DataGridLength(1, DataGridLengthUnitType.Star)
+            : new DataGridLength(column.Width);
+        if (!TableFormats.IsCheck(column.Format))
+            return new DataGridTextColumn
+            {
+                Header = Loc.T(column.HeaderKey), Width = width, MinWidth = fill ? MinFillColumnWidth : 0,
+                Binding = new Binding(path) { Mode = BindingMode.OneWay },
+                ElementStyle = TrimmedCell
+            };
+
+        var icon = new FrameworkElementFactory(typeof(PathIcon));
+        icon.SetValue(WidthProperty, 14.0);
+        icon.SetValue(HeightProperty, 14.0);
+        icon.SetValue(HorizontalAlignmentProperty, HorizontalAlignment.Left);
+        icon.SetValue(MarginProperty, new Thickness(4, 0, 0, 0));
+        icon.SetValue(PathIcon.DataProperty, Application.Current.TryFindResource("IconCheck"));
+        icon.SetValue(PathIcon.IconBrushProperty, Application.Current.TryFindResource("BrushOk"));
+        icon.SetBinding(VisibilityProperty,
+            new Binding(path) { Mode = BindingMode.OneWay, Converter = new CheckVisibility() });
+        return new DataGridTemplateColumn
+        {
+            Header = Loc.T(column.HeaderKey), Width = width, SortMemberPath = path,
+            CellTemplate = new DataTemplate { VisualTree = icon }
+        };
+    }
+
+    /// <summary>상한을 넘는 칸은 말줄임(…) — 전체 값은 칸에 마우스를 올리면 툴팁으로 본다.</summary>
+    private static readonly Style TrimmedCell = CreateTrimmedCell();
+
+    private static Style CreateTrimmedCell()
+    {
+        var style = new Style(typeof(TextBlock));
+        style.Setters.Add(new Setter(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis));
+        style.Setters.Add(new Setter(FrameworkElement.ToolTipProperty,
+            new Binding(nameof(TextBlock.Text)) { RelativeSource = RelativeSource.Self }));
+        style.Setters.Add(new Setter(ToolTipService.IsEnabledProperty,
+            new Binding(nameof(TextBlock.Text))
+            {
+                RelativeSource = RelativeSource.Self, Converter = NonEmpty.Instance
+            }));
+        style.Seal();
+        return style;
+    }
+
+    /// <summary>빈 칸에는 툴팁을 띄우지 않는다.</summary>
+    private sealed class NonEmpty : IValueConverter
+    {
+        public static readonly NonEmpty Instance = new();
+
+        public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            return value is string { Length: > 0 };
+        }
+
+        public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    /// <summary>켜짐 표시 값이면 아이콘을 보인다.</summary>
+    private sealed class CheckVisibility : IValueConverter
+    {
+        public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            return value as string == TableFormats.CheckValue ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
     private void AddActionButton(TableAction action)
     {
-        var button = new Button { Content = Loc.T(action.LabelKey), Margin = new Thickness(0, 0, 8, 4) };
+        var label = Loc.T(action.LabelKey);
+        // 아이콘만 두는 버튼(위로·아래로 등)은 글자 대신 툴팁으로 이름을 보인다
+        var button = new Button
+        {
+            Content = action.IconOnly ? null : label, ToolTip = label, Margin = new Thickness(0, 0, 8, 4),
+            Padding = action.IconOnly ? new Thickness(8, 6, 8, 6) : new Thickness(12, 6, 12, 6)
+        };
         if (TryFindResource(action.IconKey) is Geometry icon) IconAssist.SetIcon(button, icon);
         button.Click += async (_, _) => await RunActionAsync(action);
         ActionPanel.Children.Add(button);
@@ -119,7 +215,7 @@ public partial class TableTab : UserControl
     {
         var hasSelection = TableGrid.SelectedItem is TableRow;
         foreach (var (button, action) in _actions)
-            button.IsEnabled = !_busy && (!action.NeedsSelection || hasSelection);
+            button.IsEnabled = !_busy && (action is not { NeedsSelection: true } || hasSelection);
     }
 
     /// <summary>목록을 다시 읽는다 — 실패하면 상태줄에 오류를 두고 false.</summary>
@@ -131,7 +227,9 @@ public partial class TableTab : UserControl
         try
         {
             var rows = await _load();
-            TableGrid.ItemsSource = rows.Select(row => new TableRow(row, _columns)).ToList();
+            var tableRows = rows.Select(row => new TableRow(row, _columns)).ToList();
+            FitColumns(tableRows);
+            TableGrid.ItemsSource = tableRows;
             var view = CollectionViewSource.GetDefaultView(TableGrid.ItemsSource);
             view.Filter = item => item is TableRow row && Matches(row, _columns, FilterBox.Text);
             StatusText.Text = CountText(view.Cast<object>().Count(), rows.Count, FilterBox.Text);

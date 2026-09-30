@@ -69,6 +69,26 @@ public sealed partial class ProxmoxApiClient
         };
     }
     /// <summary>
+    ///     RDP 콘솔 서버를 띄우고 접속 정보를 받는다(POST nodes/{node}/qemu/{vmid}/rdpproxy).
+    ///     아직 정식 PVE 에 없는 기능(pve-devel RFC) — VM 디스플레이가 rdp 일 때만 부른다. API 토큰도 된다.
+    /// </summary>
+    [Versioning.PveApi("POST", "/nodes/{node}/qemu/{vmid}/rdpproxy", Experimental = true)]
+    public async Task<RdpProxyInfo> CreateRdpProxyAsync(string node, int vmid, CancellationToken ct = default)
+    {
+        var data = await PostFormJsonAsync(
+            $"nodes/{Escape(node)}/qemu/{vmid}/rdpproxy",
+            new Dictionary<string, string>(),
+            true,
+            ct).ConfigureAwait(false);
+
+        return new RdpProxyInfo
+        {
+            User = GetString(data, "user"),
+            Password = GetString(data, "password"),
+            Token = GetString(data, "token")
+        };
+    }
+    /// <summary>
     ///     Gets the SPICE proxy connection settings (POST nodes/{node}/qemu/{vmid}/spiceproxy)
     ///     used to build a .vv file for remote-viewer. QEMU VMs only.
     /// </summary>

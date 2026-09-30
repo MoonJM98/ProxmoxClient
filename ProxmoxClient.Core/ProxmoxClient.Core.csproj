@@ -6,4 +6,9 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+        <!-- RDP 콘솔(RDCleanPath·CredSSP·그래픽 디코딩) — IronRDP .NET 바인딩, MIT/Apache-2.0 -->
+        <PackageReference Include="Devolutions.IronRdp" Version="2025.12.4" />
+    </ItemGroup>
+
 </Project>

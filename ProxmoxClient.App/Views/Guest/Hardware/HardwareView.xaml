@@ -11,10 +11,10 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- 웹 UI 하드웨어 도구 모음: 추가 ▾ · 제거(분리) · 편집 · 디스크 작업 ▾ · 되돌리기 -->
+        <!-- 웹 UI 하드웨어 도구 모음: 추가(메뉴) · 제거(분리) · 편집 · 디스크 작업(메뉴) · 되돌리기 -->
         <WrapPanel Grid.Row="0" Margin="0,0,0,6">
             <Button x:Name="BtnAdd" ic:IconAssist.Icon="{StaticResource IconPlus}" Margin="0,0,8,4" MinWidth="96"
-                    Content="{loc:Tr Hw_AddMenu}" Click="OnAddClick">
+                    Content="{loc:Tr Hw_AddMenu}" ic:IconAssist.Dropdown="True" Click="OnAddClick">
                 <Button.ContextMenu>
                     <ContextMenu x:Name="AddMenu" />
                 </Button.ContextMenu>
@@ -24,7 +24,8 @@
             <Button x:Name="BtnEdit" ic:IconAssist.Icon="{StaticResource IconPencil}" Margin="0,0,8,4" MinWidth="96"
                     Content="{loc:Tr ServerManagerWindow_03}" Click="OnEdit" IsEnabled="False" />
             <Button x:Name="BtnDisk" ic:IconAssist.Icon="{StaticResource IconDatabase}" Margin="0,0,8,4"
-                    MinWidth="96" Content="{loc:Tr Hw_DiskMenu}" Click="OnDiskClick" IsEnabled="False">
+                    MinWidth="96" Content="{loc:Tr Hw_DiskMenu}" ic:IconAssist.Dropdown="True" Click="OnDiskClick"
+                    IsEnabled="False">
                 <Button.ContextMenu>
                     <ContextMenu x:Name="DiskMenu">
                         <MenuItem x:Name="MenuMove" Header="{loc:Tr Hw_DiskMove}" Click="OnMoveDisk" />
@@ -37,7 +38,7 @@
             <Button x:Name="BtnRevert" ic:IconAssist.Icon="{StaticResource IconUndo}" Margin="0,0,8,4" MinWidth="96"
                     Content="{loc:Tr OptionsTab_Revert}" Click="OnRevert" IsEnabled="False" />
             <Button ic:IconAssist.Icon="{StaticResource IconRefresh}" Margin="0,0,8,4" MinWidth="96"
-                    Content="{loc:Tr MainWindow_03}" Click="OnRefresh" />
+                    ic:RefreshButton.IsRefresh="True" Content="{loc:Tr MainWindow_03}" Click="OnRefresh" />
         </WrapPanel>
 
         <DataGrid Grid.Row="1" x:Name="RowGrid" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
@@ -59,7 +60,7 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <TextBlock Grid.Row="2" x:Name="StatusText" Style="{StaticResource DialogStatus}" Margin="0,10,0,0"
+        <TextBlock Grid.Row="2" x:Name="StatusText" Style="{StaticResource DialogStatus}" ic:WindowFooter.Move="True" Margin="0,10,0,0"
                    TextWrapping="Wrap" />
     </Grid>
 </UserControl>

@@ -79,7 +79,7 @@ public partial class HardwareView
         OpenMenu(BtnDisk);
     }
 
-    /// <summary>버튼 아래에 메뉴를 연다(웹 UI 의 ▾ 버튼).</summary>
+    /// <summary>버튼 아래에 메뉴를 연다(웹 UI 의 펼침 버튼).</summary>
     private static void OpenMenu(Button button)
     {
         if (button.ContextMenu is not { } menu) return;

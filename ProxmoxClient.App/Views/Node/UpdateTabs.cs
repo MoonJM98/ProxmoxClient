@@ -95,7 +95,7 @@ internal static class UpdateTabs
                 LabelKey = "NodeApt_Upgrade", IconKey = "IconTerminal",
                 Run = (_, _) =>
                 {
-                    new TerminalWindow(api, node, "upgrade").Show();
+                    Services.ConsoleWindows.ShowNodeShell(api, node, "upgrade");
                     return Task.FromResult<string?>(Loc.T("NodeApt_UpgradeOpened"));
                 }
             });

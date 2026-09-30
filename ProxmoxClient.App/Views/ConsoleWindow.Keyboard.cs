@@ -56,6 +56,7 @@ public partial class ConsoleWindow
         foreach (var (xtScanCode, keysym) in _pressedKeys.Values) SendGuestKey(xtScanCode, keysym, false);
 
         _pressedKeys.Clear();
+        UpdateModifierIndicators();
     }
     private void SendGuestKey(int xtScanCode, int keysym, bool down)
     {
@@ -160,6 +161,8 @@ public partial class ConsoleWindow
         {
             SendGuestKey(xtScanCode, keysym, false);
         }
+
+        if (isModifier || vk is 0x5B or 0x5C) UpdateModifierIndicators(); // 상태 표시줄의 Ctrl·Alt·Shift·Win
 
         if (keysym == 0 && xtScanCode == 0)
         {

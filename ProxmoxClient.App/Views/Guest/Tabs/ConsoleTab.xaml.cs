@@ -31,7 +31,7 @@ public partial class ConsoleTab : UserControl
         DescriptionText.Text = Loc.T(isCt ? "ConsoleTab_DescCt" : "ConsoleTab_DescVm");
     }
 
-    private void OnOpenConsole(object sender, RoutedEventArgs e)
+    private async void OnOpenConsole(object sender, RoutedEventArgs e)
     {
         if (_guest.IsTemplate)
         {
@@ -42,11 +42,8 @@ public partial class ConsoleTab : UserControl
         var title = Loc.T("GuestWindow_Title", _guest.Kind.Label(), _guest.VmId, _guest.Name);
         try
         {
-            // Owner 미지정: 부모창과 독립된 최상위 창(작업 표시줄 개별 표시, 부모 최소화에 영향받지 않음)
-            Window console = _guest.Kind == ResourceKind.Lxc
-                ? new TerminalWindow(_api, _guest, title, _runPower, _canPowerManage)
-                : new ConsoleWindow(_api, _guest, title, _runPower, _canPowerManage);
-            console.Show();
+            // Owner 미지정 최상위 창 — 같은 게스트 콘솔이 이미 열려 있으면 그 창을 앞으로
+            await Services.ConsoleWindows.ShowPreferredAsync(_api, _guest, title, _runPower, _canPowerManage);
             StatusText.Text = string.Empty;
         }
         catch (Exception ex)

@@ -38,13 +38,10 @@ internal sealed class WizardPage(StackPanel panel, bool showAdvanced, WizardWind
         });
     }
 
+    /// <summary>한 번 읽을 설명 — 폼을 늘이지 않게 (i) 아이콘 툴팁으로 둔다.</summary>
     public void Note(string text)
     {
-        panel.Children.Add(new TextBlock
-        {
-            Text = text, TextWrapping = TextWrapping.Wrap, Opacity = 0.75, FontSize = 11,
-            Margin = new Thickness(0, 2, 0, 8)
-        });
+        panel.Children.Add(new InfoTip { Text = text, Margin = new Thickness(0, 2, 0, 8) });
     }
 
     public void Text(string labelKey, Func<string> get, Action<string> set, string? hint = null, bool advanced = false)

@@ -27,6 +27,10 @@ public partial class MainWindow : Window
         WindowTheme.ApplyDarkTitleBar(this);
         DataContext = _vm;
         _vm.ConfirmCertificate = (rejection, profile) => CertificateTrust.Confirm(this, rejection, profile);
+        // 전원 확인은 지금 앞에 있는 창(콘솔 창에서 누른 경우 그 창) 위에 띄운다
+        _vm.ConfirmPowerAction = text => ThemedMessageBox.Show(
+            Application.Current.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive) ?? this, text,
+            Loc.T("TableTab_ConfirmTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
         _autoConnectProfile = autoConnectProfile;
         Loaded += OnLoadedAsync;
         Closing += (_, _) => _vm.Dispose();
@@ -38,6 +42,10 @@ public partial class MainWindow : Window
         _appSettings = await _appSettingsStore.LoadAsync();
         ByteFormatter.DisplayUnit = _appSettings.ByteUnit;
         _vm.ApplyStartupSettings(_appSettings);
+        _vm.ShowTemplates = _appSettings.ShowTemplates;
+        ApplyTemplateColumn();
+        GuestDetailRow.Height = new GridLength(_appSettings.GuestDetailHeight);
+        NodeListColumn.Width = new GridLength(_appSettings.NodeListWidth);
         await _vm.LoadProfilesAsync();
         if (_autoConnectProfile is { } profile)
         {
@@ -60,6 +68,45 @@ public partial class MainWindow : Window
             _vm.ApplyRefreshInterval(saved.RefreshInterval); // 저장 즉시 새 간격 적용
             ByteFormatter.DisplayUnit = saved.ByteUnit; // 다음 새로고침부터 모든 용량 표시에 반영
         }
+    }
+
+    /// <summary>템플릿 표시를 바꾸면 '템플릿' 열도 함께 숨기거나 보이고, 다음 실행을 위해 저장한다.</summary>
+    private async void OnShowTemplatesClick(object sender, RoutedEventArgs e)
+    {
+        ApplyTemplateColumn();
+        _appSettings = _appSettings with { ShowTemplates = _vm.ShowTemplates };
+        try
+        {
+            await _appSettingsStore.SaveAsync(_appSettings);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            App.Log($"[설정] 템플릿 표시 저장 실패: {ex.Message}");
+        }
+    }
+
+    /// <summary>영역 크기 손잡이를 놓았다 — 다음 실행에도 같은 크기로 열리게 저장한다.</summary>
+    private async void OnPaneSplitterDragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        _appSettings = (_appSettings with
+        {
+            GuestDetailHeight = GuestDetailRow.ActualHeight,
+            NodeListWidth = NodeListColumn.ActualWidth
+        }).Normalize();
+        try
+        {
+            await _appSettingsStore.SaveAsync(_appSettings);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            App.Log($"[설정] 영역 크기 저장 실패: {ex.Message}");
+        }
+    }
+
+    /// <summary>템플릿을 숨기면 목록에 템플릿이 없으므로 '템플릿' 열도 필요 없다.</summary>
+    private void ApplyTemplateColumn()
+    {
+        TemplateColumn.Visibility = _vm.ShowTemplates ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OpenLoginDialog()
@@ -282,17 +329,6 @@ public partial class MainWindow : Window
             GuestGrid.SelectedItem = resource;
     }
 
-    /// <summary>상세 패널의 "⋯" 버튼 — 버튼에 붙은 ContextMenu 를 버튼 아래에 연다.</summary>
-    private void OnMoreActions(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { ContextMenu: { } menu } button)
-        {
-            menu.PlacementTarget = button;
-            menu.Placement = PlacementMode.Bottom;
-            menu.IsOpen = true;
-        }
-    }
-
     /// <summary>게스트 목록 행 더블클릭 → 콘솔 열기(헤더·빈 영역 더블클릭은 무시).</summary>
     private void OnGuestGridDoubleClick(object sender, MouseButtonEventArgs e)
     {
@@ -350,7 +386,13 @@ public partial class MainWindow : Window
         OpenGuestWindow(api, guest, "backup");
     }
 
-    private void OnOpenConsole(object sender, RoutedEventArgs e)
+    private async void OnOpenConsole(object sender, RoutedEventArgs e)
+    {
+        await OpenConsoleAsync(null);
+    }
+
+    /// <summary>게스트 콘솔을 연다 — protocol 이 없으면 기본(VM 디스플레이가 RDP 면 RDP, 아니면 VNC).</summary>
+    private async Task OpenConsoleAsync(Core.Vnc.ConsoleProtocol? protocol)
     {
         if (_vm.SelectedGuest is not { } guest)
         {
@@ -374,12 +416,22 @@ public partial class MainWindow : Window
 
         var title = $"{guest.Kind.Label()} {guest.VmId} — {guest.Name}";
         // Owner 미지정: 부모창과 독립된 최상위 창(작업 표시줄 개별 표시, 부모 최소화에 영향받지 않음)
-        // VM 은 VNC 그래픽 콘솔, CT 는 termproxy 터미널
+        // 같은 게스트 콘솔이 이미 열려 있으면 새로 열지 않고 그 창을 앞으로
         var canPowerManage = _vm.Permissions?.CanPowerMgmt ?? true;
-        Window console = guest.Kind == ResourceKind.Lxc
-            ? new TerminalWindow(api, guest, title, _vm.RunGuestPowerForAsync, canPowerManage)
-            : new ConsoleWindow(api, guest, title, _vm.RunGuestPowerForAsync, canPowerManage);
-        console.Show();
+        try
+        {
+            if (protocol is { } chosen)
+                Services.ConsoleWindows.ShowGuest(api, guest, title, _vm.RunGuestPowerForAsync, canPowerManage, chosen);
+            else
+                await Services.ConsoleWindows.ShowPreferredAsync(api, guest, title, _vm.RunGuestPowerForAsync,
+                    canPowerManage);
+        }
+        catch (Exception ex)
+        {
+            // 창을 만들지 못했다(비동기 메뉴·버튼에서 불리므로 여기서 알린다)
+            App.Log($"[콘솔] {guest.VmId} 열기 실패: {ex}");
+            _vm.StatusMessage = Loc.T("ConsoleWindow_M07", ex.Message);
+        }
     }
 
     private void OnGuestTfChanged(object sender, SelectionChangedEventArgs e)

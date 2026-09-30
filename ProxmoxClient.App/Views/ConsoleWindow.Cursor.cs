@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ProxmoxClient.App.Interop;
+using ProxmoxClient.App.Localization;
 using ProxmoxClient.Core.Vnc;
 
 namespace ProxmoxClient.App.Views;
@@ -49,14 +50,14 @@ public partial class ConsoleWindow
     {
         var scale = DisplayScale() * VisualTreeHelper.GetDpi(this).DpiScaleX;
         if (scale <= 0 || double.IsNaN(scale)) scale = 1;
-        var key = (_cursor, Math.Round(scale, 3), _settings.LocalCursor);
+        var key = (_cursor, Math.Round(scale, 3), CursorMode);
         if (key == _cursorKey && ScreenImage.Cursor is not null) return;
         _cursorKey = key;
 
         NativeCursor.Created? created = null;
         Cursor cursor;
         UpdateOverlayImage();
-        if (_settings.LocalCursor == ConsoleSettings.LocalCursorMode.Both)
+        if (CursorMode == ConsoleSettings.LocalCursorMode.Both)
         {
             cursor = Cursors.Arrow; // 게스트 커서는 겹쳐 그린 모양(보낸 경우) 또는 게스트 화면의 커서
         }
@@ -70,7 +71,7 @@ public partial class ConsoleWindow
         }
         else
         {
-            cursor = _settings.LocalCursor switch
+            cursor = CursorMode switch
             {
                 ConsoleSettings.LocalCursorMode.Arrow => Cursors.Arrow,
                 ConsoleSettings.LocalCursorMode.Dot => (created = DotCursor(scale))?.Cursor ?? Cursors.Arrow,
@@ -87,7 +88,7 @@ public partial class ConsoleWindow
     /// <summary>"둘 다 보기" 에서 겹쳐 그릴 게스트 커서 그림 — 모양이 없거나(0×0 포함) 다른 모드면 숨긴다.</summary>
     private void UpdateOverlayImage()
     {
-        if (_settings.LocalCursor != ConsoleSettings.LocalCursorMode.Both || _cursor is not { IsEmpty: false } shape)
+        if (CursorMode != ConsoleSettings.LocalCursorMode.Both || _cursor is not { IsEmpty: false } shape)
         {
             CursorImage.Source = null;
             CursorImage.Visibility = Visibility.Collapsed;
@@ -117,6 +118,22 @@ public partial class ConsoleWindow
         CursorTransform.X = position.X - shape.HotX * scale;
         CursorTransform.Y = position.Y - shape.HotY * scale;
         CursorImage.Visibility = Visibility.Visible;
+    }
+
+    /// <summary>연결 뒤 이만큼 기다려도 커서 모양이 안 오면 표준 VGA 처럼 모양을 보내지 않는 화면으로 본다.</summary>
+    private static readonly TimeSpan CursorShapeWait = TimeSpan.FromSeconds(4);
+
+    /// <summary>
+    ///     "PC 커서만" 인데 게스트가 커서 모양을 보내지 않으면(표준 VGA 등) 게스트가 화면에 직접 그린 커서도 함께 보인다 —
+    ///     앱에서 지울 수 없으므로 까닭과 고치는 방법(디스플레이를 VirtIO-GPU·SPICE 로)을 상태 줄에 알린다.
+    /// </summary>
+    private async Task HintCursorShapeAsync(IConsoleSession session)
+    {
+        await Task.Delay(CursorShapeWait);
+        if (_closed || !ReferenceEquals(_session, session) || session.IsConnected != true || _cursor is not null
+            || CursorMode == ConsoleSettings.LocalCursorMode.Both) return;
+
+        SetState(Loc.T("Console_NoCursorShape"));
     }
 
     /// <summary>작은 흰 점(검은 테두리) — 어느 배경에서도 보이는 최소 커서(noVNC 의 점 커서와 같은 용도).</summary>

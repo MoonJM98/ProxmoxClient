@@ -249,4 +249,31 @@
   <data name="Api_VersionRequired" xml:space="preserve">
     <value>This feature requires PVE {0} or later (server: {1}).</value>
   </data>
+  <data name="Rdp_Preparing" xml:space="preserve">
+    <value>Preparing RDP server...</value>
+  </data>
+  <data name="Rdp_Connecting" xml:space="preserve">
+    <value>Connecting RDP websocket...</value>
+  </data>
+  <data name="Rdp_LoggingIn" xml:space="preserve">
+    <value>Logging in to RDP...</value>
+  </data>
+  <data name="Rdp_GatewayError" xml:space="preserve">
+    <value>The RDP proxy refused the connection ({0}): {1}</value>
+  </data>
+  <data name="Rdp_Negotiation" xml:space="preserve">
+    <value>The RDP server rejected the connection parameters (security protocol).</value>
+  </data>
+  <data name="Rdp_NoCertificate" xml:space="preserve">
+    <value>Did not receive the RDP server certificate.</value>
+  </data>
+  <data name="Rdp_NotConnected" xml:space="preserve">
+    <value>Could not finish the RDP connection (last step: {0}).</value>
+  </data>
+  <data name="Rdp_NeedsNetworkAuth" xml:space="preserve">
+    <value>RDP authentication needs an external server (Kerberos), which is not supported.</value>
+  </data>
+  <data name="Rdp_Failed" xml:space="preserve">
+    <value>RDP error: {0}</value>
+  </data>
 </root>

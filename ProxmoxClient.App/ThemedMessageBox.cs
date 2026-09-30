@@ -37,18 +37,19 @@ public static class ThemedMessageBox
             _ => "BrushAccent"
         };
 
-        var icon = new TextBlock
+        var iconKey = image switch
         {
-            Text = image switch
-            {
-                MessageBoxImage.Warning or MessageBoxImage.Exclamation => "!",
-                MessageBoxImage.Error or MessageBoxImage.Hand or MessageBoxImage.Stop => "✕",
-                MessageBoxImage.Question => "?",
-                _ => "i"
-            },
-            FontSize = 20,
-            FontWeight = FontWeights.Bold,
-            Foreground = (Brush)app.FindResource(iconColorKey),
+            MessageBoxImage.Warning or MessageBoxImage.Exclamation => "IconAlertTriangle",
+            MessageBoxImage.Error or MessageBoxImage.Hand or MessageBoxImage.Stop => "IconCircleX",
+            MessageBoxImage.Question => "IconCircleHelp",
+            _ => "IconInfo"
+        };
+        var icon = new ProxmoxClient.App.Controls.PathIcon
+        {
+            Width = 26,
+            Height = 26,
+            Data = (Geometry)app.FindResource(iconKey),
+            IconBrush = (Brush)app.FindResource(iconColorKey),
             VerticalAlignment = VerticalAlignment.Top,
             Margin = new Thickness(0, 0, 14, 0)
         };

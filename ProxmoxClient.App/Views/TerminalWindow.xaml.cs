@@ -168,14 +168,22 @@ public partial class TerminalWindow : Window
         StoppedPanel.ShowWaiting(message);
     }
 
-    /// <summary>정지↔실행 전환 — 꺼지면 안내 화면, 외부에서 켜지면 자동 연결.</summary>
+    /// <summary>
+    ///     정지↔실행 전환 — 꺼지면 안내 화면, 외부에서 켜지면 자동 연결.
+    ///     목록의 상태는 몇 초씩 늦게, 부팅 중에는 잠깐 거꾸로 올 수도 있다. 콘솔이 붙어 있으면 게스트는 켜져 있는
+    ///     것이므로 안내로 화면을 덮지 않는다 — 정말 꺼지면 서버가 연결을 끊고, 그 뒤 상태가 바뀔 때 안내를 띄운다.
+    /// </summary>
     private void OnGuestStoppedChanged(bool stopped)
     {
         if (_closed) return;
 
+        var connected = _session?.IsConnected == true;
         if (stopped)
-            ShowStopped();
-        else if (_session?.IsConnected != true) _ = AutoConnectAsync(Loc.T("TerminalWindow_StartedConnecting"));
+        {
+            if (!connected) ShowStopped();
+        }
+        else if (connected) SetStoppedView(false);
+        else _ = AutoConnectAsync(Loc.T("TerminalWindow_StartedConnecting"));
     }
 
     private async void OnStoppedPanelStart(object? sender, EventArgs e)
@@ -257,6 +265,7 @@ public partial class TerminalWindow : Window
 
                 SetState(ex is null ? Loc.T("ConsoleWindow_M05") : Loc.T("ConsoleWindow_M06", ex.Message));
                 UpdateButtons(false);
+                if (_runState?.IsStopped == true) ShowStopped(); // 이미 꺼진 것으로 보고된 뒤 연결이 끊겼다
             });
         };
 
@@ -301,6 +310,9 @@ public partial class TerminalWindow : Window
     {
         BtnReconnect.IsEnabled = !connected;
         BtnDisconnect.IsEnabled = connected;
+        // 연결 중이면 '연결 끊기', 끊겼으면 '재연결' — 같은 자리에서 서로 바뀐다
+        BtnDisconnect.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
+        BtnReconnect.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
         BtnPaste.IsEnabled = connected;
     }
 
@@ -362,12 +374,30 @@ public partial class TerminalWindow : Window
         Terminal.Focus();
     }
 
+    /// <summary>[종료 | ▾] 의 종료 쪽 — 버튼의 Action 속성(Stop)은 표시 조건이라 여기서는 종료를 직접 부른다.</summary>
+    private async void OnShutdownClick(object sender, RoutedEventArgs e)
+    {
+        if (_guest is { IsRunning: false })
+        {
+            SetState(Loc.T("GuestPower_ShutdownNeedsRunning", _guest.VmId)); // 일시 정지 — ▾ 에서 재개·정지
+            return;
+        }
+
+        await RunPowerAsync(GuestPowerAction.Shutdown);
+    }
+
     private async void OnPowerAction(object sender, RoutedEventArgs e)
     {
-        if (_guest is null || _runPower is null) return;
         if (sender is not DependencyObject source
             || (GuestPowerVisibility.GetAction(source) is var action && action == GuestPowerAction.None))
             return;
+
+        await RunPowerAsync(action);
+    }
+
+    private async Task RunPowerAsync(GuestPowerAction action)
+    {
+        if (_guest is null || _runPower is null) return;
 
         var label = GuestPowerRules.Label(action);
         SetState(Loc.T("ConsoleWindow_M12", label));
@@ -378,7 +408,7 @@ public partial class TerminalWindow : Window
 
     private void OnOpenSettings(object sender, RoutedEventArgs e)
     {
-        var dialog = new ConsoleSettingsWindow(_settings) { Owner = this };
+        var dialog = new ConsoleSettingsWindow(_settings, ConsoleSettingsTab.Terminal) { Owner = this };
         if (dialog.ShowDialog() == true && dialog.SavedSettings is { } saved)
         {
             _settings = saved;

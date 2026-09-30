@@ -23,6 +23,15 @@ public partial class OptionsTab : UserControl
     private bool _busy;
     private GuestPendingConfig _config = GuestPendingConfig.Empty;
 
+    /// <summary>지금 이 화면을 쓸 수 없는 이유(있으면 목록을 흐리게 하고 편집·추가 버튼을 막는다).</summary>
+    private string? _lockReason;
+
+    /// <summary>
+    ///     읽어 온 설정을 보고 이 화면을 쓸 수 없는 이유를 돌려준다(쓸 수 있으면 null) — 예: Cloud-Init 드라이브가 없으면
+    ///     웹 UI 처럼 항목을 고칠 수 없다.
+    /// </summary>
+    public Func<IReadOnlyDictionary<string, string>, string?>? LockedReason { get; set; }
+
     /// <param name="options">보여 줄 설정 항목(호출자가 미리 걸러서 넘긴다).</param>
     /// <param name="load">현재 값·대기 중 변경을 읽어 오는 함수.</param>
     /// <param name="save">바뀐 항목만 저장하는 함수 — 빈 값은 "삭제(서버 기본값)" 를 뜻한다.</param>
@@ -110,6 +119,7 @@ public partial class OptionsTab : UserControl
             var rows = _options.Where(o => o.VisibleIf?.Invoke(union) ?? true)
                 .Select(o => new OptionRow(o, _config)).ToList();
             OptionGrid.ItemsSource = rows;
+            ApplyLock(LockedReason?.Invoke(union));
             PendingColumn.Visibility = rows.Any(r => r.HasPending) ? Visibility.Visible : Visibility.Collapsed;
             UpdateButtons();
         }
@@ -123,6 +133,17 @@ public partial class OptionsTab : UserControl
         }
     }
 
+    private void ApplyLock(string? reason)
+    {
+        _lockReason = reason;
+        var locked = reason is not null;
+        LockText.Text = reason ?? string.Empty;
+        LockPanel.Visibility = locked ? Visibility.Visible : Visibility.Collapsed;
+        OptionGrid.IsEnabled = !locked;
+        OptionGrid.Opacity = locked ? 0.45 : 1;
+        ExtraPanel.IsEnabled = !locked;
+    }
+
     private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         UpdateButtons();
@@ -131,8 +152,8 @@ public partial class OptionsTab : UserControl
     private void UpdateButtons()
     {
         var row = OptionGrid.SelectedItem as OptionRow;
-        BtnEdit.IsEnabled = row is { Option.ReadOnly: false };
-        BtnRevert.IsEnabled = row is { HasPending: true };
+        BtnEdit.IsEnabled = _lockReason is null && row is { Option.ReadOnly: false };
+        BtnRevert.IsEnabled = _lockReason is null && row is { HasPending: true };
     }
 
     private void OnGridDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)

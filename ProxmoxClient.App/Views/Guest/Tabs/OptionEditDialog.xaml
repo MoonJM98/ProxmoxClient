@@ -53,8 +53,7 @@
                 </StackPanel>
             </Grid>
 
-            <TextBlock x:Name="HintText" Foreground="{StaticResource BrushDim}" FontSize="11"
-                       TextWrapping="Wrap" Margin="0,8,0,0" Visibility="Collapsed" />
+            <ic:InfoTip x:Name="HintText" Margin="0,8,0,0" />
         </StackPanel>
 
         <Border Grid.Row="1" Style="{StaticResource DialogFooter}">

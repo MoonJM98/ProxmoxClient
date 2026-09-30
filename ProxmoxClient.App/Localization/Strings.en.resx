@@ -754,7 +754,7 @@
     <value>Proxmox Client</value>
   </data>
     <data name="Tab_Guests" xml:space="preserve">
-    <value>Guests (VM/CT)</value>
+    <value>Guests</value>
   </data>
     <data name="Tab_Nodes" xml:space="preserve">
     <value>Nodes</value>
@@ -2823,7 +2823,7 @@ Try again, or install it yourself with [Open download page].</value>
     <value>Named IPs/networks usable in rules.</value>
   </data>
   <data name="DcFirewall_IpSetsHint" xml:space="preserve">
-    <value>Address lists usable in rules. Use 'Entries' to edit addresses.</value>
+    <value>Address lists usable in rules. Double-click a list to view and edit its addresses (IP/CIDR).</value>
   </data>
   <data name="DcFirewall_Cidr" xml:space="preserve">
     <value>IP/CIDR</value>
@@ -3785,7 +3785,7 @@ Paste the join information below into 'Join cluster' on the new node (same forma
     <value>Search failed: {0}</value>
   </data>
   <data name="StorageScan_Hint" xml:space="preserve">
-    <value>Open ▼ to search the server.</value>
+    <value>Open the list to search the server.</value>
   </data>
   <data name="StorageScan_NeedField" xml:space="preserve">
     <value>Fill in '{0}' first.</value>
@@ -4164,7 +4164,7 @@ Continue?</value>
     <value>Allocations are only available for the PVE IPAM.</value>
   </data>
   <data name="StorageDownload_FileNameHint" xml:space="preserve">
-    <value>Open ▼ to take the file name from the URL.</value>
+    <value>Open the list to take the file name from the URL.</value>
   </data>
   <data name="DcHa_ManagerStatus" xml:space="preserve">
     <value>Manager status</value>
@@ -4470,7 +4470,7 @@ Continue?</value>
     <value>Tag</value>
   </data>
   <data name="OciPull_TagHint" xml:space="preserve">
-    <value>Open ▼ to list the repository's tags. Empty means latest.</value>
+    <value>Open the list to list the repository's tags. Empty means latest.</value>
   </data>
   <data name="OciPull_FileName" xml:space="preserve">
     <value>File name</value>
@@ -4894,6 +4894,132 @@ Continue?</value>
   </data>
   <data name="GuestLife_MoreMenu" xml:space="preserve">
     <value>More</value>
+  </data>
+  <data name="BackupTab_NotesHint" xml:space="preserve">
+    <value>Notes stored with the backup. Available variables: {{cluster}}, {{guestname}}, {{node}}, {{vmid}}</value>
+  </data>
+  <data name="BackupTab_ProtectedHint" xml:space="preserve">
+    <value>Protected backups are not removed by pruning or manual deletion.</value>
+  </data>
+  <data name="BackupTab_CompressZstd" xml:space="preserve">
+    <value>ZSTD (fast and good)</value>
+  </data>
+  <data name="BackupTab_CompressLzo" xml:space="preserve">
+    <value>LZO (fast)</value>
+  </data>
+  <data name="BackupTab_CompressGzip" xml:space="preserve">
+    <value>GZIP (good)</value>
+  </data>
+  <data name="MainWindow_ShowTemplates" xml:space="preserve">
+    <value>Show templates</value>
+  </data>
+  <data name="MainWindow_PowerMore" xml:space="preserve">
+    <value>More power actions (reboot, pause, stop...)</value>
+  </data>
+  <data name="MainWindow_ConsoleKinds" xml:space="preserve">
+    <value>Choose console type</value>
+  </data>
+  <data name="Console_KindVnc" xml:space="preserve">
+    <value>Graphical console (VNC)</value>
+  </data>
+  <data name="Console_KindSpice" xml:space="preserve">
+    <value>SPICE (virt-viewer)</value>
+  </data>
+  <data name="Console_KindSerial" xml:space="preserve">
+    <value>Serial terminal</value>
+  </data>
+  <data name="GuestPower_Confirm" xml:space="preserve">
+    <value>{0} {1} ({2}) — run '{3}'?</value>
+  </data>
+  <data name="NodePower_BulkMenu" xml:space="preserve">
+    <value>Bulk actions</value>
+  </data>
+  <data name="CloudInit_NoDrive" xml:space="preserve">
+    <value>No CloudInit drive found. Add one first under Hardware → Add → CloudInit Drive.</value>
+  </data>
+  <data name="CephGate_NotInstalledRoot" xml:space="preserve">
+    <value>Ceph is not installed. Install it now?</value>
+  </data>
+  <data name="CephGate_NotInstalledUser" xml:space="preserve">
+    <value>Ceph is not installed. Log in as root to install.</value>
+  </data>
+  <data name="GuestPower_ShutdownNeedsRunning" xml:space="preserve">
+    <value>{0} is not running — if paused, resume or stop it from ▾.</value>
+  </data>
+  <data name="Console_SpecialKeys" xml:space="preserve">
+    <value>Special keys</value>
+  </data>
+  <data name="Console_SpecialKeysHint" xml:space="preserve">
+    <value>Ctrl, Alt, Shift and Win stay held in the guest until pressed again. Tab, Esc and Ctrl+Alt+Del are pressed once.</value>
+  </data>
+  <data name="Console_ClipShared" xml:space="preserve">
+    <value>Send the PC clipboard to the guest. Text copied in the guest comes to the PC clipboard automatically.</value>
+  </data>
+  <data name="Console_ClipNeedsVnc" xml:space="preserve">
+    <value>Clipboard sharing is off — set Clipboard to VNC under VM Hardware → Display (needs spice-vdagent in the guest) and restart the VM.</value>
+  </data>
+  <data name="Console_ClipFromGuest" xml:space="preserve">
+    <value>Copied the guest clipboard to the PC clipboard.</value>
+  </data>
+  <data name="ConsoleSettings_Clipboard" xml:space="preserve">
+    <value>Clipboard</value>
+  </data>
+  <data name="ConsoleSettings_ClipboardAuto" xml:space="preserve">
+    <value>Sync automatically (on window switch)</value>
+  </data>
+  <data name="ConsoleSettings_ClipboardHint" xml:space="preserve">
+    <value>Works only when the VM uses the VNC clipboard (display clipboard=vnc, spice-vdagent in the guest). Returning to the console sends the PC clipboard to the guest; leaving it brings the guest clipboard to the PC.</value>
+  </data>
+  <data name="Console_ModifiersHint" xml:space="preserve">
+    <value>Modifier keys held in the guest — from Special keys or the keyboard</value>
+  </data>
+  <data name="NavWindow_Refresh" xml:space="preserve">
+    <value>Refresh (F5) — reload the current tab</value>
+  </data>
+  <data name="Console_NoCursorShape" xml:space="preserve">
+    <value>This VM display (e.g. standard VGA) does not send a cursor shape, so the guest-drawn cursor also shows. Set Hardware → Display to VirtIO-GPU or SPICE (qxl) to see only the PC cursor.</value>
+  </data>
+  <data name="ConsoleSettings_TabVnc" xml:space="preserve">
+    <value>VNC</value>
+  </data>
+  <data name="ConsoleSettings_TabRdp" xml:space="preserve">
+    <value>RDP</value>
+  </data>
+  <data name="ConsoleSettings_TabTerminal" xml:space="preserve">
+    <value>Terminal</value>
+  </data>
+  <data name="ConsoleSettings_RdpNote" xml:space="preserve">
+    <value>Used when the VM display is RDP. This feature (qemu-rdp, pve-rdpproxy) is from the PVE development list and only works on servers with those patches installed.</value>
+  </data>
+  <data name="ConsoleSettings_RdpResolution" xml:space="preserve">
+    <value>Resolution</value>
+  </data>
+  <data name="ConsoleSettings_RdpResolutionFit" xml:space="preserve">
+    <value>Resize the guest resolution to the window</value>
+  </data>
+  <data name="ConsoleSettings_RdpResolutionHint" xml:space="preserve">
+    <value>In Fit mode, resizing the console window also changes the guest resolution. When off, the guest resolution stays and is scaled to the window.</value>
+  </data>
+  <data name="ConsoleSettings_RdpCursorHint" xml:space="preserve">
+    <value>The RDP server always sends the guest cursor shape, so 'PC cursor only' shows a single lag-free cursor. 'Both' also shows the PC arrow.</value>
+  </data>
+  <data name="Console_KindRdp" xml:space="preserve">
+    <value>Graphical console (RDP)</value>
+  </data>
+  <data name="Console_ClipRdp" xml:space="preserve">
+    <value>The RDP clipboard is shared automatically — copy on one side and paste on the other right away.</value>
+  </data>
+  <data name="ConsoleWindow_HeaderRdp" xml:space="preserve">
+    <value>RDP console — {0}</value>
+  </data>
+  <data name="Console_ClipRdpOff" xml:space="preserve">
+    <value>RDP clipboard sharing is off — turn it on in the RDP tab of Console settings and reconnect.</value>
+  </data>
+  <data name="ConsoleSettings_RdpClipboardAuto" xml:space="preserve">
+    <value>Share the clipboard with the guest automatically</value>
+  </data>
+  <data name="ConsoleSettings_RdpClipboardHint" xml:space="preserve">
+    <value>Copy on one side and paste on the other right away (text, images and other standard formats). The guest may need a clipboard agent such as spice-vdagent. Takes effect on reconnect.</value>
   </data>
   <data name="MainWindow_TaskLogHint" xml:space="preserve">
     <value>Double-click a row to view the task log.</value>
@@ -5486,7 +5612,7 @@ Continue?</value>
     <value>Automatic (Storage used by the VM, or 'local')</value>
   </data>
   <data name="Hw_AddMenu" xml:space="preserve">
-    <value>Add ▾</value>
+    <value>Add</value>
   </data>
   <data name="Hw_Remove" xml:space="preserve">
     <value>Remove</value>
@@ -5495,7 +5621,7 @@ Continue?</value>
     <value>Detach</value>
   </data>
   <data name="Hw_DiskMenu" xml:space="preserve">
-    <value>Disk Action ▾</value>
+    <value>Disk Action</value>
   </data>
   <data name="Hw_DiskMove" xml:space="preserve">
     <value>Move Storage</value>
@@ -6149,7 +6275,7 @@ Continue?</value>
     <value>Device Passthrough</value>
   </data>
   <data name="Ct_VolumeMenu" xml:space="preserve">
-    <value>Volume Action ▾</value>
+    <value>Volume Action</value>
   </data>
   <data name="Ct_Swap" xml:space="preserve">
     <value>Swap</value>

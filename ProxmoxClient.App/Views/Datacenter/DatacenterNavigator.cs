@@ -42,7 +42,8 @@ public static class DatacenterNavigator
         tabs.Add("summary", "GuestTab_Summary", "IconList", audit, () => DatacenterTables.Summary(api));
         tabs.Add("cluster", "DcTab_Cluster", "IconServer", audit,
             () => ClusterTabs.Cluster(api, permissions.CanSysModify));
-        tabs.Add("ceph", "DcTab_Ceph", "IconDatabase", audit, () => ClusterTabs.CephStatus(api));
+        tabs.Add("ceph", "DcTab_Ceph", "IconDatabase", audit, () => Node.CephGate.Wrap(api, null,
+            () => api.Cluster.CephStatusJsonAsync(), () => ClusterTabs.CephStatus(api)));
         tabs.Add("options", "GuestTab_Options", "IconSettings", audit, () => DatacenterOptions.Create(api));
         tabs.Add("storage", "DcTab_Storage", "IconDatabase", true,
             () => DatacenterTables.Storage(api, permissions.Has("Datastore.Allocate")));

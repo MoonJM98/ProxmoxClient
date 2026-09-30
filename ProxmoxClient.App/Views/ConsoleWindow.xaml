@@ -31,17 +31,32 @@
                             ic:IconAssist.Brush="{StaticResource BrushOk}" Content="{loc:Tr MainWindow_33}"
                             ic:GuestPowerVisibility.Action="Start" ic:GuestPowerVisibility.Guest="{Binding}"
                             Margin="0,0,6,0" Click="OnPowerAction" />
-                    <Button ic:IconAssist.Icon="{StaticResource IconPower}"
-                            ic:IconAssist.Brush="{StaticResource BrushWarn}" Content="{loc:Tr MainWindow_35}"
-                            ic:GuestPowerVisibility.Action="Shutdown" ic:GuestPowerVisibility.Guest="{Binding}"
-                            Margin="0,0,6,0" Click="OnPowerAction" />
-                    <Button ic:IconAssist.Icon="{StaticResource IconSquare}"
-                            ic:IconAssist.Brush="{StaticResource BrushErr}" Content="{loc:Tr BackupWindow_08}"
-                            ToolTip="{loc:Tr ConsoleWindow_01}" ic:GuestPowerVisibility.Action="Stop"
-                            ic:GuestPowerVisibility.Guest="{Binding}" Margin="0,0,6,0" Click="OnPowerAction" />
-                    <Button ic:IconAssist.Icon="{StaticResource IconRotate}" Content="{loc:Tr MainWindow_34}"
-                            ic:GuestPowerVisibility.Action="Reboot" ic:GuestPowerVisibility.Guest="{Binding}"
-                            Margin="0,0,6,0" Click="OnPowerAction" />
+                    <!-- 웹 UI 처럼 [종료 | ▾] — 정지·재부팅·리셋 등은 ▾ 안에(목록이 게스트 상태에 맞게 숨긴다) -->
+                    <ic:SplitButton ic:IconAssist.Icon="{StaticResource IconPower}"
+                                    ic:IconAssist.Brush="{StaticResource BrushWarn}" Content="{loc:Tr MainWindow_35}"
+                                    ic:GuestPowerVisibility.Action="Stop" ic:GuestPowerVisibility.Guest="{Binding}"
+                                    Margin="0,0,6,0" Click="OnShutdownClick">
+                        <ic:SplitButton.DropDownMenu>
+                            <ContextMenu>
+                                <MenuItem ic:IconAssist.Icon="{StaticResource IconRotate}" Header="{loc:Tr MainWindow_34}"
+                                          ic:GuestPowerVisibility.Action="Reboot" ic:GuestPowerVisibility.Guest="{Binding}"
+                                          Click="OnPowerAction" />
+                                <MenuItem ic:IconAssist.Icon="{StaticResource IconPause}" Header="{loc:Tr MainWindow_11}"
+                                          ic:GuestPowerVisibility.Action="Suspend" ic:GuestPowerVisibility.Guest="{Binding}"
+                                          Click="OnPowerAction" />
+                                <MenuItem ic:IconAssist.Icon="{StaticResource IconResume}" Header="{loc:Tr MainWindow_12}"
+                                          ic:GuestPowerVisibility.Action="Resume" ic:GuestPowerVisibility.Guest="{Binding}"
+                                          Click="OnPowerAction" />
+                                <MenuItem ic:IconAssist.Icon="{StaticResource IconSquare}"
+                                          ic:IconAssist.Brush="{StaticResource BrushErr}" Header="{loc:Tr MainWindow_36}"
+                                          ic:GuestPowerVisibility.Action="Stop" ic:GuestPowerVisibility.Guest="{Binding}"
+                                          Click="OnPowerAction" />
+                                <MenuItem ic:IconAssist.Icon="{StaticResource IconRotate}" Header="{loc:Tr GuestPower_Reset}"
+                                          ic:GuestPowerVisibility.Action="Reset" ic:GuestPowerVisibility.Guest="{Binding}"
+                                          Click="OnPowerAction" />
+                            </ContextMenu>
+                        </ic:SplitButton.DropDownMenu>
+                    </ic:SplitButton>
                     <Border Width="1" Background="{StaticResource BrushBorder}" Margin="4,4,10,4" />
                 </StackPanel>
                 <Button ic:IconAssist.Icon="{StaticResource IconRefresh}" x:Name="BtnConnect"
@@ -49,14 +64,38 @@
                 <Button ic:IconAssist.Icon="{StaticResource IconLogOut}" x:Name="BtnDisconnect"
                         Content="{loc:Tr MainWindow_02}" MinWidth="84" Margin="0,0,6,0" Click="OnDisconnect" />
                 <Separator Margin="2,0" />
-                <Button ic:IconAssist.Icon="{StaticResource IconKeyboard}" x:Name="BtnCad" Content="Ctrl+Alt+Del"
-                        MinWidth="96" Margin="6,0,6,0" Click="OnCtrlAltDel" />
+                <!-- 특수 키 ▾ — noVNC 의 키 모음: Ctrl·Alt·Shift·Win 은 누른 채 유지(체크), Tab·Esc·Ctrl+Alt+Del 은 한 번 -->
+                <Button ic:IconAssist.Icon="{StaticResource IconKeyboard}" x:Name="BtnKeys"
+                        Content="{loc:Tr Console_SpecialKeys}" ic:IconAssist.Dropdown="True"
+                        Margin="6,0,6,0" Click="OnKeysMenu" ToolTip="{loc:Tr Console_SpecialKeysHint}" />
+                <Popup x:Name="KeysPopup" PlacementTarget="{Binding ElementName=BtnKeys}" Placement="Bottom"
+                       StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                    <Border Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder}"
+                            BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,4,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <ToggleButton x:Name="KeyCtrl" Tag="Ctrl" Content="Ctrl" Style="{StaticResource KeyToggle}"
+                                          Checked="OnStickyKeyToggled" Unchecked="OnStickyKeyToggled" />
+                            <ToggleButton x:Name="KeyAlt" Tag="Alt" Content="Alt" Style="{StaticResource KeyToggle}"
+                                          Checked="OnStickyKeyToggled" Unchecked="OnStickyKeyToggled" />
+                            <ToggleButton x:Name="KeyShift" Tag="Shift" Content="Shift" Style="{StaticResource KeyToggle}"
+                                          Checked="OnStickyKeyToggled" Unchecked="OnStickyKeyToggled" />
+                            <ToggleButton x:Name="KeyWin" Tag="Win" Content="Win" Style="{StaticResource KeyToggle}"
+                                          Checked="OnStickyKeyToggled" Unchecked="OnStickyKeyToggled" />
+                            <Border Width="1" Background="{StaticResource BrushBorder}" Margin="2,2,8,2" />
+                            <Button Tag="Tab" Content="Tab" Padding="10,5" Margin="0,0,6,0" Click="OnTapKey" />
+                            <Button Tag="Esc" Content="Esc" Padding="10,5" Margin="0,0,6,0" Click="OnTapKey" />
+                            <Button Tag="CtrlAltDel" Content="Ctrl+Alt+Del" Padding="10,5" Click="OnTapKey" />
+                        </StackPanel>
+                    </Border>
+                </Popup>
                 <Button ic:IconAssist.Icon="{StaticResource IconClipboard}" x:Name="BtnClip"
-                        Content="{loc:Tr ConsoleWindow_03}" MinWidth="100" Margin="0,0,6,0" Click="OnSendClipboard" />
+                        Content="{loc:Tr ConsoleWindow_03}" MinWidth="100" Margin="0,0,6,0" Click="OnSendClipboard"
+                        ToolTipService.ShowOnDisabled="True" />
                 <Separator Margin="2,0" />
                 <Button ic:IconAssist.Icon="{StaticResource IconMaximize}" x:Name="BtnScale"
                         Content="{loc:Tr ConsoleWindow_04}" MinWidth="92" Margin="6,0,6,0" Click="OnToggleScale" />
-                <Button ic:IconAssist.Icon="{StaticResource IconExternal}" x:Name="BtnSpice"
+                <!-- SPICE 는 디스플레이가 SPICE(qxl) 일 때만 — 연결 뒤 설정을 읽고 보인다 -->
+                <Button ic:IconAssist.Icon="{StaticResource IconExternal}" x:Name="BtnSpice" Visibility="Collapsed"
                         Content="{loc:Tr ConsoleWindow_05}" MinWidth="110" Style="{StaticResource AccentButton}"
                         Click="OnOpenSpice" />
                 <Button ic:IconAssist.Icon="{StaticResource IconSettings}" x:Name="BtnSettings"
@@ -86,7 +125,17 @@
         <ic:GuestStoppedPanel Grid.Row="1" x:Name="StoppedPanel" Visibility="Collapsed" />
 
         <Border Grid.Row="2" Style="{StaticResource ToolbarBorder}">
-            <TextBlock x:Name="StateText" Text="{loc:Tr ConsoleWindow_06}" Foreground="{StaticResource BrushDim}" />
+            <DockPanel>
+                <!-- 게스트에 눌려 있는 조합키 — 특수 키로 누른 채 둔 것과 PC 키보드로 누르고 있는 것 모두 -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" ToolTip="{loc:Tr Console_ModifiersHint}">
+                    <Border x:Name="ModCtrl" Style="{StaticResource ModifierTag}"><TextBlock Text="Ctrl" /></Border>
+                    <Border x:Name="ModAlt" Style="{StaticResource ModifierTag}"><TextBlock Text="Alt" /></Border>
+                    <Border x:Name="ModShift" Style="{StaticResource ModifierTag}"><TextBlock Text="Shift" /></Border>
+                    <Border x:Name="ModWin" Style="{StaticResource ModifierTag}"><TextBlock Text="Win" /></Border>
+                </StackPanel>
+                <TextBlock x:Name="StateText" Text="{loc:Tr ConsoleWindow_06}" Foreground="{StaticResource BrushDim}"
+                           VerticalAlignment="Center" />
+            </DockPanel>
         </Border>
     </Grid>
 </Window>

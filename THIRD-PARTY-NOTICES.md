@@ -11,6 +11,7 @@ ProxmoxClient 는 MIT 라이선스로 배포되며(루트의 `LICENSE` 참조), 
 | Windows Terminal (Microsoft.Terminal.Wpf / Control) | MIT | `third-party/windows-terminal-NOTICE.md` |
 | Lucide Icons | ISC (일부 Feather MIT) | `third-party/lucide-LICENSE.txt` |
 | Net.Codecrete.QrCodeGenerator 3.2.1 | MIT | `third-party/qrcodegenerator-LICENSE.txt` |
+| IronRDP (Devolutions.IronRdp 2025.12.4) | MIT 또는 Apache-2.0 (선택) | `third-party/ironrdp-LICENSE-MIT.txt`<br>`third-party/ironrdp-LICENSE-APACHE.txt` |
 
 ---
 
@@ -86,6 +87,16 @@ Signer  : CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washin
 - 라이선스: MIT
 - 출처: https://github.com/manuelbl/QrCodeGenerator
 - 포함 형태: NuGet 패키지 참조(`Net.Codecrete.QrCodeGenerator.dll` 배포) — 2단계 인증(TOTP) 등록 QR 코드
+
+---
+
+## 5. IronRDP (Devolutions.IronRdp 2025.12.4)
+
+- 저작권: (c) Devolutions Inc. 및 IronRDP 기여자
+- 라이선스: MIT 또는 Apache License 2.0 중 선택(이 배포는 MIT 조건을 따른다)
+- 출처: https://github.com/Devolutions/IronRDP (패키지 커밋 632ad86)
+- 포함 형태: NuGet 패키지 참조 — `Devolutions.IronRdp.dll`(관리 바인딩)과
+  `runtimes/win-x64/native/DevolutionsIronRdp.dll`(Rust 네이티브 코어) 배포. RDP 콘솔(VM 디스플레이 rdp)에 쓴다.
 
 ---
 

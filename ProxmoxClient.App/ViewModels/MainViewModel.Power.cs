@@ -35,7 +35,8 @@ public partial class MainViewModel
     private Task StartGuestAsync()
     {
         return RunGuestPowerAsync(
-            g => Api!.StartGuestAsync(g.Node, g.Kind, g.VmId), Loc.T("GuestPower_Start"), SelectedGuest!);
+            g => Api!.StartGuestAsync(g.Node, g.Kind, g.VmId), Loc.T("GuestPower_Start"), SelectedGuest!,
+            confirm: false);
     }
     [RelayCommand(CanExecute = nameof(CanRunGuestPower))]
     private Task StopGuestAsync()
@@ -46,6 +47,13 @@ public partial class MainViewModel
     [RelayCommand(CanExecute = nameof(CanRunGuestPower))]
     private Task ShutdownGuestAsync()
     {
+        // [종료 | ▾] 는 일시 정지된 게스트에도 보인다(▾ 에 재개·정지) — 종료는 켜진 게스트에만
+        if (SelectedGuest is { IsRunning: false } paused)
+        {
+            StatusMessage = Loc.T("GuestPower_ShutdownNeedsRunning", paused.VmId);
+            return Task.CompletedTask;
+        }
+
         return RunGuestPowerAsync(
             g => Api!.ShutdownGuestAsync(g.Node, g.Kind, g.VmId), Loc.T("GuestPower_Shutdown"), SelectedGuest!);
     }
@@ -69,7 +77,8 @@ public partial class MainViewModel
     private Task ResumeGuestAsync()
     {
         return RunGuestPowerAsync(
-            g => Api!.ResumeGuestAsync(g.Node, g.Kind, g.VmId), Loc.T("GuestPower_Resume"), SelectedGuest!);
+            g => Api!.ResumeGuestAsync(g.Node, g.Kind, g.VmId), Loc.T("GuestPower_Resume"), SelectedGuest!,
+            confirm: false);
     }
     private bool CanResumeGuest()
     {
@@ -112,12 +121,22 @@ public partial class MainViewModel
 
         return operation is null
             ? Task.CompletedTask
-            : RunGuestPowerAsync(operation, GuestPowerRules.Label(action), guest);
+            : RunGuestPowerAsync(operation, GuestPowerRules.Label(action), guest,
+                confirm: action is not (GuestPowerAction.Start or GuestPowerAction.Resume));
     }
+
+    /// <summary>
+    ///     게스트를 멈추거나 다시 시작하는 전원 동작 전에 한 번 더 묻는 창(메인 창이 넣는다) — 웹 UI 와 같다.
+    ///     시작·재개는 묻지 않는다. null 이면 묻지 않는다.
+    /// </summary>
+    public Func<string, bool>? ConfirmPowerAction { get; set; }
     private async Task RunGuestPowerAsync(
-        Func<PveResource, Task<string>> operation, string label, PveResource guest)
+        Func<PveResource, Task<string>> operation, string label, PveResource guest, bool confirm = true)
     {
         if (Api is null) return;
+        if (confirm && ConfirmPowerAction is { } ask
+                    && !ask(Loc.T("GuestPower_Confirm", guest.Kind.Label(), guest.VmId, guest.Name, label)))
+            return;
 
         IsBusy = true;
         try

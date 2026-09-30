@@ -16,6 +16,23 @@ public static class IconAssist
     public static readonly DependencyProperty IconProperty = DependencyProperty.RegisterAttached(
         "Icon", typeof(Geometry), typeof(IconAssist), new PropertyMetadata(null, OnIconChanged));
 
+    /// <summary>누르면 메뉴가 펼쳐지는 버튼 — 글자 뒤에 아래 화살표 아이콘을 붙인다.</summary>
+    public static readonly DependencyProperty DropdownProperty = DependencyProperty.RegisterAttached(
+        "Dropdown", typeof(bool), typeof(IconAssist), new PropertyMetadata(false));
+
+    /// <summary>
+    ///     버튼 모서리 — 나뉜 버튼([종료 | ▾])은 맞붙는 쪽을 각지게 둔다(왼쪽 "4,0,0,4", 오른쪽 "0,4,4,0").
+    /// </summary>
+    public static readonly DependencyProperty CornerRadiusProperty = DependencyProperty.RegisterAttached(
+        "CornerRadius", typeof(CornerRadius), typeof(IconAssist), new PropertyMetadata(new CornerRadius(4)));
+
+    /// <summary>마우스를 올렸을 때 버튼 배경·테두리 — 강조 버튼은 파란색을 밝게, 일반 버튼은 회색에 파란 테두리.</summary>
+    public static readonly DependencyProperty HoverBackgroundProperty = DependencyProperty.RegisterAttached(
+        "HoverBackground", typeof(Brush), typeof(IconAssist), new PropertyMetadata(null));
+
+    public static readonly DependencyProperty HoverBorderProperty = DependencyProperty.RegisterAttached(
+        "HoverBorder", typeof(Brush), typeof(IconAssist), new PropertyMetadata(null));
+
     public static readonly DependencyProperty BrushProperty = DependencyProperty.RegisterAttached(
         "Brush", typeof(Brush), typeof(IconAssist), new PropertyMetadata(null));
 
@@ -27,6 +44,46 @@ public static class IconAssist
     public static void SetIcon(DependencyObject element, Geometry? value)
     {
         element.SetValue(IconProperty, value);
+    }
+
+    public static bool GetDropdown(DependencyObject element)
+    {
+        return (bool)element.GetValue(DropdownProperty);
+    }
+
+    public static void SetDropdown(DependencyObject element, bool value)
+    {
+        element.SetValue(DropdownProperty, value);
+    }
+
+    public static CornerRadius GetCornerRadius(DependencyObject element)
+    {
+        return (CornerRadius)element.GetValue(CornerRadiusProperty);
+    }
+
+    public static void SetCornerRadius(DependencyObject element, CornerRadius value)
+    {
+        element.SetValue(CornerRadiusProperty, value);
+    }
+
+    public static Brush? GetHoverBackground(DependencyObject element)
+    {
+        return (Brush?)element.GetValue(HoverBackgroundProperty);
+    }
+
+    public static void SetHoverBackground(DependencyObject element, Brush? value)
+    {
+        element.SetValue(HoverBackgroundProperty, value);
+    }
+
+    public static Brush? GetHoverBorder(DependencyObject element)
+    {
+        return (Brush?)element.GetValue(HoverBorderProperty);
+    }
+
+    public static void SetHoverBorder(DependencyObject element, Brush? value)
+    {
+        element.SetValue(HoverBorderProperty, value);
     }
 
     public static Brush? GetBrush(DependencyObject element)

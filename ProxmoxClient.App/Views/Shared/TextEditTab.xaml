@@ -12,20 +12,22 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <WrapPanel Grid.Row="0" Margin="0,0,0,6">
-            <Button x:Name="SaveButton" ic:IconAssist.Icon="{StaticResource IconSave}" Margin="0,0,8,4"
-                    Content="{loc:Tr TextEditTab_Save}" Click="OnSave" MinWidth="96" />
-            <Button ic:IconAssist.Icon="{StaticResource IconRefresh}" Margin="0,0,8,4"
-                    Content="{loc:Tr TextEditTab_Reload}" Click="OnReload" MinWidth="96" />
-        </WrapPanel>
+        <DockPanel Grid.Row="0" Margin="0,0,0,6">
+            <WrapPanel DockPanel.Dock="Left">
+                <Button x:Name="SaveButton" ic:IconAssist.Icon="{StaticResource IconSave}" Margin="0,0,8,4"
+                        Content="{loc:Tr TextEditTab_Save}" Click="OnSave" MinWidth="96" />
+                <Button ic:IconAssist.Icon="{StaticResource IconRefresh}" Margin="0,0,8,4"
+                        Content="{loc:Tr TextEditTab_Reload}" Click="OnReload" MinWidth="96" />
+            </WrapPanel>
+            <ic:InfoTip x:Name="HintText" Margin="4,0,0,4" />
+        </DockPanel>
 
-        <TextBlock Grid.Row="1" x:Name="HintText" Foreground="{StaticResource BrushDim}" FontSize="11"
-                   TextWrapping="Wrap" Margin="0,0,0,10" />
+
 
         <TextBox Grid.Row="2" x:Name="Editor" FontFamily="Cascadia Mono, Consolas" FontSize="12"
                  TextWrapping="NoWrap" AcceptsReturn="True" AcceptsTab="True"
                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
 
-        <TextBlock Grid.Row="3" x:Name="StatusText" Style="{StaticResource DialogStatus}" Margin="0,10,0,0" />
+        <TextBlock Grid.Row="3" x:Name="StatusText" Style="{StaticResource DialogStatus}" ic:WindowFooter.Move="True" Margin="0,10,0,0" />
     </Grid>
 </UserControl>

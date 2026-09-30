@@ -53,24 +53,14 @@ internal static class FirewallRules
 
     private static IReadOnlyList<TableAction> Actions(ProxmoxApiClient api, FirewallScope scope)
     {
+        // 자주 쓰는 추가·편집·삭제만 버튼으로, 복사·보안 그룹 넣기는 '더보기 ▾', 위·아래는 아이콘만
+        const string More = "GuestLife_MoreMenu";
         return
         [
             new TableAction
             {
                 LabelKey = "Action_Add", IconKey = "IconPlus",
                 Run = (_, owner) => EditAsync(api, scope, null, owner, copy: false)
-            },
-            new TableAction
-            {
-                LabelKey = "FwRule_Copy", IconKey = "IconCopy", NeedsSelection = true,
-                Run = (row, owner) => IsGroup(row!)
-                    ? InsertGroupAsync(api, scope, row, owner)
-                    : EditAsync(api, scope, row, owner, copy: true)
-            },
-            new TableAction
-            {
-                LabelKey = "FwRule_InsertGroup", IconKey = "IconShield",
-                Run = (_, owner) => InsertGroupAsync(api, scope, null, owner)
             },
             new TableAction
             {
@@ -82,6 +72,18 @@ internal static class FirewallRules
             DeleteAction(row => Loc.T("FirewallWindow_M07", Value(row, "pos"), Value(row, "action"),
                     Value(row, "type"), Value(row, "dport")),
                 row => api.Firewall.DeleteRuleAsync(scope, Value(row, "pos")), "FirewallWindow_M09"),
+            new TableAction
+            {
+                LabelKey = "FwRule_Copy", IconKey = "IconCopy", NeedsSelection = true, MenuKey = More,
+                Run = (row, owner) => IsGroup(row!)
+                    ? InsertGroupAsync(api, scope, row, owner)
+                    : EditAsync(api, scope, row, owner, copy: true)
+            },
+            new TableAction
+            {
+                LabelKey = "FwRule_InsertGroup", IconKey = "IconShield", MenuKey = More,
+                Run = (_, owner) => InsertGroupAsync(api, scope, null, owner)
+            },
             Move(api, scope, "FwRule_MoveUp", "IconArrowUp", -1),
             Move(api, scope, "FwRule_MoveDown", "IconArrowDown", +1)
         ];
@@ -98,7 +100,7 @@ internal static class FirewallRules
     {
         return new TableAction
         {
-            LabelKey = labelKey, IconKey = iconKey, NeedsSelection = true,
+            LabelKey = labelKey, IconKey = iconKey, NeedsSelection = true, IconOnly = true,
             Run = async (row, _) =>
             {
                 if (!int.TryParse(Value(row!, "pos"), out var pos)) return null;

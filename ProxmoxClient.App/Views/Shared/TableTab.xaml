@@ -12,28 +12,32 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- 버튼이 많으면 다음 줄로 넘긴다 -->
-        <WrapPanel Grid.Row="0" Margin="0,0,0,6">
-            <WrapPanel x:Name="ActionPanel" />
-            <Button ic:IconAssist.Icon="{StaticResource IconRefresh}" Margin="0,0,8,4"
-                    Content="{loc:Tr MainWindow_03}" Click="OnRefresh" MinWidth="96" />
-            <!-- 필터 칸 — filterable 로 만든 표에서만 보인다 -->
-            <StackPanel x:Name="FilterPanel" Orientation="Horizontal" Margin="8,0,0,4" Visibility="Collapsed">
-                <ic:PathIcon Data="{StaticResource IconSearch}" IconBrush="{StaticResource BrushDim}"
-                             Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,6,0" />
-                <TextBox x:Name="FilterBox" Width="220" VerticalAlignment="Center"
-                         ToolTip="{loc:Tr TableTab_Filter}" TextChanged="OnFilterChanged" />
-            </StackPanel>
-        </WrapPanel>
+        <!-- 버튼이 많으면 다음 줄로 넘긴다. 화면 설명은 버튼 뒤 남은 자리에 — 모자라면 (i) 아이콘 -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,6">
+            <WrapPanel DockPanel.Dock="Left">
+                <WrapPanel x:Name="ActionPanel" />
+                <!-- 새로고침은 아이콘만(툴팁) — 버튼 줄을 짧게 -->
+                <Button x:Name="BtnRefresh" ic:RefreshButton.IsRefresh="True" ic:IconAssist.Icon="{StaticResource IconRefresh}" Margin="0,0,8,4"
+                        Padding="8,6" VerticalAlignment="Top"
+                        ToolTip="{loc:Tr MainWindow_03}" Click="OnRefresh" />
+                <!-- 필터 칸 — filterable 로 만든 표에서만 보인다 -->
+                <StackPanel x:Name="FilterPanel" Orientation="Horizontal" Margin="8,0,0,4" Visibility="Collapsed">
+                    <ic:PathIcon Data="{StaticResource IconSearch}" IconBrush="{StaticResource BrushDim}"
+                                 Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBox x:Name="FilterBox" Width="220" VerticalAlignment="Center"
+                             ToolTip="{loc:Tr TableTab_Filter}" TextChanged="OnFilterChanged" />
+                </StackPanel>
+            </WrapPanel>
+            <ic:InfoTip x:Name="HintText" Margin="4,0,0,4" />
+        </DockPanel>
 
-        <TextBlock Grid.Row="1" x:Name="HintText" Foreground="{StaticResource BrushDim}" FontSize="11"
-                   TextWrapping="Wrap" Margin="0,0,0,10" />
+
 
         <DataGrid Grid.Row="2" x:Name="TableGrid" AutoGenerateColumns="False" IsReadOnly="True"
                   GridLinesVisibility="Horizontal" HeadersVisibility="Column"
                   SelectionMode="Single" SelectionChanged="OnSelectionChanged"
                   MouseDoubleClick="OnRowDoubleClick" />
 
-        <TextBlock Grid.Row="3" x:Name="StatusText" Style="{StaticResource DialogStatus}" Margin="0,10,0,0" />
+        <TextBlock Grid.Row="3" x:Name="StatusText" Style="{StaticResource DialogStatus}" ic:WindowFooter.Move="True" Margin="0,10,0,0" />
     </Grid>
 </UserControl>

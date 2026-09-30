@@ -9,59 +9,113 @@
         WindowStartupLocation="CenterOwner" ResizeMode="CanResize" ShowInTaskbar="False">
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="20,16,20,10">
-                <TextBlock Text="{loc:Tr ConsoleSettingsWindow_02}" Style="{StaticResource FormSection}" />
-                <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_03}" Hint="{loc:Tr ConsoleSettingsWindow_04}">
-                    <ComboBox x:Name="EncodingBox" SelectionChanged="OnEncodingChanged" Width="220"
-                              HorizontalAlignment="Left" />
-                </ic:FormRow>
-                <ic:FormRow x:Name="RowQuality" Label="{loc:Tr ConsoleSettingsWindow_05}"
-                            Hint="{loc:Tr ConsoleSettingsWindow_06}">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Right" Width="28" TextAlignment="Right" VerticalAlignment="Center"
-                                   Text="{Binding Value, ElementName=QualitySlider, Mode=OneWay, StringFormat={}{0:0}}" />
-                        <Slider x:Name="QualitySlider" Minimum="0" Maximum="9" TickFrequency="1"
-                                IsSnapToTickEnabled="True"
-                                SmallChange="1" LargeChange="1" Margin="0,4,10,0" />
-                    </DockPanel>
-                </ic:FormRow>
-                <ic:FormRow x:Name="RowCompression" Label="{loc:Tr ConsoleSettingsWindow_07}"
-                            Hint="{loc:Tr ConsoleSettingsWindow_08}">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Right" Width="28" TextAlignment="Right" VerticalAlignment="Center"
-                                   Text="{Binding Value, ElementName=CompressionSlider, Mode=OneWay, StringFormat={}{0:0}}" />
-                        <Slider x:Name="CompressionSlider" Minimum="0" Maximum="9" TickFrequency="1"
-                                IsSnapToTickEnabled="True"
-                                SmallChange="1" LargeChange="1" Margin="0,4,10,0" />
-                    </DockPanel>
-                </ic:FormRow>
-                <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_09}"
-                            Hint="{loc:Tr ConsoleSettingsWindow_10}">
-                    <CheckBox x:Name="ExtendedKeysCheck" Content="{loc:Tr ConsoleSettingsWindow_11}" Margin="0,6,0,0" />
-                </ic:FormRow>
-                <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_12}">
-                    <CheckBox x:Name="SmoothScalingCheck" Content="{loc:Tr ConsoleSettingsWindow_13}" Margin="0,6,0,0" />
-                </ic:FormRow>
-                <ic:FormRow Label="{loc:Tr ConsoleSettings_LocalCursor}" Hint="{loc:Tr ConsoleSettings_LocalCursorHint}">
-                    <ComboBox x:Name="CursorBox" Width="220" HorizontalAlignment="Left" />
-                </ic:FormRow>
+        <!-- 밑줄 탭(SubTabsView 와 같은 모양) — 콘솔 종류마다 설정을 나눈다 -->
+        <ListBox Grid.Row="0" x:Name="TabBar" Background="Transparent"
+                 BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1"
+                 Margin="20,12,20,0" SelectionChanged="OnTabChanged"
+                 ItemContainerStyle="{StaticResource SubTabItem}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBoxItem Content="{loc:Tr ConsoleSettings_TabVnc}" />
+            <ListBoxItem Content="{loc:Tr ConsoleSettings_TabRdp}" />
+            <ListBoxItem Content="{loc:Tr ConsoleSettings_TabTerminal}" />
+        </ListBox>
 
-                <TextBlock Text="{loc:Tr ConsoleSettingsWindow_14}" Style="{StaticResource FormSection}" />
-                <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_15}" Hint="{loc:Tr ConsoleSettingsWindow_16}">
-                    <ComboBox x:Name="FontBox" IsEditable="True" Width="260" HorizontalAlignment="Left" />
-                </ic:FormRow>
-                <ic:FormRow x:Name="RowFontSize" Label="{loc:Tr ConsoleSettingsWindow_17}">
-                    <TextBox x:Name="FontSizeBox" ic:InputFilter.Mode="Integer" Width="140" HorizontalAlignment="Left" />
-                </ic:FormRow>
-            </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <!-- 세 탭을 겹쳐 두고 고른 것만 보인다 — 숨긴 탭도 자리를 차지해(Hidden) 탭을 바꿔도 창 높이가 그대로다 -->
+            <Grid Margin="20,12,20,10">
+                <StackPanel x:Name="VncPanel">
+                    <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_03}" Hint="{loc:Tr ConsoleSettingsWindow_04}">
+                        <ComboBox x:Name="EncodingBox" SelectionChanged="OnEncodingChanged" Width="220"
+                                  HorizontalAlignment="Left" />
+                    </ic:FormRow>
+                    <ic:FormRow x:Name="RowQuality" Label="{loc:Tr ConsoleSettingsWindow_05}"
+                                Hint="{loc:Tr ConsoleSettingsWindow_06}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Width="28" TextAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding Value, ElementName=QualitySlider, Mode=OneWay, StringFormat={}{0:0}}" />
+                            <Slider x:Name="QualitySlider" Minimum="0" Maximum="9" TickFrequency="1"
+                                    IsSnapToTickEnabled="True"
+                                    SmallChange="1" LargeChange="1" Margin="0,4,10,0" />
+                        </DockPanel>
+                    </ic:FormRow>
+                    <ic:FormRow x:Name="RowCompression" Label="{loc:Tr ConsoleSettingsWindow_07}"
+                                Hint="{loc:Tr ConsoleSettingsWindow_08}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Width="28" TextAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding Value, ElementName=CompressionSlider, Mode=OneWay, StringFormat={}{0:0}}" />
+                            <Slider x:Name="CompressionSlider" Minimum="0" Maximum="9" TickFrequency="1"
+                                    IsSnapToTickEnabled="True"
+                                    SmallChange="1" LargeChange="1" Margin="0,4,10,0" />
+                        </DockPanel>
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_09}"
+                                Hint="{loc:Tr ConsoleSettingsWindow_10}">
+                        <CheckBox x:Name="ExtendedKeysCheck" Content="{loc:Tr ConsoleSettingsWindow_11}"
+                                  Margin="0,6,0,0" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_12}">
+                        <CheckBox x:Name="SmoothScalingCheck" Content="{loc:Tr ConsoleSettingsWindow_13}"
+                                  Margin="0,6,0,0" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr ConsoleSettings_Clipboard}"
+                                Hint="{loc:Tr ConsoleSettings_ClipboardHint}">
+                        <CheckBox x:Name="ClipboardSyncCheck" Content="{loc:Tr ConsoleSettings_ClipboardAuto}"
+                                  Margin="0,6,0,0" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr ConsoleSettings_LocalCursor}"
+                                Hint="{loc:Tr ConsoleSettings_LocalCursorHint}">
+                        <ComboBox x:Name="CursorBox" Width="220" HorizontalAlignment="Left" />
+                    </ic:FormRow>
+                </StackPanel>
+
+                <StackPanel x:Name="RdpPanel" Visibility="Hidden">
+                    <TextBlock Text="{loc:Tr ConsoleSettings_RdpNote}" TextWrapping="Wrap"
+                               Foreground="{StaticResource BrushDim}" Margin="0,0,0,10" />
+                    <ic:FormRow Label="{loc:Tr ConsoleSettings_RdpResolution}"
+                                Hint="{loc:Tr ConsoleSettings_RdpResolutionHint}">
+                        <CheckBox x:Name="RdpDynamicCheck" Content="{loc:Tr ConsoleSettings_RdpResolutionFit}"
+                                  Margin="0,6,0,0" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr ConsoleSettings_Clipboard}"
+                                Hint="{loc:Tr ConsoleSettings_RdpClipboardHint}">
+                        <CheckBox x:Name="RdpClipboardCheck" Content="{loc:Tr ConsoleSettings_RdpClipboardAuto}"
+                                  Margin="0,6,0,0" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_12}">
+                        <CheckBox x:Name="RdpSmoothCheck" Content="{loc:Tr ConsoleSettingsWindow_13}"
+                                  Margin="0,6,0,0" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr ConsoleSettings_LocalCursor}"
+                                Hint="{loc:Tr ConsoleSettings_RdpCursorHint}">
+                        <ComboBox x:Name="RdpCursorBox" Width="220" HorizontalAlignment="Left" />
+                    </ic:FormRow>
+                </StackPanel>
+
+                <StackPanel x:Name="TerminalPanel" Visibility="Hidden">
+                    <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_15}" Hint="{loc:Tr ConsoleSettingsWindow_16}">
+                        <ComboBox x:Name="FontBox" IsEditable="True" Width="260" HorizontalAlignment="Left" />
+                    </ic:FormRow>
+                    <ic:FormRow x:Name="RowFontSize" Label="{loc:Tr ConsoleSettingsWindow_17}">
+                        <TextBox x:Name="FontSizeBox" ic:InputFilter.Mode="Integer" Width="140"
+                                 HorizontalAlignment="Left" />
+                    </ic:FormRow>
+                </StackPanel>
+            </Grid>
         </ScrollViewer>
 
-        <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
+        <Border Grid.Row="2" Style="{StaticResource DialogFooter}">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <Button ic:IconAssist.Icon="{StaticResource IconSave}" x:Name="BtnSave"

@@ -15,6 +15,9 @@ namespace ProxmoxClient.App.Views.Node;
 /// </summary>
 internal static class NodePowerActions
 {
+    /// <summary>게스트 일괄 시작·정지·일시 정지·이전은 웹 UI 처럼 '일괄 작업 ▾' 하나에 모은다.</summary>
+    private const string BulkMenu = "NodePower_BulkMenu";
+
     public static IReadOnlyList<TableAction> Create(ProxmoxApiClient api, string node, PermissionsInfo permissions)
     {
         var actions = new List<TableAction>();
@@ -23,7 +26,7 @@ internal static class NodePowerActions
         {
             actions.Add(new TableAction
             {
-                LabelKey = "NodePower_StartAll", IconKey = "IconPlay",
+                LabelKey = "NodePower_StartAll", IconKey = "IconPlay", MenuKey = BulkMenu,
                 Run = (_, owner) => BulkAsync(api, node, owner, "NodePower_StartAll", g => !g.IsRunning,
                 [
                     new FormField
@@ -35,7 +38,7 @@ internal static class NodePowerActions
             });
             actions.Add(new TableAction
             {
-                LabelKey = "NodePower_StopAll", IconKey = "IconSquare",
+                LabelKey = "NodePower_StopAll", IconKey = "IconSquare", MenuKey = BulkMenu,
                 Run = (_, owner) => BulkAsync(api, node, owner, "NodePower_StopAll", g => g.IsRunning,
                 [
                     new FormField { Key = "timeout", LabelKey = "NodePower_Timeout", Initial = "180" },
@@ -48,7 +51,7 @@ internal static class NodePowerActions
             var suspendAll = api.Nodes.Feature(nameof(NodesApi.SuspendAllAsync));
             actions.Add(new TableAction
             {
-                LabelKey = "NodePower_SuspendAll", IconKey = "IconPause", Requires = suspendAll,
+                LabelKey = "NodePower_SuspendAll", IconKey = "IconPause", MenuKey = BulkMenu, Requires = suspendAll,
                 Run = (_, owner) => BulkAsync(api, node, owner, "NodePower_SuspendAll",
                     g => g.IsRunning && g.Kind == ResourceKind.Qemu, [],
                     form => api.Nodes.SuspendAllAsync(node, form), suspendAll)
@@ -58,7 +61,7 @@ internal static class NodePowerActions
         if (permissions.CanMigrate)
             actions.Add(new TableAction
             {
-                LabelKey = "NodePower_MigrateAll", IconKey = "IconSwitch",
+                LabelKey = "NodePower_MigrateAll", IconKey = "IconSwitch", MenuKey = BulkMenu,
                 Run = async (_, owner) =>
                 {
                     var targets = (await api.GetNodesAsync())

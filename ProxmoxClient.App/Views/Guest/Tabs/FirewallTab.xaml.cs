@@ -23,7 +23,7 @@ public partial class FirewallTab : UserControl
         _api = api;
         _scope = scope;
         OptionsRow.Visibility = scope.HasOptions ? Visibility.Visible : Visibility.Collapsed;
-        RulesHost.Content = FirewallRules.Create(api, scope, canEdit);
+        RulesHost.Content = FirewallRules.Create(api, scope, canEdit).Embedded(); // 이 화면이 이미 여백을 둔다
         OptionsRow.IsEnabled = canEdit;
         Loaded += async (_, _) => await LoadOptionsAsync();
     }

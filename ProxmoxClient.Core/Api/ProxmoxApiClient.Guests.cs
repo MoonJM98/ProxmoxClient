@@ -105,11 +105,15 @@ public sealed partial class ProxmoxApiClient
     /// <summary>
     ///     Starts a vzdump backup of one guest (POST nodes/{node}/vzdump, vmid=…). mode: snapshot|suspend|stop.
     ///     compress: "" (none)|zstd|lzo|gzip. Returns the task UPID.
+    ///     options: 웹 UI 백업 창의 추가 칸(protected·notes-template·notification-mode) — 비었으면 보내지 않는다.
     /// </summary>
     [Versioning.PveApi("POST", "/nodes/{node}/vzdump")]
+    [Versioning.PveParam("notes-template", "7.1")]
+    [Versioning.PveParam("protected", "7.1")]
+    [Versioning.PveParam("notification-mode", "8.1")]
     public Task<string> BackupGuestAsync(
         string node, ResourceKind kind, int vmid, string storage, string mode, string compress,
-        CancellationToken ct = default)
+        IReadOnlyDictionary<string, string>? options = null, CancellationToken ct = default)
     {
         // 백업은 게스트 경로가 아니라 노드의 vzdump 에 게스트 번호를 넘긴다(VM·CT 같은 경로)
         var form = new Dictionary<string, string>
@@ -119,6 +123,8 @@ public sealed partial class ProxmoxApiClient
             ["mode"] = mode
         };
         if (!string.IsNullOrEmpty(compress)) form["compress"] = compress;
+        foreach (var (key, value) in options ?? new Dictionary<string, string>())
+            if (value.Length > 0 && VzdumpOptions.Contains(key)) form[key] = value;
 
         return PostWriteAsync($"nodes/{Escape(node)}/vzdump", form, ct);
     }

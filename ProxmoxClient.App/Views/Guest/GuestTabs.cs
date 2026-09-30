@@ -116,7 +116,8 @@ internal static class GuestTabs
             Id = "snapshots",
             LabelKey = "GuestTab_Snapshots",
             IconKey = "IconCamera",
-            IsVisible = (p, _) => p.CanSnapshot
+            // 템플릿은 스냅샷을 만들 수 없다(웹 UI 도 탭을 두지 않는다)
+            IsVisible = (p, guest) => p.CanSnapshot && !guest.IsTemplate
         },
         new()
         {

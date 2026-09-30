@@ -18,21 +18,23 @@
         <Border DockPanel.Dock="Top" Background="{StaticResource BrushPanel}"
                 BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1" Padding="14,10">
             <DockPanel>
+                <!-- 지금 보는 탭을 다시 읽는다(F5) — 탭마다 있던 새로고침 버튼을 여기로 모았다 -->
+                <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconRefresh}" Padding="8,5"
+                        ToolTip="{loc:Tr NavWindow_Refresh}" Click="OnRefresh" />
                 <ic:PathIcon x:Name="HeaderIcon" Width="20" Height="20" Margin="0,0,10,0"
                              Data="{StaticResource IconBox}" DockPanel.Dock="Left" />
                 <TextBlock x:Name="HeaderText" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
             </DockPanel>
         </Border>
 
-        <!-- 꼬리말 — 상태 메시지와 닫기 -->
+        <!-- 꼬리말 — 지금 탭의 상태 문구·저장 버튼(ic:WindowFooter.Move 로 옮겨 온 것)과 닫기 -->
         <Border DockPanel.Dock="Bottom" Background="{StaticResource BrushPanel}"
                 BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,1,0,0" Padding="12,8">
             <DockPanel>
                 <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconX}"
                         Content="{loc:Tr FirewallWindow_18}" Style="{StaticResource DialogButton}"
                         IsCancel="True" />
-                <TextBlock x:Name="StatusText" VerticalAlignment="Center" TextWrapping="Wrap"
-                           Foreground="{StaticResource BrushDim}" />
+                <StackPanel x:Name="FooterSlot" VerticalAlignment="Center" Margin="0,0,8,0" />
             </DockPanel>
         </Border>
 

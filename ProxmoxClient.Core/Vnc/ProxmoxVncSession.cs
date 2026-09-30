@@ -10,7 +10,7 @@ namespace ProxmoxClient.Core.Vnc;
 ///     Proxmox VM 콘솔 세션: vncproxy 생성 → vncwebsocket(웹소켓, binary 서브프로토콜) 연결 → RFB 협상.
 ///     이벤트는 백그라운드 스레드에서 발생하므로 UI에서 디스패처 마샬링이 필요하다.
 /// </summary>
-public sealed class ProxmoxVncSession : IDisposable
+public sealed class ProxmoxVncSession : IConsoleSession
 {
     private const int ScanControlL = 0x1D;
     private const int ScanAltL = 0x38;
@@ -93,6 +93,32 @@ public sealed class ProxmoxVncSession : IDisposable
     /// <summary>연결 종료. null=정상, 아니면 오류.</summary>
     public event Action<Exception?>? Closed;
 
+    /// <summary>게스트 클립보드가 바뀌었다(확장 클립보드 — VM 이 clipboard=vnc 일 때). 수신 스레드에서 불린다.</summary>
+    public event Action<string>? ClipboardReceived;
+
+    /// <summary>VNC 는 기본 커서 알림이 없다(모양은 <see cref="CursorShape" /> 로만 온다).</summary>
+    event Action? IConsoleSession.CursorDefault
+    {
+        add { }
+        remove { }
+    }
+
+    Task IConsoleSession.ConnectAsync(string node, int vmid, CancellationToken ct)
+    {
+        return ConnectAsync(node, ResourceKind.Qemu, vmid, ct);
+    }
+
+    /// <summary>VNC 는 클라이언트가 해상도를 바꿀 수 없다(게스트가 정한다).</summary>
+    public void RequestDesktopSize(int width, int height)
+    {
+    }
+
+    public string TakeStatsText()
+    {
+        var s = TakeStats();
+        return $"{s.Mbps:F1} Mbps · {s.Fps:F0} fps · Raw {s.Raw} · Tight {s.Tight} · Img {s.Image} · Copy {s.Copy}";
+    }
+
     /// <summary>대역폭·인코딩 통계 스냅숏(호출 시점부터 재측정).</summary>
     public (double Mbps, double Fps, long Raw, long Tight, long Image, long Copy) TakeStats()
     {
@@ -132,7 +158,7 @@ public sealed class ProxmoxVncSession : IDisposable
         _cts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token);
         _websocket = websocket;
 
-        var rfb = new RfbClient(new WebSocketStream(websocket))
+        var rfb = new RfbClient(new ConsoleWebSocketStream(websocket))
         {
             ImageDecoder = ImageDecoder,
             Settings = Settings
@@ -147,6 +173,7 @@ public sealed class ProxmoxVncSession : IDisposable
         rfb.CursorPosition += (x, y) => CursorPosition?.Invoke(x, y);
         rfb.CursorShape += cursor => CursorShape?.Invoke(cursor);
         rfb.LedState += leds => LedState?.Invoke(leds);
+        rfb.ServerCutText += text => ClipboardReceived?.Invoke(text);
         rfb.ConnectionClosed += ex =>
         {
             IsConnected = false;
@@ -208,7 +235,22 @@ public sealed class ProxmoxVncSession : IDisposable
 
         try
         {
-            return rfb.SendClientCutTextAsync(text, token);
+            return rfb.SendClipboardTextAsync(text, token);
+        }
+        catch (InvalidOperationException)
+        {
+            return Task.CompletedTask; // 전송 채널 종료(연결 끊김) — 종료는 Closed 이벤트로 처리
+        }
+    }
+
+    /// <summary>게스트 클립보드를 지금 요청한다(확장 클립보드일 때만) — 답은 <see cref="ClipboardReceived" /> 로 온다.</summary>
+    public Task RequestClipboardAsync()
+    {
+        if (!TryGetSender(out var rfb, out var token)) return Task.CompletedTask;
+
+        try
+        {
+            return rfb.RequestClipboardTextAsync(token);
         }
         catch (InvalidOperationException)
         {
@@ -288,85 +330,5 @@ public sealed class ProxmoxVncSession : IDisposable
     private void RaiseStatus(string text)
     {
         StatusChanged?.Invoke(text);
-    }
-
-    /// <summary>ClientWebSocket 을 RFB 가 요구하는 스트림처럼 감싸는 어댑터.</summary>
-    private sealed class WebSocketStream(ClientWebSocket websocket) : Stream
-    {
-        /// <summary>이 크기 이상을 요청받고 남은 데이터가 없으면 내부 버퍼를 거치지 않고 호출자 버퍼로 바로 수신한다.</summary>
-        private const int DirectReceiveThreshold = 4096;
-
-        private readonly byte[] _receiveBuffer = new byte[64 * 1024];
-        private ArraySegment<byte> _pending;
-
-        public override bool CanRead => true;
-        public override bool CanWrite => true;
-        public override bool CanSeek => false;
-
-        public override long Length => throw new NotSupportedException();
-
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
-
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
-        {
-            // Raw 행·압축 청크·JPEG 데이터처럼 큰 읽기는 프레임버퍼/풀 버퍼에 직접 받아 복사 1회를 없앤다.
-            // 작은 읽기(헤더 1~4바이트)는 내부 버퍼에 크게 받아 수신 호출 횟수를 줄인다.
-            if (_pending.Count == 0 && buffer.Length >= DirectReceiveThreshold)
-            {
-                if (websocket.State is not (WebSocketState.Open or WebSocketState.CloseReceived)) return 0;
-
-                var direct = await websocket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
-                return direct.MessageType == WebSocketMessageType.Close ? 0 : direct.Count;
-            }
-
-            while (_pending.Count == 0)
-            {
-                if (websocket.State is not (WebSocketState.Open or WebSocketState.CloseReceived)) return 0;
-
-                var result = await websocket.ReceiveAsync(_receiveBuffer.AsMemory(), ct).ConfigureAwait(false);
-                if (result.MessageType == WebSocketMessageType.Close) return 0;
-
-                _pending = new ArraySegment<byte>(_receiveBuffer, 0, result.Count);
-            }
-
-            var take = Math.Min(buffer.Length, _pending.Count);
-            _pending.AsSpan(0, take).CopyTo(buffer.Span);
-            _pending = _pending.Slice(take);
-            return take;
-        }
-
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ct = default)
-        {
-            return websocket.SendAsync(buffer, WebSocketMessageType.Binary, true, ct);
-            // 배열 복사 없이 전송
-        }
-
-        public override void Flush()
-        {
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            return ReadAsync(buffer.AsMemory(offset, count)).AsTask().GetAwaiter().GetResult();
-        }
-
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            WriteAsync(buffer.AsMemory(offset, count)).AsTask().GetAwaiter().GetResult();
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException();
-        }
-
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException();
-        }
     }
 }

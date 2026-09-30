@@ -173,8 +173,10 @@ internal static class FirewallTabs
 
     private static TableTab IpSets(ProxmoxApiClient api, FirewallScope scope, bool canEdit)
     {
+        // 주소 목록은 '항목' 버튼 대신 집합을 두 번 눌러 연다
         return new TableTab(() => api.Firewall.ListIpSetsAsync(scope), IpSetColumns, "DcFirewall_IpSetsHint",
-            IpSetActions(api, scope, canEdit));
+            IpSetActions(api, scope, canEdit),
+            open: (row, owner) => ShowIpSetEntries(api, scope, canEdit, row["name"], owner));
     }
 
     /// <summary>옵션 — 서버가 모르는 옵션(예: 8.3 전의 policy_forward)은 목록에 두지 않는다.</summary>
@@ -273,24 +275,21 @@ internal static class FirewallTabs
         ];
     }
 
+    /// <summary>IP 집합의 주소 목록 창 — 목록에서 집합을 두 번 누르면 연다(웹 UI 오른쪽 IP/CIDR 표).</summary>
+    private static void ShowIpSetEntries(ProxmoxApiClient api, FirewallScope scope, bool canEdit, string name,
+        System.Windows.Window? owner)
+    {
+        TableWindow.ShowModal(owner, Loc.T("DcFirewall_EntriesTitle", name),
+            new TableTab(() => api.Firewall.ListIpSetEntriesAsync(scope, name), IpSetEntryColumns,
+                "DcFirewall_EntriesHint", canEdit ? IpSetEntryActions(api, scope, name) : null));
+    }
+
     private static IReadOnlyList<TableAction> IpSetActions(ProxmoxApiClient api, FirewallScope scope, bool canEdit)
     {
-        var entries = new TableAction
-        {
-            LabelKey = "DcFirewall_Entries", IconKey = "IconList", NeedsSelection = true,
-            Run = (row, owner) =>
-            {
-                var name = row!["name"];
-                return Task.FromResult(TableWindow.ShowModal(owner, Loc.T("DcFirewall_EntriesTitle", name),
-                    new TableTab(() => api.Firewall.ListIpSetEntriesAsync(scope, name), IpSetEntryColumns,
-                        "DcFirewall_EntriesHint", canEdit ? IpSetEntryActions(api, scope, name) : null)));
-            }
-        };
-        if (!canEdit) return [entries];
+        if (!canEdit) return [];
 
         return
         [
-            entries,
             new TableAction
             {
                 LabelKey = "Action_Add", IconKey = "IconPlus",

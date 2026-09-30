@@ -66,10 +66,13 @@ public partial class FormDialog : Window
             group.Children.Add(element);
         }
 
-        if (field.Hint is { Length: > 0 } hint)
+        // 안내 문구는 라벨 옆 (i) 아이콘 툴팁으로 — 줄마다 긴 설명이 붙어 대화상자가 길어지지 않게
+        if (field.Hint is { Length: > 0 } hint && added.OfType<FormRow>().FirstOrDefault() is { } row)
+            row.Hint = hint;
+        else if (field.Hint is { Length: > 0 } rowless)
             group.Children.Add(new TextBlock
             {
-                Text = hint, FontSize = 11, TextWrapping = TextWrapping.Wrap, Opacity = 0.7,
+                Text = rowless, FontSize = 11, TextWrapping = TextWrapping.Wrap, Opacity = 0.7,
                 Margin = new Thickness(LabelWidth + 8, -4, 0, 8)
             });
 

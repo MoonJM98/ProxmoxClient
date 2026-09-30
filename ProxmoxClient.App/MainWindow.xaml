@@ -127,13 +127,15 @@
                             </Style.Triggers>
                         </Style>
                     </Grid.Style>
+                    <!-- 상세 | 목록 사이를 끌어 높이를 바꾼다 — 게스트를 골라도 높이가 바뀌지 않게 고정(설정에 저장) -->
                     <Grid.RowDefinitions>
+                        <RowDefinition x:Name="GuestDetailRow" Height="300" MinHeight="110" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" MinHeight="160" />
                     </Grid.RowDefinitions>
 
                     <!-- ===== 선택 게스트 상세 ===== -->
-                    <Border Grid.Row="0" Style="{StaticResource FormPanel}" Padding="0" Margin="0,0,0,10">
+                    <Border Grid.Row="0" Style="{StaticResource FormPanel}" Padding="0" Margin="0">
                         <Grid>
                             <!-- 선택 없음 안내 -->
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,28">
@@ -166,7 +168,7 @@
                                 </Grid.Style>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
                                 <!-- 헤더: 게스트 식별 + 동작 -->
@@ -183,70 +185,71 @@
                                                         Command="{Binding StartGuestCommand}" Margin="0,0,6,0"
                                                         ic:GuestPowerVisibility.Action="Start"
                                                         ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}" />
-                                                <Button ic:IconAssist.Icon="{StaticResource IconPower}"
-                                                        ic:IconAssist.Brush="{StaticResource BrushWarn}"
-                                                        Content="{loc:Tr MainWindow_35}"
-                                                        Command="{Binding ShutdownGuestCommand}" Margin="0,0,6,0"
-                                                        ic:GuestPowerVisibility.Action="Shutdown"
-                                                        ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}" />
-                                                <Button ic:IconAssist.Icon="{StaticResource IconSquare}"
-                                                        ic:IconAssist.Brush="{StaticResource BrushErr}"
-                                                        Content="{loc:Tr MainWindow_36}"
-                                                        Command="{Binding StopGuestCommand}" Margin="0,0,6,0"
-                                                        ic:GuestPowerVisibility.Action="Stop"
-                                                        ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}" />
-                                                <Button ic:IconAssist.Icon="{StaticResource IconRotate}"
-                                                        Content="{loc:Tr MainWindow_34}"
-                                                        Command="{Binding RebootGuestCommand}" Margin="0,0,6,0"
-                                                        ic:GuestPowerVisibility.Action="Reboot"
-                                                        ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}" />
+                                                <!-- 웹 UI 처럼 [종료 | ▾] — 재부팅·일시 정지·재개·최대 절전·정지·리셋은 ▾ 안에 -->
+                                                <ic:SplitButton ic:IconAssist.Icon="{StaticResource IconPower}"
+                                                                ic:IconAssist.Brush="{StaticResource BrushWarn}"
+                                                                Content="{loc:Tr MainWindow_35}"
+                                                                Command="{Binding ShutdownGuestCommand}"
+                                                                Margin="0,0,6,0"
+                                                                ic:GuestPowerVisibility.Action="Stop"
+                                                                ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}">
+                                                    <ic:SplitButton.DropDownMenu>
+                                                        <ContextMenu>
+                                                            <MenuItem ic:IconAssist.Icon="{StaticResource IconRotate}"
+                                                                      Header="{loc:Tr MainWindow_34}"
+                                                                      Command="{Binding RebootGuestCommand}"
+                                                                      ic:GuestPowerVisibility.Action="Reboot"
+                                                                      ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}" />
+                                                            <MenuItem ic:IconAssist.Icon="{StaticResource IconPause}"
+                                                                      Header="{loc:Tr MainWindow_11}"
+                                                                      Command="{Binding SuspendGuestCommand}"
+                                                                      ic:GuestPowerVisibility.Action="Suspend"
+                                                                      ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}" />
+                                                            <MenuItem ic:IconAssist.Icon="{StaticResource IconResume}"
+                                                                      Header="{loc:Tr MainWindow_12}"
+                                                                      Command="{Binding ResumeGuestCommand}"
+                                                                      ic:GuestPowerVisibility.Action="Resume"
+                                                                      ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}" />
+                                                            <MenuItem ic:IconAssist.Icon="{StaticResource IconMoon}"
+                                                                      Header="{loc:Tr MainWindow_13}"
+                                                                      Command="{Binding HibernateGuestCommand}"
+                                                                      ic:GuestPowerVisibility.Action="Hibernate"
+                                                                      ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}" />
+                                                            <MenuItem ic:IconAssist.Icon="{StaticResource IconSquare}"
+                                                                      ic:IconAssist.Brush="{StaticResource BrushErr}"
+                                                                      Header="{loc:Tr MainWindow_36}"
+                                                                      Command="{Binding StopGuestCommand}"
+                                                                      ic:GuestPowerVisibility.Action="Stop"
+                                                                      ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}" />
+                                                            <MenuItem ic:IconAssist.Icon="{StaticResource IconRotate}"
+                                                                      Header="{loc:Tr GuestPower_Reset}"
+                                                                      Command="{Binding ResetGuestCommand}"
+                                                                      ic:GuestPowerVisibility.Action="Reset"
+                                                                      ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}" />
+                                                        </ContextMenu>
+                                                    </ic:SplitButton.DropDownMenu>
+                                                </ic:SplitButton>
                                                 <Border Width="1" Background="{StaticResource BrushBorder}"
                                                         Margin="4,4,10,4" />
                                             </StackPanel>
-                                            <Button ic:IconAssist.Icon="{StaticResource IconMonitor}"
-                                                    Content="{loc:Tr MainWindow_09}" Click="OnOpenConsole"
-                                                    Style="{StaticResource AccentButton}" Margin="0,0,6,0"
-                                                    Visibility="{Binding Permissions.CanConsole, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
+                                            <!-- 웹 UI 처럼 [콘솔 | ▾] — VM 은 ▾ 에서 그래픽·SPICE·직렬 터미널을 고른다(CT 는 ▾ 없음) -->
+                                            <ic:SplitButton Style="{StaticResource AccentSplitButton}"
+                                                            ic:IconAssist.Icon="{StaticResource IconMonitor}"
+                                                            Content="{loc:Tr MainWindow_09}" Click="OnOpenConsole"
+                                                            DropDownOpening="OnConsoleMenu"
+                                                            ShowDropDown="{Binding CanChooseConsole}" Margin="0,0,6,0"
+                                                            Visibility="{Binding CanOpenConsole, Converter={StaticResource BoolToVis}}" />
                                             <Button ic:IconAssist.Icon="{StaticResource IconCamera}"
                                                     Content="{loc:Tr MainWindow_Snapshots}"
                                                     Click="OnOpenSnapshot" Margin="0,0,6,0"
-                                                    Visibility="{Binding Permissions.CanSnapshot, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
-                                            <Button ic:IconAssist.Icon="{StaticResource IconSettings}"
-                                                    Content="{loc:Tr MainWindow_04}" Click="OnMenuSettings"
-                                                    Margin="0,0,6,0"
-                                                    Visibility="{Binding Permissions.CanConfigure, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
-                                            <Button ic:IconAssist.Icon="{StaticResource IconMore}"
-                                                    ToolTip="{loc:Tr MainWindow_10}" Padding="9,6"
-                                                    Click="OnMoreActions">
-                                                <Button.ContextMenu>
-                                                    <ContextMenu
-                                                        DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                        <MenuItem ic:IconAssist.Icon="{StaticResource IconPause}"
-                                                                  Header="{loc:Tr MainWindow_11}"
-                                                                  Command="{Binding SuspendGuestCommand}"
-                                                                  ic:GuestPowerVisibility.Action="Suspend"
-                                                                  ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}"
-                                                                  ic:GuestPowerVisibility.Allowed="{Binding Permissions.CanPowerMgmt, FallbackValue=True}" />
-                                                        <MenuItem ic:IconAssist.Icon="{StaticResource IconResume}"
-                                                                  Header="{loc:Tr MainWindow_12}"
-                                                                  Command="{Binding ResumeGuestCommand}"
-                                                                  ic:GuestPowerVisibility.Action="Resume"
-                                                                  ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}"
-                                                                  ic:GuestPowerVisibility.Allowed="{Binding Permissions.CanPowerMgmt, FallbackValue=True}" />
-                                                        <MenuItem ic:IconAssist.Icon="{StaticResource IconMoon}"
-                                                                  Header="{loc:Tr MainWindow_13}"
-                                                                  Command="{Binding HibernateGuestCommand}"
-                                                                  ic:GuestPowerVisibility.Action="Hibernate"
-                                                                  ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}"
-                                                                  ic:GuestPowerVisibility.Allowed="{Binding Permissions.CanPowerMgmt, FallbackValue=True}" />
-                                                        <MenuItem ic:IconAssist.Icon="{StaticResource IconRotate}"
-                                                                  Header="{loc:Tr GuestPower_Reset}"
-                                                                  Command="{Binding ResetGuestCommand}"
-                                                                  ic:GuestPowerVisibility.Action="Reset"
-                                                                  ic:GuestPowerVisibility.Guest="{Binding SelectedGuest}"
-                                                                  ic:GuestPowerVisibility.Allowed="{Binding Permissions.CanPowerMgmt,
-                                                                      FallbackValue=True}" />
-                                                        <Separator />
+                                                    Visibility="{Binding CanOpenSnapshots, Converter={StaticResource BoolToVis}}" />
+                                            <!-- [설정 | ▾] — 복제·백업·방화벽은 ▾ 안에(따로 있던 ⋯ 버튼을 합쳤다) -->
+                                            <ic:SplitButton ic:IconAssist.Icon="{StaticResource IconSettings}"
+                                                            Content="{loc:Tr MainWindow_04}" Click="OnMenuSettings"
+                                                            Margin="0,0,6,0"
+                                                            Visibility="{Binding Permissions.CanConfigure, Converter={StaticResource BoolToVis}, FallbackValue=Visible}">
+                                                <ic:SplitButton.DropDownMenu>
+                                                    <ContextMenu>
                                                         <MenuItem ic:IconAssist.Icon="{StaticResource IconCopy}"
                                                                   Header="{loc:Tr MainWindow_14}" Click="OnMenuClone"
                                                                   Visibility="{Binding Permissions.CanClone, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
@@ -258,8 +261,8 @@
                                                                   Click="OnMenuFirewall"
                                                                   Visibility="{Binding Permissions.CanConfigure, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
                                                     </ContextMenu>
-                                                </Button.ContextMenu>
-                                            </Button>
+                                                </ic:SplitButton.DropDownMenu>
+                                            </ic:SplitButton>
                                         </StackPanel>
 
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -431,7 +434,7 @@
                                             <TextBlock Text="{loc:Tr MainWindow_29}" VerticalAlignment="Center"
                                                        Foreground="{StaticResource BrushDim}" />
                                         </DockPanel>
-                                        <Grid Grid.Row="1" Height="190">
+                                        <Grid Grid.Row="1" MinHeight="120">
                                             <controls:GraphLine Series="{Binding GuestGraphSeries}"
                                                                 XLabels="{Binding GuestGraphXLabels}"
                                                                 Timestamps="{Binding GuestGraphTimes}">
@@ -446,7 +449,7 @@
                                                         </Style.Triggers>
                                                     </Style>
                                                 </controls:GraphLine.Style>
-                                            </controls:GraphLine>
+                                            </controls:GraphLine>
                                         </Grid>
                                     </Grid>
                                 </Grid>
@@ -454,8 +457,11 @@
                         </Grid>
                     </Border>
 
+                    <GridSplitter Grid.Row="1" Style="{StaticResource PaneSplitterH}"
+                                  DragCompleted="OnPaneSplitterDragCompleted" />
+
                     <!-- ===== 게스트 목록 ===== -->
-                    <Grid Grid.Row="1">
+                    <Grid Grid.Row="2">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
@@ -466,16 +472,20 @@
                                     Content="{loc:Tr MainWindow_30}"
                                     Click="OnCreateGuest" Style="{StaticResource AccentButton}"
                                     Visibility="{Binding Permissions.CanAllocate, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
+                            <!-- 템플릿 표시 — 끄면 목록에서 템플릿과 '템플릿' 열을 숨긴다(설정에 저장) -->
+                            <CheckBox DockPanel.Dock="Right" Content="{loc:Tr MainWindow_ShowTemplates}"
+                                      IsChecked="{Binding ShowTemplates}" VerticalAlignment="Center"
+                                      Margin="0,0,14,0" Click="OnShowTemplatesClick" />
                             <TextBlock VerticalAlignment="Center">
                                 <Run Text="{loc:Tr MainWindow_31}" FontWeight="SemiBold" />
                                 <Run Text="  " />
-                                <Run Text="{Binding Guests.Count, Mode=OneWay, FallbackValue=0}"
+                                <Run Text="{Binding GuestsView.Count, Mode=OneWay, FallbackValue=0}"
                                      Foreground="{StaticResource BrushDim}" />
                                 <Run Text="{loc:Tr MainWindow_32}" Foreground="{StaticResource BrushDim}" />
                             </TextBlock>
                         </DockPanel>
 
-                        <DataGrid Grid.Row="1" x:Name="GuestGrid" ItemsSource="{Binding Guests}"
+                        <DataGrid Grid.Row="1" x:Name="GuestGrid" ItemsSource="{Binding GuestsView}"
                                   SelectedItem="{Binding SelectedGuest}"
                                   AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal"
                                   HeadersVisibility="Column"
@@ -486,7 +496,7 @@
                                     DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                     <MenuItem ic:IconAssist.Icon="{StaticResource IconMonitor}"
                                               Header="{loc:Tr MainWindow_09}" Click="OnMenuConsole"
-                                              Visibility="{Binding Permissions.CanConsole, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
+                                              Visibility="{Binding CanOpenConsole, Converter={StaticResource BoolToVis}}" />
                                     <Separator />
                                     <MenuItem ic:IconAssist.Icon="{StaticResource IconPlay}"
                                               ic:IconAssist.Brush="{StaticResource BrushOk}"
@@ -536,7 +546,7 @@
                                     <Separator />
                                     <MenuItem ic:IconAssist.Icon="{StaticResource IconCamera}"
                                               Header="{loc:Tr MainWindow_37}" Click="OnMenuSnapshot"
-                                              Visibility="{Binding Permissions.CanSnapshot, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
+                                              Visibility="{Binding CanOpenSnapshots, Converter={StaticResource BoolToVis}}" />
                                     <MenuItem ic:IconAssist.Icon="{StaticResource IconCopy}"
                                               Header="{loc:Tr MainWindow_14}" Click="OnMenuClone"
                                               Visibility="{Binding Permissions.CanClone, Converter={StaticResource BoolToVis}, FallbackValue=Visible}" />
@@ -553,11 +563,13 @@
                                 </ContextMenu>
                             </DataGrid.ContextMenu>
                             <DataGrid.Columns>
-                                <DataGridTemplateColumn Header="{loc:Tr MainWindow_39}" Width="70">
+                                <!-- 종류는 아이콘만(모니터 = VM, 상자 = CT) — 글자는 툴팁으로 -->
+                                <DataGridTemplateColumn Header="{loc:Tr MainWindow_39}" Width="48">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <ic:PathIcon Width="14" Height="14" Margin="0,0,6,0">
+                                            <StackPanel Orientation="Horizontal" Background="Transparent"
+                                                        ToolTip="{Binding Kind, Mode=OneWay, Converter={StaticResource KindLabel}}">
+                                                <ic:PathIcon Width="14" Height="14" Margin="2,0,0,0">
                                                     <ic:PathIcon.Style>
                                                         <Style TargetType="ic:PathIcon">
                                                             <Setter Property="Data"
@@ -571,9 +583,6 @@
                                                         </Style>
                                                     </ic:PathIcon.Style>
                                                 </ic:PathIcon>
-                                                <TextBlock
-                                                    Text="{Binding Kind, Mode=OneWay, Converter={StaticResource KindLabel}}"
-                                                    VerticalAlignment="Center" />
                                             </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
@@ -642,7 +651,7 @@
                                                     Binding="{Binding DiskBytes, Mode=OneWay, Converter={StaticResource BytesFmt}}" />
                                 <DataGridTextColumn Header="{loc:Tr MainWindow_21}" Width="*" MinWidth="120"
                                                     Binding="{Binding UptimeDisplaySeconds, Mode=OneWay, Converter={StaticResource UptimeFmt}}" />
-                                <DataGridCheckBoxColumn Header="{loc:Tr MainWindow_43}"
+                                <DataGridCheckBoxColumn x:Name="TemplateColumn" Header="{loc:Tr MainWindow_43}"
                                                         Binding="{Binding IsTemplate, Mode=OneWay}" Width="70"
                                                         ElementStyle="{StaticResource GridCheckBox}" />
                             </DataGrid.Columns>
@@ -662,13 +671,15 @@
                             </Style.Triggers>
                         </Style>
                     </Grid.Style>
+                    <!-- 노드 목록 | 상세 사이를 끌어 너비를 바꾼다 -->
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="290" />
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition x:Name="NodeListColumn" Width="290" MinWidth="180" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" MinWidth="360" />
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0" Background="{StaticResource BrushPanel}" CornerRadius="6" Padding="10"
-                            BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" Margin="0,0,8,0">
+                            BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" Margin="0">
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Top" Text="{loc:Tr MainWindow_NodeList}"
                                        Style="{StaticResource SectionHeader}" Margin="0,0,0,6" />
@@ -704,7 +715,10 @@
                         </DockPanel>
                     </Border>
 
-                    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                    <GridSplitter Grid.Column="1" Style="{StaticResource PaneSplitterV}"
+                                  DragCompleted="OnPaneSplitterDragCompleted" />
+
+                    <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
                         <StackPanel>
                             <DockPanel Margin="2,0,0,8">
                                 <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconSettings}"
@@ -857,7 +871,7 @@
                                             </Style.Triggers>
                                         </Style>
                                     </controls:GraphLine.Style>
-                                </controls:GraphLine>
+                                </controls:GraphLine>
                             </Grid>
                         </StackPanel>
                     </ScrollViewer>

@@ -23,6 +23,12 @@ public sealed class PveApiAttribute(string method, string path) : Attribute
     /// </summary>
     public bool Legacy { get; init; }
 
+    /// <summary>
+    ///     아직 정식 PVE 에 없는(개발 목록에 올라온 패치 등) 엔드포인트 — 검사 도구는 스키마 대조를 건너뛴다.
+    ///     버전으로 켜고 끌 수 없으므로 부르는 쪽이 서버 상태(예: VM 설정)로 지원 여부를 먼저 확인한다.
+    /// </summary>
+    public bool Experimental { get; init; }
+
     public PveApiVersion SinceVersion => PveApiVersion.Parse(Since);
 
     public PveApiVersion? UntilVersion => Until is null ? null : PveApiVersion.Parse(Until);

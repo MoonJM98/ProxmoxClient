@@ -21,6 +21,6 @@
             <!-- 규칙 목록·버튼(FirewallRules) — 웹 UI 의 방화벽 규칙 표 -->
             <ContentControl Grid.Row="1" x:Name="RulesHost" />
 
-            <TextBlock Grid.Row="2" x:Name="StatusText" Style="{StaticResource DialogStatus}" Margin="0,10,0,0" />
+            <TextBlock Grid.Row="2" x:Name="StatusText" Style="{StaticResource DialogStatus}" ic:WindowFooter.Move="True" Margin="0,10,0,0" />
         </Grid>
 </UserControl>

@@ -14,6 +14,7 @@ using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Services;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
+using ProxmoxClient.Core.Rdp;
 using ProxmoxClient.Core.Vnc;
 
 namespace ProxmoxClient.App.Views;
@@ -33,10 +34,6 @@ public partial class ConsoleWindow : Window
     /// <summary>WritePixels 연속 실패 상한 — 조건이 계속 맞지 않을 때 매 틱 예외·재요청이 반복되지 않도록.</summary>
     private const int MaxConsecutiveWritePixelsFailures = 5;
     private const int KeysymKpEnter = 0xFF8D;
-    /// <summary>remote-viewer 가 이 시간 안에 종료되면 연결 실패로 보고 알린다.</summary>
-    private static readonly TimeSpan SpiceEarlyExitWindow = TimeSpan.FromSeconds(5);
-    /// <summary>remote-viewer 가 .vv 를 읽고 지우지 못한 경우(비정상 종료 등) 비밀번호 파일을 정리하기까지의 대기.</summary>
-    private static readonly TimeSpan SpiceFileCleanupDelay = TimeSpan.FromSeconds(15);
     private readonly ProxmoxApiClient _api;
     private readonly bool _canPowerManage;
     private readonly object _dirtyLock = new();
@@ -68,12 +65,12 @@ public partial class ConsoleWindow : Window
     private IntPtr _keyboardHook;
     private int _pointerMask;
     private int _renderingHooked;
-    private ProxmoxVncSession? _session;
+    private IConsoleSession? _session;
     private ConsoleSettings _settings = new();
     private DispatcherTimer? _statsTimer;
     private int _writePixelsFailures;
     public ConsoleWindow(ProxmoxApiClient api, PveResource guest, string guestTitle, GuestPowerRunner runPower,
-        bool canPowerManage)
+        bool canPowerManage, ConsoleProtocol protocol = ConsoleProtocol.Vnc)
     {
         if (guest.Kind != ResourceKind.Qemu) throw new NotSupportedException(Loc.T("ConsoleWindow_VmOnly"));
 
@@ -85,17 +82,26 @@ public partial class ConsoleWindow : Window
         _node = guest.Node;
         _vmid = guest.VmId;
         _guestTitle = guestTitle;
+        _protocol = protocol;
         // 게스트 객체는 메인 새로고침으로 상태가 갱신되므로 전원 버튼 표시가 자동으로 따라간다
         PowerPanel.DataContext = guest;
         PowerPanel.Visibility = canPowerManage ? Visibility.Visible : Visibility.Collapsed;
         _canPowerManage = canPowerManage;
         StoppedPanel.StartRequested += OnStoppedPanelStart;
         _runState = new GuestRunStateMonitor(guest, OnGuestStoppedChanged);
-        _title = Loc.T("ConsoleWindow_Header", guestTitle);
+        _title = Loc.T(IsRdp ? "ConsoleWindow_HeaderRdp" : "ConsoleWindow_Header", guestTitle);
         Title = _title;
         // 키보드는 이 창이 활성일 때만 가로챈다 — 비활성·최소화되면 곧바로 풀고 눌린 키를 뗀다
-        Activated += (_, _) => InstallKeyboardHook();
-        Deactivated += (_, _) => RemoveKeyboardHook();
+        Activated += (_, _) =>
+        {
+            InstallKeyboardHook();
+            SyncClipboardToGuest(); // PC 에서 새로 복사하고 돌아왔으면 게스트로
+        };
+        Deactivated += (_, _) =>
+        {
+            RemoveKeyboardHook();
+            RequestGuestClipboard(); // 다른 창에서 붙여 넣을 수 있게 게스트 클립보드를 PC 로
+        };
         StateChanged += (_, _) =>
         {
             if (WindowState == WindowState.Minimized) RemoveKeyboardHook();
@@ -104,6 +110,7 @@ public partial class ConsoleWindow : Window
         ScreenImage.LostMouseCapture += (_, _) => _pointerMask = 0; // 캡처를 잃으면 눌림 상태가 남지 않게
         // 화면 크기(맞춤 배율)·모니터 DPI 가 바뀌면 커서 크기도 게스트 화면과 같은 비율로 다시 만든다
         ScreenImage.SizeChanged += (_, _) => RefreshCursor();
+        ConsoleScroll.SizeChanged += (_, _) => QueueDesktopResize(); // RDP — 게스트 해상도를 창에 맞춘다
         DpiChanged += (_, _) => RefreshCursor();
         Loaded += async (_, _) =>
         {
@@ -119,12 +126,17 @@ public partial class ConsoleWindow : Window
         };
         Closing += (_, _) =>
         {
+            ReleaseStickyKeys(); // 게스트에 Ctrl 등이 눌린 채 남지 않게(연결이 살아 있을 때 보낸다)
             _closed = true;
             _runState.Dispose();
             CompositionTarget.Rendering -= OnCompositionRendering;
             _statsTimer?.Stop();
             RemoveKeyboardHook();
-            _session?.Dispose();
+            // RDP 는 떼는 키·종료 알림을 보낸 뒤 닫는다(짧게, 뒤에서) — 게스트에 키가 눌린 채 남지 않게
+            if (IsRdp && _session is { IsConnected: true } rdp)
+                _ = rdp.DisconnectAsync().ContinueWith(t => App.Log($"[콘솔 {_vmid}] RDP 종료 실패: {t.Exception}"),
+                    TaskContinuationOptions.OnlyOnFaulted);
+            else _session?.Dispose();
         };
         Closed += (_, _) => _cursorHandle?.Dispose(); // 창이 사라진 뒤 — 쓰는 중인 커서 핸들을 먼저 지우지 않게
     }
@@ -134,14 +146,22 @@ public partial class ConsoleWindow : Window
         SetState(Loc.T("ConsoleWindow_M01"));
         UpdateButtons(false);
     }
-    /// <summary>정지↔실행 전환 — 꺼지면 안내 화면, 외부에서 켜지면 자동 연결.</summary>
+    /// <summary>
+    ///     정지↔실행 전환 — 꺼지면 안내 화면, 외부에서 켜지면 자동 연결.
+    ///     목록의 상태는 몇 초씩 늦게, 부팅 중에는 잠깐 거꾸로 올 수도 있다. 콘솔이 붙어 있으면 게스트는 켜져 있는
+    ///     것이므로 안내로 화면을 덮지 않는다 — 정말 꺼지면 서버가 연결을 끊고, 그 뒤 상태가 바뀔 때 안내를 띄운다.
+    /// </summary>
     private void OnGuestStoppedChanged(bool stopped)
     {
         if (_closed) return;
 
+        var connected = _session?.IsConnected == true;
         if (stopped)
-            ShowStopped();
-        else if (_session?.IsConnected != true) _ = AutoConnectAsync(Loc.T("ConsoleWindow_StartedConnecting"));
+        {
+            if (!connected) ShowStopped();
+        }
+        else if (connected) StoppedPanel.Hide();
+        else _ = AutoConnectAsync(Loc.T("ConsoleWindow_StartedConnecting"));
     }
     private async void OnStoppedPanelStart(object? sender, EventArgs e)
     {
@@ -180,11 +200,12 @@ public partial class ConsoleWindow : Window
         UpdateButtons(false);
         BtnConnect.IsEnabled = false; // 연결 시도 중 중복 재연결 방지
 
-        var session = new ProxmoxVncSession(_api)
-        {
-            ImageDecoder = DecodeTightImage,
-            Settings = _settings
-        };
+        IConsoleSession session = IsRdp
+            ? new ProxmoxRdpSession(_api)
+            {
+                InitialSize = DesiredDesktopSize(), ShareClipboard = _settings.RdpClipboard
+            }
+            : new ProxmoxVncSession(_api) { ImageDecoder = DecodeTightImage, Settings = _settings };
 
         // 재연결 후 늦게 도착한 이전 세션 이벤트가 새 세션 UI 를 덮어쓰지 않도록 세션 동일성 확인
         bool IsCurrent()
@@ -202,7 +223,8 @@ public partial class ConsoleWindow : Window
 
             StoppedPanel.Hide();
             EnsureBitmap(w, h);
-            FitWindowToFramebuffer(w, h);
+            // RDP 창 맞춤 해상도면 게스트가 창에 맞췄다 — 창을 게스트 크기(물리 픽셀)로 다시 키우지 않는다
+            if (!FitsGuestToWindow) FitWindowToFramebuffer(w, h);
             var tier = RenderCapability.Tier >> 16;
             var accel = tier >= 2 ? Loc.T("ConsoleWindow_AccelHardware") :
                 tier == 1 ? Loc.T("ConsoleWindow_AccelPartial") : Loc.T("ConsoleWindow_AccelSoftware");
@@ -210,7 +232,10 @@ public partial class ConsoleWindow : Window
             UpdateButtons(true);
             Focus();
             StartStatsTicker();
+            _ = DetectClipboardAsync();
+            if (!IsRdp) _ = HintCursorShapeAsync(session); // RDP 는 커서 모양을 늘 보낸다
         });
+        session.ClipboardReceived += OnGuestClipboard;
         session.FrameReceived += QueueFrameFlush;
         session.LedState += leds => Dispatcher.BeginInvoke(() =>
         {
@@ -219,6 +244,10 @@ public partial class ConsoleWindow : Window
         session.CursorShape += cursor => Dispatcher.BeginInvoke(() =>
         {
             if (IsCurrent()) ApplyCursorShape(cursor);
+        });
+        session.CursorDefault += () => Dispatcher.BeginInvoke(() =>
+        {
+            if (IsCurrent()) ResetCursor();
         });
         session.Closed += ex =>
         {
@@ -230,12 +259,13 @@ public partial class ConsoleWindow : Window
                 _statsTimer?.Stop();
                 SetState(ex is null ? Loc.T("ConsoleWindow_M05") : Loc.T("ConsoleWindow_M06", ex.Message));
                 UpdateButtons(false);
+                if (_runState.IsStopped) ShowStopped(); // 이미 꺼진 것으로 보고된 뒤 연결이 끊겼다
             });
         };
         _session = session;
         try
         {
-            await session.ConnectAsync(_node, ResourceKind.Qemu, _vmid);
+            await session.ConnectAsync(_node, _vmid);
             return true;
         }
         catch (Exception ex) when (IsCurrent())
@@ -402,18 +432,20 @@ public partial class ConsoleWindow : Window
         {
             if (_session?.IsConnected != true) return;
 
-            var s = _session.TakeStats();
-            StateText.Text =
-                $"{s.Mbps:F1} Mbps · {s.Fps:F0} fps · Raw {s.Raw} · Tight {s.Tight} · Img {s.Image} · Copy {s.Copy}";
+            StateText.Text = _session.TakeStatsText();
         };
         _statsTimer.Start();
     }
     private void UpdateButtons(bool connected)
     {
         BtnDisconnect.IsEnabled = connected;
-        BtnCad.IsEnabled = connected;
-        BtnClip.IsEnabled = connected;
+        BtnKeys.IsEnabled = connected;
+        UpdateClipboardButton(connected);
+        if (!connected) ReleaseStickyKeys();
         BtnConnect.IsEnabled = !connected;
+        // 연결 중이면 '연결 끊기', 끊겼으면 '재연결' — 같은 자리에서 서로 바뀐다
+        BtnDisconnect.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
+        BtnConnect.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
     }
     private void SetState(string text)
     {
@@ -432,10 +464,6 @@ public partial class ConsoleWindow : Window
         SetState(Loc.T("MainViewModel_M05"));
         UpdateButtons(false);
     }
-    private void OnCtrlAltDel(object sender, RoutedEventArgs e)
-    {
-        if (_session?.IsConnected == true) _ = _session.SendCtrlAltDelAsync();
-    }
     private void OnSendClipboard(object sender, RoutedEventArgs e)
     {
         if (_session?.IsConnected != true) return;
@@ -445,6 +473,7 @@ public partial class ConsoleWindow : Window
             var text = Clipboard.ContainsText() ? Clipboard.GetText() : string.Empty;
             if (text.Length > 0)
             {
+                _lastClipboardSync = text;
                 _ = _session.SendClipboardAsync(text);
                 SetState(Loc.T("ConsoleWindow_M09"));
             }
@@ -462,6 +491,7 @@ public partial class ConsoleWindow : Window
         ResizeMode = _fitMode ? ResizeMode.CanResize : ResizeMode.NoResize;
         if (!_fitMode && _fbWidth > 0) FitWindowToFramebuffer(_fbWidth, _fbHeight);
         BtnScale.Content = _fitMode ? Loc.T("ConsoleWindow_04") : Loc.T("ConsoleWindow_M11");
+        QueueDesktopResize();
     }
     /// <summary>
     ///     화면 영역이 프레임버퍼와 정확히 같아지도록 창 크기를 맞춘다.
@@ -482,10 +512,21 @@ public partial class ConsoleWindow : Window
     /// <summary>맞춤(축소) 모드 + 부드러운 스케일링 설정 시 Linear, 그 외(1:1 포함)는 NearestNeighbor 로 픽셀 선명도 유지.</summary>
     private void ApplyScalingMode()
     {
-        RenderOptions.SetBitmapScalingMode(ScreenImage, _fitMode && _settings.SmoothScaling
+        RenderOptions.SetBitmapScalingMode(ScreenImage, _fitMode && SmoothScaling
             ? BitmapScalingMode.Linear
             : BitmapScalingMode.NearestNeighbor);
         RefreshCursor(); // 맞춤 전환·설정 변경 — 커서 크기·대체 커서를 다시 맞춘다
+    }
+    /// <summary>[종료 | ▾] 의 종료 쪽 — 버튼의 Action 속성(Stop)은 표시 조건이라 여기서는 종료를 직접 부른다.</summary>
+    private async void OnShutdownClick(object sender, RoutedEventArgs e)
+    {
+        if (!_guest.IsRunning)
+        {
+            SetState(Loc.T("GuestPower_ShutdownNeedsRunning", _vmid)); // 일시 정지 — ▾ 에서 재개·정지
+            return;
+        }
+
+        await RunPowerAsync(GuestPowerAction.Shutdown);
     }
     private async void OnPowerAction(object sender, RoutedEventArgs e)
     {
@@ -493,6 +534,10 @@ public partial class ConsoleWindow : Window
             || (GuestPowerVisibility.GetAction(source) is var action && action == GuestPowerAction.None))
             return;
 
+        await RunPowerAsync(action);
+    }
+    private async Task RunPowerAsync(GuestPowerAction action)
+    {
         var label = GuestPowerRules.Label(action);
         SetState(Loc.T("ConsoleWindow_M12", label));
         await _runPower(_guest, action);
@@ -500,11 +545,13 @@ public partial class ConsoleWindow : Window
     }
     private void OnOpenSettings(object sender, RoutedEventArgs e)
     {
-        var dialog = new ConsoleSettingsWindow(_settings) { Owner = this };
+        var tab = IsRdp ? ConsoleSettingsTab.Rdp : ConsoleSettingsTab.Vnc;
+        var dialog = new ConsoleSettingsWindow(_settings, tab) { Owner = this };
         if (dialog.ShowDialog() != true || dialog.SavedSettings is not { } saved) return;
 
         _settings = saved;
         ApplyScalingMode();
+        QueueDesktopResize(); // RDP 창 맞춤 해상도를 방금 켰으면 바로 맞춘다
         SetState(Loc.T("ConsoleWindow_M14"));
     }
     private (int X, int Y) ToVncCoordinates(Point position)

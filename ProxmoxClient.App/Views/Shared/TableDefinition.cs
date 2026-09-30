@@ -41,10 +41,13 @@ public sealed record TableAction
     public ApiFeature? Requires { get; init; }
 
     /// <summary>
-    ///     작업 버튼 줄(<see cref="ActionBar" />)에서 같은 키끼리 드롭다운 버튼 하나(라벨 = 이 키)에 모은다.
+    ///     작업 버튼 줄(<see cref="ActionBar" />·<see cref="TableTab" />)에서 같은 키끼리 드롭다운 버튼 하나(라벨 = 이 키)에 모은다.
     ///     자주 쓰지 않는 작업으로 버튼 줄이 길어지지 않게 한다. null 이면 제 버튼을 갖는다.
     /// </summary>
     public string? MenuKey { get; init; }
+
+    /// <summary>글자 없이 아이콘만 두고 이름은 툴팁으로(위로·아래로처럼 아이콘만으로 뜻이 분명한 버튼).</summary>
+    public bool IconOnly { get; init; }
 }
 
 /// <summary>표에 보여 줄 한 행 — 없는 필드는 빈칸, 형식은 미리 적용해 둔다.</summary>
@@ -110,15 +113,33 @@ public static class TableFormats
             : $"{t.Hours:D2}:{t.Minutes:D2}:{t.Seconds:D2}";
     }
 
-    /// <summary>1/0 → ✓/빈칸.</summary>
+    /// <summary>
+    ///     켜짐 표시 값 — 표는 이 값이 든 칸에 체크 아이콘을 그린다(<see cref="IsCheck" />). 글자는 복사·필터용.
+    /// </summary>
+    public const string CheckValue = "1";
+
+    /// <summary>1/0 → 체크/빈칸.</summary>
     public static string Flag(string raw)
     {
-        return raw is "1" or "true" ? "✓" : string.Empty;
+        return raw is "1" or "true" ? CheckValue : string.Empty;
     }
 
     /// <summary>1/0 을 반대로 — "disable" 같은 필드를 '사용' 열로 보일 때.</summary>
     public static string InverseFlag(string raw)
     {
-        return raw is "1" or "true" ? string.Empty : "✓";
+        return raw is "1" or "true" ? string.Empty : CheckValue;
+    }
+
+    /// <summary>값이 없으면 켜짐(서버 기본값이 켜짐인 enable 같은 필드) — 0/false 만 빈칸.</summary>
+    public static string EnabledFlag(string raw)
+    {
+        return raw is "0" or "false" ? string.Empty : CheckValue;
+    }
+
+    /// <summary>체크 아이콘으로 그릴 열인지 — 위 세 형식 중 하나.</summary>
+    public static bool IsCheck(Func<string, string>? format)
+    {
+        return format is not null && format.Method.DeclaringType == typeof(TableFormats)
+                                  && format.Method.Name is nameof(Flag) or nameof(InverseFlag) or nameof(EnabledFlag);
     }
 }

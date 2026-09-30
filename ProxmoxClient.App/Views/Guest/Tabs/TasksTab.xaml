@@ -19,13 +19,12 @@
 
         <DockPanel Grid.Row="0" Margin="0,0,0,10">
             <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconRefresh}"
-                    Content="{loc:Tr MainWindow_03}" Click="OnRefresh" MinWidth="96" />
+                    ic:RefreshButton.IsRefresh="True" Content="{loc:Tr MainWindow_03}" Click="OnRefresh" MinWidth="96" />
             <Button DockPanel.Dock="Right" x:Name="StopButton" ic:IconAssist.Icon="{StaticResource IconSquare}"
                     Content="{loc:Tr TasksTab_Stop}" Click="OnStop" Margin="0,0,8,0" Visibility="Collapsed" />
             <Button DockPanel.Dock="Right" x:Name="LogButton" ic:IconAssist.Icon="{StaticResource IconList}"
                     Content="{loc:Tr TasksTab_Log}" Click="OnLog" Margin="0,0,8,0" Visibility="Collapsed" />
-            <TextBlock x:Name="HintText" Foreground="{StaticResource BrushDim}" FontSize="11"
-                       VerticalAlignment="Center" TextWrapping="Wrap" />
+            <ic:InfoTip x:Name="HintText" Margin="0" />
         </DockPanel>
 
         <DataGrid Grid.Row="1" x:Name="TaskGrid" AutoGenerateColumns="False" IsReadOnly="True"
@@ -56,6 +55,6 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <TextBlock Grid.Row="2" x:Name="StatusText" Style="{StaticResource DialogStatus}" Margin="0,10,0,0" />
+        <TextBlock Grid.Row="2" x:Name="StatusText" Style="{StaticResource DialogStatus}" ic:WindowFooter.Move="True" Margin="0,10,0,0" />
     </Grid>
 </UserControl>

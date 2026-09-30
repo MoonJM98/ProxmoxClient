@@ -23,7 +23,7 @@ public partial class NodeShellTab : UserControl
         try
         {
             // 게스트 콘솔과 같이 부모창과 독립된 최상위 창으로 연다
-            new TerminalWindow(_api, _node).Show();
+            Services.ConsoleWindows.ShowNodeShell(_api, _node);
             StatusText.Text = string.Empty;
         }
         catch (Exception ex)
