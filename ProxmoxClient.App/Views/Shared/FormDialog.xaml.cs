@@ -178,7 +178,7 @@ public partial class FormDialog : Window
             {
                 var item = new ComboBoxItem
                 {
-                    Content = description.Length > 0 ? $"{value}  —  {description}" : value
+                    Content = description.Length > 0 ? $"{value} - {description}" : value
                 };
                 TextSearch.SetText(item, value); // 고르면 칸에는 설명 없이 값만
                 combo.Items.Add(item);

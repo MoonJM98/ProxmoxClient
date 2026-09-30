@@ -104,7 +104,7 @@ internal static class NodeSdnTab
         {
             LabelKey = labelKey, IconKey = "IconList", NeedsSelection = true,
             Run = (row, owner) => Task.FromResult(TableWindow.ShowModal(owner,
-                $"{Loc.T(labelKey)} — {row!["name"]}", new TableTab(() => load(row), columns, "NodeSdn_StatusHint")))
+                $"{Loc.T(labelKey)} - {row!["name"]}", new TableTab(() => load(row), columns, "NodeSdn_StatusHint")))
         };
     }
 }

@@ -88,6 +88,9 @@ public sealed record ConsoleSettings
         return Math.Clamp(level, MinLevel, MaxLevel);
     }
 
+    /// <summary>게스트 파일 창에서 숨김·시스템 항목을 보인다(흐리게).</summary>
+    public bool ShowHiddenGuestFiles { get; init; } = true;
+
     /// <summary>범위를 벗어난 값·빈 글꼴·정의되지 않은 열거값을 교정한 새 인스턴스.</summary>
     public ConsoleSettings Normalize()
     {

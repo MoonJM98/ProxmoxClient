@@ -209,7 +209,7 @@ internal static class FirewallRules
         try
         {
             list.AddRange((await api.Firewall.MacrosAsync())
-                .Select(m => (Value(m, "macro"), $"{Value(m, "macro")} — {Value(m, "descr")}"))
+                .Select(m => (Value(m, "macro"), $"{Value(m, "macro")} - {Value(m, "descr")}"))
                 .Where(m => m.Item1.Length > 0)
                 .OrderBy(m => m.Item1, StringComparer.OrdinalIgnoreCase));
         }
@@ -227,7 +227,7 @@ internal static class FirewallRules
     {
         return (await api.Firewall.ListGroupsAsync())
             .Select(g => (Value(g, "group"), Value(g, "comment") is { Length: > 0 } c
-                ? $"{Value(g, "group")} — {c}"
+                ? $"{Value(g, "group")} - {c}"
                 : Value(g, "group")))
             .ToList();
     }

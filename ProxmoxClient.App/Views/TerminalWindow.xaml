@@ -79,6 +79,13 @@
                     <Button ic:IconAssist.Icon="{StaticResource IconClipboard}" x:Name="BtnPaste"
                             Content="{loc:Tr TerminalWindow_04}"
                             MinWidth="90" Click="OnPaste" ToolTip="{loc:Tr TerminalWindow_05}" />
+                    <!-- CT 파일(따로 뜨는 파일 창) — CT 에서만 보인다 -->
+                    <Border x:Name="FilesSeparator" Width="1" Background="{StaticResource BrushBorder}"
+                            Margin="10,4,4,4" Visibility="Collapsed" />
+                    <Button x:Name="BtnFiles" ic:IconAssist.Icon="{StaticResource IconFolder}"
+                            Content="{loc:Tr GuestFiles_Toggle}"
+                            Visibility="Collapsed" Margin="6,0,0,0" Click="OnOpenFiles"
+                            ToolTip="{loc:Tr GuestFiles_ToggleTip}" />
                 </StackPanel>
             </DockPanel>
         </Border>

@@ -38,6 +38,7 @@ public partial class TerminalWindow : Window
     private readonly ConsoleSettingsStore _settingsStore = new();
     private readonly ConsoleTarget _target;
     private readonly string _title;
+    private readonly Toast _toast;
     private bool _autoConnecting;
     private bool _closed;
     private ProxmoxTerminalConnection? _connection;
@@ -63,6 +64,7 @@ public partial class TerminalWindow : Window
         _canPowerManage = canPowerManage;
         StoppedPanel.StartRequested += OnStoppedPanelStart;
         _runState = new GuestRunStateMonitor(guest, OnGuestStoppedChanged);
+        if (guest.Kind == ResourceKind.Lxc) InitFiles(api, guest, guestTitle);
     }
 
     /// <summary>
@@ -84,6 +86,7 @@ public partial class TerminalWindow : Window
     private TerminalWindow(ProxmoxApiClient api, ConsoleTarget target, string title)
     {
         InitializeComponent();
+        _toast = new Toast(TerminalHost);
         WindowTheme.ApplyDarkTitleBar(this);
         _api = api;
         _target = target;
@@ -113,6 +116,7 @@ public partial class TerminalWindow : Window
             _imeForwarder = null;
             _inputGuard?.Dispose();
             _inputGuard = null;
+            _filesWindow?.Close();
             DisposeSession(true);
         };
     }
@@ -316,10 +320,11 @@ public partial class TerminalWindow : Window
         BtnPaste.IsEnabled = connected;
     }
 
+    /// <summary>상태 — 아래 상태 줄에 두고, 평소 상태(연결됨)가 아니면 터미널 위에 잠깐 알린다(창 제목은 그대로).</summary>
     private void SetState(string text)
     {
         StateText.Text = text;
-        Title = text.StartsWith(Loc.T("ConsoleWindow_M08"), StringComparison.Ordinal) ? _title : $"{_title} — {text}";
+        if (!text.StartsWith(Loc.T("ConsoleWindow_M08"), StringComparison.Ordinal)) _toast.Show(text);
     }
 
     private async void OnReconnect(object sender, RoutedEventArgs e)

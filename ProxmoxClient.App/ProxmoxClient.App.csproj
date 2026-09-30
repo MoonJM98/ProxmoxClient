@@ -51,4 +51,14 @@
         <SatelliteResourceLanguages>ko;en</SatelliteResourceLanguages>
     </PropertyGroup>
 
+    <!-- IronRDP 패키지는 네이티브 DLL 을 runtimes\ 아래 콘텐츠로도 복사한다(win-x64·win-arm64 모두).
+         RID 게시(MSI)에서는 그 RID 의 DLL 이 이미 루트에 있으므로 이 사본은 게시물에서 뺀다(약 12MB) -->
+    <Target Name="DropIronRdpNativeCopies" AfterTargets="ComputeResolvedFilesToPublishList"
+            Condition="'$(RuntimeIdentifier)' != ''">
+        <ItemGroup>
+            <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                                   Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('runtimes')) AND '%(Filename)%(Extension)' == 'DevolutionsIronRdp.dll'" />
+        </ItemGroup>
+    </Target>
+
 </Project>

@@ -276,4 +276,46 @@
   <data name="Rdp_Failed" xml:space="preserve">
     <value>RDP error: {0}</value>
   </data>
+  <data name="HiddenShell_NotReady" xml:space="preserve">
+    <value>The node shell did not become ready (slow login, or not root@pam).</value>
+  </data>
+  <data name="HiddenShell_TooLong" xml:space="preserve">
+    <value>The command is too long (use a shorter path).</value>
+  </data>
+  <data name="HiddenShell_Closed" xml:space="preserve">
+    <value>The node shell connection was closed.</value>
+  </data>
+  <data name="HiddenShell_BadOutput" xml:space="preserve">
+    <value>The node shell returned an unrecognized response.</value>
+  </data>
+  <data name="GuestFiles_BadName" xml:space="preserve">
+    <value>Invalid name: {0}</value>
+  </data>
+  <data name="GuestFiles_MountFailed" xml:space="preserve">
+    <value>Could not mount the stopped CT {0} (another task may hold a lock): {1}</value>
+  </data>
+  <data name="GuestFiles_Failed" xml:space="preserve">
+    <value>The operation failed (exit code {0}).</value>
+  </data>
+  <data name="AgentFiles_NoExec" xml:space="preserve">
+    <value>The guest agent blocks command execution (guest-exec) - check the qemu-guest-agent settings in the guest (block-rpcs/allow-rpcs).</value>
+  </data>
+  <data name="AgentFiles_NoFolder" xml:space="preserve">
+    <value>Folders cannot be downloaded from this (Windows) guest - files only.</value>
+  </data>
+  <data name="AgentFiles_Truncated" xml:space="preserve">
+    <value>The guest agent output was truncated (limit exceeded).</value>
+  </data>
+  <data name="AgentFiles_Timeout" xml:space="preserve">
+    <value>The guest command (pid {0}) did not finish in time.</value>
+  </data>
+  <data name="HiddenShell_InputChanged" xml:space="preserve">
+    <value>The file changed size while uploading - try again.</value>
+  </data>
+  <data name="AgentFiles_Shrunk" xml:space="preserve">
+    <value>The file shrank while downloading ({0} / {1} bytes) - download it again.</value>
+  </data>
+  <data name="GuestFiles_MountBusy" xml:space="preserve">
+    <value>Another file panel is using the stopped CT {0} - try again when it finishes.</value>
+  </data>
 </root>

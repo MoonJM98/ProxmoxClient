@@ -52,6 +52,20 @@ public sealed class GuestAgentApi(ProxmoxApiClient api) : PveDomainApi(api)
     }
 
     /// <summary>
+    ///     게스트 안 파일 쓰기(바이트 그대로) — base64 를 직접 넘긴다(encode=0). 서버의 content 한도(60 KiB 글자) 안에서만.
+    /// </summary>
+    [PveApi("POST", "/nodes/{node}/qemu/{vmid}/agent/file-write")]
+    public Task<Row> FileWriteBytesAsync(string node, int vmid, string path, ReadOnlyMemory<byte> data,
+        CancellationToken ct = default)
+    {
+        return Api.SendForObjectAsync(HttpMethod.Post, $"{A(node, vmid)}/file-write",
+            new Dictionary<string, string>
+            {
+                ["file"] = path, ["content"] = Convert.ToBase64String(data.Span), ["encode"] = "0"
+            }, ct);
+    }
+
+    /// <summary>
     ///     파일 시스템 동결·해제·상태 — action: freeze·thaw·status. 동결 동안 게스트의 디스크 쓰기가 멈추므로 끝나면
     ///     반드시 해제해야 한다. 응답 result 를 글로 돌려준다.
     /// </summary>

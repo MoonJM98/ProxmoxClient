@@ -98,12 +98,18 @@
                 <Button ic:IconAssist.Icon="{StaticResource IconExternal}" x:Name="BtnSpice" Visibility="Collapsed"
                         Content="{loc:Tr ConsoleWindow_05}" MinWidth="110" Style="{StaticResource AccentButton}"
                         Click="OnOpenSpice" />
+                <!-- 게스트 파일(게스트 에이전트) — 파일 창을 따로 연다 -->
+                <Button x:Name="BtnFiles" ic:IconAssist.Icon="{StaticResource IconFolder}"
+                        Content="{loc:Tr GuestFiles_Toggle}"
+                        Margin="6,0,0,0" Click="OnOpenFiles" ToolTip="{loc:Tr GuestFiles_ToggleTipVm}" />
                 <Button ic:IconAssist.Icon="{StaticResource IconSettings}" x:Name="BtnSettings"
                         Content="{loc:Tr MainWindow_04}" MinWidth="80" Margin="6,0,0,0" Click="OnOpenSettings" />
             </WrapPanel>
         </Border>
 
-        <ScrollViewer Grid.Row="1" x:Name="ConsoleScroll" Background="#000000"
+        <!-- 파일을 콘솔 화면에 끌어다 놓으면 파일 창을 열고 지금 폴더로 올린다 -->
+        <ScrollViewer Grid.Row="1" x:Name="ConsoleScroll" Background="#000000" AllowDrop="True"
+                      DragEnter="OnScreenDragOver" DragOver="OnScreenDragOver" Drop="OnScreenDrop"
                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                       VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
             <Grid x:Name="ScreenHost">

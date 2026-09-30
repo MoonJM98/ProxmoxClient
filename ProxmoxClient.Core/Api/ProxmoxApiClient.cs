@@ -70,6 +70,9 @@ public sealed partial class ProxmoxApiClient : IDisposable
     /// <summary>True once ticket auth succeeded (or immediately in token mode).</summary>
     public bool IsAuthenticated =>
         Profile.AuthMode == AuthMode.ApiToken || _auth is not null;
+    /// <summary>로그인한 사용자 ID(user@realm, 서버 응답 기준) — 로그인 전이거나 API 토큰이면 null.</summary>
+    public string? AuthenticatedUser { get; private set; }
+
     /// <summary>세션 인증 티켓(비밀번호 모드). 콘솔 웹소켓 연결에 필요.</summary>
     public string? AuthTicket => _auth?.Ticket;
     /// <summary>이 클라이언트를 만든 연결 프로필.</summary>
@@ -148,6 +151,8 @@ public sealed partial class ProxmoxApiClient : IDisposable
         if (string.IsNullOrEmpty(ticket)) throw new ProxmoxApiException(0, Res.T("ProxmoxApiClient_03"));
 
         _auth = new AuthSession(ticket, csrfToken, Environment.TickCount64);
+        // 서버가 알려 준 실제 사용자 ID — 프로필에 영역 없이 "root" 로 적어 두어도 "root@pam" 으로 온다
+        AuthenticatedUser = GetString(data, "username") is { Length: > 0 } user ? user : Profile.UserName;
     }
     /// <summary>Gets the cluster version (GET /version) — handy as a connection test.</summary>
     [Versioning.PveApi("GET", "/version")]

@@ -37,6 +37,7 @@ public sealed partial class ProxmoxApiClient
         if (ticket.Length == 0 || user.Length == 0) throw new ProxmoxApiException(0, Res.T("ProxmoxApiClient_03"));
 
         Profile.UserName = user;
+        AuthenticatedUser = user;
         _auth = new AuthSession(ticket, GetString(data, "CSRFPreventionToken") is { Length: > 0 } csrf ? csrf : null,
             Environment.TickCount64);
         return user;

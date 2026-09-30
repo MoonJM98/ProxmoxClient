@@ -52,6 +52,7 @@ public partial class ConsoleWindow : Window
     private readonly GuestRunStateMonitor _runState;
     private readonly ConsoleSettingsStore _settingsStore = new();
     private readonly string _title;
+    private readonly Toast _toast;
     private readonly int _vmid;
     private bool _autoConnecting;
     private WriteableBitmap? _bitmap;
@@ -75,6 +76,7 @@ public partial class ConsoleWindow : Window
         if (guest.Kind != ResourceKind.Qemu) throw new NotSupportedException(Loc.T("ConsoleWindow_VmOnly"));
 
         InitializeComponent();
+        _toast = new Toast(ConsoleScroll);
         WindowTheme.ApplyDarkTitleBar(this);
         _api = api;
         _guest = guest;
@@ -86,6 +88,7 @@ public partial class ConsoleWindow : Window
         // 게스트 객체는 메인 새로고침으로 상태가 갱신되므로 전원 버튼 표시가 자동으로 따라간다
         PowerPanel.DataContext = guest;
         PowerPanel.Visibility = canPowerManage ? Visibility.Visible : Visibility.Collapsed;
+        InitFiles(api, guest);
         _canPowerManage = canPowerManage;
         StoppedPanel.StartRequested += OnStoppedPanelStart;
         _runState = new GuestRunStateMonitor(guest, OnGuestStoppedChanged);
@@ -132,6 +135,7 @@ public partial class ConsoleWindow : Window
             CompositionTarget.Rendering -= OnCompositionRendering;
             _statsTimer?.Stop();
             RemoveKeyboardHook();
+            _filesWindow?.Close();
             // RDP 는 떼는 키·종료 알림을 보낸 뒤 닫는다(짧게, 뒤에서) — 게스트에 키가 눌린 채 남지 않게
             if (IsRdp && _session is { IsConnected: true } rdp)
                 _ = rdp.DisconnectAsync().ContinueWith(t => App.Log($"[콘솔 {_vmid}] RDP 종료 실패: {t.Exception}"),
@@ -447,10 +451,11 @@ public partial class ConsoleWindow : Window
         BtnDisconnect.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
         BtnConnect.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
     }
+    /// <summary>상태 — 아래 상태 줄에 두고, 평소 상태(연결됨)가 아니면 화면 위에 잠깐 알린다(창 제목은 그대로).</summary>
     private void SetState(string text)
     {
         StateText.Text = text;
-        Title = text.StartsWith(Loc.T("ConsoleWindow_M08")) ? _title : $"{_title} — {text}";
+        if (!text.StartsWith(Loc.T("ConsoleWindow_M08"), StringComparison.Ordinal)) _toast.Show(text);
     }
     private async void OnReconnect(object sender, RoutedEventArgs e)
     {

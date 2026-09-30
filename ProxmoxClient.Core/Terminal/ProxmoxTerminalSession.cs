@@ -54,6 +54,9 @@ public sealed class ProxmoxTerminalSession : IDisposable
         private set => _isConnected = value;
     }
 
+    /// <summary>아직 보내지 않은 메시지 수 — 큰 입력을 흘려 보낼 때 이만큼 쌓이면 잠시 기다린다(메모리에 다 쌓지 않게).</summary>
+    public int PendingSends => _outgoing.Reader.Count;
+
     /// <summary>서버 인증 성공 응답 접두어.</summary>
     private static ReadOnlySpan<byte> AuthOk => "OK"u8;
 

@@ -21,7 +21,7 @@ public partial class MainWindow
     {
         if (sender is not Button button || _vm.SelectedGuest is not { } guest || _vm.Api is not { } api) return;
 
-        var title = $"{guest.Kind.Label()} {guest.VmId} — {guest.Name}";
+        var title = $"{guest.Kind.Label()} {guest.VmId} - {guest.Name}";
         var canPower = _vm.Permissions?.CanPowerMgmt ?? true;
         var rdp = MenuItem("Console_KindRdp", "IconMonitor", false,
             async () => await OpenConsoleAsync(Core.Vnc.ConsoleProtocol.Rdp));

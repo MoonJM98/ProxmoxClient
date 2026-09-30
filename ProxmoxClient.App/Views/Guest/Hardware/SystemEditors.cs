@@ -229,7 +229,7 @@ internal static partial class SystemEditors
             return rows.Select(r => (Name: ActionHelpers.Value(r, "name"), Vendor: CpuVendor(r)))
                 .Where(r => r.Name.Length > 0)
                 .OrderBy(r => VendorOrder(r.Vendor)).ThenBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
-                .Select(r => (r.Name, $"{r.Name.Replace("custom-", "", StringComparison.Ordinal)} — {r.Vendor}"))
+                .Select(r => (r.Name, $"{r.Name.Replace("custom-", "", StringComparison.Ordinal)} - {r.Vendor}"))
                 .ToList();
         }
         catch (Exception ex) when (ex is ProxmoxClient.Core.Api.ProxmoxApiException)

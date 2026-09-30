@@ -331,9 +331,51 @@
     <value>RDP 연결을 마치지 못했습니다(마지막 단계: {0}).</value>
   </data>
   <data name="Rdp_NeedsNetworkAuth" xml:space="preserve">
-    <value>RDP 인증에 외부 서버(Kerberos)가 필요합니다 — 지원하지 않는 구성입니다.</value>
+    <value>RDP 인증에 외부 서버(Kerberos)가 필요합니다 - 지원하지 않는 구성입니다.</value>
   </data>
   <data name="Rdp_Failed" xml:space="preserve">
     <value>RDP 오류: {0}</value>
+  </data>
+  <data name="HiddenShell_NotReady" xml:space="preserve">
+    <value>노드 셸이 준비되지 않았습니다(로그인 지연 또는 root@pam 이 아님).</value>
+  </data>
+  <data name="HiddenShell_TooLong" xml:space="preserve">
+    <value>명령이 너무 깁니다(경로를 짧게 해 주세요).</value>
+  </data>
+  <data name="HiddenShell_Closed" xml:space="preserve">
+    <value>노드 셸 연결이 끊겼습니다.</value>
+  </data>
+  <data name="HiddenShell_BadOutput" xml:space="preserve">
+    <value>노드 셸에서 알아볼 수 없는 응답이 왔습니다.</value>
+  </data>
+  <data name="GuestFiles_BadName" xml:space="preserve">
+    <value>쓸 수 없는 이름입니다: {0}</value>
+  </data>
+  <data name="GuestFiles_MountFailed" xml:space="preserve">
+    <value>꺼진 CT {0} 를 마운트하지 못했습니다(다른 작업이 잠갔을 수 있음): {1}</value>
+  </data>
+  <data name="GuestFiles_Failed" xml:space="preserve">
+    <value>작업이 실패했습니다(종료 코드 {0}).</value>
+  </data>
+  <data name="AgentFiles_NoExec" xml:space="preserve">
+    <value>게스트 에이전트가 명령 실행(guest-exec)을 막아 두었습니다 - 게스트의 qemu-guest-agent 설정(block-rpcs/allow-rpcs)을 확인하세요.</value>
+  </data>
+  <data name="AgentFiles_NoFolder" xml:space="preserve">
+    <value>이 게스트(Windows)에서는 폴더를 받을 수 없습니다 - 파일만 받을 수 있습니다.</value>
+  </data>
+  <data name="AgentFiles_Truncated" xml:space="preserve">
+    <value>게스트 에이전트 출력이 잘렸습니다(한도 초과).</value>
+  </data>
+  <data name="AgentFiles_Timeout" xml:space="preserve">
+    <value>게스트 명령(pid {0})이 제한 시간 안에 끝나지 않았습니다.</value>
+  </data>
+  <data name="HiddenShell_InputChanged" xml:space="preserve">
+    <value>올리는 동안 파일 크기가 바뀌었습니다 - 다시 시도하세요.</value>
+  </data>
+  <data name="AgentFiles_Shrunk" xml:space="preserve">
+    <value>받는 동안 파일이 줄었습니다({0} / {1} 바이트) - 다시 받으세요.</value>
+  </data>
+  <data name="GuestFiles_MountBusy" xml:space="preserve">
+    <value>꺼진 CT {0} 를 다른 파일 패널이 쓰고 있습니다 - 그 작업이 끝난 뒤 다시 시도하세요.</value>
   </data>
 </root>

@@ -48,7 +48,7 @@ internal static partial class CtEditors
         return new HardwareEdit
         {
             // 창 제목에 볼륨을 보인다(웹 UI 의 읽기 전용 "디스크 이미지" 칸)
-            Title = $"{(isRoot ? Loc.T("Ct_RootDisk") : Loc.T("Ct_MountPoint", key))} — {mount.Get("file")}",
+            Title = $"{(isRoot ? Loc.T("Ct_RootDisk") : Loc.T("Ct_MountPoint", key))} - {mount.Get("file")}",
             Fields = MountFields(mount, isRoot, isCreate: false, ctx),
             Validate = values => isRoot ? null : ValidatePath(values),
             Build = values => One(key, ApplyMount(mount, values, isRoot).Format("file"))
