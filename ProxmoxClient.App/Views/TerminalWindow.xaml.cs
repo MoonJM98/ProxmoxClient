@@ -13,7 +13,7 @@ using ProxmoxClient.Core.Vnc;
 namespace ProxmoxClient.App.Views;
 
 /// <summary>
-///     CT 터미널 콘솔 — Proxmox termproxy(서버 측 PTY) 를 Windows Terminal 렌더러(<see cref="TerminalControl" />)로 표시.
+///     터미널 콘솔(CT 콘솔·노드 셸) — Proxmox termproxy(서버 측 PTY) 를 Windows Terminal 렌더러(<see cref="TerminalControl" />)로 표시.
 /// </summary>
 public partial class TerminalWindow : Window
 {
@@ -31,50 +31,73 @@ public partial class TerminalWindow : Window
     private readonly ProxmoxApiClient _api;
     private readonly bool _canPowerManage;
 
-    private readonly PveResource _guest;
-    private readonly ResourceKind _kind;
-    private readonly string _node;
-    private readonly GuestPowerRunner _runPower;
-    private readonly GuestRunStateMonitor _runState;
+    // 노드 셸이면 게스트·전원 관련 필드는 비어 있다
+    private readonly PveResource? _guest;
+    private readonly GuestPowerRunner? _runPower;
+    private readonly GuestRunStateMonitor? _runState;
     private readonly ConsoleSettingsStore _settingsStore = new();
+    private readonly ConsoleTarget _target;
     private readonly string _title;
-    private readonly int _vmid;
     private bool _autoConnecting;
     private bool _closed;
     private ProxmoxTerminalConnection? _connection;
 
     private ImeResultForwarder? _imeForwarder;
+
+    /// <summary>Tab·방향키와 마우스 클릭이 WPF 에 빼앗기지 않고 터미널로 가게 한다.</summary>
+    private TerminalInputGuard? _inputGuard;
     private ProxmoxTerminalSession? _session;
 
     private ConsoleSettings _settings = new();
 
     public TerminalWindow(ProxmoxApiClient api, PveResource guest, string guestTitle, GuestPowerRunner runPower,
         bool canPowerManage)
+        : this(api, ConsoleTarget.ForGuest(guest.Node, guest.Kind, guest.VmId),
+            Loc.T("TerminalWindow_Header", guestTitle))
     {
-        InitializeComponent();
-        WindowTheme.ApplyDarkTitleBar(this);
-        _api = api;
         _guest = guest;
         _runPower = runPower;
-        _node = guest.Node;
-        _kind = guest.Kind;
-        _vmid = guest.VmId;
         // 게스트 객체는 메인 새로고침으로 상태가 갱신되므로 전원 버튼 표시가 자동으로 따라간다
         PowerPanel.DataContext = guest;
         PowerPanel.Visibility = canPowerManage ? Visibility.Visible : Visibility.Collapsed;
         _canPowerManage = canPowerManage;
         StoppedPanel.StartRequested += OnStoppedPanelStart;
         _runState = new GuestRunStateMonitor(guest, OnGuestStoppedChanged);
-        _title = Loc.T("TerminalWindow_Header", guestTitle);
+    }
+
+    /// <summary>
+    ///     노드 셸 — 노드는 꺼질 일이 없으므로 전원 버튼과 정지 안내를 쓰지 않는다.
+    ///     command 가 있으면 로그인 대신 그 명령을 실행한다(예: "upgrade" = 패키지 업그레이드).
+    /// </summary>
+    public TerminalWindow(ProxmoxApiClient api, string node, string? command = null)
+        : this(api, ConsoleTarget.ForNode(node, command),
+            Loc.T(command switch
+            {
+                "upgrade" => "TerminalWindow_NodeUpgrade",
+                "ceph_install" => "TerminalWindow_CephInstall",
+                _ => "TerminalWindow_NodeShell"
+            }, node))
+    {
+        PowerPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private TerminalWindow(ProxmoxApiClient api, ConsoleTarget target, string title)
+    {
+        InitializeComponent();
+        WindowTheme.ApplyDarkTitleBar(this);
+        _api = api;
+        _target = target;
+        _title = title;
         Title = _title;
 
         Loaded += async (_, _) =>
         {
             _settings = await _settingsStore.LoadAsync();
+            if (_closed) return; // 설정을 읽는 사이 창을 닫았으면 전역 키 필터를 새로 걸지 않는다
             Terminal.AutoResize = true;
             ApplyTheme();
             AttachImeForwarder();
-            if (_runState.IsStopped)
+            if (_runState?.IsStopped == true)
             {
                 ShowStopped(); // 정지 상태면 연결하지 않고 시작 안내
                 return;
@@ -85,9 +108,11 @@ public partial class TerminalWindow : Window
         Closing += (_, _) =>
         {
             _closed = true;
-            _runState.Dispose();
+            _runState?.Dispose();
             _imeForwarder?.Dispose();
             _imeForwarder = null;
+            _inputGuard?.Dispose();
+            _inputGuard = null;
             DisposeSession(true);
         };
     }
@@ -97,7 +122,10 @@ public partial class TerminalWindow : Window
     {
         _imeForwarder?.Dispose();
         _imeForwarder = ImeResultForwarder.Attach(Terminal, text => _session?.SendInput(text));
-        if (_imeForwarder is null) App.Log($"[터미널 {_vmid}] IME 입력 연결 실패: 터미널 네이티브 창을 찾지 못했습니다.");
+        if (_imeForwarder is null) App.Log($"[터미널 {_target.DisplayName}] IME 입력 연결 실패: 터미널 네이티브 창을 찾지 못했습니다.");
+
+        _inputGuard?.Dispose();
+        _inputGuard = TerminalInputGuard.Attach(Terminal);
     }
 
     /// <summary>Win32 COLORREF(0x00BBGGRR).</summary>
@@ -140,18 +168,28 @@ public partial class TerminalWindow : Window
         StoppedPanel.ShowWaiting(message);
     }
 
-    /// <summary>정지↔실행 전환 — 꺼지면 안내 화면, 외부에서 켜지면 자동 연결.</summary>
+    /// <summary>
+    ///     정지↔실행 전환 — 꺼지면 안내 화면, 외부에서 켜지면 자동 연결.
+    ///     목록의 상태는 몇 초씩 늦게, 부팅 중에는 잠깐 거꾸로 올 수도 있다. 콘솔이 붙어 있으면 게스트는 켜져 있는
+    ///     것이므로 안내로 화면을 덮지 않는다 — 정말 꺼지면 서버가 연결을 끊고, 그 뒤 상태가 바뀔 때 안내를 띄운다.
+    /// </summary>
     private void OnGuestStoppedChanged(bool stopped)
     {
         if (_closed) return;
 
+        var connected = _session?.IsConnected == true;
         if (stopped)
-            ShowStopped();
-        else if (_session?.IsConnected != true) _ = AutoConnectAsync(Loc.T("TerminalWindow_StartedConnecting"));
+        {
+            if (!connected) ShowStopped();
+        }
+        else if (connected) SetStoppedView(false);
+        else _ = AutoConnectAsync(Loc.T("TerminalWindow_StartedConnecting"));
     }
 
     private async void OnStoppedPanelStart(object? sender, EventArgs e)
     {
+        if (_guest is null || _runPower is null) return;
+
         ShowWaiting(Loc.T("Console_StartRequesting"));
         await _runPower(_guest, GuestPowerAction.Start);
         await AutoConnectAsync(Loc.T("Console_WaitingBoot"));
@@ -179,6 +217,15 @@ public partial class TerminalWindow : Window
         }
     }
 
+    /// <summary>
+    ///     컨트롤이 이미 계산한 행·열을 서버 PTY 에 알린다. 컨트롤은 창 크기가 바뀔 때만 연결에 크기를 알리는데,
+    ///     창 배치는 연결을 붙이기 전에 끝나므로 이대로 두면 서버는 창을 다시 조절할 때까지 기본 80×24 로 그린다.
+    /// </summary>
+    private void SyncTerminalSize(ProxmoxTerminalSession session)
+    {
+        if (Terminal.Columns > 0 && Terminal.Rows > 0) session.Resize(Terminal.Columns, Terminal.Rows);
+    }
+
     /// <summary>연결 시도(termproxy 생성·웹소켓·인증 전송). 성공하면 true — 최종 인증 결과는 Connected/Closed 이벤트.</summary>
     private async Task<bool> ConnectAsync()
     {
@@ -204,36 +251,39 @@ public partial class TerminalWindow : Window
             if (!IsCurrent()) return;
 
             SetStoppedView(false);
+            SyncTerminalSize(session);
             SetState(Loc.T("TerminalWindow_M01"));
             UpdateButtons(true);
             Terminal.Focus();
         });
         session.Closed += ex =>
         {
-            App.Log($"[터미널 {_vmid}] 연결 종료: {(ex is null ? "정상" : ex.ToString())}");
+            App.Log($"[터미널 {_target.DisplayName}] 연결 종료: {(ex is null ? "정상" : ex.ToString())}");
             Dispatcher.BeginInvoke(() =>
             {
                 if (!IsCurrent()) return;
 
                 SetState(ex is null ? Loc.T("ConsoleWindow_M05") : Loc.T("ConsoleWindow_M06", ex.Message));
                 UpdateButtons(false);
+                if (_runState?.IsStopped == true) ShowStopped(); // 이미 꺼진 것으로 보고된 뒤 연결이 끊겼다
             });
         };
 
         _session = session;
         _connection = connection;
         Terminal.Connection = connection;
+        SyncTerminalSize(session);
 
         try
         {
-            await session.ConnectAsync(_node, _kind, _vmid);
+            await session.ConnectAsync(_target);
             return true;
         }
         catch (Exception ex)
         {
             if (IsCurrent())
             {
-                App.Log($"[터미널 {_vmid}] 연결 실패: {ex}");
+                App.Log($"[터미널 {_target.DisplayName}] 연결 실패: {ex}");
                 SetState(Loc.T("ConsoleWindow_M07", ex.Message));
                 UpdateButtons(false);
             }
@@ -260,6 +310,9 @@ public partial class TerminalWindow : Window
     {
         BtnReconnect.IsEnabled = !connected;
         BtnDisconnect.IsEnabled = connected;
+        // 연결 중이면 '연결 끊기', 끊겼으면 '재연결' — 같은 자리에서 서로 바뀐다
+        BtnDisconnect.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
+        BtnReconnect.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
         BtnPaste.IsEnabled = connected;
     }
 
@@ -321,11 +374,30 @@ public partial class TerminalWindow : Window
         Terminal.Focus();
     }
 
+    /// <summary>[종료 | ▾] 의 종료 쪽 — 버튼의 Action 속성(Stop)은 표시 조건이라 여기서는 종료를 직접 부른다.</summary>
+    private async void OnShutdownClick(object sender, RoutedEventArgs e)
+    {
+        if (_guest is { IsRunning: false })
+        {
+            SetState(Loc.T("GuestPower_ShutdownNeedsRunning", _guest.VmId)); // 일시 정지 — ▾ 에서 재개·정지
+            return;
+        }
+
+        await RunPowerAsync(GuestPowerAction.Shutdown);
+    }
+
     private async void OnPowerAction(object sender, RoutedEventArgs e)
     {
         if (sender is not DependencyObject source
             || (GuestPowerVisibility.GetAction(source) is var action && action == GuestPowerAction.None))
             return;
+
+        await RunPowerAsync(action);
+    }
+
+    private async Task RunPowerAsync(GuestPowerAction action)
+    {
+        if (_guest is null || _runPower is null) return;
 
         var label = GuestPowerRules.Label(action);
         SetState(Loc.T("ConsoleWindow_M12", label));
@@ -336,7 +408,7 @@ public partial class TerminalWindow : Window
 
     private void OnOpenSettings(object sender, RoutedEventArgs e)
     {
-        var dialog = new ConsoleSettingsWindow(_settings) { Owner = this };
+        var dialog = new ConsoleSettingsWindow(_settings, ConsoleSettingsTab.Terminal) { Owner = this };
         if (dialog.ShowDialog() == true && dialog.SavedSettings is { } saved)
         {
             _settings = saved;

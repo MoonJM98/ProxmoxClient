@@ -14,6 +14,12 @@ public sealed class PveNodeStatus
     /// <summary>Logical CPU count.</summary>
     public int CpuCores { get; init; }
 
+    /// <summary>CPU 소켓 수(cpuinfo.sockets).</summary>
+    public int CpuSockets { get; init; }
+
+    /// <summary>CPU 모델 이름(cpuinfo.model).</summary>
+    public string CpuModel { get; init; } = string.Empty;
+
     /// <summary>Kernel version string.</summary>
     public string KernelVersion { get; init; } = string.Empty;
 

@@ -11,6 +11,8 @@
         -->
         <PackageReference Include="ProxmoxClient.Vendored.Terminal.Wpf" Version="1.25.2603.3002"/>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2"/>
+        <!-- 2단계 인증(TOTP) QR 코드 — 의존성 없는 MIT 라이브러리(Project Nayuki QR 생성기 C# 이식) -->
+        <PackageReference Include="Net.Codecrete.QrCodeGenerator" Version="3.2.1"/>
     </ItemGroup>
 
     <!-- 고지 의무 — 배포 폴더에 라이선스와 서드파티 고지 원문을 함께 둔다 -->
@@ -19,6 +21,14 @@
         <None Include="..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest"/>
         <None Include="..\third-party\**" Link="third-party\%(RecursiveDir)%(Filename)%(Extension)"
               CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+
+    <!--
+        아이콘 원본을 배포 폴더에도 둔다 — 설치 관리자가 바로가기·프로그램 목록 아이콘으로 이 파일을 직접 쓴다.
+        exe 안의 아이콘만 쓰면 업데이트 때 exe 를 교체하는 동안 탐색기 아이콘 캐시가 빈 아이콘으로 남을 수 있다.
+    -->
+    <ItemGroup>
+        <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"/>
     </ItemGroup>
 
     <PropertyGroup>
@@ -31,9 +41,14 @@
         <ApplicationIcon>app.ico</ApplicationIcon>
         <Product>Proxmox Client</Product>
         <AssemblyTitle>Proxmox Client</AssemblyTitle>
-        <Version>1.0.0</Version>
+        <Version>1.0.1</Version>
         <Copyright>Copyright (c) 2026 ProxmoxClient Contributors</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <!--
+            앱이 제공하는 언어(한국어·영어)의 WPF 리소스만 배포한다 — 나머지 12개 언어 폴더(약 8MB)는 쓰이지 않는다.
+            언어를 추가하면 여기에도 넣어야 그 언어의 WPF 기본 문구(대화상자 등)가 번역된다.
+        -->
+        <SatelliteResourceLanguages>ko;en</SatelliteResourceLanguages>
     </PropertyGroup>
 
 </Project>

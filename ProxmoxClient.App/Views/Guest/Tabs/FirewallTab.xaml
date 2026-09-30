@@ -1,0 +1,26 @@
+<UserControl x:Class="ProxmoxClient.App.Views.Guest.Tabs.FirewallTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+             xmlns:ic="clr-namespace:ProxmoxClient.App.Controls">
+
+        <Grid Margin="20,16,20,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" x:Name="OptionsRow" Margin="0,0,0,10">
+                <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconCheck}"
+                        Content="{loc:Tr FirewallWindow_02}"
+                        MinWidth="96" Click="OnApplyOptions" />
+                <CheckBox x:Name="FirewallToggle" Content="{loc:Tr FirewallWindow_03}" VerticalAlignment="Center" />
+            </DockPanel>
+
+            <!-- 규칙 목록·버튼(FirewallRules) — 웹 UI 의 방화벽 규칙 표 -->
+            <ContentControl Grid.Row="1" x:Name="RulesHost" />
+
+            <TextBlock Grid.Row="2" x:Name="StatusText" Style="{StaticResource DialogStatus}" ic:WindowFooter.Move="True" Margin="0,10,0,0" />
+        </Grid>
+</UserControl>

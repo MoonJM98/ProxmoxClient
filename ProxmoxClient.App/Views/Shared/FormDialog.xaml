@@ -1,0 +1,36 @@
+<Window x:Class="ProxmoxClient.App.Views.Shared.FormDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        Style="{StaticResource ThemedWindow}"
+        Width="520" SizeToContent="Height" MinWidth="380"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="20,18,20,12">
+            <StackPanel x:Name="FieldPanel" />
+            <TextBlock x:Name="ErrorText" Style="{StaticResource DialogStatus}" Margin="0,8,0,0" />
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
+            <DockPanel LastChildFill="False">
+                <!-- 웹 UI 처럼 고급 항목은 체크해야 보인다(고급 항목이 있을 때만 이 체크박스가 보인다) -->
+                <CheckBox x:Name="AdvancedCheck" DockPanel.Dock="Left" VerticalAlignment="Center"
+                          Content="{loc:Tr FormDialog_Advanced}" Visibility="Collapsed"
+                          Checked="OnAdvancedChanged" Unchecked="OnAdvancedChanged" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button ic:IconAssist.Icon="{StaticResource IconCheck}" Content="{loc:Tr ThemedMessageBox_M01}"
+                            Style="{StaticResource DialogPrimaryButton}" Click="OnOk" IsDefault="True" />
+                    <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr AppSettingsWindow_13}"
+                            Style="{StaticResource DialogButton}" IsCancel="True" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

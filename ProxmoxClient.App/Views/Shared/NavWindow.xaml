@@ -1,0 +1,62 @@
+<Window x:Class="ProxmoxClient.App.Views.Shared.NavWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:ProxmoxClient.App"
+        xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+        xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        Style="{StaticResource ThemedWindow}"
+        Width="900" Height="620" MinWidth="720" MinHeight="480"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize" ShowInTaskbar="False">
+
+    <Window.Resources>
+        <c:ResourceKeyToGeometryConverter x:Key="KeyToIcon" />
+    </Window.Resources>
+
+    <DockPanel>
+
+        <!-- 머리말 — 무엇을 보고 있는지 (웹 UI 상단과 같은 자리) -->
+        <Border DockPanel.Dock="Top" Background="{StaticResource BrushPanel}"
+                BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1" Padding="14,10">
+            <DockPanel>
+                <!-- 지금 보는 탭을 다시 읽는다(F5) — 탭마다 있던 새로고침 버튼을 여기로 모았다 -->
+                <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconRefresh}" Padding="8,5"
+                        ToolTip="{loc:Tr NavWindow_Refresh}" Click="OnRefresh" />
+                <ic:PathIcon x:Name="HeaderIcon" Width="20" Height="20" Margin="0,0,10,0"
+                             Data="{StaticResource IconBox}" DockPanel.Dock="Left" />
+                <TextBlock x:Name="HeaderText" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+        </Border>
+
+        <!-- 꼬리말 — 지금 탭의 상태 문구·저장 버튼(ic:WindowFooter.Move 로 옮겨 온 것)과 닫기 -->
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource BrushPanel}"
+                BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,1,0,0" Padding="12,8">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconX}"
+                        Content="{loc:Tr FirewallWindow_18}" Style="{StaticResource DialogButton}"
+                        IsCancel="True" />
+                <StackPanel x:Name="FooterSlot" VerticalAlignment="Center" Margin="0,0,8,0" />
+            </DockPanel>
+        </Border>
+
+        <!-- 왼쪽 탭 목록 — 권한이 없는 탭은 애초에 채우지 않는다 -->
+        <Border DockPanel.Dock="Left" Width="176" Background="{StaticResource BrushPanel}"
+                BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,1,0">
+            <ListBox x:Name="TabList" BorderThickness="0" Background="Transparent"
+                     SelectionChanged="OnTabChanged" HorizontalContentAlignment="Stretch">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Margin="2,5">
+                            <ic:PathIcon Width="16" Height="16" Margin="0,0,10,0"
+                                         Data="{Binding IconKey, Converter={StaticResource KeyToIcon}}" />
+                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- 선택한 탭의 내용 -->
+        <ContentControl x:Name="TabContent" Margin="0" />
+
+    </DockPanel>
+</Window>

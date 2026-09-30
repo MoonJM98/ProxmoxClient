@@ -10,24 +10,6 @@ namespace ProxmoxClient.App;
 /// </summary>
 internal static class ComboChoices
 {
-    public static readonly (string Value, string Label)[] QemuOsTypes =
-    [
-        ("", "ComboChoices_M01"),
-        ("win11", "Windows 11 / 2022 / 2025"),
-        ("win10", "Windows 10 / 2016 / 2019"),
-        ("win8", "Windows 8.x / 2012 / 2012 R2"),
-        ("win7", "Windows 7 / 2008 R2"),
-        ("wvista", "Windows Vista"),
-        ("w2k8", "Windows 2008"),
-        ("w2k3", "Windows 2003"),
-        ("wxp", "Windows XP"),
-        ("w2k", "Windows 2000"),
-        ("l26", "ComboChoices_M02"),
-        ("l24", "ComboChoices_M03"),
-        ("solaris", "Solaris / OpenSolaris / OpenIndiana"),
-        ("other", "ComboChoices_M04")
-    ];
-
     public static readonly (string Value, string Label)[] NicModels =
     [
         ("virtio", "Choice_NicVirtio"),

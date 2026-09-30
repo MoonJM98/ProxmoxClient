@@ -137,6 +137,7 @@ public partial class LoginWindow : Window
             return null;
 
         FillRealmBox(domains, profile.UserName);
+        UpdateOpenIdUi();
         return domains;
     }
 
@@ -200,6 +201,7 @@ public partial class LoginWindow : Window
         if (_fillingRealm) return;
 
         if (RealmBox.SelectedItem is PveAuthDomain domain) _selectedRealm = domain.Realm;
+        UpdateOpenIdUi();
     }
 
     private async void OnSavedConnect(object sender, RoutedEventArgs e)
@@ -226,35 +228,17 @@ public partial class LoginWindow : Window
             return;
         }
 
-        var runtime = stored.Clone();
-        runtime.AuthMode = AuthMode.Password;
-        runtime.ApiTokenId = null;
-        runtime.ApiTokenSecret = null;
-
-        var user = UserBox.Text.Trim();
-        runtime.Password = PassBox.SecurePassword; // WPF PasswordBox → SecureString 직접 전달
-        if (user.Length == 0 || PassBox.SecurePassword.Length == 0)
+        if (IsOpenIdRealm)
         {
-            SetStatus(Loc.T("LoginWindow_M06"));
+            await ConnectOpenIdAsync(stored);
             return;
         }
 
-        if (user.Contains('@'))
-        {
-            runtime.UserName = user; // 전체 아이디(user@realm)를 직접 입력한 경우
-        }
-        else if (_selectedRealm is { Length: > 0 } realm)
-        {
-            runtime.UserName = $"{user}@{realm}";
-        }
-        else
-        {
-            SetStatus(Loc.T("LoginWindow_M07"));
-            return;
-        }
+        if (BuildPasswordProfile(stored) is not { } runtime) return;
 
         if (runtime.UseVpn)
         {
+            // VPN 이 먼저 연결돼야 서버에 닿으므로 로그인 확인은 메인 창이 VPN 연결 뒤에 한다
             RememberIdentity(stored, runtime);
             SetStatus(Loc.T("LoginWindow_M08"));
             ResultProfile = runtime;
@@ -262,6 +246,42 @@ public partial class LoginWindow : Window
             return;
         }
 
+        await VerifyLoginAsync(stored, runtime);
+    }
+
+    /// <summary>입력한 아이디·암호로 이번 연결용 프로필을 만든다 — 빠진 값이 있으면 상태줄에 알리고 null.</summary>
+    private ConnectionProfile? BuildPasswordProfile(ConnectionProfile stored)
+    {
+        var user = UserBox.Text.Trim();
+        if (user.Length == 0 || PassBox.SecurePassword.Length == 0)
+        {
+            SetStatus(Loc.T("LoginWindow_M06"));
+            return null;
+        }
+
+        string userName;
+        if (user.Contains('@'))
+            userName = user; // 전체 아이디(user@realm)를 직접 입력한 경우
+        else if (_selectedRealm is { Length: > 0 } realm)
+            userName = $"{user}@{realm}";
+        else
+        {
+            SetStatus(Loc.T("LoginWindow_M07"));
+            return null;
+        }
+
+        var runtime = stored.Clone();
+        runtime.AuthMode = AuthMode.Password;
+        runtime.ApiTokenId = null;
+        runtime.ApiTokenSecret = null;
+        runtime.UserName = userName;
+        runtime.Password = PassBox.SecurePassword; // WPF PasswordBox → SecureString 직접 전달
+        return runtime;
+    }
+
+    /// <summary>서버에 실제로 로그인해 확인한다 — 인증서를 처음 보면 지문을 확인받고, 성공하면 창을 닫는다.</summary>
+    private async Task VerifyLoginAsync(ConnectionProfile stored, ConnectionProfile runtime)
+    {
         _busy = true;
         BtnLogin.IsEnabled = false;
         SetStatus(Loc.T("LoginWindow_M09"));
@@ -269,13 +289,10 @@ public partial class LoginWindow : Window
         var client = new ProxmoxApiClient(runtime);
         try
         {
-            if (runtime.AuthMode == AuthMode.ApiToken)
-                await client.GetClusterResourcesAsync(); // 토큰 실제 검증(권한 필요 엔드포인트)
-            else
-                await CertificateTrust.RunAsync(
-                    () => client.LoginAsync(),
-                    rejection => CertificateTrust.Confirm(this, rejection, runtime),
-                    () => TrustStoredCertificateAsync(stored, runtime));
+            await CertificateTrust.RunAsync(
+                () => client.LoginAsync(),
+                rejection => CertificateTrust.Confirm(this, rejection, runtime),
+                () => TrustStoredCertificateAsync(stored, runtime));
 
             RememberIdentity(stored, runtime);
             ResultProfile = runtime;

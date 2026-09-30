@@ -91,7 +91,7 @@ internal sealed class ImeResultForwarder : IDisposable
         }
     }
 
-    private static T? FindDescendant<T>(DependencyObject parent) where T : DependencyObject
+    internal static T? FindDescendant<T>(DependencyObject parent) where T : DependencyObject
     {
         var count = VisualTreeHelper.GetChildrenCount(parent);
         for (var i = 0; i < count; i++)

@@ -7,7 +7,11 @@
         Style="{StaticResource ThemedWindow}"
         Title="{loc:Tr TerminalWindow_01}"
         Width="1000" Height="640" MinWidth="640" MinHeight="400"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        KeyboardNavigation.TabNavigation="None" KeyboardNavigation.DirectionalNavigation="None"
+        KeyboardNavigation.ControlTabNavigation="None">
+    <!-- 터미널은 네이티브 창(HwndHost)이라 WPF 키보드 이동이 Tab·방향키를 먼저 가져가 포커스를 옮긴다 —
+         창 전체에서 끄면 그 키가 터미널(셸 자동 완성·명령 기록)로 간다 -->
     <Window.Resources>
         <Style TargetType="Border" x:Key="ToolbarBorder">
             <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
@@ -34,17 +38,32 @@
                                 ic:IconAssist.Brush="{StaticResource BrushOk}" Content="{loc:Tr MainWindow_33}"
                                 ic:GuestPowerVisibility.Action="Start" ic:GuestPowerVisibility.Guest="{Binding}"
                                 Margin="0,0,6,0" Click="OnPowerAction" />
-                        <Button ic:IconAssist.Icon="{StaticResource IconPower}"
-                                ic:IconAssist.Brush="{StaticResource BrushWarn}" Content="{loc:Tr MainWindow_35}"
-                                ic:GuestPowerVisibility.Action="Shutdown" ic:GuestPowerVisibility.Guest="{Binding}"
-                                Margin="0,0,6,0" Click="OnPowerAction" />
-                        <Button ic:IconAssist.Icon="{StaticResource IconSquare}"
-                                ic:IconAssist.Brush="{StaticResource BrushErr}" Content="{loc:Tr BackupWindow_08}"
-                                ToolTip="{loc:Tr ConsoleWindow_01}" ic:GuestPowerVisibility.Action="Stop"
-                                ic:GuestPowerVisibility.Guest="{Binding}" Margin="0,0,6,0" Click="OnPowerAction" />
-                        <Button ic:IconAssist.Icon="{StaticResource IconRotate}" Content="{loc:Tr MainWindow_34}"
-                                ic:GuestPowerVisibility.Action="Reboot" ic:GuestPowerVisibility.Guest="{Binding}"
-                                Margin="0,0,6,0" Click="OnPowerAction" />
+                        <!-- 웹 UI 처럼 [종료 | ▾] — 정지·재부팅·리셋 등은 ▾ 안에(목록이 게스트 상태에 맞게 숨긴다) -->
+                        <ic:SplitButton ic:IconAssist.Icon="{StaticResource IconPower}"
+                                        ic:IconAssist.Brush="{StaticResource BrushWarn}" Content="{loc:Tr MainWindow_35}"
+                                        ic:GuestPowerVisibility.Action="Stop" ic:GuestPowerVisibility.Guest="{Binding}"
+                                        Margin="0,0,6,0" Click="OnShutdownClick">
+                            <ic:SplitButton.DropDownMenu>
+                                <ContextMenu>
+                                    <MenuItem ic:IconAssist.Icon="{StaticResource IconRotate}" Header="{loc:Tr MainWindow_34}"
+                                              ic:GuestPowerVisibility.Action="Reboot" ic:GuestPowerVisibility.Guest="{Binding}"
+                                              Click="OnPowerAction" />
+                                    <MenuItem ic:IconAssist.Icon="{StaticResource IconPause}" Header="{loc:Tr MainWindow_11}"
+                                              ic:GuestPowerVisibility.Action="Suspend" ic:GuestPowerVisibility.Guest="{Binding}"
+                                              Click="OnPowerAction" />
+                                    <MenuItem ic:IconAssist.Icon="{StaticResource IconResume}" Header="{loc:Tr MainWindow_12}"
+                                              ic:GuestPowerVisibility.Action="Resume" ic:GuestPowerVisibility.Guest="{Binding}"
+                                              Click="OnPowerAction" />
+                                    <MenuItem ic:IconAssist.Icon="{StaticResource IconSquare}"
+                                              ic:IconAssist.Brush="{StaticResource BrushErr}" Header="{loc:Tr MainWindow_36}"
+                                              ic:GuestPowerVisibility.Action="Stop" ic:GuestPowerVisibility.Guest="{Binding}"
+                                              Click="OnPowerAction" />
+                                    <MenuItem ic:IconAssist.Icon="{StaticResource IconRotate}" Header="{loc:Tr GuestPower_Reset}"
+                                              ic:GuestPowerVisibility.Action="Reset" ic:GuestPowerVisibility.Guest="{Binding}"
+                                              Click="OnPowerAction" />
+                                </ContextMenu>
+                            </ic:SplitButton.DropDownMenu>
+                        </ic:SplitButton>
                         <Border Width="1" Background="{StaticResource BrushBorder}" Margin="4,4,10,4" />
                     </StackPanel>
                     <Button ic:IconAssist.Icon="{StaticResource IconRefresh}" x:Name="BtnReconnect"

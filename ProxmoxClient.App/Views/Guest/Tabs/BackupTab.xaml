@@ -1,0 +1,55 @@
+<UserControl x:Class="ProxmoxClient.App.Views.Guest.Tabs.BackupTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+             xmlns:ic="clr-namespace:ProxmoxClient.App.Controls">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,16,20,10">
+
+                <ic:FormRow Label="{loc:Tr BackupWindow_03}" Hint="{loc:Tr BackupWindow_04}">
+                    <ComboBox x:Name="StorageBox" Width="260" HorizontalAlignment="Left">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Storage, Mode=OneWay}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </ic:FormRow>
+                <!-- 웹 UI 백업 창과 같은 칸 — 모드·압축은 목록, 알림·보호·메모는 서버가 아는 버전에서만 보인다 -->
+                <ic:FormRow Label="{loc:Tr BackupWindow_05}">
+                    <ComboBox x:Name="ModeBox" Width="260" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow Label="{loc:Tr BackupWindow_09}">
+                    <ComboBox x:Name="CompressBox" Width="260" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowNotify" Label="{loc:Tr DcBackup_NotifyMode}">
+                    <ComboBox x:Name="NotifyBox" Width="260" HorizontalAlignment="Left" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowProtected" Label="{loc:Tr DcBackup_Protected}"
+                            Hint="{loc:Tr BackupTab_ProtectedHint}">
+                    <CheckBox x:Name="ProtectedCheck" Margin="0,6,0,0" />
+                </ic:FormRow>
+                <ic:FormRow x:Name="RowNotes" Label="{loc:Tr DcBackup_NotesTemplate}"
+                            Hint="{loc:Tr BackupTab_NotesHint}">
+                    <TextBox x:Name="NotesBox" Text="{}{{guestname}}" AcceptsReturn="True" TextWrapping="Wrap"
+                             MinHeight="64" VerticalContentAlignment="Top" />
+                </ic:FormRow>
+            </StackPanel>
+        </ScrollViewer>
+
+        <DockPanel Grid.Row="1" Margin="20,0,20,16" ic:WindowFooter.Move="True">
+            <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconArchive}" x:Name="BtnBackup"
+                    Content="{loc:Tr BackupWindow_12}"
+                    Style="{StaticResource AccentButton}" Click="OnBackup" MinWidth="120" />
+            <ic:InfoTip DockPanel.Dock="Right" Compact="True" Text="{loc:Tr BackupWindow_11}" />
+            <TextBlock x:Name="StatusText" Style="{StaticResource DialogStatus}" />
+        </DockPanel>
+    </Grid>
+</UserControl>

@@ -24,10 +24,13 @@
                 <ic:FormRow Label="{loc:Tr MainWindow_40}" Hint="{loc:Tr CloneWindow_04}">
                     <TextBox x:Name="NameBox" />
                 </ic:FormRow>
-                <ic:FormRow Label="{loc:Tr BackupWindow_05}" Hint="{loc:Tr CloneWindow_05}">
+                <!-- 연결 복제는 템플릿에서만 된다 — 템플릿이 아니면 이 줄을 숨기고 전체 복제만 한다 -->
+                <ic:FormRow x:Name="RowMode" Label="{loc:Tr BackupWindow_05}" Hint="{loc:Tr CloneWindow_05}">
                     <StackPanel Orientation="Horizontal">
-                        <RadioButton x:Name="RadioFull" Content="{loc:Tr CloneWindow_06}" IsChecked="True" />
-                        <RadioButton Content="{loc:Tr CloneWindow_07}" />
+                        <RadioButton x:Name="RadioFull" Content="{loc:Tr CloneWindow_06}" IsChecked="True"
+                                     Checked="OnModeChanged" />
+                        <RadioButton x:Name="RadioLinked" Content="{loc:Tr CloneWindow_07}"
+                                     Checked="OnModeChanged" />
                     </StackPanel>
                 </ic:FormRow>
                 <ic:FormRow Label="{loc:Tr CloneWindow_08}">

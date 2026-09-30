@@ -30,6 +30,15 @@ public sealed class PermissionsInfo
 
     public bool CanAllocate => Has("VM.Allocate");
 
+    // 노드·데이터센터 기능
+    public bool CanSysAudit => Has("Sys.Audit");
+    public bool CanSysModify => Has("Sys.Modify");
+    public bool CanSysConsole => Has("Sys.Console");
+    public bool CanSysPowerMgmt => Has("Sys.PowerMgmt");
+
+    /// <summary>사용자·그룹·역할 등 접근 제어를 볼 수 있는지.</summary>
+    public bool CanAuditPermissions => HasAny("Permissions.Modify", "Sys.Audit", "User.Modify");
+
     public bool Has(string privilege)
     {
         return IsAdmin

@@ -27,6 +27,10 @@ public partial class AppSettingsWindow : Window
     ];
 
     private readonly AppSettingsStore _store = new();
+
+    /// <summary>이 창에 칸이 없는 설정(템플릿 표시 등)은 받은 값을 그대로 유지한다.</summary>
+    private readonly AppSettings _current;
+
     private bool _saving;
 
     public AppSettingsWindow(AppSettings current)
@@ -35,6 +39,7 @@ public partial class AppSettingsWindow : Window
         WindowTheme.ApplyDarkTitleBar(this);
 
         var settings = current.Normalize();
+        _current = settings;
         RowInterval.Hint =
             Loc.T("AppSettingsWindow_M01", AppSettings.MinRefreshIntervalSeconds,
                 AppSettings.MaxRefreshIntervalSeconds);
@@ -62,7 +67,7 @@ public partial class AppSettingsWindow : Window
             return;
         }
 
-        var settings = new AppSettings
+        var settings = (_current with
         {
             RefreshIntervalSeconds = seconds,
             AutoRefreshOnStart = AutoRefreshCheck.IsChecked == true,
@@ -70,7 +75,7 @@ public partial class AppSettingsWindow : Window
                 ? unit
                 : ByteDisplayUnit.Auto,
             Language = ComboChoices.Selected(LanguageBox) ?? AppSettings.AutoLanguage
-        }.Normalize();
+        }).Normalize();
 
         _saving = true;
         BtnSave.IsEnabled = false;

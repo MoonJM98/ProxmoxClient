@@ -1,0 +1,60 @@
+<UserControl x:Class="ProxmoxClient.App.Views.Guest.Tabs.TasksTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+             xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+             xmlns:c="clr-namespace:ProxmoxClient.App">
+
+    <UserControl.Resources>
+        <c:DateTimeLocalConverter x:Key="DateLocal" />
+        <c:StatusToBrushConverter x:Key="StatusBrush" />
+    </UserControl.Resources>
+
+    <Grid Margin="20,16,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" Margin="0,0,0,10">
+            <Button DockPanel.Dock="Right" ic:IconAssist.Icon="{StaticResource IconRefresh}"
+                    ic:RefreshButton.IsRefresh="True" Content="{loc:Tr MainWindow_03}" Click="OnRefresh" MinWidth="96" />
+            <Button DockPanel.Dock="Right" x:Name="StopButton" ic:IconAssist.Icon="{StaticResource IconSquare}"
+                    Content="{loc:Tr TasksTab_Stop}" Click="OnStop" Margin="0,0,8,0" Visibility="Collapsed" />
+            <Button DockPanel.Dock="Right" x:Name="LogButton" ic:IconAssist.Icon="{StaticResource IconList}"
+                    Content="{loc:Tr TasksTab_Log}" Click="OnLog" Margin="0,0,8,0" Visibility="Collapsed" />
+            <ic:InfoTip x:Name="HintText" Margin="0" />
+        </DockPanel>
+
+        <DataGrid Grid.Row="1" x:Name="TaskGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                  GridLinesVisibility="Horizontal" HeadersVisibility="Column" SelectionMode="Single"
+                  MouseDoubleClick="OnRowDoubleClick">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="{loc:Tr MainWindow_42}" Width="90">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <DockPanel>
+                                <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center"
+                                         Fill="{Binding Status, Converter={StaticResource StatusBrush}}" />
+                                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="{loc:Tr MainWindow_54}" Binding="{Binding Type, Mode=OneWay}"
+                                    Width="140" />
+                <DataGridTextColumn Header="{loc:Tr MainWindow_TaskStart}"
+                                    Binding="{Binding StartTimeUtc, Mode=OneWay, Converter={StaticResource DateLocal}}"
+                                    Width="150" />
+                <DataGridTextColumn Header="{loc:Tr MainWindow_TaskEnd}"
+                                    Binding="{Binding EndTimeUtc, Mode=OneWay, Converter={StaticResource DateLocal}}"
+                                    Width="150" />
+                <DataGridTextColumn Header="{loc:Tr MainWindow_60}" Binding="{Binding User, Mode=OneWay}"
+                                    Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock Grid.Row="2" x:Name="StatusText" Style="{StaticResource DialogStatus}" ic:WindowFooter.Move="True" Margin="0,10,0,0" />
+    </Grid>
+</UserControl>

@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
-using ProxmoxClient.App.Localization;
 using ProxmoxClient.Core.Models;
 using ProxmoxClient.Core.Vpn;
 
@@ -86,12 +85,7 @@ public sealed class UptimeConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is not long seconds || seconds <= 0) return "-";
-
-        var t = TimeSpan.FromSeconds(seconds);
-        return t.Days > 0
-            ? Loc.T("Uptime_WithDays", t.Days, t.Hours, t.Minutes, t.Seconds)
-            : $"{t.Hours:D2}:{t.Minutes:D2}:{t.Seconds:D2}";
+        return value is long seconds and > 0 ? Views.Shared.TableFormats.FormatUptime(seconds) : "-";
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -216,6 +210,20 @@ public sealed class VpnStateToBrushConverter : IValueConverter
             VpnState.Error => Err,
             _ => Dim
         };
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        return Binding.DoNothing;
+    }
+}
+
+/// <summary>아이콘 리소스 키(문자열) → Geometry. 탭 목록처럼 아이콘을 코드에서 지정할 때 쓴다.</summary>
+public sealed class ResourceKeyToGeometryConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        return value is string key ? Application.Current?.TryFindResource(key) as Geometry : null;
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

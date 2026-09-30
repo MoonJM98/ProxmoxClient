@@ -15,6 +15,22 @@ public sealed class VncProxyInfo
     public string UpId { get; init; } = string.Empty;
 }
 
+/// <summary>
+///     POST /nodes/{node}/qemu/{vmid}/rdpproxy 결과(RDP 콘솔, 아직 정식 PVE 에 없는 기능) —
+///     토큰으로 웹소켓(…/rdp/{token})을 열고, 사용자·비밀번호로 이 VM 의 RDP 서버에 로그인한다.
+/// </summary>
+public sealed class RdpProxyInfo
+{
+    /// <summary>RDP 로그인 사용자(서버가 정한 고정 값).</summary>
+    public string User { get; init; } = string.Empty;
+
+    /// <summary>이번 RDP 서버에만 쓰는 일회성 비밀번호.</summary>
+    public string Password { get; init; } = string.Empty;
+
+    /// <summary>이 VM 콘솔을 가리키는 토큰 — 웹소켓 경로와 RDCleanPath 인증에 쓴다.</summary>
+    public string Token { get; init; } = string.Empty;
+}
+
 /// <summary>POST /nodes/{node}/{lxc|qemu}/{vmid}/termproxy 결과 — 서버 PTY 에 붙는 터미널 웹소켓 접속 정보.</summary>
 public sealed class TermProxyInfo
 {

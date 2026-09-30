@@ -2,37 +2,35 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 
     <!--
-        Proxmox Client 설치 관리자.
-        UpgradeCode 는 제품의 영구 식별자다 — 바꾸면 기존 설치본을 덮어쓰지 못하고 따로 설치되므로 고정한다.
+        Proxmox Client 설치 관리자. 아키텍처(x64/x86/arm64)마다 별도의 MSI 로 빌드한다.
+        UpgradeCode 는 wixproj 가 아키텍처별로 넘겨준다 — 배포 후에는 절대 바꾸지 않는다.
     -->
     <Package Name="Proxmox Client"
              Manufacturer="ProxmoxClient Contributors"
              Version="$(ProductVersion)"
-             UpgradeCode="2F4848BC-0938-4DAF-9378-C805DA549D7A"
+             UpgradeCode="$(UpgradeGuid)"
              Scope="perMachine"
              Compressed="yes"
              InstallerVersion="500">
 
-        <MajorUpgrade DowngradeErrorMessage="이미 최신 버전의 [ProductName] 이(가) 설치되어 있습니다."/>
-        <MediaTemplate EmbedCab="yes"/>
+        <!-- 같은 버전으로 다시 설치해도 기존 설치를 교체한다(아니면 프로그램 목록에 두 개가 나란히 생긴다) -->
+        <MajorUpgrade AllowSameVersionUpgrades="yes"
+                      DowngradeErrorMessage="이미 최신 버전의 [ProductName] 이(가) 설치되어 있습니다."/>
+        <!-- 최고 압축 — 설치 파일이 작아지고, 설치 시 해제 시간 차이는 미미하다 -->
+        <MediaTemplate EmbedCab="yes" CompressionLevel="high"/>
 
-        <Icon Id="AppIcon" SourceFile="$(PublishDir)\ProxmoxClient.App.exe"/>
-        <Property Id="ARPPRODUCTICON" Value="AppIcon"/>
+        <!--
+            exe 가 아닌 .ico 원본을 아이콘으로 쓴다. 업데이트 중 exe 가 교체되는 사이 탐색기가 빈 아이콘을
+            캐시하는 문제를 피한다. Icon Id 는 바로가기 규칙상 원본과 같은 확장자(.ico)로 끝나야 한다.
+        -->
+        <Icon Id="AppIcon.ico" SourceFile="$(PublishDir)\app.ico"/>
+        <Property Id="ARPPRODUCTICON" Value="AppIcon.ico"/>
         <Property Id="ARPURLINFOABOUT" Value="https://github.com/microsoft/terminal"/>
         <Property Id="ARPNOREPAIR" Value="1"/>
 
-        <!-- 프레임워크 종속 배포라 .NET 10 데스크톱 런타임이 필요하다 -->
-        <Property Id="DOTNETDESKTOP10">
-            <RegistrySearch Id="SearchDotNetDesktop10"
-                            Root="HKLM"
-                            Key="SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App"
-                            Name="Version"
-                            Type="raw"/>
-        </Property>
+        <!-- 자체 포함(self-contained) 배포라 별도의 .NET 런타임 설치가 필요 없다 -->
 
-        <Launch Condition="Installed OR DOTNETDESKTOP10"
-                Message="이 프로그램에는 .NET 10 데스크톱 런타임이 필요합니다. https://dotnet.microsoft.com/download/dotnet/10.0 에서 설치한 뒤 다시 실행해 주세요."/>
-
+        <!-- 6432 는 패키지 비트에 따라 자동 매핑된다: x86 → Program Files (x86), x64/arm64 → Program Files -->
         <StandardDirectory Id="ProgramFiles6432Folder">
             <Directory Id="INSTALLFOLDER" Name="Proxmox Client"/>
         </StandardDirectory>
@@ -61,7 +59,9 @@
                       Name="Proxmox Client"
                       Description="Proxmox Virtual Environment 관리 도구"
                       Target="[INSTALLFOLDER]ProxmoxClient.App.exe"
-                      WorkingDirectory="INSTALLFOLDER"/>
+                      WorkingDirectory="INSTALLFOLDER"
+                      Icon="AppIcon.ico"
+                      IconIndex="0"/>
             <RemoveFolder Id="RemoveAppMenuFolder" Directory="AppMenuFolder" On="uninstall"/>
             <!-- 바로가기는 사용자 프로필 영역이라 KeyPath 를 HKCU 에 두어야 한다(ICE38/43/57) -->
             <RegistryValue Root="HKCU"

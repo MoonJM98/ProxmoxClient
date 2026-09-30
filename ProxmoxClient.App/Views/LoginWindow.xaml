@@ -67,8 +67,10 @@
                 <StackPanel>
                     <TextBlock Text="{loc:Tr LoginWindow_05}" Style="{StaticResource FieldLabel}" />
                     <TextBox x:Name="UserBox" Margin="0,0,0,6" />
-                    <TextBlock Text="{loc:Tr LoginWindow_06}" Style="{StaticResource FieldLabel}" />
+                    <TextBlock x:Name="PassLabel" Text="{loc:Tr LoginWindow_06}" Style="{StaticResource FieldLabel}" />
                     <PasswordBox x:Name="PassBox" Margin="0,0,0,6" KeyDown="OnPassBoxKeyDown" />
+                    <TextBlock x:Name="OpenIdHint" Visibility="Collapsed" TextWrapping="Wrap" FontSize="11"
+                               Foreground="{StaticResource BrushDim}" Margin="0,0,0,6" />
                     <TextBlock Text="{loc:Tr LoginWindow_07}" Style="{StaticResource FieldLabel}" />
                     <DockPanel>
                         <Button DockPanel.Dock="Right" x:Name="BtnReloadRealms"
@@ -83,8 +85,9 @@
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </DockPanel>
+                    <!-- 로그인 때마다 보여 안심시키는 안내라 아이콘 툴팁 대신 글로 둔다 -->
                     <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11" Margin="0,6,0,0"
-                               Text="{loc:Tr LoginWindow_09}" />
+                               TextWrapping="Wrap" Text="{loc:Tr LoginWindow_09}" />
                 </StackPanel>
             </Border>
 

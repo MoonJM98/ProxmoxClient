@@ -31,6 +31,10 @@ public partial class CloneWindow : Window
             new[] { ("", Loc.T("CloneWindow_M02")) }.Concat(storageNames.Select(s => (s, s))));
         StorageBox.SelectedIndex = 0;
 
+        // 웹 UI 처럼 템플릿은 연결 복제가 기본, 템플릿이 아니면 전체 복제만 가능하므로 모드를 묻지 않는다
+        if (guest.IsTemplate) RadioLinked.IsChecked = true;
+        else RowMode.Visibility = Visibility.Collapsed;
+
         Loaded += async (_, _) => await SuggestIdAsync();
     }
 
@@ -90,6 +94,14 @@ public partial class CloneWindow : Window
             _busy = false;
             BtnClone.IsEnabled = true;
         }
+    }
+
+    /// <summary>연결 복제는 원본 디스크를 공유하므로 대상 저장소를 고를 수 없다.</summary>
+    private void OnModeChanged(object sender, RoutedEventArgs e)
+    {
+        if (StorageBox is null) return; // InitializeComponent 중(첫 IsChecked) 호출
+
+        StorageBox.IsEnabled = RadioFull.IsChecked == true;
     }
 
     private void SetStatus(string text)
