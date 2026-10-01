@@ -46,8 +46,11 @@ public sealed record ConsoleSettings
     /// <summary>Tight JPEG 품질 레벨 0-9 (높을수록 고화질·대역폭 증가).</summary>
     public int QualityLevel { get; init; } = 6;
 
-    /// <summary>zlib 압축 레벨 0-9 (높을수록 대역폭 감소·CPU 증가).</summary>
-    public int CompressionLevel { get; init; } = 6;
+    /// <summary>
+    ///     zlib 압축 레벨 0-9 (높을수록 대역폭 감소·CPU 증가). 기본 2 는 웹 UI(noVNC)와 같다 — QEMU 는 레벨이 높으면
+    ///     zlib 을 세게·gradient 필터까지 써서 화면을 묶는 데 오래 걸린다.
+    /// </summary>
+    public int CompressionLevel { get; init; } = 2;
 
     /// <summary>QEMU 확장 키 이벤트(스캔코드 전송) 사용 — 서버 미지원 시 keysym 으로 자동 대체.</summary>
     public bool UseQemuExtendedKeys { get; init; } = true;
@@ -57,6 +60,9 @@ public sealed record ConsoleSettings
 
     /// <summary>맞춤 모드 축소 시 Linear 보간 사용.</summary>
     public bool SmoothScaling { get; init; } = true;
+
+    /// <summary>콘솔 화면을 WPF 를 거치지 않고 GPU(Direct3D)로 바로 그린다 — 화면 지연이 줄어든다(VNC·RDP).</summary>
+    public bool DirectRendering { get; init; } = true;
 
     /// <summary>
     ///     클립보드 자동 동기화(VM 이 clipboard=vnc 일 때) — 콘솔 창으로 돌아오면 PC → 게스트, 떠나면 게스트 → PC.
@@ -91,11 +97,24 @@ public sealed record ConsoleSettings
     /// <summary>게스트 파일 창에서 숨김·시스템 항목을 보인다(흐리게).</summary>
     public bool ShowHiddenGuestFiles { get; init; } = true;
 
+    public Dictionary<string, Files.GuestFileConnection> GuestFileConnections { get; init; } = [];
+    public Dictionary<string, string> SftpHostKeys { get; init; } = [];
+    public Dictionary<Guid, Files.SftpAccountProfile> SftpAccounts { get; init; } = [];
+    public Dictionary<Guid, Files.SftpConnectionProfile> SftpConnections { get; init; } = [];
+
     /// <summary>범위를 벗어난 값·빈 글꼴·정의되지 않은 열거값을 교정한 새 인스턴스.</summary>
     public ConsoleSettings Normalize()
     {
         return this with
         {
+            SftpAccounts = (SftpAccounts ?? []).Where(pair => pair.Value is not null)
+                .ToDictionary(pair => pair.Key, pair => (pair.Value with { Id = pair.Key }).Normalize()),
+            SftpConnections = (SftpConnections ?? []).Where(pair => pair.Value is not null)
+                .ToDictionary(pair => pair.Key, pair => (pair.Value with { Id = pair.Key }).Normalize()),
+            GuestFileConnections = (GuestFileConnections ?? []).Where(pair => pair.Value is not null)
+                .ToDictionary(pair => pair.Key, pair => pair.Value.Normalize()),
+            SftpHostKeys = (SftpHostKeys ?? []).Where(pair => !string.IsNullOrWhiteSpace(pair.Value))
+                .ToDictionary(pair => pair.Key, pair => pair.Value),
             Encoding = Enum.IsDefined(Encoding) ? Encoding : VncEncoding.Tight,
             LocalCursor = Enum.IsDefined(LocalCursor) ? LocalCursor : LocalCursorMode.Both,
             RdpLocalCursor = Enum.IsDefined(RdpLocalCursor) ? RdpLocalCursor : LocalCursorMode.Arrow,

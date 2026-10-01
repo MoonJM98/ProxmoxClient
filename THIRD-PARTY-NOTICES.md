@@ -100,6 +100,16 @@ Signer  : CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washin
 
 ---
 
+## 6. Vortice.Windows 3.8.3 (Vortice.Direct2D1 · Direct3D11 · DXGI · DirectX · Mathematics) · SharpGen.Runtime 2.4.2-beta
+
+- 저작권: (c) Amer Koleci 및 Vortice.Windows 기여자 / (c) Andrew Ventura·Jeremy Koritzinsky(SharpGen)
+- 라이선스: MIT
+- 출처: https://github.com/amerkoleci/Vortice.Windows , https://github.com/SharpGenTools/SharpGenTools
+- 포함 형태: NuGet 패키지 참조(관리 DLL 배포) — 콘솔 화면을 Direct3D 11·Direct2D 로 바로 그리는 데 쓴다
+  (`Rendering/DirectScreenRenderer.cs`). DirectX 런타임 자체는 Windows 에 들어 있는 것을 쓴다.
+
+---
+
 ## 함께 사용하지만 포함하지 않는 소프트웨어
 
 아래 프로그램은 배포물에 **포함되지 않으며**, 사용자의 PC 에 설치된 것을 별도 프로세스로

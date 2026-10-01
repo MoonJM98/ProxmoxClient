@@ -92,6 +92,16 @@ public partial class ConsoleWindow
         {
             CursorImage.Source = null;
             CursorImage.Visibility = Visibility.Collapsed;
+            _direct?.SetCursorShape(null);
+            return;
+        }
+
+        if (_direct is { } direct) // GPU 화면이면 커서도 거기에 그린다(WPF 그림은 자식 창 아래에 가려진다)
+        {
+            CursorImage.Source = null;
+            CursorImage.Visibility = Visibility.Collapsed;
+            direct.SetCursorShape(shape);
+            MoveCursorOverlay(Mouse.GetPosition(ScreenHost));
             return;
         }
 
@@ -106,6 +116,13 @@ public partial class ConsoleWindow
     private void MoveCursorOverlay(Point position)
     {
         var inside = ScreenImage.IsMouseOver || ScreenImage.IsMouseCaptured;
+        if (_direct is { } direct)
+        {
+            var shown = inside && CursorMode == ConsoleSettings.LocalCursorMode.Both && _cursor is { IsEmpty: false };
+            MoveDirectCursor(direct, position, shown);
+            return;
+        }
+
         if (CursorImage.Source is null || _cursor is not { IsEmpty: false } shape || !inside)
         {
             CursorImage.Visibility = Visibility.Collapsed;

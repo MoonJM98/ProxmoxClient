@@ -318,4 +318,35 @@
   <data name="GuestFiles_MountBusy" xml:space="preserve">
     <value>Another file panel is using the stopped CT {0} - try again when it finishes.</value>
   </data>
+  <data name="Sftp_KeyPathRequired" xml:space="preserve">
+    <value>Select an SSH private key file.</value>
+  </data>
+  <data name="Sftp_CertificatePathRequired" xml:space="preserve">
+    <value>Select an OpenSSH user certificate file.</value>
+  </data>
+  <data name="Sftp_DefaultKeysMissing" xml:space="preserve">
+    <value>No default SSH private key (id_ed25519, id_ecdsa, id_rsa) was found in {0}.</value>
+  </data>
+  <data name="Sftp_KeyLoadFailed" xml:space="preserve">
+    <value>Cannot read the SSH private key: {0}
+{1}</value>
+  </data>
+  <data name="Sftp_PassphraseRequired" xml:space="preserve">
+    <value>The SSH private key requires a passphrase: {0}</value>
+  </data>
+  <data name="Sftp_PassphraseInvalid" xml:space="preserve">
+    <value>Cannot decrypt the SSH private key. Check the passphrase: {0}</value>
+  </data>
+  <data name="Sftp_CertificateInvalid" xml:space="preserve">
+    <value>Cannot use the OpenSSH user certificate: {0}</value>
+  </data>
+  <data name="SshKey_PathRequired" xml:space="preserve"><value>Choose a path for the new private key.</value></data>
+  <data name="SshKey_AlreadyExists" xml:space="preserve"><value>The private or public key file already exists. Choose another path.
+{0}
+{1}</value></data>
+  <data name="SshKey_CurrentUserRequired" xml:space="preserve"><value>Cannot determine the current Windows user to restrict access to the private key.</value></data>
+  <data name="SshKey_CommentSingleLine" xml:space="preserve"><value>Enter a one-line public key comment without control characters.</value></data>
+  <data name="SshKey_Ed25519Passphrase" xml:space="preserve"><value>This key generator creates Ed25519 keys without a passphrase. Choose RSA 3072 to use a passphrase.</value></data>
+  <data name="SshKey_CleanupFailed" xml:space="preserve"><value>Key generation did not complete and these files could not be removed. Check their permissions and delete them.
+{0}</value></data>
 </root>

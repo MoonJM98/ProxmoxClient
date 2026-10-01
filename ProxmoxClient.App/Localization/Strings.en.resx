@@ -8070,4 +8070,143 @@ Overwrite them?</value>
   <data name="DcMapping_LiveMigrationHint" xml:space="preserve">
     <value>Applies to PVE 8.3 or later only.</value>
   </data>
+  <data name="Sftp_Connect" xml:space="preserve"><value>SFTP connection</value></data>
+  <data name="Sftp_Host" xml:space="preserve"><value>Host</value></data>
+  <data name="Sftp_Port" xml:space="preserve"><value>Port</value></data>
+  <data name="Sftp_User" xml:space="preserve"><value>User name</value></data>
+  <data name="Sftp_Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Sftp_PasswordHint" xml:space="preserve"><value>Leave blank to use the saved password.</value></data>
+  <data name="Sftp_Remember" xml:space="preserve"><value>Remember password (Windows Credential Manager)</value></data>
+  <data name="Sftp_BadPort" xml:space="preserve"><value>Port must be a number between 1 and 65535.</value></data>
+  <data name="Sftp_PasswordLong" xml:space="preserve"><value>Password exceeds the Windows credential size limit.</value></data>
+  <data name="Sftp_AuthFailed" xml:space="preserve"><value>SFTP authentication failed — enter your password again.</value></data>
+  <data name="Sftp_HostKey" xml:space="preserve"><value>SFTP host key verification</value></data>
+  <data name="Sftp_TrustKey" xml:space="preserve"><value>Trust the SSH host key for {0}?
+
+SHA256:{1}
+
+Compare this fingerprint with the server's host key before accepting.</value></data>
+  <data name="Sftp_KeyChanged" xml:space="preserve"><value>The SSH host key for {0} has changed.
+
+Previous: SHA256:{2}
+New: SHA256:{1}
+
+Accept only if you have verified this change with the server administrator. Trust the new key?</value></data>
+  <data name="Sftp_Agent" xml:space="preserve"><value>Guest agent</value></data>
+  <data name="Sftp_Settings" xml:space="preserve"><value>SFTP connection settings…</value></data>
+  <data name="Sftp_Container" xml:space="preserve"><value>Node shell</value></data>
+  <data name="Sftp_ForgetPassword" xml:space="preserve"><value>Delete saved SFTP password</value></data>
+  <data name="Sftp_Connections" xml:space="preserve"><value>Connection profiles</value></data>
+  <data name="Sftp_Accounts" xml:space="preserve"><value>Accounts</value></data>
+  <data name="Sftp_Account" xml:space="preserve"><value>Account profile</value></data>
+  <data name="Sftp_ProfileName" xml:space="preserve"><value>Profile name</value></data>
+  <data name="Sftp_Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Sftp_Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Sftp_ManageAccounts" xml:space="preserve"><value>Manage accounts…</value></data>
+  <data name="Sftp_SaveProfile" xml:space="preserve"><value>Save</value></data>
+  <data name="Sftp_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Sftp_UseForGuest" xml:space="preserve"><value>Connect this guest</value></data>
+  <data name="Sftp_AccountPasswordHint" xml:space="preserve"><value>Leave blank to keep the saved password. Account changes apply to every connection using this account.</value></data>
+  <data name="Sftp_HasSavedPassword" xml:space="preserve"><value>Password saved</value></data>
+  <data name="Sftp_NoSavedPassword" xml:space="preserve"><value>No saved password</value></data>
+  <data name="Sftp_SelectAccount" xml:space="preserve"><value>Select an account for this connection profile.</value></data>
+  <data name="Sftp_AccountInUse" xml:space="preserve"><value>This account is used by a connection profile. Change or delete those connections first.</value></data>
+  <data name="Sftp_RequiredFields" xml:space="preserve"><value>Enter a profile name and the required connection information.</value></data>
+  <data name="Sftp_Saved" xml:space="preserve"><value>Saved.</value></data>
+  <data name="Sftp_PasswordFor" xml:space="preserve"><value>Connect to {1} using {0}</value></data>
+  <data name="Sftp_AccountChanged" xml:space="preserve"><value>The account changed during connection. Connect again.</value></data>
+  <data name="Sftp_FilesButton" xml:space="preserve"><value>Files (SFTP)</value></data>
+  <data name="Sftp_AgentFilesButton" xml:space="preserve"><value>Files (Guest agent)</value></data>
+  <data name="Sftp_NodeFilesButton" xml:space="preserve"><value>Files (Node shell)</value></data>
+  <data name="Settings_General" xml:space="preserve"><value>General</value></data>
+  <data name="Settings_Sftp" xml:space="preserve"><value>SFTP · Accounts</value></data>
+  <data name="GuestFiles_BreadcrumbHint" xml:space="preserve"><value>Click a folder to navigate; click empty space or press Alt+D to edit the path.</value></data>
+  <data name="GuestFiles_Subfolders" xml:space="preserve"><value>Subfolders</value></data>
+  <data name="GuestFiles_NoSubfolders" xml:space="preserve"><value>No subfolders</value></data>
+  <data name="Sftp_Authentication" xml:space="preserve"><value>Authentication</value></data>
+  <data name="Sftp_AuthPassword" xml:space="preserve"><value>Password</value></data>
+  <data name="Sftp_AuthPrivateKey" xml:space="preserve"><value>Private key file</value></data>
+  <data name="Sftp_AuthDefaultKeys" xml:space="preserve"><value>This PC's default .ssh keys</value></data>
+  <data name="Sftp_AuthCertificate" xml:space="preserve"><value>OpenSSH user certificate</value></data>
+  <data name="Sftp_PrivateKeyPath" xml:space="preserve"><value>Private key file</value></data>
+  <data name="Sftp_CertificatePath" xml:space="preserve"><value>OpenSSH certificate file</value></data>
+  <data name="Sftp_Browse" xml:space="preserve"><value>Browse…</value></data>
+  <data name="Sftp_DefaultKeysHint" xml:space="preserve"><value>Uses id_ed25519, id_ecdsa and id_rsa found in %USERPROFILE%\.ssh.</value></data>
+  <data name="Sftp_CertificateHint" xml:space="preserve"><value>Select an OpenSSH user certificate issued by a CA trusted by the server, and its matching private key.</value></data>
+  <data name="Sftp_Passphrase" xml:space="preserve"><value>Private key passphrase (if set)</value></data>
+  <data name="Sftp_RememberPassphrase" xml:space="preserve"><value>Remember key passphrase (Windows Credential Manager)</value></data>
+  <data name="Sftp_PassphraseHint" xml:space="preserve"><value>Leave blank for an unencrypted key or to keep an existing saved passphrase. Account changes apply to every connection using this account.</value></data>
+  <data name="Sftp_HasSavedPassphrase" xml:space="preserve"><value>Key passphrase saved</value></data>
+  <data name="Sftp_NoSavedPassphrase" xml:space="preserve"><value>No saved key passphrase</value></data>
+  <data name="Sftp_ForgetPassphrase" xml:space="preserve"><value>Delete saved key passphrase</value></data>
+  <data name="Sftp_KeyFileMissing" xml:space="preserve"><value>The private key file was not found. Check the file path.</value></data>
+  <data name="Sftp_CertificateFileMissing" xml:space="preserve"><value>The OpenSSH certificate file was not found. Check the file path.</value></data>
+  <data name="Sftp_KeyPrompt" xml:space="preserve"><value>SFTP key passphrase</value></data>
+  <data name="Sftp_PassphraseFor" xml:space="preserve"><value>Private key passphrase for {0} — {1}</value></data>
+  <data name="Sftp_KeyAuthFailed" xml:space="preserve"><value>SFTP key authentication failed. Check the passphrase and the server's authorized key or certificate settings.</value></data>
+  <data name="Sftp_PassphraseLong" xml:space="preserve"><value>The key passphrase exceeds the Windows credential size limit.</value></data>
+  <data name="Sftp_KeyFilter" xml:space="preserve"><value>Private key files|id_*;*.pem;*.key|All files|*.*</value></data>
+  <data name="Sftp_CertificateFilter" xml:space="preserve"><value>OpenSSH certificates|*-cert.pub;*.pub|All files|*.*</value></data>
+  <data name="Sftp_KeyPathRequired" xml:space="preserve"><value>Select a private key file.</value></data>
+  <data name="Sftp_CertificatePathRequired" xml:space="preserve"><value>Select an OpenSSH user certificate file.</value></data>
+  <data name="Sftp_DefaultKeysMissing" xml:space="preserve"><value>No default private keys were found in {0}. Add id_ed25519, id_ecdsa or id_rsa, or select a private key file.</value></data>
+  <data name="Sftp_KeyLoadFailed" xml:space="preserve"><value>Cannot load private key file {0}: {1}</value></data>
+  <data name="Sftp_PassphraseRequired" xml:space="preserve"><value>Enter the passphrase for private key file {0}.</value></data>
+  <data name="Sftp_PassphraseInvalid" xml:space="preserve"><value>The passphrase for private key file {0} is incorrect, or the file could not be read.</value></data>
+  <data name="Sftp_CertificateInvalid" xml:space="preserve"><value>Cannot load the OpenSSH user certificate: {0}</value></data>
+  <data name="Sftp_KeySetup" xml:space="preserve"><value>Create key / server registration…</value></data>
+  <data name="SshSetup_Title" xml:space="preserve"><value>SSH key generation and server registration</value></data>
+  <data name="SshSetup_RegistrationTab" xml:space="preserve"><value>Public key · Server registration</value></data>
+  <data name="SshSetup_GenerationTab" xml:space="preserve"><value>Generate a key</value></data>
+  <data name="SshSetup_PrivateKey" xml:space="preserve"><value>Private key for the public key to register</value></data>
+  <data name="SshSetup_ExistingKeyHint" xml:space="preserve"><value>Select a private key and load its public key. The public key can be derived even when the .pub file is missing.</value></data>
+  <data name="SshSetup_ReadPublicKey" xml:space="preserve"><value>Load · Extract public key</value></data>
+  <data name="SshSetup_PublicKey" xml:space="preserve"><value>User public key (.pub)</value></data>
+  <data name="SshSetup_CopyPublicKey" xml:space="preserve"><value>Copy public key</value></data>
+  <data name="SshSetup_SavePublicKey" xml:space="preserve"><value>Save public key file…</value></data>
+  <data name="SshSetup_RegistrationDescription" xml:space="preserve"><value>Run the command below in a Linux server console logged in as {0}. It creates ~/.ssh and authorized_keys when missing, preserves existing keys, and registers this public key without duplicates.</value></data>
+  <data name="SshSetup_TargetUser" xml:space="preserve"><value>the SFTP target user</value></data>
+  <data name="SshSetup_CopyCommand" xml:space="preserve"><value>Copy authorized_keys registration command</value></data>
+  <data name="SshSetup_PasteCommandHint" xml:space="preserve"><value>The copy button copies a single-line command with the same registration behavior as the script above. Paste it into the server console and press Enter. added means a new key was registered; already means it was present. The actual authorized_keys path follows.</value></data>
+  <data name="SshSetup_RegistrationNote" xml:space="preserve"><value>The file is named authorized_keys. Register the key in the target user's home; do not use sudo to run this in another user's home. Permissions are set to 700 for .ssh and 600 for authorized_keys. Keep the private key on this PC; register only the public key on the server. This command is for Linux · Unix. If the server uses a different AuthorizedKeysFile path, use that location.</value></data>
+  <data name="SshSetup_CertificateRegistration" xml:space="preserve"><value>For certificate authentication, send the public key for {0} to your CA to issue an OpenSSH user certificate. Configure the issued certificate and its matching private key in the account profile.</value></data>
+  <data name="SshSetup_CertificateNote" xml:space="preserve"><value>The server must trust the issuing CA. An administrator can configure the CA public key file with TrustedUserCAKeys in sshd_config, or register the CA public key with the cert-authority option in the target user's authorized_keys. The certificate's user principal must also be allowed. Registering an ordinary user public key alone does not configure certificate authentication. A newly generated key needs a separately issued certificate.</value></data>
+  <data name="SshSetup_OpenDocs" xml:space="preserve"><value>Open OpenSSH registration documentation</value></data>
+  <data name="SshSetup_GenerationHint" xml:space="preserve"><value>If you have no key, generate a private key and a .pub public key file on this PC. Existing files are never overwritten. The generated key path is returned to the account editor; apply it with the account's Save button.</value></data>
+  <data name="SshSetup_KeyType" xml:space="preserve"><value>Key type</value></data>
+  <data name="SshSetup_Rsa3072" xml:space="preserve"><value>RSA 3072 (optional passphrase)</value></data>
+  <data name="SshSetup_Ed25519" xml:space="preserve"><value>Ed25519 (unencrypted key)</value></data>
+  <data name="SshSetup_Ed25519Hint" xml:space="preserve"><value>Ed25519 generation creates an unencrypted OpenSSH key. Select RSA 3072 to protect the key file with a passphrase. Existing encrypted Ed25519 keys can still be used for SFTP authentication.</value></data>
+  <data name="SshSetup_NewPath" xml:space="preserve"><value>New private key location</value></data>
+  <data name="SshSetup_NewPassphrase" xml:space="preserve"><value>New private key passphrase (optional)</value></data>
+  <data name="SshSetup_ConfirmPassphrase" xml:space="preserve"><value>Confirm passphrase</value></data>
+  <data name="SshSetup_PassphraseHint" xml:space="preserve"><value>The passphrase encrypts the private key file. Leave blank to create an unencrypted key. Choose whether to remember it in the account editor's Windows credential option.</value></data>
+  <data name="SshSetup_Comment" xml:space="preserve"><value>Public key comment</value></data>
+  <data name="SshSetup_Generate" xml:space="preserve"><value>Generate private and public keys</value></data>
+  <data name="SshSetup_Working" xml:space="preserve"><value>Working…</value></data>
+  <data name="SshSetup_PublicKeyReady" xml:space="preserve"><value>Public key extracted. Register it on the target server.</value></data>
+  <data name="SshSetup_UnlockKey" xml:space="preserve"><value>Private key passphrase for public key extraction</value></data>
+  <data name="SshSetup_PublicKeyFilter" xml:space="preserve"><value>OpenSSH public key|*.pub|All files|*.*</value></data>
+  <data name="SshSetup_PublicKeySaved" xml:space="preserve"><value>Public key saved: {0}</value></data>
+  <data name="SshSetup_PassphraseMismatch" xml:space="preserve"><value>The two private key passphrases do not match.</value></data>
+  <data name="SshSetup_Generated" xml:space="preserve"><value>New key created: {0} · Register it on the server and save the account in the editor.</value></data>
+  <data name="Sftp_PublicKeyInvalid" xml:space="preserve"><value>Use a single valid OpenSSH user public key line.</value></data>
+  <data name="Sftp_RegistrationCommandLong" xml:space="preserve"><value>This key's registration command is too long for console pasting. Save the public key file and register it in the target user's authorized_keys.</value></data>
+  <data name="SshSetup_CertificatePublicKeyReady" xml:space="preserve"><value>Public key extracted. Send it to your CA to issue a user certificate.</value></data>
+  <data name="SshSetup_NewCertificateRequired" xml:space="preserve"><value>Issue a new OpenSSH user certificate for this key and select the new certificate file.</value></data>
+  <data name="GuestFiles_MoreFolders" xml:space="preserve">
+    <value>More parent folders</value>
+  </data>
+  <data name="ConsoleSettings_DirectRender" xml:space="preserve">
+    <value>Rendering</value>
+  </data>
+  <data name="ConsoleSettings_DirectRenderOn" xml:space="preserve">
+    <value>Draw directly with the GPU (lower display latency)</value>
+  </data>
+  <data name="ConsoleSettings_DirectRenderHint" xml:space="preserve">
+    <value>Draws with Direct3D instead of WPF so the screen updates sooner. Turn off if the screen flickers or looks wrong. Applies to VNC and RDP.</value>
+  </data>
+  <data name="Console_DirectFailed" xml:space="preserve">
+    <value>Could not start GPU drawing; using the standard renderer.</value>
+  </data>
 </root>

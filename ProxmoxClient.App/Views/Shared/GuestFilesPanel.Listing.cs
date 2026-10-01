@@ -18,7 +18,7 @@ public partial class GuestFilesPanel
 
     private static readonly IComparer<GuestFileEntry> DefaultOrder = Comparer<GuestFileEntry>.Create((a, b) =>
     {
-        var byKind = (a.IsDirectory ? 0 : 1).CompareTo(b.IsDirectory ? 0 : 1);
+        var byKind = (a.OpensAsFolder ? 0 : 1).CompareTo(b.OpensAsFolder ? 0 : 1);
         return byKind != 0 ? byKind : StringComparer.CurrentCultureIgnoreCase.Compare(a.Name, b.Name);
     });
 
@@ -139,7 +139,7 @@ public partial class GuestFilesPanel
         }
 
         _current = directory;
-        PathBox.Text = directory;
+        UpdateAddress(directory, sorted.Any(e => e.OpensAsFolder));
         Placeholder.Visibility = Visibility.Collapsed;
         if (!updateStatus) return;
 

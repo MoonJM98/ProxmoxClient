@@ -51,10 +51,11 @@ public partial class GuestFilesPanel
         {
             foreach (var (entry, path) in targets)
             {
-                if (entry.IsDirectory && !files.CanDownloadDirectory)
+                if (entry.OpensAsFolder && !files.CanDownloadDirectory)
                     throw new GuestFileException(Loc.T("GuestFiles_NoFolderDownload", entry.Name));
 
-                await DownloadOneAsync(files, directory, entry, path, ct);
+                var (from, item) = entry.LinkToDirectory ? LinkedFolder(files, directory, entry) : (directory, entry);
+                await DownloadOneAsync(files, from, item, path, ct);
             }
 
             StatusText.Text = Loc.T("GuestFiles_Downloaded", targets.Count);
@@ -82,11 +83,28 @@ public partial class GuestFilesPanel
         }
     }
 
-    /// <summary>PC 에 저장할 이름 — 폴더는 .tar, Windows 에서 못 쓰는 글자는 _ 로.</summary>
+    /// <summary>
+    ///     폴더 링크를 받을 때 — tar 는 링크 경로를 링크 하나로 묶으므로 가리키는 폴더(담긴 폴더, 폴더 항목)로
+    ///     바꾼다. 대상을 모르거나 뿌리면 링크 경로 그대로.
+    /// </summary>
+    private static (string Directory, GuestFileEntry Entry) LinkedFolder(IGuestFileSystem files, string directory,
+        GuestFileEntry link)
+    {
+        var target = string.IsNullOrEmpty(link.LinkTarget)
+            ? files.Combine(directory, link.Name)
+            : files.ResolveLink(directory, link);
+        var name = CrumbLabel(files, target, false);
+        var parent = files.Parent(target);
+        return name.Length == 0 || files.NameComparer.Equals(parent, target)
+            ? (directory, link with { Kind = GuestFileKind.Directory })
+            : (parent, link with { Name = name, Kind = GuestFileKind.Directory, LinkToDirectory = false });
+    }
+
+    /// <summary>PC 에 저장할 이름 — 폴더(폴더 링크 포함)는 .tar, Windows 에서 못 쓰는 글자는 _ 로.</summary>
     private static string LocalName(GuestFileEntry entry)
     {
         var name = string.Concat(entry.Name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
-        return entry.IsDirectory ? name + ".tar" : name;
+        return entry.OpensAsFolder ? name + ".tar" : name;
     }
 
     private async void OnUpload(object sender, RoutedEventArgs e)

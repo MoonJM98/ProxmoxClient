@@ -24,13 +24,16 @@ internal static class GuestListFormat
         Func<string, string>? group = null)
     {
         var m = meta.Split('/');
-        var kind = m[0] switch
+        // 종류 한 글자 + (find %Y 처럼) 링크가 가리키는 대상 종류 — "ld" 는 폴더를 가리키는 링크
+        var type = m[0];
+        var kind = type.Length == 0 ? GuestFileKind.Other : type[0] switch
         {
-            "d" => GuestFileKind.Directory,
-            "f" => GuestFileKind.File,
-            "l" => GuestFileKind.Link,
+            'd' => GuestFileKind.Directory,
+            'f' => GuestFileKind.File,
+            'l' => GuestFileKind.Link,
             _ => GuestFileKind.Other
         };
+        var linkToDirectory = kind == GuestFileKind.Link && type.Length > 1 && type[1] == 'd';
         long.TryParse(m.ElementAtOrDefault(1), NumberStyles.Integer, CultureInfo.InvariantCulture, out var size);
         DateTime? modified = double.TryParse(m.ElementAtOrDefault(2), NumberStyles.Float, CultureInfo.InvariantCulture,
                                  out var seconds) && seconds is > 0 and < 253402300799
@@ -40,7 +43,7 @@ internal static class GuestListFormat
         var grp = m.ElementAtOrDefault(5) ?? string.Empty;
         return new GuestFileEntry(name, kind, size, modified, m.ElementAtOrDefault(3) ?? string.Empty,
             owner is null ? user : owner(user), group is null ? grp : group(grp),
-            kind == GuestFileKind.Link && link.Length > 0 ? link : null);
+            kind == GuestFileKind.Link && link.Length > 0 ? link : null, linkToDirectory);
     }
 }
 

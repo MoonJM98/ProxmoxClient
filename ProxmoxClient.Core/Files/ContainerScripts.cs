@@ -43,12 +43,30 @@ internal static class ContainerScripts
                                 + "[ -n \"$f\" ] && [ -f \"$R$f\" ] && head -c 1048576 -- \"$R$f\"; "
                                 + "printf '\\0'; done; true";
 
-    /// <summary>폴더 목록 — 항목마다 "%y/%s/%T@/%m/%U/%G" \0 이름 \0 링크 대상 \0.</summary>
+    /// <summary>
+    ///     폴더 목록 — 항목마다 "%y/%s/%T@/%m/%U/%G" \0 이름 \0 링크 대상 \0. 링크는 <see cref="LinkKinds" /> 가
+    ///     폴더를 가리키는지 보고 종류를 "ld" 로 바꾼다.
+    /// </summary>
     public static string List(string directory)
     {
         return Dir(directory) + "[ -d \"$R$d\" ] || { echo \"not a directory: $d\" >&2; exit 2; }; "
-                              + "find -P \"$R$d\" -mindepth 1 -maxdepth 1 -printf '%y/%s/%T@/%m/%U/%G\\0%f\\0%l\\0'";
+                              + "find -P \"$R$d\" -mindepth 1 -maxdepth 1 -printf '%y/%s/%T@/%m/%U/%G\\0%f\\0%l\\0' | "
+                              + LinkKinds;
     }
+
+    /// <summary>
+    ///     목록 레코드를 그대로 넘기되 링크는 CT 루트 R 안에서 끝까지 풀어(pvc_real 과 같은 규칙, 40 번까지) 폴더면
+    ///     종류를 "ld" 로 — find %Y 는 노드(호스트) 루트 기준으로 절대 링크를 풀어 틀리므로 쓰지 않는다.
+    /// </summary>
+    private const string LinkKinds =
+        "perl -e 'my($r,$d)=@ARGV;$/=chr(0);"
+        + "sub real{my @t=grep{length}split(m{/},$_[0]);my(@o,$n);while(@t){my $c=shift @t;next if $c eq q{.};"
+        + "if($c eq q{..}){pop @o;next}my $l=readlink($r.q{/}.join(q{/},@o,$c));"
+        + "if(defined $l){return if ++$n>40;@o=() if $l=~m{^/};unshift @t,grep{length}split(m{/},$l);next}"
+        + "push @o,$c}q{/}.join(q{/},@o)}"
+        + "while(defined(my $m=<STDIN>)){my $f=<STDIN>;my $l=<STDIN>;last unless defined $l;"
+        + "if($m=~m{^l/}){my $p=real($d.q{/}.substr($f,0,-1));$m=q{ld}.substr($m,1) if defined $p&&-d($r.$p)}"
+        + "print $m,$f,$l}' \"$R\" \"$d\"";
 
     /// <summary>파일 내용 — 링크면 CT 루트 기준으로 따라간다.</summary>
     public static string ReadFile(string path)

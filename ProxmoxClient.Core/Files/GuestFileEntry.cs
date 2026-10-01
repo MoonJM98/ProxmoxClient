@@ -19,6 +19,7 @@ public enum GuestFileKind
 /// <param name="Owner">소유자 이름(모르면 번호나 빈 문자열).</param>
 /// <param name="Group">그룹 이름.</param>
 /// <param name="LinkTarget">심볼릭 링크가 가리키는 곳(링크일 때만).</param>
+/// <param name="LinkToDirectory">폴더를 가리키는 링크(심볼릭 링크·정션) — 폴더처럼 연다.</param>
 public sealed record GuestFileEntry(
     string Name,
     GuestFileKind Kind,
@@ -27,9 +28,14 @@ public sealed record GuestFileEntry(
     string Mode,
     string Owner,
     string Group,
-    string? LinkTarget = null)
+    string? LinkTarget = null,
+    bool LinkToDirectory = false)
 {
+    /// <summary>진짜 폴더 — 지우기·받기처럼 안으로 들어가는 작업은 이것만(링크는 링크 자체로 다룬다).</summary>
     public bool IsDirectory => Kind == GuestFileKind.Directory;
+
+    /// <summary>열면 폴더로 들어가는 항목(폴더, 폴더를 가리키는 링크) — 탐색·정렬·아이콘용.</summary>
+    public bool OpensAsFolder => IsDirectory || LinkToDirectory;
 
     /// <summary>
     ///     숨김·시스템 항목 — 이름이 '.' 으로 시작하거나(리눅스), Windows 속성(PowerShell Mode 의 h·s)이 있을 때.

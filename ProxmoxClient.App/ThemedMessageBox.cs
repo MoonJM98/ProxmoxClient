@@ -10,20 +10,23 @@ public static class ThemedMessageBox
 {
     public static MessageBoxResult Show(Window owner, string text, string title,
         MessageBoxButton buttons = MessageBoxButton.OK,
-        MessageBoxImage image = MessageBoxImage.Information)
+        MessageBoxImage image = MessageBoxImage.Information,
+        MessageBoxResult defaultResult = MessageBoxResult.None)
     {
-        return ShowCore(owner, text, title, buttons, image);
+        return ShowCore(owner, text, title, buttons, image, defaultResult);
     }
 
     public static MessageBoxResult Show(string text, string title,
         MessageBoxButton buttons = MessageBoxButton.OK,
-        MessageBoxImage image = MessageBoxImage.Information)
+        MessageBoxImage image = MessageBoxImage.Information,
+        MessageBoxResult defaultResult = MessageBoxResult.None)
     {
-        return ShowCore(null, text, title, buttons, image);
+        return ShowCore(null, text, title, buttons, image, defaultResult);
     }
 
     private static MessageBoxResult ShowCore(
-        Window? owner, string text, string title, MessageBoxButton buttons, MessageBoxImage image)
+        Window? owner, string text, string title, MessageBoxButton buttons, MessageBoxImage image,
+        MessageBoxResult defaultResult)
     {
         var app = Application.Current ?? throw new InvalidOperationException("Application이 초기화되지 않았습니다.");
         var result = MessageBoxResult.None;
@@ -102,6 +105,14 @@ public static class ThemedMessageBox
             primary = [okButton, cancel];
         }
 
+        var defaultButton = defaultResult switch
+        {
+            MessageBoxResult.No when buttons == MessageBoxButton.YesNo => noButton,
+            MessageBoxResult.Cancel when buttons == MessageBoxButton.OKCancel => primary[1],
+            _ => primary[0]
+        };
+        if (defaultResult != MessageBoxResult.None) defaultButton.IsDefault = true;
+
         var buttonRow = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -142,7 +153,7 @@ public static class ThemedMessageBox
             Content = root
         };
         WindowTheme.ApplyDarkTitleBar(window);
-        window.Loaded += (_, _) => primary[0].Focus();
+        window.Loaded += (_, _) => defaultButton.Focus();
         window.ShowDialog();
         return result;
     }

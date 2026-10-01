@@ -61,6 +61,8 @@ public sealed partial class RfbClient
     private static readonly TimeSpan InflaterReleaseTimeout = TimeSpan.FromSeconds(2);
     /// <summary>현재 FramebufferUpdate 의 변경 영역(읽기 루프 전용).</summary>
     private readonly DirtyRegion _dirty = new();
+    /// <summary>스레드 풀에서 진행 중인 Tight JPEG/PNG 디코드(읽기 루프 전용) — RfbClient.Tight.cs.</summary>
+    private readonly List<PendingDecode> _decodes = [];
     private readonly object _frameLock = new();
     /// <summary>
     ///     핸드셰이크 이후 모든 클라이언트→서버 메시지는 이 채널을 거쳐 전송 루프 하나가 순서대로 보낸다.
@@ -452,6 +454,28 @@ public sealed partial class RfbClient
         // 클라이언트는 현재 프레임 rect들을 읽으면서 동시에 처리 (스레드 분리)
         await RequestFramebufferUpdateAsync(true, ct).ConfigureAwait(false);
 
+        try
+        {
+            await ReadRectsAsync(rectCount, ct).ConfigureAwait(false);
+            // 이 갱신의 JPEG 디코드가 모두 프레임버퍼에 쓰인 뒤에 화면에 알린다
+            await DrainDecodesAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            AbandonDecodes();
+            throw;
+        }
+
+        for (var i = 0; i < _dirty.Count; i++)
+        {
+            var rect = _dirty[i];
+            FrameUpdated?.Invoke(rect.X1, rect.Y1, rect.Width, rect.Height);
+        }
+
+        Interlocked.Increment(ref _frames);
+    }
+    private async Task ReadRectsAsync(int rectCount, CancellationToken ct)
+    {
         for (var i = 0; i < rectCount; i++)
         {
             // rect 헤더 12바이트(x,y,w,h,인코딩)를 한 번에 읽는다
@@ -462,6 +486,9 @@ public sealed partial class RfbClient
             var h = BinaryPrimitives.ReadUInt16BigEndian(_rectHeader.AsSpan(6, 2));
             var encoding = BinaryPrimitives.ReadInt32BigEndian(_rectHeader.AsSpan(8, 4));
             if (encoding is EncRaw or EncZlib or EncTight or EncCopyRect) ValidateRect(x, y, w, h);
+            // 아직 디코드 중인 JPEG 와 겹치는 곳에 쓰기 전에는 그 디코드를 기다린다(그리는 순서 유지)
+            if (encoding is EncRaw or EncZlib or EncTight)
+                await DrainOverlappingAsync(x, y, w, h).ConfigureAwait(false);
 
             switch (encoding)
             {
@@ -564,6 +591,7 @@ public sealed partial class RfbClient
                 case EncCopyRect:
                 {
                     await ReadExactlyAsync(_scratch, 0, 4, ct).ConfigureAwait(false);
+                    await DrainDecodesAsync().ConfigureAwait(false); // 원본을 읽으므로 디코드가 다 쓴 뒤에
                     var srcX = BinaryPrimitives.ReadUInt16BigEndian(_scratch.AsSpan(0, 2));
                     var srcY = BinaryPrimitives.ReadUInt16BigEndian(_scratch.AsSpan(2, 2));
                     ValidateRect(srcX, srcY, w, h);
@@ -575,6 +603,7 @@ public sealed partial class RfbClient
                     break;
                 }
                 case EncDesktopSize:
+                    await DrainDecodesAsync().ConfigureAwait(false); // 프레임버퍼를 바꾸기 전에
                     ValidateFramebufferSize(w, h);
                     FramebufferWidth = w;
                     FramebufferHeight = h;
@@ -588,14 +617,6 @@ public sealed partial class RfbClient
                     throw new IOException(Res.T("RfbClient_12", encoding));
             }
         }
-
-        for (var i = 0; i < _dirty.Count; i++)
-        {
-            var rect = _dirty[i];
-            FrameUpdated?.Invoke(rect.X1, rect.Y1, rect.Width, rect.Height);
-        }
-
-        Interlocked.Increment(ref _frames);
     }
     /// <summary>
     ///     픽셀을 싣는 사각형이 프레임버퍼 안에 있는지 확인. 벗어나면 행이 다음 줄로 넘어가 화면을 덮거나

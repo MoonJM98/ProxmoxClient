@@ -6,5 +6,21 @@ namespace ProxmoxClient.Core.Vnc;
 public sealed class ConsoleSettingsStore(string? path = null)
     : JsonSettingsStore<ConsoleSettings>(path ?? DefaultPath, settings => settings.Normalize())
 {
+    private static readonly SemaphoreSlim Updates = new(1, 1);
+
+    /// <summary>여러 콘솔 창이 서로의 게스트 매핑·서버 키·표시 설정을 덮어쓰지 않게 수정한다.</summary>
+    public async Task<ConsoleSettings> UpdateAsync(Func<ConsoleSettings, ConsoleSettings> update,
+        CancellationToken ct = default)
+    {
+        await Updates.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var settings = update(await LoadAsync(ct).ConfigureAwait(false)).Normalize();
+            await SaveAsync(settings, ct).ConfigureAwait(false);
+            return settings;
+        }
+        finally { Updates.Release(); }
+    }
+
     public static string DefaultPath => InAppData("console-settings.json");
 }

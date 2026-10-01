@@ -82,10 +82,19 @@
                     <!-- CT 파일(따로 뜨는 파일 창) — CT 에서만 보인다 -->
                     <Border x:Name="FilesSeparator" Width="1" Background="{StaticResource BrushBorder}"
                             Margin="10,4,4,4" Visibility="Collapsed" />
-                    <Button x:Name="BtnFiles" ic:IconAssist.Icon="{StaticResource IconFolder}"
+                    <ic:SplitButton x:Name="BtnFiles" ic:IconAssist.Icon="{StaticResource IconFolder}"
                             Content="{loc:Tr GuestFiles_Toggle}"
                             Visibility="Collapsed" Margin="6,0,0,0" Click="OnOpenFiles"
-                            ToolTip="{loc:Tr GuestFiles_ToggleTip}" />
+                            ToolTip="{loc:Tr GuestFiles_ToggleTip}">
+                        <ic:SplitButton.DropDownMenu>
+                            <ContextMenu>
+                                <MenuItem x:Name="FilesNodeShell" Header="{loc:Tr Sftp_Container}" Click="OnFilesMethod" />
+                                <MenuItem x:Name="FilesSftp" Header="SFTP" Click="OnFilesMethod" />
+                                <Separator />
+                                <MenuItem x:Name="FilesConfigure" Header="{loc:Tr Sftp_Settings}" Click="OnFilesMethod" />
+                            </ContextMenu>
+                        </ic:SplitButton.DropDownMenu>
+                    </ic:SplitButton>
                 </StackPanel>
             </DockPanel>
         </Border>

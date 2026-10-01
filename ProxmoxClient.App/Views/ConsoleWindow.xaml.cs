@@ -114,11 +114,21 @@ public partial class ConsoleWindow : Window
         // 화면 크기(맞춤 배율)·모니터 DPI 가 바뀌면 커서 크기도 게스트 화면과 같은 비율로 다시 만든다
         ScreenImage.SizeChanged += (_, _) => RefreshCursor();
         ConsoleScroll.SizeChanged += (_, _) => QueueDesktopResize(); // RDP — 게스트 해상도를 창에 맞춘다
+        // GPU 화면 — 뷰포트·스크롤·배치가 바뀌면 자식 창 크기와 그릴 자리를 다시 맞춘다
+        ConsoleScroll.ScrollChanged += (_, _) =>
+        {
+            UpdateDirectSlot();
+            UpdateDirectLayout();
+            MoveCursorOverlay(Mouse.GetPosition(ScreenHost)); // 1:1 에서 스크롤하면 겹친 커서도 따라오게
+        };
+        LayoutUpdated += (_, _) => UpdateDirectLayout();
+        StoppedPanel.IsVisibleChanged += (_, _) => UpdateDirectSlot();
         DpiChanged += (_, _) => RefreshCursor();
         Loaded += async (_, _) =>
         {
             _settings = await _settingsStore.LoadAsync();
             ApplyScalingMode();
+            ApplyDirectRendering();
             if (_runState.IsStopped)
             {
                 ShowStopped(); // 정지 상태면 연결하지 않고 시작 안내
@@ -131,6 +141,7 @@ public partial class ConsoleWindow : Window
         {
             ReleaseStickyKeys(); // 게스트에 Ctrl 등이 눌린 채 남지 않게(연결이 살아 있을 때 보낸다)
             _closed = true;
+            CloseDirect();
             _runState.Dispose();
             CompositionTarget.Rendering -= OnCompositionRendering;
             _statsTimer?.Stop();
@@ -227,6 +238,7 @@ public partial class ConsoleWindow : Window
 
             StoppedPanel.Hide();
             EnsureBitmap(w, h);
+            _direct?.InvalidateAll();
             // RDP 창 맞춤 해상도면 게스트가 창에 맞췄다 — 창을 게스트 크기(물리 픽셀)로 다시 키우지 않는다
             if (!FitsGuestToWindow) FitWindowToFramebuffer(w, h);
             var tier = RenderCapability.Tier >> 16;
@@ -314,6 +326,8 @@ public partial class ConsoleWindow : Window
     /// <summary>읽기 스레드에서 호출 — 변경 영역을 누적하고 렌더 루프가 꺼져 있으면 UI 스레드에서 켠다.</summary>
     private void QueueFrameFlush(int x, int y, int w, int h)
     {
+        if (TryQueueDirectFrame(x, y, w, h)) return; // GPU 로 바로 그리는 중 — WPF 렌더 틱을 거치지 않는다
+
         lock (_dirtyLock)
         {
             _pendingDirty.Add(x, y, w, h);
@@ -389,44 +403,11 @@ public partial class ConsoleWindow : Window
             }
         }
     }
-    /// <summary>
-    ///     Tight JPEG/PNG → 프레임버퍼 직접 디코드(WPF WIC 사용, Core 는 WPF 무의존 유지).
-    ///     행 간격(stride)을 프레임버퍼 폭으로 지정해 (x, y) 위치에 곧바로 기록 — 중간 픽셀 배열·행 복사 없음.
-    /// </summary>
+    /// <summary>Tight JPEG/PNG → 프레임버퍼 직접 디코드(WIC 직접 호출, Core 는 WPF·Windows 무의존 유지).</summary>
     internal static void DecodeTightImage(
         byte[] data, int length, byte[] framebuffer, int framebufferWidth, int x, int y, int width, int height)
     {
-        using var stream = new MemoryStream(data, 0, length, false);
-        var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
-        if (decoder.Frames.Count == 0) throw new IOException(Loc.T("ConsoleWindow_TightNoFrame"));
-
-        BitmapSource frame = decoder.Frames[0];
-        if (frame.Format != PixelFormats.Bgr32
-            && frame.Format != PixelFormats.Bgra32)
-            frame = new FormatConvertedBitmap(frame, PixelFormats.Bgr32, null, 0);
-
-        var w = Math.Min(width, frame.PixelWidth);
-        var h = Math.Min(height, frame.PixelHeight);
-        if (w <= 0 || h <= 0) return;
-
-        var rowBytes = w * 4;
-        var lastRowEnd = ((y + h - 1) * framebufferWidth + x) * 4 + rowBytes;
-        if (x < 0 || y < 0 || x + w > framebufferWidth || lastRowEnd > framebuffer.Length)
-            throw new IOException(Loc.T("ConsoleWindow_TightOutOfRange"));
-
-        // 프레임버퍼의 rect 위치에 행 간격(프레임버퍼 폭)으로 바로 디코드 — 중간 버퍼·행 복사 없음.
-        // WIC 는 행마다 rect 폭만큼만 쓰고, 버퍼 크기를 마지막 행 끝까지로 넘겨 그 밖은 건드릴 수 없다
-        var start = (y * framebufferWidth + x) * 4;
-        var handle = GCHandle.Alloc(framebuffer, GCHandleType.Pinned);
-        try
-        {
-            var target = Marshal.UnsafeAddrOfPinnedArrayElement(framebuffer, start);
-            frame.CopyPixels(new Int32Rect(0, 0, w, h), target, lastRowEnd - start, framebufferWidth * 4);
-        }
-        finally
-        {
-            handle.Free();
-        }
+        WicImageDecoder.Decode(data, length, framebuffer, framebufferWidth, x, y, width, height);
     }
     private void StartStatsTicker()
     {
@@ -521,6 +502,7 @@ public partial class ConsoleWindow : Window
             ? BitmapScalingMode.Linear
             : BitmapScalingMode.NearestNeighbor);
         RefreshCursor(); // 맞춤 전환·설정 변경 — 커서 크기·대체 커서를 다시 맞춘다
+        UpdateDirectLayout();
     }
     /// <summary>[종료 | ▾] 의 종료 쪽 — 버튼의 Action 속성(Stop)은 표시 조건이라 여기서는 종료를 직접 부른다.</summary>
     private async void OnShutdownClick(object sender, RoutedEventArgs e)
@@ -556,6 +538,7 @@ public partial class ConsoleWindow : Window
 
         _settings = saved;
         ApplyScalingMode();
+        ApplyDirectRendering();
         QueueDesktopResize(); // RDP 창 맞춤 해상도를 방금 켰으면 바로 맞춘다
         SetState(Loc.T("ConsoleWindow_M14"));
     }

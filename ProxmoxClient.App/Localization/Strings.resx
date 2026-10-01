@@ -10246,4 +10246,143 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>PVE 8.3 이상에서만 적용됩니다.</value>
     <comment>Views/Datacenter/ClusterTabs.cs</comment>
   </data>
+  <data name="Sftp_Connect" xml:space="preserve"><value>SFTP 연결</value></data>
+  <data name="Sftp_Host" xml:space="preserve"><value>호스트</value></data>
+  <data name="Sftp_Port" xml:space="preserve"><value>포트</value></data>
+  <data name="Sftp_User" xml:space="preserve"><value>사용자명</value></data>
+  <data name="Sftp_Password" xml:space="preserve"><value>비밀번호</value></data>
+  <data name="Sftp_PasswordHint" xml:space="preserve"><value>저장된 비밀번호를 사용하려면 비워 두세요.</value></data>
+  <data name="Sftp_Remember" xml:space="preserve"><value>비밀번호 기억 (Windows 자격 증명 관리자)</value></data>
+  <data name="Sftp_BadPort" xml:space="preserve"><value>포트는 1~65535 사이의 숫자여야 합니다.</value></data>
+  <data name="Sftp_PasswordLong" xml:space="preserve"><value>비밀번호가 Windows 자격 증명 저장 한도를 초과합니다.</value></data>
+  <data name="Sftp_AuthFailed" xml:space="preserve"><value>SFTP 인증 실패 — 비밀번호를 다시 입력하세요.</value></data>
+  <data name="Sftp_HostKey" xml:space="preserve"><value>SFTP 서버 키 확인</value></data>
+  <data name="Sftp_TrustKey" xml:space="preserve"><value>{0} 서버의 SSH 키를 신뢰하시겠습니까?
+
+SHA256:{1}
+
+서버의 키 지문과 비교한 뒤 확인하세요.</value></data>
+  <data name="Sftp_KeyChanged" xml:space="preserve"><value>{0} 서버의 SSH 키가 변경되었습니다.
+
+기존: SHA256:{2}
+새 키: SHA256:{1}
+
+서버 관리자가 변경한 키인지 확인한 경우에만 신뢰하세요. 새 키를 신뢰하시겠습니까?</value></data>
+  <data name="Sftp_Agent" xml:space="preserve"><value>게스트 에이전트</value></data>
+  <data name="Sftp_Settings" xml:space="preserve"><value>SFTP 연결 설정…</value></data>
+  <data name="Sftp_Container" xml:space="preserve"><value>노드 셸</value></data>
+  <data name="Sftp_ForgetPassword" xml:space="preserve"><value>저장된 SFTP 비밀번호 삭제</value></data>
+  <data name="Sftp_Connections" xml:space="preserve"><value>접속 프로필</value></data>
+  <data name="Sftp_Accounts" xml:space="preserve"><value>계정 관리</value></data>
+  <data name="Sftp_Account" xml:space="preserve"><value>계정 프로필</value></data>
+  <data name="Sftp_ProfileName" xml:space="preserve"><value>프로필 이름</value></data>
+  <data name="Sftp_Add" xml:space="preserve"><value>추가</value></data>
+  <data name="Sftp_Delete" xml:space="preserve"><value>삭제</value></data>
+  <data name="Sftp_ManageAccounts" xml:space="preserve"><value>계정 관리…</value></data>
+  <data name="Sftp_SaveProfile" xml:space="preserve"><value>저장</value></data>
+  <data name="Sftp_Close" xml:space="preserve"><value>닫기</value></data>
+  <data name="Sftp_UseForGuest" xml:space="preserve"><value>이 게스트에 연결</value></data>
+  <data name="Sftp_AccountPasswordHint" xml:space="preserve"><value>비워 두면 저장된 비밀번호를 유지합니다. 계정을 수정하면 이 계정을 사용하는 모든 접속 프로필에 적용됩니다.</value></data>
+  <data name="Sftp_HasSavedPassword" xml:space="preserve"><value>저장된 비밀번호 있음</value></data>
+  <data name="Sftp_NoSavedPassword" xml:space="preserve"><value>저장된 비밀번호 없음</value></data>
+  <data name="Sftp_SelectAccount" xml:space="preserve"><value>접속 프로필에서 사용할 계정을 선택하세요.</value></data>
+  <data name="Sftp_AccountInUse" xml:space="preserve"><value>이 계정을 사용하는 접속 프로필이 있습니다. 먼저 해당 프로필의 계정을 변경하거나 프로필을 삭제하세요.</value></data>
+  <data name="Sftp_RequiredFields" xml:space="preserve"><value>프로필 이름과 필수 연결 정보를 입력하세요.</value></data>
+  <data name="Sftp_Saved" xml:space="preserve"><value>저장했습니다.</value></data>
+  <data name="Sftp_PasswordFor" xml:space="preserve"><value>{0} 계정으로 {1} 연결</value></data>
+  <data name="Sftp_AccountChanged" xml:space="preserve"><value>연결 중 계정 정보가 변경되었습니다. 다시 연결하세요.</value></data>
+  <data name="Sftp_FilesButton" xml:space="preserve"><value>파일 (SFTP)</value></data>
+  <data name="Sftp_AgentFilesButton" xml:space="preserve"><value>파일 (게스트 에이전트)</value></data>
+  <data name="Sftp_NodeFilesButton" xml:space="preserve"><value>파일 (노드 셸)</value></data>
+  <data name="Settings_General" xml:space="preserve"><value>일반</value></data>
+  <data name="Settings_Sftp" xml:space="preserve"><value>SFTP · 계정</value></data>
+  <data name="GuestFiles_BreadcrumbHint" xml:space="preserve"><value>폴더를 눌러 이동합니다. 빈 영역을 누르거나 Alt+D를 누르면 경로를 입력할 수 있습니다.</value></data>
+  <data name="GuestFiles_Subfolders" xml:space="preserve"><value>하위 폴더</value></data>
+  <data name="GuestFiles_NoSubfolders" xml:space="preserve"><value>하위 폴더 없음</value></data>
+  <data name="Sftp_Authentication" xml:space="preserve"><value>인증 방식</value></data>
+  <data name="Sftp_AuthPassword" xml:space="preserve"><value>비밀번호</value></data>
+  <data name="Sftp_AuthPrivateKey" xml:space="preserve"><value>개인 키 파일</value></data>
+  <data name="Sftp_AuthDefaultKeys" xml:space="preserve"><value>이 PC의 기본 .ssh 키</value></data>
+  <data name="Sftp_AuthCertificate" xml:space="preserve"><value>OpenSSH 사용자 인증서</value></data>
+  <data name="Sftp_PrivateKeyPath" xml:space="preserve"><value>개인 키 파일</value></data>
+  <data name="Sftp_CertificatePath" xml:space="preserve"><value>OpenSSH 인증서 파일</value></data>
+  <data name="Sftp_Browse" xml:space="preserve"><value>찾아보기…</value></data>
+  <data name="Sftp_DefaultKeysHint" xml:space="preserve"><value>%USERPROFILE%\.ssh의 id_ed25519, id_ecdsa, id_rsa를 찾아 연결에 사용합니다.</value></data>
+  <data name="Sftp_CertificateHint" xml:space="preserve"><value>서버가 신뢰하는 CA에서 발급한 OpenSSH 사용자 인증서와 해당 개인 키를 선택하세요.</value></data>
+  <data name="Sftp_Passphrase" xml:space="preserve"><value>개인 키 암호 (있는 경우)</value></data>
+  <data name="Sftp_RememberPassphrase" xml:space="preserve"><value>개인 키 암호 기억 (Windows 자격 증명 관리자)</value></data>
+  <data name="Sftp_PassphraseHint" xml:space="preserve"><value>암호 없는 키는 비워 두세요. 기존 계정에서 비워 두면 저장된 키 암호를 유지합니다. 계정 수정은 이 계정을 사용하는 모든 접속 프로필에 적용됩니다.</value></data>
+  <data name="Sftp_HasSavedPassphrase" xml:space="preserve"><value>저장된 개인 키 암호 있음</value></data>
+  <data name="Sftp_NoSavedPassphrase" xml:space="preserve"><value>저장된 개인 키 암호 없음</value></data>
+  <data name="Sftp_ForgetPassphrase" xml:space="preserve"><value>저장된 개인 키 암호 삭제</value></data>
+  <data name="Sftp_KeyFileMissing" xml:space="preserve"><value>개인 키 파일을 찾을 수 없습니다. 파일 경로를 확인하세요.</value></data>
+  <data name="Sftp_CertificateFileMissing" xml:space="preserve"><value>OpenSSH 인증서 파일을 찾을 수 없습니다. 파일 경로를 확인하세요.</value></data>
+  <data name="Sftp_KeyPrompt" xml:space="preserve"><value>SFTP 개인 키 암호</value></data>
+  <data name="Sftp_PassphraseFor" xml:space="preserve"><value>{0} 계정의 개인 키 암호 — {1}</value></data>
+  <data name="Sftp_KeyAuthFailed" xml:space="preserve"><value>SFTP 키 인증에 실패했습니다. 키 암호와 서버의 키 등록 또는 인증서 설정을 확인하세요.</value></data>
+  <data name="Sftp_PassphraseLong" xml:space="preserve"><value>개인 키 암호가 Windows 자격 증명 저장 한도를 초과합니다.</value></data>
+  <data name="Sftp_KeyFilter" xml:space="preserve"><value>개인 키 파일|id_*;*.pem;*.key|모든 파일|*.*</value></data>
+  <data name="Sftp_CertificateFilter" xml:space="preserve"><value>OpenSSH 인증서|*-cert.pub;*.pub|모든 파일|*.*</value></data>
+  <data name="Sftp_KeyPathRequired" xml:space="preserve"><value>개인 키 파일을 선택하세요.</value></data>
+  <data name="Sftp_CertificatePathRequired" xml:space="preserve"><value>OpenSSH 사용자 인증서 파일을 선택하세요.</value></data>
+  <data name="Sftp_DefaultKeysMissing" xml:space="preserve"><value>{0}에서 기본 개인 키를 찾을 수 없습니다. id_ed25519, id_ecdsa, id_rsa 중 하나를 추가하거나 개인 키 파일을 직접 선택하세요.</value></data>
+  <data name="Sftp_KeyLoadFailed" xml:space="preserve"><value>개인 키 파일 {0}을 읽을 수 없습니다: {1}</value></data>
+  <data name="Sftp_PassphraseRequired" xml:space="preserve"><value>개인 키 파일 {0}의 암호를 입력하세요.</value></data>
+  <data name="Sftp_PassphraseInvalid" xml:space="preserve"><value>개인 키 파일 {0}의 암호가 올바르지 않거나 파일을 읽을 수 없습니다.</value></data>
+  <data name="Sftp_CertificateInvalid" xml:space="preserve"><value>OpenSSH 사용자 인증서를 읽을 수 없습니다: {0}</value></data>
+  <data name="Sftp_KeySetup" xml:space="preserve"><value>키 생성·서버 등록 안내…</value></data>
+  <data name="SshSetup_Title" xml:space="preserve"><value>SSH 키 생성 및 서버 등록</value></data>
+  <data name="SshSetup_RegistrationTab" xml:space="preserve"><value>공개 키 · 서버 등록</value></data>
+  <data name="SshSetup_GenerationTab" xml:space="preserve"><value>새 키 생성</value></data>
+  <data name="SshSetup_PrivateKey" xml:space="preserve"><value>등록할 공개 키의 개인 키 파일</value></data>
+  <data name="SshSetup_ExistingKeyHint" xml:space="preserve"><value>개인 키를 선택한 뒤 공개 키를 불러오세요. .pub 파일이 없어도 개인 키에서 공개 키를 추출할 수 있습니다.</value></data>
+  <data name="SshSetup_ReadPublicKey" xml:space="preserve"><value>공개 키 불러오기 · 추출</value></data>
+  <data name="SshSetup_PublicKey" xml:space="preserve"><value>사용자 공개 키 (.pub)</value></data>
+  <data name="SshSetup_CopyPublicKey" xml:space="preserve"><value>공개 키 복사</value></data>
+  <data name="SshSetup_SavePublicKey" xml:space="preserve"><value>공개 키 파일 저장…</value></data>
+  <data name="SshSetup_RegistrationDescription" xml:space="preserve"><value>Linux 서버에 {0} 사용자로 로그인한 콘솔에서 아래 명령을 실행하세요. ~/.ssh와 authorized_keys가 없으면 만들고, 기존 키를 유지하면서 이 공개 키를 등록합니다. 같은 키는 중복으로 추가하지 않습니다.</value></data>
+  <data name="SshSetup_TargetUser" xml:space="preserve"><value>SFTP 대상</value></data>
+  <data name="SshSetup_CopyCommand" xml:space="preserve"><value>authorized_keys 등록 명령 복사</value></data>
+  <data name="SshSetup_PasteCommandHint" xml:space="preserve"><value>복사 버튼은 위 명령과 같은 작업을 하는 한 줄 명령을 복사합니다. 서버 콘솔에 붙여넣고 Enter를 누르세요. added는 새 등록, already는 이미 등록된 키이며, 뒤에 실제 authorized_keys 경로가 표시됩니다.</value></data>
+  <data name="SshSetup_RegistrationNote" xml:space="preserve"><value>파일 이름은 authorized_keys입니다. 대상 사용자 홈에 등록해야 하므로 sudo로 다른 사용자의 홈에 실행하지 마세요. 권한은 .ssh 700, authorized_keys 600으로 설정합니다. 개인 키는 이 PC에 보관하고 서버에는 공개 키만 등록합니다. 이 명령은 Linux · Unix용이며, 서버의 AuthorizedKeysFile 설정이 다르면 해당 경로를 사용해야 합니다.</value></data>
+  <data name="SshSetup_CertificateRegistration" xml:space="preserve"><value>인증서 모드에서는 {0} 사용자의 공개 키를 CA에 전달하여 OpenSSH 사용자 인증서를 발급받으세요. 발급된 인증서와 같은 개인 키를 계정 프로필에 지정합니다.</value></data>
+  <data name="SshSetup_CertificateNote" xml:space="preserve"><value>서버는 발급 CA를 신뢰해야 합니다. 관리자가 sshd_config의 TrustedUserCAKeys에 CA 공개 키 파일을 지정하거나 대상 사용자의 authorized_keys에 cert-authority 옵션을 붙인 CA 공개 키를 등록할 수 있습니다. 인증서의 사용자 principal도 허용되어야 합니다. 일반 사용자 공개 키를 등록하는 것만으로 인증서 인증이 설정되지는 않습니다. 새 키 생성 후에는 그 공개 키에 대한 인증서를 별도로 발급받아야 합니다.</value></data>
+  <data name="SshSetup_OpenDocs" xml:space="preserve"><value>OpenSSH 등록 안내 열기</value></data>
+  <data name="SshSetup_GenerationHint" xml:space="preserve"><value>키가 없으면 이 PC에 개인 키와 .pub 공개 키 파일을 생성하세요. 기존 파일은 덮어쓰지 않습니다. 생성한 키 경로는 계정 편집기에 반영되며 계정 저장 버튼으로 적용합니다.</value></data>
+  <data name="SshSetup_KeyType" xml:space="preserve"><value>키 종류</value></data>
+  <data name="SshSetup_Rsa3072" xml:space="preserve"><value>RSA 3072 (키 암호 선택 가능)</value></data>
+  <data name="SshSetup_Ed25519" xml:space="preserve"><value>Ed25519 (암호 없는 키)</value></data>
+  <data name="SshSetup_Ed25519Hint" xml:space="preserve"><value>Ed25519 생성은 암호 없는 OpenSSH 키를 만듭니다. 키 암호로 파일을 보호하려면 RSA 3072를 선택하세요. 기존의 암호화된 Ed25519 키는 SFTP 인증에 사용할 수 있습니다.</value></data>
+  <data name="SshSetup_NewPath" xml:space="preserve"><value>새 개인 키 저장 위치</value></data>
+  <data name="SshSetup_NewPassphrase" xml:space="preserve"><value>새 개인 키 암호 (선택)</value></data>
+  <data name="SshSetup_ConfirmPassphrase" xml:space="preserve"><value>개인 키 암호 확인</value></data>
+  <data name="SshSetup_PassphraseHint" xml:space="preserve"><value>입력한 암호로 개인 키 파일을 암호화합니다. 비워 두면 암호 없는 키를 만듭니다. 키 암호 기억 여부는 계정 편집기의 Windows 자격 증명 저장 옵션에서 선택하세요.</value></data>
+  <data name="SshSetup_Comment" xml:space="preserve"><value>공개 키 설명</value></data>
+  <data name="SshSetup_Generate" xml:space="preserve"><value>개인 키와 공개 키 생성</value></data>
+  <data name="SshSetup_Working" xml:space="preserve"><value>처리 중…</value></data>
+  <data name="SshSetup_PublicKeyReady" xml:space="preserve"><value>공개 키를 추출했습니다. 대상 서버에 등록하세요.</value></data>
+  <data name="SshSetup_UnlockKey" xml:space="preserve"><value>공개 키 추출을 위한 개인 키 암호</value></data>
+  <data name="SshSetup_PublicKeyFilter" xml:space="preserve"><value>OpenSSH 공개 키|*.pub|모든 파일|*.*</value></data>
+  <data name="SshSetup_PublicKeySaved" xml:space="preserve"><value>공개 키를 저장했습니다: {0}</value></data>
+  <data name="SshSetup_PassphraseMismatch" xml:space="preserve"><value>입력한 두 개인 키 암호가 일치하지 않습니다.</value></data>
+  <data name="SshSetup_Generated" xml:space="preserve"><value>새 키를 생성했습니다: {0} · 서버 등록 후 계정 편집기에서 저장하세요.</value></data>
+  <data name="Sftp_PublicKeyInvalid" xml:space="preserve"><value>올바른 OpenSSH 사용자 공개 키 한 줄을 사용하세요.</value></data>
+  <data name="Sftp_RegistrationCommandLong" xml:space="preserve"><value>이 키의 등록 명령은 콘솔 붙여넣기에 너무 깁니다. 공개 키 파일을 저장하여 대상 사용자의 authorized_keys에 등록하세요.</value></data>
+  <data name="SshSetup_CertificatePublicKeyReady" xml:space="preserve"><value>공개 키를 추출했습니다. 이 공개 키를 CA에 전달하여 사용자 인증서를 발급받으세요.</value></data>
+  <data name="SshSetup_NewCertificateRequired" xml:space="preserve"><value>새 키에 대한 OpenSSH 사용자 인증서를 발급받아 인증서 파일을 다시 지정하세요.</value></data>
+  <data name="GuestFiles_MoreFolders" xml:space="preserve">
+    <value>상위 폴더 더 보기</value>
+  </data>
+  <data name="ConsoleSettings_DirectRender" xml:space="preserve">
+    <value>화면 그리기</value>
+  </data>
+  <data name="ConsoleSettings_DirectRenderOn" xml:space="preserve">
+    <value>GPU로 바로 그리기 (화면 지연 감소)</value>
+  </data>
+  <data name="ConsoleSettings_DirectRenderHint" xml:space="preserve">
+    <value>WPF를 거치지 않고 Direct3D로 그려 화면이 더 빨리 바뀝니다. 화면이 깜빡이거나 이상하면 끄세요. VNC·RDP 공통.</value>
+  </data>
+  <data name="Console_DirectFailed" xml:space="preserve">
+    <value>GPU로 바로 그리기를 시작하지 못해 기본 방식으로 그립니다.</value>
+  </data>
 </root>

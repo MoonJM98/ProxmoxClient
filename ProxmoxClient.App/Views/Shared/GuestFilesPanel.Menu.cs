@@ -32,8 +32,7 @@ public partial class GuestFilesPanel
         {
             // 다른 창이 바꾼 콘솔 설정을 덮지 않게 저장 직전에 다시 읽어 이 값만 바꾼다
             var store = new ConsoleSettingsStore();
-            var settings = await store.LoadAsync();
-            await store.SaveAsync(settings with { ShowHiddenGuestFiles = _showHidden });
+            await store.UpdateAsync(settings => settings with { ShowHiddenGuestFiles = _showHidden });
         }
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
         {

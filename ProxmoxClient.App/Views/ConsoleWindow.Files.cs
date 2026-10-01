@@ -1,4 +1,6 @@
 using System.Windows;
+using ProxmoxClient.App.Localization;
+using ProxmoxClient.App.Services;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Files;
@@ -14,28 +16,64 @@ public partial class ConsoleWindow
 {
     private Func<CancellationToken, Task<IGuestFileSystem>>? _openFiles;
     private GuestFilesWindow? _filesWindow;
+    private GuestFileConnections? _fileConnections;
+    private GuestFileConnection? _filesConnection;
 
     private void InitFiles(ProxmoxApiClient api, PveResource guest)
     {
-        _openFiles = ct => OpenAgentFilesAsync(api, guest, ct);
+        _fileConnections = new GuestFileConnections(this, api, guest);
+        _openFiles = _fileConnections.OpenAsync;
+        Loaded += async (_, _) => await UpdateFilesMenuAsync();
     }
 
-    private static async Task<IGuestFileSystem> OpenAgentFilesAsync(ProxmoxApiClient api, PveResource guest,
-        CancellationToken ct)
+    private async void OnOpenFiles(object sender, RoutedEventArgs e) => await ShowFilesWindowAsync();
+
+    private async Task UpdateFilesMenuAsync()
     {
-        return await AgentFileSystem.OpenAsync(api, guest.Node, guest.VmId, ct);
+        if (_fileConnections is null) return;
+        var connection = await _fileConnections.LoadAsync();
+        ApplyFilesMenu(connection);
     }
 
-    private void OnOpenFiles(object sender, RoutedEventArgs e) => ShowFilesWindow();
+    private void ApplyFilesMenu(GuestFileConnection connection)
+    {
+        FilesAgent.IsChecked = !connection.UseSftp;
+        FilesSftp.IsChecked = connection.UseSftp;
+        BtnFiles.Content = Loc.T(connection.UseSftp ? "Sftp_FilesButton" : "Sftp_AgentFilesButton");
+        BtnFiles.ToolTip = Loc.T(connection.UseSftp ? "Sftp_Connect" : "GuestFiles_ToggleTipVm");
+    }
+
+    private async void OnFilesMethod(object sender, RoutedEventArgs e)
+    {
+        if (_fileConnections is null) return;
+        try
+        {
+            var sftp = !ReferenceEquals(sender, FilesAgent);
+            var configured = ReferenceEquals(sender, FilesConfigure);
+            var selected = await _fileConnections.SelectAsync(sftp, configured);
+            if (selected || !configured) _filesWindow?.Close();
+            await UpdateFilesMenuAsync();
+            if (selected) await ShowFilesWindowAsync();
+        }
+        catch (Exception ex)
+        {
+            ThemedMessageBox.Show(this, ex.Message, Loc.T("Sftp_Connect"), MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     /// <summary>파일 창을 연다 — 이미 열려 있으면 앞으로 가져온다.</summary>
-    private GuestFilesWindow? ShowFilesWindow()
+    private async Task<GuestFilesWindow?> ShowFilesWindowAsync()
     {
-        if (_openFiles is null) return null;
+        if (_openFiles is null || _fileConnections is null) return null;
+        var connection = await _fileConnections.LoadAsync();
+        if (_closed) return null;
+        ApplyFilesMenu(connection);
+        if (_filesWindow is not null && _filesConnection != connection) _filesWindow.Close();
         if (_filesWindow is null)
         {
+            _filesConnection = connection;
             _filesWindow = GuestFilesWindow.Create(this, _guestTitle, _openFiles);
-            _filesWindow.Closed += (_, _) => _filesWindow = null;
+            _filesWindow.Closed += (_, _) => { _filesWindow = null; _filesConnection = null; };
             _filesWindow.Show();
         }
         else
@@ -62,6 +100,6 @@ public partial class ConsoleWindow
         if (GuestFilesPanel.IsDraggingOut || e.Data.GetData(DataFormats.FileDrop) is not string[] paths) return;
 
         e.Handled = true;
-        if (ShowFilesWindow() is { } window) await window.UploadAsync(paths);
+        if (await ShowFilesWindowAsync() is { } window) await window.UploadAsync(paths);
     }
 }

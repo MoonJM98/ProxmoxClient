@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
-        <ProjectReference Include="..\ProxmoxClient.Core\ProxmoxClient.Core.csproj"/>
+        <ProjectReference Include="..\ProxmoxClient.Core\ProxmoxClient.Core.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -9,18 +9,19 @@
             Windows Terminal WPF 컨트롤 — MIT 바이너리를 packages\ 에 직접 담아 쓴다.
             Microsoft 가 nuget.org 에 게시하지 않는 컨트롤이라(microsoft/terminal #6999) 공식 패키지가 없다.
         -->
-        <PackageReference Include="ProxmoxClient.Vendored.Terminal.Wpf" Version="1.25.2603.3002"/>
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2"/>
+        <PackageReference Include="ProxmoxClient.Vendored.Terminal.Wpf" Version="1.25.2603.3002" />
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
         <!-- 2단계 인증(TOTP) QR 코드 — 의존성 없는 MIT 라이브러리(Project Nayuki QR 생성기 C# 이식) -->
-        <PackageReference Include="Net.Codecrete.QrCodeGenerator" Version="3.2.1"/>
+        <PackageReference Include="Net.Codecrete.QrCodeGenerator" Version="3.2.1" />
+        <PackageReference Include="Vortice.Direct2D1" Version="3.8.3" />
+        <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
     </ItemGroup>
 
     <!-- 고지 의무 — 배포 폴더에 라이선스와 서드파티 고지 원문을 함께 둔다 -->
     <ItemGroup>
-        <None Include="..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest"/>
-        <None Include="..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest"/>
-        <None Include="..\third-party\**" Link="third-party\%(RecursiveDir)%(Filename)%(Extension)"
-              CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\third-party\**" Link="third-party\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <!--
@@ -28,7 +29,7 @@
         exe 안의 아이콘만 쓰면 업데이트 때 exe 를 교체하는 동안 탐색기 아이콘 캐시가 빈 아이콘으로 남을 수 있다.
     -->
     <ItemGroup>
-        <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"/>
+        <Content Include="app.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -41,7 +42,7 @@
         <ApplicationIcon>app.ico</ApplicationIcon>
         <Product>Proxmox Client</Product>
         <AssemblyTitle>Proxmox Client</AssemblyTitle>
-        <Version>1.0.1</Version>
+        <Version>1.0.2</Version>
         <Copyright>Copyright (c) 2026 ProxmoxClient Contributors</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <!--
@@ -53,11 +54,9 @@
 
     <!-- IronRDP 패키지는 네이티브 DLL 을 runtimes\ 아래 콘텐츠로도 복사한다(win-x64·win-arm64 모두).
          RID 게시(MSI)에서는 그 RID 의 DLL 이 이미 루트에 있으므로 이 사본은 게시물에서 뺀다(약 12MB) -->
-    <Target Name="DropIronRdpNativeCopies" AfterTargets="ComputeResolvedFilesToPublishList"
-            Condition="'$(RuntimeIdentifier)' != ''">
+    <Target Name="DropIronRdpNativeCopies" AfterTargets="ComputeResolvedFilesToPublishList" Condition="'$(RuntimeIdentifier)' != ''">
         <ItemGroup>
-            <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
-                                   Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('runtimes')) AND '%(Filename)%(Extension)' == 'DevolutionsIronRdp.dll'" />
+            <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('runtimes')) AND '%(Filename)%(Extension)' == 'DevolutionsIronRdp.dll'" />
         </ItemGroup>
     </Target>
 

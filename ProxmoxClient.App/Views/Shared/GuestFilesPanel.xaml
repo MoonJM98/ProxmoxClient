@@ -3,7 +3,41 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
              xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
-             AllowDrop="True" DragEnter="OnDragOver" DragOver="OnDragOver" Drop="OnDrop">
+             AllowDrop="True" DragEnter="OnDragOver" DragOver="OnDragOver" Drop="OnDrop" PreviewKeyDown="OnAddressShortcut">
+    <UserControl.Resources>
+        <Style x:Key="BreadcrumbButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource BrushText}" /><Setter Property="Padding" Value="7,0" />
+            <!-- 위에 붙이고 아래는 비운다(탐색기처럼 아래 빈 줄을 누르면 경로 편집) -->
+            <Setter Property="Height" Value="23" /><Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+                <Border x:Name="Surface" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="3">
+                    <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{StaticResource BrushHover}" /></Trigger>
+                    <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="Background" Value="{StaticResource BrushSelection}" /></Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate></Setter.Value></Setter>
+        </Style>
+        <Style x:Key="BreadcrumbMenu" TargetType="ContextMenu" BasedOn="{StaticResource {x:Type ContextMenu}}">
+            <Setter Property="MaxHeight" Value="360" />
+            <Setter Property="MaxWidth" Value="360" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="4">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                          CanContentScroll="False" Focusable="False">
+                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
     <!-- 게스트 파일 패널(파일 창) — 폴더 탐색, 내려받기·올리기(끌어다 놓기), 새 폴더·이름 바꾸기·지우기 -->
     <DockPanel Background="{StaticResource BrushBg}">
         <Border DockPanel.Dock="Top" Padding="8,5" Background="{StaticResource BrushPanel}"
@@ -35,8 +69,15 @@
                           Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
                           StrokeThickness="1.8" StrokeLineJoin="Round" />
                 </ToggleButton>
-                <TextBox x:Name="PathBox" KeyDown="OnPathKeyDown" VerticalAlignment="Center"
-                         ToolTip="{loc:Tr GuestFiles_PathHint}" />
+                <Border x:Name="AddressBar" Background="{StaticResource BrushBg}" BorderBrush="{StaticResource BrushBorder}"
+                        BorderThickness="1" CornerRadius="4" MinHeight="30" VerticalAlignment="Center"
+                        PreviewMouseLeftButtonDown="OnAddressClick" ToolTip="{loc:Tr GuestFiles_BreadcrumbHint}">
+                    <Grid Background="Transparent">
+                        <ic:BreadcrumbPanel x:Name="Breadcrumbs" VerticalAlignment="Top" Margin="2,1,2,0" />
+                        <TextBox x:Name="PathBox" Visibility="Collapsed" KeyDown="OnPathKeyDown" LostKeyboardFocus="OnPathLostFocus"
+                                 BorderThickness="0" Background="{StaticResource BrushBg}" ToolTip="{loc:Tr GuestFiles_PathHint}" />
+                    </Grid>
+                </Border>
             </DockPanel>
         </Border>
 
@@ -101,9 +142,19 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0">
-                                    <Path Data="{Binding Icon}" Width="14" Height="14" Stretch="Uniform"
-                                          Stroke="{Binding IconBrush}" StrokeThickness="1.6" Margin="0,0,8,0"
-                                          StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                    <Grid Width="14" Height="14" Margin="0,0,8,0">
+                                        <Path Data="{Binding Icon}" Stretch="Uniform"
+                                              Stroke="{Binding IconBrush}" StrokeThickness="1.6"
+                                              StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                        <!-- 폴더 링크 표시(왼쪽 아래 작은 배지) -->
+                                        <Border Visibility="{Binding LinkBadge}" Width="9" Height="9" CornerRadius="2"
+                                                HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-3,0,0,-3"
+                                                Background="{StaticResource BrushBg}">
+                                            <Path Data="{StaticResource IconLink}" Stretch="Uniform" Margin="1"
+                                                  Stroke="{StaticResource BrushText}" StrokeThickness="1.3"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                        </Border>
+                                    </Grid>
                                     <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"
                                                ToolTip="{Binding NameTip}" />
                                 </StackPanel>

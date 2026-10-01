@@ -69,6 +69,11 @@
                         <CheckBox x:Name="SmoothScalingCheck" Content="{loc:Tr ConsoleSettingsWindow_13}"
                                   Margin="0,6,0,0" />
                     </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr ConsoleSettings_DirectRender}"
+                                Hint="{loc:Tr ConsoleSettings_DirectRenderHint}">
+                        <CheckBox x:Name="DirectRenderCheck" Content="{loc:Tr ConsoleSettings_DirectRenderOn}"
+                                  Margin="0,6,0,0" Click="OnDirectRenderClick" />
+                    </ic:FormRow>
                     <ic:FormRow Label="{loc:Tr ConsoleSettings_Clipboard}"
                                 Hint="{loc:Tr ConsoleSettings_ClipboardHint}">
                         <CheckBox x:Name="ClipboardSyncCheck" Content="{loc:Tr ConsoleSettings_ClipboardAuto}"
@@ -96,6 +101,11 @@
                     <ic:FormRow Label="{loc:Tr ConsoleSettingsWindow_12}">
                         <CheckBox x:Name="RdpSmoothCheck" Content="{loc:Tr ConsoleSettingsWindow_13}"
                                   Margin="0,6,0,0" />
+                    </ic:FormRow>
+                    <ic:FormRow Label="{loc:Tr ConsoleSettings_DirectRender}"
+                                Hint="{loc:Tr ConsoleSettings_DirectRenderHint}">
+                        <CheckBox x:Name="RdpDirectRenderCheck" Content="{loc:Tr ConsoleSettings_DirectRenderOn}"
+                                  Margin="0,6,0,0" Click="OnDirectRenderClick" />
                     </ic:FormRow>
                     <ic:FormRow Label="{loc:Tr ConsoleSettings_LocalCursor}"
                                 Hint="{loc:Tr ConsoleSettings_RdpCursorHint}">

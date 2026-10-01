@@ -54,6 +54,19 @@ public partial class AppSettingsWindow : Window
     /// <summary>저장에 성공한 설정(취소 시 null).</summary>
     public AppSettings? SavedSettings { get; private set; }
 
+    private void OnSettingsTabChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (!ReferenceEquals(e.Source, SettingsNavigation) || GeneralPanel is null || SftpPanel is null || BtnClose is null) return;
+        var index = SettingsNavigation.SelectedIndex;
+        GeneralPanel.Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ConsolePanel.Visibility = index == 1 ? Visibility.Visible : Visibility.Collapsed;
+        SftpPanel.Visibility = index == 2 ? Visibility.Visible : Visibility.Collapsed;
+        BtnSave.Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
+        BtnSave.IsDefault = index == 0;
+        BtnClose.Content = Loc.T(index == 0 ? "AppSettingsWindow_13" : "Sftp_Close");
+        StatusText.Text = string.Empty;
+    }
+
     private async void OnSave(object sender, RoutedEventArgs e)
     {
         if (_saving) return;

@@ -92,10 +92,12 @@ public partial class GuestFilesPanel : UserControl
 
     private async void OnPathKeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Escape) { e.Handled = true; EndAddressEdit(); return; }
         if (e.Key != Key.Enter || _files is null) return;
 
         e.Handled = true;
         var path = PathBox.Text.Trim();
+        EndAddressEdit();
         await NavigateAsync(path.Length == 0 ? _files.HomePath : path);
     }
 
@@ -154,6 +156,13 @@ public partial class GuestFilesPanel : UserControl
         var files = _files!;
         if (row.Entry.IsDirectory)
         {
+            await NavigateAsync(files.Combine(_current, row.Entry.Name));
+            return;
+        }
+
+        if (row.Entry.LinkToDirectory)
+        {
+            // 탐색기처럼 링크 경로 그대로 들어간다(주소에 링크 이름이 보이고, 위로 가면 링크가 있던 폴더)
             await NavigateAsync(files.Combine(_current, row.Entry.Name));
             return;
         }
@@ -217,7 +226,8 @@ public partial class GuestFilesPanel : UserControl
             App.Log($"[게스트 파일] {status} 실패: {ex}");
             StatusText.Foreground = (Brush)FindResource("BrushWarn");
             StatusText.Text = Loc.T("GuestFiles_Error", ex.Message);
-            if (_files is null && ex is AgentExecBlockedException blocked) ShowUnblockGuide(blocked.Family, blocked.ScriptCommand);
+            if (_files is null && ex is AgentExecBlockedException blocked)
+                ShowUnblockGuide(blocked.Family, blocked.ScriptCommand);
             else if (_files is null) ShowPlaceholder(ex.Message);
         }
         finally
@@ -277,8 +287,8 @@ public sealed class GuestFileRow(GuestFileEntry entry, FrameworkElement owner)
     public GuestFileEntry Entry { get; } = entry;
     public string Name => Entry.Name;
     public string NameTip => Entry.LinkTarget is { } target ? $"{Entry.Name} → {target}" : Entry.Name;
-    public string SortName => (Entry.IsDirectory ? "0" : "1") + Entry.Name;
-    public long SortSize => Entry.IsDirectory ? -1 : Entry.Size;
+    public string SortName => (Entry.OpensAsFolder ? "0" : "1") + Entry.Name;
+    public long SortSize => Entry.OpensAsFolder ? -1 : Entry.Size;
     public DateTime SortModified => Entry.Modified ?? DateTime.MinValue;
     public string SizeText => Entry.Kind == GuestFileKind.File ? ByteFormatter.Format(Entry.Size) : string.Empty;
     /// <summary>숨김·시스템 항목은 흐리게.</summary>
@@ -290,12 +300,12 @@ public sealed class GuestFileRow(GuestFileEntry entry, FrameworkElement owner)
         : Entry.Group.Length == 0 || Entry.Group == Entry.Owner ? Entry.Owner
         : $"{Entry.Owner}:{Entry.Group}";
 
-    public Geometry? Icon => owner.TryFindResource(Entry.Kind switch
-    {
-        GuestFileKind.Directory => "IconFolder",
-        GuestFileKind.Link => "IconLink",
-        _ => "IconFile"
-    }) as Geometry;
+    public Geometry? Icon => owner.TryFindResource(Entry.OpensAsFolder ? "IconFolder"
+        : Entry.Kind == GuestFileKind.Link ? "IconLink"
+        : "IconFile") as Geometry;
 
-    public Brush? IconBrush => owner.TryFindResource(Entry.IsDirectory ? "BrushAccent" : "BrushDim") as Brush;
+    public Brush? IconBrush => owner.TryFindResource(Entry.OpensAsFolder ? "BrushAccent" : "BrushDim") as Brush;
+
+    /// <summary>폴더 링크는 폴더 아이콘 위에 작은 링크 표시를 겹친다.</summary>
+    public Visibility LinkBadge => Entry.LinkToDirectory ? Visibility.Visible : Visibility.Collapsed;
 }
