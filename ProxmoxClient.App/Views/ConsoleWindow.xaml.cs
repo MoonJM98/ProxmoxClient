@@ -67,6 +67,7 @@ public partial class ConsoleWindow : Window
     private IntPtr _keyboardHook;
     private int _pointerMask;
     private int _renderingHooked;
+    private bool _dpiApplyQueued;
     private IConsoleSession? _session;
     private ConsoleSettings _settings = new();
     private DispatcherTimer? _statsTimer;
@@ -124,14 +125,7 @@ public partial class ConsoleWindow : Window
         };
         LayoutUpdated += (_, _) => UpdateDirectLayout();
         StoppedPanel.IsVisibleChanged += (_, _) => UpdateDirectSlot();
-        DpiChanged += (_, _) =>
-        {
-            RebuildBitmap();
-            if (!_fitMode && _fbWidth > 0) FitWindowToFramebuffer(_fbWidth, _fbHeight, false); // 1:1 — 끌어 옮기는 중이니 크기만
-            RefreshCursor();
-            UpdateDirectLayout(); // GPU 화면의 그릴 자리는 물리 픽셀 기준
-            QueueDesktopResize(); // RDP — WPF 크기는 같아도 실제 픽셀 수가 바뀐다
-        };
+        DpiChanged += (_, _) => QueueDpiApply();
         Loaded += async (_, _) =>
         {
             _settings = await _settingsStore.LoadAsync();
@@ -320,6 +314,29 @@ public partial class ConsoleWindow : Window
         var dpi = 96 * dpiScale;
         _bitmap = new WriteableBitmap(width, height, dpi, dpi, PixelFormats.Bgr32, null);
         ScreenImage.Source = _bitmap;
+    }
+
+    /// <summary>
+    ///     배율이 다른 모니터로 옮겼을 때 — WPF 는 DpiChanged 를 올린 <b>뒤에</b> Windows 가 제안한 크기(지금 창 크기 × 배율 비)로
+    ///     창을 옮긴다. 이벤트 안에서 창 크기를 바꾸면 그 크기에 덮이고, 전환이 거듭될수록 앞선 결과를 다시 변환해 어긋난다.
+    ///     그래서 제안 크기가 적용·배치된 뒤에 한 번만, 원본(게스트 해상도) 기준으로 다시 맞춘다. 연달아 바뀌면 마지막 것만.
+    /// </summary>
+    private void QueueDpiApply()
+    {
+        if (_dpiApplyQueued) return;
+
+        _dpiApplyQueued = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+        {
+            _dpiApplyQueued = false;
+            if (_closed) return;
+
+            RebuildBitmap();
+            if (!_fitMode && _fbWidth > 0) FitWindowToFramebuffer(_fbWidth, _fbHeight, false); // 1:1 — 끌어 옮기는 중이니 크기만
+            RefreshCursor();
+            UpdateDirectLayout(); // GPU 화면의 그릴 자리는 물리 픽셀 기준
+            QueueDesktopResize(); // RDP — WPF 크기는 같아도 실제 픽셀 수가 바뀐다
+        });
     }
 
     /// <summary>

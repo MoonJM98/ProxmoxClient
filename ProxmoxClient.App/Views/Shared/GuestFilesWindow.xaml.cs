@@ -1,4 +1,6 @@
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.Core.Files;
 
@@ -11,6 +13,9 @@ namespace ProxmoxClient.App.Views.Shared;
 public partial class GuestFilesWindow : Window
 {
     private const double Gap = 8;
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoZOrder = 0x0004;
+    private const uint SwpNoActivate = 0x0010;
 
     private GuestFilesWindow(Window owner, string guestTitle)
     {
@@ -19,6 +24,7 @@ public partial class GuestFilesWindow : Window
         Owner = owner;
         Title = Loc.T("GuestFiles_WindowTitle", guestTitle);
         PlaceBeside(owner);
+        SourceInitialized += (_, _) => MatchOwnerDpi(owner);
         Closing += (_, _) => Panel.Close();
     }
 
@@ -37,6 +43,24 @@ public partial class GuestFilesWindow : Window
     {
         await Panel.ShowAsync();
         await Panel.UploadAsync(paths);
+    }
+
+    /// <summary>
+    ///     창 핸들이 생긴 뒤(아직 보이기 전) — 배율이 다른 모니터에 있는 콘솔 창 옆이면 자리를 다시 잡는다.
+    ///     PerMonitorV2 에서 WPF 의 Left/Top 은 그 창이 놓인 모니터 배율로 나눈 값이라, 콘솔 창(150% 보조 모니터 등)의
+    ///     Left/Top 을 그대로 쓰면 이 창은 자기 DPI(주 모니터 등)로 바꿔 엉뚱한 모니터에 놓인다.
+    ///     먼저 콘솔 창 자리로 옮겨 DPI 를 맞춘 뒤(옮기는 동안 WPF 가 크기를 새 배율로 맞춘다) 같은 기준으로 다시 놓는다.
+    /// </summary>
+    private void MatchOwnerDpi(Window owner)
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        var ownerHandle = new WindowInteropHelper(owner).Handle;
+        if (handle == IntPtr.Zero || ownerHandle == IntPtr.Zero || GetDpiForWindow(handle) == GetDpiForWindow(ownerHandle)
+            || !GetWindowRect(ownerHandle, out var ownerRect))
+            return;
+
+        SetWindowPos(handle, IntPtr.Zero, ownerRect.Left, ownerRect.Top, 0, 0, SwpNoSize | SwpNoZOrder | SwpNoActivate);
+        PlaceBeside(owner);
     }
 
     /// <summary>
@@ -62,4 +86,22 @@ public partial class GuestFilesWindow : Window
             Left = Math.Clamp(bounds.Left + (bounds.Width - Width) / 2, area.Left,
                 Math.Max(area.Left, area.Right - Width));
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(IntPtr hwnd, out NativeRect rect);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowPos(IntPtr hwnd, IntPtr insertAfter, int x, int y, int width, int height,
+        uint flags);
 }
