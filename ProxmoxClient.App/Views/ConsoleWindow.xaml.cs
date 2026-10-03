@@ -123,7 +123,12 @@ public partial class ConsoleWindow : Window
         };
         LayoutUpdated += (_, _) => UpdateDirectLayout();
         StoppedPanel.IsVisibleChanged += (_, _) => UpdateDirectSlot();
-        DpiChanged += (_, _) => RefreshCursor();
+        DpiChanged += (_, _) =>
+        {
+            RefreshCursor();
+            UpdateDirectLayout(); // GPU 화면의 그릴 자리는 물리 픽셀 기준
+            QueueDesktopResize(); // RDP — WPF 크기는 같아도 실제 픽셀 수가 바뀐다
+        };
         Loaded += async (_, _) =>
         {
             _settings = await _settingsStore.LoadAsync();

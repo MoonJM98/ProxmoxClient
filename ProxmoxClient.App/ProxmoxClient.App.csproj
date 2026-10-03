@@ -40,6 +40,8 @@
         <UseWPF>true</UseWPF>
         <!-- 로그인 화면 로고 — 실행 파일·작업 표시줄·모든 창의 아이콘 -->
         <ApplicationIcon>app.ico</ApplicationIcon>
+        <!-- 모니터별 DPI 인식 — 배율이 다른 모니터에서 흐려지지 않게(app.manifest 참고) -->
+        <ApplicationManifest>app.manifest</ApplicationManifest>
         <Product>Proxmox Client</Product>
         <AssemblyTitle>Proxmox Client</AssemblyTitle>
         <Version>1.0.2</Version>
