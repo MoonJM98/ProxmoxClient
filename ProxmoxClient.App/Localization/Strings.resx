@@ -724,7 +724,7 @@
         <comment>GuestSettingsWindow.xaml · Text</comment>
   </data>
     <data name="LoginWindow_01" xml:space="preserve">
-    <value>로그인 — Proxmox 클라이언트</value>
+    <value>로그인 - Proxmox 클라이언트</value>
         <comment>LoginWindow.xaml · Title</comment>
   </data>
     <data name="LoginWindow_02" xml:space="preserve">
@@ -1224,7 +1224,7 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
         <comment>MainViewModel.cs · 메시지</comment>
   </data>
     <data name="MainViewModel_M11" xml:space="preserve">
-    <value>작업 실패: {0} {1} — {2}</value>
+    <value>작업 실패: {0} {1} - {2}</value>
         <comment>MainViewModel.cs · 메시지</comment>
   </data>
     <data name="MainViewModel_M12" xml:space="preserve">
@@ -1320,7 +1320,7 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
         <comment>ConsoleWindow.cs · 메시지</comment>
   </data>
     <data name="ConsoleWindow_M04" xml:space="preserve">
-    <value>연결됨 — {0}x{1} · {2} (키보드/마우스는 콘솔 창을 클릭해 포커스를 주세요)</value>
+    <value>연결됨 - {0}x{1} · {2} (키보드/마우스는 콘솔 창을 클릭해 포커스를 주세요)</value>
         <comment>ConsoleWindow.cs · 메시지</comment>
   </data>
     <data name="ConsoleWindow_M05" xml:space="preserve">
@@ -1556,7 +1556,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
         <comment>ProfileRegisterWindow.cs · 메시지</comment>
   </data>
     <data name="ProfileRegisterWindow_M04" xml:space="preserve">
-    <value>서버 확인 완료 — [등록]을 누르면 목록에 추가합니다.</value>
+    <value>서버 확인 완료 - [등록]을 누르면 목록에 추가합니다.</value>
         <comment>ProfileRegisterWindow.cs · 메시지</comment>
   </data>
     <data name="ProfileRegisterWindow_M05" xml:space="preserve">
@@ -1614,7 +1614,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
         <comment>SnapshotDialog.cs · 메시지</comment>
   </data>
     <data name="TerminalWindow_M01" xml:space="preserve">
-    <value>연결됨 — 복사/붙여넣기는 도구 모음 버튼을 사용하세요 (Ctrl+C 는 셸로 전달됩니다)</value>
+    <value>연결됨 - 복사/붙여넣기는 도구 모음 버튼을 사용하세요 (Ctrl+C 는 셸로 전달됩니다)</value>
         <comment>TerminalWindow.cs · 메시지</comment>
   </data>
     <data name="TerminalWindow_M02" xml:space="preserve">
@@ -1638,7 +1638,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
         <comment>TerminalWindow.cs · 메시지</comment>
   </data>
     <data name="VirtViewerSetupWindow_M01" xml:space="preserve">
-    <value>설치되지 않음 — SPICE 콘솔을 사용하려면 VirtViewer가 필요합니다.</value>
+    <value>설치되지 않음 - SPICE 콘솔을 사용하려면 VirtViewer가 필요합니다.</value>
         <comment>VirtViewerSetupWindow.cs · 메시지</comment>
   </data>
     <data name="VirtViewerSetupWindow_M02" xml:space="preserve">
@@ -1756,7 +1756,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
         <comment>ProfileEditorViewModel.cs</comment>
   </data>
     <data name="ProfileEditor_CertNoTrusted" xml:space="preserve">
-    <value>신뢰한 인증서 없음 — 처음 연결할 때 지문을 확인합니다.</value>
+    <value>신뢰한 인증서 없음 - 처음 연결할 때 지문을 확인합니다.</value>
         <comment>ProfileEditorViewModel.cs</comment>
   </data>
     <data name="ProfileEditor_CertThumbprint" xml:space="preserve">
@@ -1820,7 +1820,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
         <comment>ConsoleWindow.xaml.cs</comment>
   </data>
     <data name="ConsoleWindow_Header" xml:space="preserve">
-    <value>콘솔 — {0}</value>
+    <value>콘솔 - {0}</value>
         <comment>ConsoleWindow.xaml.cs</comment>
   </data>
     <data name="ConsoleWindow_StartedConnecting" xml:space="preserve">
@@ -1916,7 +1916,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
         <comment>SnapshotDialog.xaml.cs</comment>
   </data>
     <data name="TerminalWindow_Header" xml:space="preserve">
-    <value>터미널 — {0}</value>
+    <value>터미널 - {0}</value>
         <comment>TerminalWindow.xaml.cs</comment>
   </data>
     <data name="TerminalWindow_StartedConnecting" xml:space="preserve">
@@ -1972,7 +1972,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>GuestWindow.xaml.cs</comment>
   </data>
   <data name="GuestWindow_Header" xml:space="preserve">
-    <value>{0} {1} ({2}) — 노드 {3}</value>
+    <value>{0} {1} ({2}) - 노드 {3}</value>
     <comment>GuestWindow.xaml.cs</comment>
   </data>
   <data name="ConsoleTab_Open" xml:space="preserve">
@@ -3528,7 +3528,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>NodeSystem</comment>
   </data>
   <data name="NodePower_CommandTitle" xml:space="preserve">
-    <value>{0}: {1} — 이 노드의 게스트가 모두 멈춥니다</value>
+    <value>{0}: {1} - 이 노드의 게스트가 모두 멈춥니다</value>
     <comment>NodeSystem</comment>
   </data>
   <data name="NodePower_CommandSent" xml:space="preserve">
@@ -4540,7 +4540,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>GuestDevices</comment>
   </data>
   <data name="GuestLife_DeleteTitle" xml:space="preserve">
-    <value>게스트 {0} ({1}) 삭제 — 디스크까지 모두 사라집니다</value>
+    <value>게스트 {0} ({1}) 삭제 - 디스크까지 모두 사라집니다</value>
     <comment>GuestDevices</comment>
   </data>
   <data name="GuestLife_Purge" xml:space="preserve">
@@ -4983,7 +4983,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>다운로드</value>
   </data>
   <data name="TaskLog_Running" xml:space="preserve">
-    <value>실행 중 — 1초마다 새 로그를 읽습니다.</value>
+    <value>실행 중 - 1초마다 새 로그를 읽습니다.</value>
   </data>
   <data name="TaskLog_Finished" xml:space="preserve">
     <value>끝남: {0}</value>
@@ -4998,7 +4998,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>서버에서 찾는 중…</value>
   </data>
   <data name="FormDialog_NothingFound" xml:space="preserve">
-    <value>찾은 항목이 없습니다 — 앞 칸 값을 확인하거나 직접 입력하세요.</value>
+    <value>찾은 항목이 없습니다 - 앞 칸 값을 확인하거나 직접 입력하세요.</value>
   </data>
   <data name="FormDialog_ScanFailed" xml:space="preserve">
     <value>찾아보기 실패: {0}</value>
@@ -5016,7 +5016,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>정리</value>
   </data>
   <data name="Prune_Title" xml:space="preserve">
-    <value>백업 정리 — {0} ({1})</value>
+    <value>백업 정리 - {0} ({1})</value>
   </data>
   <data name="Prune_NoGuest" xml:space="preserve">
     <value>게스트 번호가 없는 백업이라 정리할 수 없습니다.</value>
@@ -5059,7 +5059,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>다시 읽기</value>
   </data>
   <data name="NodeServices_Confirm" xml:space="preserve">
-    <value>'{1}' 서비스 — {0}할까요?</value>
+    <value>'{1}' 서비스 - {0}할까요?</value>
   </data>
   <data name="NodeServices_Done" xml:space="preserve">
     <value>서비스 작업을 마쳤습니다: {0}</value>
@@ -5089,7 +5089,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>설명 편집</value>
   </data>
   <data name="SnapshotDialog_EditNoteTitle" xml:space="preserve">
-    <value>스냅숏 설명 — {0}</value>
+    <value>스냅숏 설명 - {0}</value>
   </data>
   <data name="SnapshotDialog_NoteSaved" xml:space="preserve">
     <value>'{0}' 스냅숏 설명을 저장했습니다.</value>
@@ -5149,7 +5149,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>게스트 암호 변경</value>
   </data>
   <data name="GuestAgent_SetPasswordTitle" xml:space="preserve">
-    <value>VM {0} — 게스트 안 사용자 암호</value>
+    <value>VM {0} - 게스트 안 사용자 암호</value>
   </data>
   <data name="GuestAgent_PasswordConfirm" xml:space="preserve">
     <value>암호 확인</value>
@@ -5203,7 +5203,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>재배치</value>
   </data>
   <data name="DcHa_MoveTitle" xml:space="preserve">
-    <value>HA {0} — {1}</value>
+    <value>HA {0} - {1}</value>
   </data>
   <data name="DcHa_MoveRequested" xml:space="preserve">
     <value>HA 관리자에 요청했습니다: {0} (실제 이동은 조금 뒤에 보입니다)</value>
@@ -5230,7 +5230,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>Ceph 플래그를 바꿨습니다: {0}</value>
   </data>
   <data name="CephPool_EditTitle" xml:space="preserve">
-    <value>풀 편집 — {0}</value>
+    <value>풀 편집 - {0}</value>
   </data>
   <data name="CephPool_TargetRatio" xml:space="preserve">
     <value>목표 비율</value>
@@ -5272,7 +5272,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>연락처 변경</value>
   </data>
   <data name="DcAcme_EditContactTitle" xml:space="preserve">
-    <value>ACME 계정 연락처 — {0}</value>
+    <value>ACME 계정 연락처 - {0}</value>
   </data>
   <data name="DcAcme_ContactUpdated" xml:space="preserve">
     <value>계정 연락처를 바꿨습니다: {0}</value>
@@ -5335,7 +5335,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>일괄 작업을 마쳤습니다: {0}</value>
   </data>
   <data name="CephDaemon_Confirm" xml:space="preserve">
-    <value>'{1}' — {0}할까요?</value>
+    <value>'{1}' - {0}할까요?</value>
   </data>
   <data name="CephDaemon_Done" xml:space="preserve">
     <value>Ceph 데몬 작업을 마쳤습니다: {0}</value>
@@ -5437,7 +5437,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>파일 복원</value>
   </data>
   <data name="FileRestore_Title" xml:space="preserve">
-    <value>파일 복원 — {0}</value>
+    <value>파일 복원 - {0}</value>
   </data>
   <data name="FileRestore_Hint" xml:space="preserve">
     <value>두 번 눌러 폴더에 들어갑니다. 처음 열 때 서버가 복원용 가상 머신을 띄워 시간이 걸릴 수 있습니다.</value>
@@ -5485,13 +5485,13 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>경고 코드</value>
   </data>
   <data name="CephMute_CodeHint" xml:space="preserve">
-    <value>예: OSD_NEARFULL, POOL_NO_REDUNDANCY — Ceph 상태 화면의 코드</value>
+    <value>예: OSD_NEARFULL, POOL_NO_REDUNDANCY - Ceph 상태 화면의 코드</value>
   </data>
   <data name="CephMute_Ttl" xml:space="preserve">
     <value>유지 시간</value>
   </data>
   <data name="CephMute_TtlHint" xml:space="preserve">
-    <value>예: 1h, 30m — 비우면 해제할 때까지</value>
+    <value>예: 1h, 30m - 비우면 해제할 때까지</value>
   </data>
   <data name="CephMute_Sticky" xml:space="preserve">
     <value>계속 유지</value>
@@ -5542,7 +5542,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>지원 끝남</value>
   </data>
   <data name="CephFs_DeleteTitle" xml:space="preserve">
-    <value>CephFS 삭제 — {0}</value>
+    <value>CephFS 삭제 - {0}</value>
   </data>
   <data name="CephFs_RemovePools" xml:space="preserve">
     <value>데이터·메타데이터 풀도 지우기</value>
@@ -5614,13 +5614,13 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>기준 모델</value>
   </data>
   <data name="CpuModel_BaseHint" xml:space="preserve">
-    <value>예: x86-64-v2-AES, host, EPYC-Rome — 비우면 kvm64</value>
+    <value>예: x86-64-v2-AES, host, EPYC-Rome - 비우면 kvm64</value>
   </data>
   <data name="CpuModel_Flags" xml:space="preserve">
     <value>CPU 플래그</value>
   </data>
   <data name="CpuModel_FlagsHint" xml:space="preserve">
-    <value>세미콜론으로 구분, +켜기 -끄기 — 예: +aes;-pcid</value>
+    <value>세미콜론으로 구분, +켜기 -끄기 - 예: +aes;-pcid</value>
   </data>
   <data name="CpuModel_Hidden" xml:space="preserve">
     <value>숨김</value>
@@ -5647,7 +5647,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>CPU 모델 추가</value>
   </data>
   <data name="CpuModel_EditTitle" xml:space="preserve">
-    <value>CPU 모델 편집 — {0}</value>
+    <value>CPU 모델 편집 - {0}</value>
   </data>
   <data name="CpuModel_Added" xml:space="preserve">
     <value>CPU 모델을 추가했습니다.</value>
@@ -5714,7 +5714,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>공용 네트워크</value>
   </data>
   <data name="CephInit_NetworkHint" xml:space="preserve">
-    <value>예: 10.10.10.0/24 — 비우면 노드의 기본 네트워크</value>
+    <value>예: 10.10.10.0/24 - 비우면 노드의 기본 네트워크</value>
   </data>
   <data name="CephInit_ClusterNetwork" xml:space="preserve">
     <value>클러스터 네트워크</value>
@@ -5762,7 +5762,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>라우트 맵</value>
   </data>
   <data name="SdnRoute_RouteMapsHint" xml:space="preserve">
-    <value>라우트 맵 항목 — 조건(match)에 맞는 경로에 설정(set)을 적용합니다. 바꾼 뒤 SDN 을 적용하세요.</value>
+    <value>라우트 맵 항목 - 조건(match)에 맞는 경로에 설정(set)을 적용합니다. 바꾼 뒤 SDN 을 적용하세요.</value>
   </data>
   <data name="SdnRoute_Entries" xml:space="preserve">
     <value>항목</value>
@@ -5819,13 +5819,13 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>조건(match)</value>
   </data>
   <data name="SdnRoute_MatchHint" xml:space="preserve">
-    <value>한 줄에 하나 — 예: key=ip-address-prefix-list,value=내부망</value>
+    <value>한 줄에 하나 - 예: key=ip-address-prefix-list,value=내부망</value>
   </data>
   <data name="SdnRoute_Set" xml:space="preserve">
     <value>설정(set)</value>
   </data>
   <data name="SdnRoute_SetHint" xml:space="preserve">
-    <value>한 줄에 하나 — 예: key=local-preference,value=200</value>
+    <value>한 줄에 하나 - 예: key=local-preference,value=200</value>
   </data>
   <data name="SdnRoute_Call" xml:space="preserve">
     <value>다른 맵 호출</value>
@@ -5837,7 +5837,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>라우트 맵 항목 추가</value>
   </data>
   <data name="SdnRoute_EditMap" xml:space="preserve">
-    <value>라우트 맵 {0} — 항목 {1}</value>
+    <value>라우트 맵 {0} - 항목 {1}</value>
   </data>
   <data name="DcSdn_IpNoVnet" xml:space="preserve">
     <value>VNet 이 없는 줄(게이트웨이 등)은 지울 수 없습니다.</value>
@@ -5906,13 +5906,13 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>명령 실행</value>
   </data>
   <data name="AgentTool_ExecTitle" xml:space="preserve">
-    <value>VM {0} — 게스트 안에서 명령 실행</value>
+    <value>VM {0} - 게스트 안에서 명령 실행</value>
   </data>
   <data name="AgentTool_Command" xml:space="preserve">
     <value>명령</value>
   </data>
   <data name="AgentTool_CommandHint" xml:space="preserve">
-    <value>예: ls -la /var/log — 셸을 거치지 않으므로 파이프·변수를 쓰려면 bash -c "…"</value>
+    <value>예: ls -la /var/log - 셸을 거치지 않으므로 파이프·변수를 쓰려면 bash -c "…"</value>
   </data>
   <data name="AgentTool_Input" xml:space="preserve">
     <value>표준 입력</value>
@@ -5925,13 +5925,13 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
 계속할까요?</value>
   </data>
   <data name="AgentTool_ExecResultTitle" xml:space="preserve">
-    <value>실행 결과 — {0}</value>
+    <value>실행 결과 - {0}</value>
   </data>
   <data name="AgentTool_ExecDone" xml:space="preserve">
     <value>명령이 끝났습니다(종료 코드 {0}).</value>
   </data>
   <data name="AgentTool_ExecStillRunning" xml:space="preserve">
-    <value>명령이 아직 실행 중입니다(pid {0}) — 게스트 안에서 계속 돕니다.</value>
+    <value>명령이 아직 실행 중입니다(pid {0}) - 게스트 안에서 계속 돕니다.</value>
   </data>
   <data name="AgentTool_ExitCode" xml:space="preserve">
     <value>종료 코드: {0}{1}</value>
@@ -5949,16 +5949,16 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>파일 읽기</value>
   </data>
   <data name="AgentTool_ReadTitle" xml:space="preserve">
-    <value>VM {0} — 게스트 파일 읽기</value>
+    <value>VM {0} - 게스트 파일 읽기</value>
   </data>
   <data name="AgentTool_PathHint" xml:space="preserve">
-    <value>게스트 안의 전체 경로 — 예: /etc/hostname, C:\Windows\win.ini</value>
+    <value>게스트 안의 전체 경로 - 예: /etc/hostname, C:\Windows\win.ini</value>
   </data>
   <data name="AgentTool_Write" xml:space="preserve">
     <value>파일 쓰기</value>
   </data>
   <data name="AgentTool_WriteTitle" xml:space="preserve">
-    <value>VM {0} — 게스트 파일 쓰기</value>
+    <value>VM {0} - 게스트 파일 쓰기</value>
   </data>
   <data name="AgentTool_Content" xml:space="preserve">
     <value>내용</value>
@@ -5988,7 +5988,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>{0}: {1}</value>
   </data>
   <data name="OpenId_Hint" xml:space="preserve">
-    <value>OpenID 영역 — 로그인을 누르면 브라우저에서 로그인합니다. 인증 기관(IdP)에 {0} 을(를) 리디렉션 주소로 등록해 두어야 합니다.</value>
+    <value>OpenID 영역 - 로그인을 누르면 브라우저에서 로그인합니다. 인증 기관(IdP)에 {0} 을(를) 리디렉션 주소로 등록해 두어야 합니다.</value>
   </data>
   <data name="OpenId_Waiting" xml:space="preserve">
     <value>브라우저에서 로그인을 마쳐 주세요…</value>
@@ -6024,7 +6024,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>가져오기</value>
   </data>
   <data name="Import_Title" xml:space="preserve">
-    <value>게스트 가져오기 — {0}</value>
+    <value>게스트 가져오기 - {0}</value>
   </data>
   <data name="Import_TargetStorage" xml:space="preserve">
     <value>디스크를 둘 저장소</value>
@@ -6073,7 +6073,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>디스크 만들기</value>
   </data>
   <data name="AllocDisk_VmidHint" xml:space="preserve">
-    <value>디스크 주인 VM ID — 이름에도 이 번호를 씁니다.</value>
+    <value>디스크 주인 VM ID - 이름에도 이 번호를 씁니다.</value>
   </data>
   <data name="AllocDisk_FileName" xml:space="preserve">
     <value>파일 이름</value>
@@ -6097,7 +6097,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>안 쓰는 디스크가 없습니다.</value>
   </data>
   <data name="GuestLife_UnlinkTitle" xml:space="preserve">
-    <value>VM {0} — 안 쓰는 디스크 지우기</value>
+    <value>VM {0} - 안 쓰는 디스크 지우기</value>
   </data>
   <data name="GuestLife_UnlinkPick" xml:space="preserve">
     <value>지울 디스크</value>
@@ -6148,7 +6148,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>직렬 터미널</value>
   </data>
   <data name="GuestPower_Confirm" xml:space="preserve">
-    <value>{0} {1} ({2}) — '{3}' 을(를) 실행할까요?</value>
+    <value>{0} {1} ({2}) - '{3}' 을(를) 실행할까요?</value>
   </data>
   <data name="NodePower_BulkMenu" xml:space="preserve">
     <value>일괄 작업</value>
@@ -6163,7 +6163,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>Ceph 가 설치되지 않았습니다. 설치하려면 root 로 로그인하세요.</value>
   </data>
   <data name="GuestPower_ShutdownNeedsRunning" xml:space="preserve">
-    <value>{0} 은(는) 실행 중이 아닙니다 — 일시 정지 상태면 ▾ 에서 재개하거나 정지하세요.</value>
+    <value>{0} 은(는) 실행 중이 아닙니다 - 일시 정지 상태면 ▾ 에서 재개하거나 정지하세요.</value>
   </data>
   <data name="Console_SpecialKeys" xml:space="preserve">
     <value>특수 키</value>
@@ -6175,7 +6175,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>PC 클립보드를 게스트로 보냅니다. 게스트에서 복사한 글은 PC 클립보드로 자동으로 옵니다.</value>
   </data>
   <data name="Console_ClipNeedsVnc" xml:space="preserve">
-    <value>클립보드 공유가 꺼져 있습니다 — VM 하드웨어 → 디스플레이에서 클립보드를 VNC 로 설정하고(게스트에 spice-vdagent 필요) VM 을 다시 시작하세요.</value>
+    <value>클립보드 공유가 꺼져 있습니다 - VM 하드웨어 → 디스플레이에서 클립보드를 VNC 로 설정하고(게스트에 spice-vdagent 필요) VM 을 다시 시작하세요.</value>
   </data>
   <data name="Console_ClipFromGuest" xml:space="preserve">
     <value>게스트에서 복사한 글을 PC 클립보드에 넣었습니다.</value>
@@ -6190,10 +6190,10 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>VM 이 VNC 클립보드(디스플레이 clipboard=vnc, 게스트에 spice-vdagent)를 쓸 때만 동작합니다. 콘솔 창으로 돌아오면 PC 클립보드를 게스트로 보내고, 떠나면 게스트 클립보드를 PC 로 가져옵니다.</value>
   </data>
   <data name="Console_ModifiersHint" xml:space="preserve">
-    <value>게스트에 눌려 있는 조합키 — 특수 키로 누른 채 둔 키와 키보드로 누르고 있는 키</value>
+    <value>게스트에 눌려 있는 조합키 - 특수 키로 누른 채 둔 키와 키보드로 누르고 있는 키</value>
   </data>
   <data name="NavWindow_Refresh" xml:space="preserve">
-    <value>새로고침 (F5) — 지금 보는 탭을 다시 읽습니다</value>
+    <value>새로고침 (F5) - 지금 보는 탭을 다시 읽습니다</value>
   </data>
   <data name="Console_NoCursorShape" xml:space="preserve">
     <value>이 VM 화면(표준 VGA 등)은 커서 모양을 보내지 않아 게스트가 그린 커서도 함께 보입니다. 하드웨어 → 디스플레이를 VirtIO-GPU 또는 SPICE(qxl)로 바꾸면 PC 커서 하나만 보입니다.</value>
@@ -6226,19 +6226,189 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>그래픽 콘솔 (RDP)</value>
   </data>
   <data name="Console_ClipRdp" xml:space="preserve">
-    <value>RDP 클립보드는 자동으로 공유됩니다 — 한쪽에서 복사하면 다른 쪽에서 바로 붙여 넣을 수 있습니다.</value>
+    <value>RDP 클립보드는 자동으로 공유됩니다 - 한쪽에서 복사하면 다른 쪽에서 바로 붙여 넣을 수 있습니다.</value>
   </data>
   <data name="ConsoleWindow_HeaderRdp" xml:space="preserve">
-    <value>RDP 콘솔 — {0}</value>
+    <value>RDP 콘솔 - {0}</value>
   </data>
   <data name="Console_ClipRdpOff" xml:space="preserve">
-    <value>RDP 클립보드 공유가 꺼져 있습니다 — 콘솔 설정의 RDP 탭에서 켜고 다시 연결하세요.</value>
+    <value>RDP 클립보드 공유가 꺼져 있습니다 - 콘솔 설정의 RDP 탭에서 켜고 다시 연결하세요.</value>
   </data>
   <data name="ConsoleSettings_RdpClipboardAuto" xml:space="preserve">
     <value>PC 와 게스트 클립보드 자동 공유</value>
   </data>
   <data name="ConsoleSettings_RdpClipboardHint" xml:space="preserve">
     <value>한쪽에서 복사하면 다른 쪽에서 바로 붙여 넣을 수 있습니다(텍스트·이미지 등 표준 형식). 게스트에 클립보드 에이전트(spice-vdagent 등)가 필요할 수 있습니다. 다시 연결하면 적용됩니다.</value>
+  </data>
+  <data name="GuestFiles_Title" xml:space="preserve">
+    <value>파일</value>
+  </data>
+  <data name="GuestFiles_WindowTitle" xml:space="preserve">
+    <value>파일 - {0}</value>
+  </data>
+  <data name="GuestFiles_ShowHidden" xml:space="preserve">
+    <value>숨김 파일 표시</value>
+  </data>
+  <data name="GuestFiles_Open" xml:space="preserve">
+    <value>열기</value>
+  </data>
+  <data name="GuestFiles_CopyPath" xml:space="preserve">
+    <value>경로 복사</value>
+  </data>
+  <data name="GuestFiles_CountHidden" xml:space="preserve">
+    <value>항목 {0}개(숨긴 항목 {1}개) - 파일을 끌어다 놓으면 이 폴더로 올립니다.</value>
+  </data>
+  <data name="GuestFiles_DragFailed" xml:space="preserve">
+    <value>끌어내기에서 일부 파일을 받지 못했습니다. 자세한 내용은 로그를 확인하세요.</value>
+  </data>
+  <data name="GuestFiles_ExecBlockedTitle" xml:space="preserve">
+    <value>게스트 에이전트가 명령 실행을 막아 두었습니다</value>
+  </data>
+  <data name="GuestFiles_UnblockLinux" xml:space="preserve">
+    <value>게스트 안에서 root 로 아래 명령을 실행한 뒤 [다시 연결]을 누르세요. RHEL·Rocky·Alma·Oracle Linux 등은 설치 기본값(/etc/sysconfig/qemu-ga)에서 명령 실행을 막아 둡니다 - 허용 목록(FILTER_RPC_ARGS="--allow-rpcs=…")이면 파일 기능에 필요한 명령(guest-exec·guest-file-*)만 더하고, 차단 목록(--block-rpcs·BLACKLIST_RPC)이면 그 줄을 주석으로 돌린 뒤 에이전트를 다시 시작합니다.</value>
+  </data>
+  <data name="GuestFiles_UnblockSelinux" xml:space="preserve">
+    <value>SELinux 를 쓰면 마지막 명령(virt_qemu_ga_run_unconfined)도 필요합니다 - 에이전트로 실행한 명령이 SELinux 에 막혀 파일을 읽고 쓰지 못하는 것을 풉니다.</value>
+  </data>
+  <data name="GuestFiles_UnblockLinuxOther" xml:space="preserve">
+    <value>그래도 막히면 에이전트 실행 인자(systemctl cat qemu-guest-agent)나 /etc/qemu/qemu-ga.conf 에 block-rpcs·allow-rpcs 가 있는지 확인하세요. SELinux 를 쓰면 setsebool -P virt_qemu_ga_run_unconfined on 도 필요할 수 있습니다.</value>
+  </data>
+  <data name="GuestFiles_UnblockWindows" xml:space="preserve">
+    <value>게스트의 관리자 PowerShell 에서 아래 명령을 실행해 QEMU Guest Agent 서비스 실행 인자의 명령 차단(-b/--block-rpcs, -a/--allow-rpcs)을 지우고 서비스를 다시 시작한 뒤 [다시 연결]을 누르세요. 두 번째 줄은 지금 인자를 보여 줍니다.</value>
+  </data>
+  <data name="GuestFiles_CopyCommands" xml:space="preserve">
+    <value>명령 복사</value>
+  </data>
+  <data name="GuestFiles_Retry" xml:space="preserve">
+    <value>다시 연결</value>
+  </data>
+  <data name="GuestFiles_Copied" xml:space="preserve">
+    <value>명령을 복사했습니다.</value>
+  </data>
+  <data name="GuestFiles_LoadingCount" xml:space="preserve">
+    <value>폴더 읽는 중... ({0}개)</value>
+  </data>
+  <data name="GuestFiles_UnblockScript" xml:space="preserve">
+    <value>에이전트가 파일 쓰기는 허용해서 해제 스크립트를 게스트에 써 두었습니다 - 게스트 안에서 root(Windows 는 관리자)로 위 한 줄을 실행하면 아래 명령이 실행되고 스크립트는 스스로 지워집니다.
+
+{0}</value>
+  </data>
+  <data name="GuestFiles_Toggle" xml:space="preserve">
+    <value>파일</value>
+  </data>
+  <data name="GuestFiles_ToggleTip" xml:space="preserve">
+    <value>게스트 파일 보기 - 폴더 탐색, 내려받기·올리기(끌어다 놓기)</value>
+  </data>
+  <data name="GuestFiles_Upload" xml:space="preserve">
+    <value>올리기(파일을 끌어다 놓아도 됩니다)</value>
+  </data>
+  <data name="GuestFiles_Download" xml:space="preserve">
+    <value>내려받기(폴더는 tar)</value>
+  </data>
+  <data name="GuestFiles_NewFolder" xml:space="preserve">
+    <value>새 폴더</value>
+  </data>
+  <data name="GuestFiles_Rename" xml:space="preserve">
+    <value>이름 바꾸기 (F2)</value>
+  </data>
+  <data name="GuestFiles_Delete" xml:space="preserve">
+    <value>지우기 (Delete)</value>
+  </data>
+  <data name="GuestFiles_Up" xml:space="preserve">
+    <value>상위 폴더 (Backspace)</value>
+  </data>
+  <data name="GuestFiles_Refresh" xml:space="preserve">
+    <value>새로 고침</value>
+  </data>
+  <data name="GuestFiles_PathHint" xml:space="preserve">
+    <value>경로를 입력하고 Enter</value>
+  </data>
+  <data name="GuestFiles_DropHint" xml:space="preserve">
+    <value>파일을 여기로 끌어다 놓으면 지금 폴더로 올립니다.</value>
+  </data>
+  <data name="GuestFiles_Name" xml:space="preserve">
+    <value>이름</value>
+  </data>
+  <data name="GuestFiles_Size" xml:space="preserve">
+    <value>크기</value>
+  </data>
+  <data name="GuestFiles_Modified" xml:space="preserve">
+    <value>수정 시각</value>
+  </data>
+  <data name="GuestFiles_Mode" xml:space="preserve">
+    <value>권한</value>
+  </data>
+  <data name="GuestFiles_Owner" xml:space="preserve">
+    <value>소유자</value>
+  </data>
+  <data name="GuestFiles_Connecting" xml:space="preserve">
+    <value>파일 연결 중...</value>
+  </data>
+  <data name="GuestFiles_Loading" xml:space="preserve">
+    <value>폴더 읽는 중...</value>
+  </data>
+  <data name="GuestFiles_Count" xml:space="preserve">
+    <value>항목 {0}개 - 파일을 끌어다 놓으면 이 폴더로 올립니다.</value>
+  </data>
+  <data name="GuestFiles_LinkIsFile" xml:space="preserve">
+    <value>{0} 은(는) 폴더가 아니므로 받습니다.</value>
+  </data>
+  <data name="GuestFiles_Cancelled" xml:space="preserve">
+    <value>취소했습니다.</value>
+  </data>
+  <data name="GuestFiles_Error" xml:space="preserve">
+    <value>실패: {0}</value>
+  </data>
+  <data name="GuestFiles_DownloadTo" xml:space="preserve">
+    <value>받을 폴더</value>
+  </data>
+  <data name="GuestFiles_Downloading" xml:space="preserve">
+    <value>받는 중...</value>
+  </data>
+  <data name="GuestFiles_NoFolderDownload" xml:space="preserve">
+    <value>{0}: 이 게스트에서는 폴더를 받을 수 없습니다(파일만).</value>
+  </data>
+  <data name="GuestFiles_Downloaded" xml:space="preserve">
+    <value>{0}개 받았습니다.</value>
+  </data>
+  <data name="GuestFiles_OverwriteConfirm" xml:space="preserve">
+    <value>같은 이름이 이미 있습니다: {0} (모두 {1}개)
+덮어쓸까요?</value>
+  </data>
+  <data name="GuestFiles_Uploading" xml:space="preserve">
+    <value>올리는 중...</value>
+  </data>
+  <data name="GuestFiles_Uploaded" xml:space="preserve">
+    <value>{0}개 올렸습니다.</value>
+  </data>
+  <data name="GuestFiles_UploadedSkipped" xml:space="preserve">
+    <value>{0}개 올렸습니다(폴더 {1}개는 건너뜀 - 파일만 올릴 수 있습니다).</value>
+  </data>
+  <data name="GuestFiles_Working" xml:space="preserve">
+    <value>처리 중...</value>
+  </data>
+  <data name="GuestFiles_DeleteConfirm" xml:space="preserve">
+    <value>지울까요? {0} (모두 {1}개, 위치 {2})
+되돌릴 수 없습니다.</value>
+  </data>
+  <data name="GuestFiles_BadName" xml:space="preserve">
+    <value>이름에 / 를 넣거나 . 또는 .. 로 할 수 없습니다.</value>
+  </data>
+  <data name="GuestFiles_ToggleTipVm" xml:space="preserve">
+    <value>게스트 파일 보기(게스트 에이전트) - 폴더 탐색, 내려받기·올리기. 콘솔 화면에 파일을 끌어다 놓아도 올립니다.</value>
+  </data>
+  <data name="GuestFiles_NeedTicket" xml:space="preserve">
+    <value>CT 파일 보기는 비밀번호(티켓) 로그인에서만 쓸 수 있습니다 - API 토큰으로는 콘솔을 열 수 없습니다.</value>
+  </data>
+  <data name="GuestFiles_Busy" xml:space="preserve">
+    <value>다른 작업 중입니다 - 끝난 뒤 다시 놓아 주세요.</value>
+  </data>
+  <data name="GuestFiles_NotReady" xml:space="preserve">
+    <value>파일 패널이 아직 연결되지 않았습니다.</value>
+  </data>
+  <data name="GuestFiles_LocalOverwrite" xml:space="preserve">
+    <value>PC 에 같은 이름이 있거나 서로 겹칩니다: {0} (모두 {1}개)
+덮어쓸까요?</value>
   </data>
   <data name="MainWindow_TaskLogHint" xml:space="preserve">
     <value>행을 더블클릭하면 작업 로그를 봅니다.</value>
@@ -6351,7 +6521,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>CephAgent</comment>
   </data>
   <data name="CephTab_DeletePoolTitle" xml:space="preserve">
-    <value>Ceph 풀 {0} 삭제 — 안의 데이터가 모두 사라집니다</value>
+    <value>Ceph 풀 {0} 삭제 - 안의 데이터가 모두 사라집니다</value>
     <comment>CephAgent</comment>
   </data>
   <data name="CephTab_PoolDeleted" xml:space="preserve">
@@ -6533,7 +6703,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>CephManage</comment>
   </data>
   <data name="CephTab_DeleteOsdTitle" xml:space="preserve">
-    <value>{0} 삭제 — 먼저 빼기(out)·정지되어 있어야 합니다</value>
+    <value>{0} 삭제 - 먼저 빼기(out)·정지되어 있어야 합니다</value>
     <comment>CephManage</comment>
   </data>
   <data name="CephTab_OsdDeleted" xml:space="preserve">
@@ -7477,11 +7647,11 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Guest/Hardware</comment>
   </data>
   <data name="HwEd_EditDisk" xml:space="preserve">
-    <value>하드 디스크 ({0}) — {1}</value>
+    <value>하드 디스크 ({0}) - {1}</value>
     <comment>Views/Guest/Hardware</comment>
   </data>
   <data name="HwEd_AttachUnused" xml:space="preserve">
-    <value>미사용 디스크 연결 — {0}</value>
+    <value>미사용 디스크 연결 - {0}</value>
     <comment>Views/Guest/Hardware</comment>
   </data>
   <data name="HwEd_ImportImage" xml:space="preserve">
@@ -7717,7 +7887,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Guest/Hardware</comment>
   </data>
   <data name="HwEd_RngLimitHint" xml:space="preserve">
-    <value>비우면 제한 없음 — 게스트가 호스트 엔트로피를 고갈시킬 수 있습니다. 기본 1024.</value>
+    <value>비우면 제한 없음 - 게스트가 호스트 엔트로피를 고갈시킬 수 있습니다. 기본 1024.</value>
     <comment>Views/Guest/Hardware</comment>
   </data>
   <data name="HwEd_RngPeriod" xml:space="preserve">
@@ -8405,7 +8575,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/ConsoleSettingsWindow</comment>
   </data>
   <data name="ConsoleSettings_LocalCursorHint" xml:space="preserve">
-    <value>둘 다: PC 화살표와 게스트 커서를 함께 보입니다. PC 커서만: 게스트가 커서 모양을 보내면(VirtIO-GPU·QXL 등) 그 모양을 지연 없는 PC 커서로 쓰고, 안 보내면(표준 VGA 등) 화살표나 점을 씁니다 — 이때 게스트가 화면에 그린 커서도 함께 보입니다.</value>
+    <value>둘 다: PC 화살표와 게스트 커서를 함께 보입니다. PC 커서만: 게스트가 커서 모양을 보내면(VirtIO-GPU·QXL 등) 그 모양을 지연 없는 PC 커서로 쓰고, 안 보내면(표준 VGA 등) 화살표나 점을 씁니다 - 이때 게스트가 화면에 그린 커서도 함께 보입니다.</value>
     <comment>Views/ConsoleSettingsWindow</comment>
   </data>
   <data name="ConsoleSettings_CursorArrow" xml:space="preserve">
@@ -8425,19 +8595,19 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/ConsoleSettingsWindow</comment>
   </data>
   <data name="DcOpt_AllowNone" xml:space="preserve">
-    <value>없음 — 사용자는 태그를 못 붙임</value>
+    <value>없음 - 사용자는 태그를 못 붙임</value>
     <comment>Views/Datacenter/DatacenterOptions</comment>
   </data>
   <data name="DcOpt_AllowList" xml:space="preserve">
-    <value>목록 — 허용 목록의 태그만</value>
+    <value>목록 - 허용 목록의 태그만</value>
     <comment>Views/Datacenter/DatacenterOptions</comment>
   </data>
   <data name="DcOpt_AllowExisting" xml:space="preserve">
-    <value>기존 — 목록 + 이미 쓰는 태그</value>
+    <value>기존 - 목록 + 이미 쓰는 태그</value>
     <comment>Views/Datacenter/DatacenterOptions</comment>
   </data>
   <data name="DcOpt_AllowFree" xml:space="preserve">
-    <value>자유 — 아무 태그나</value>
+    <value>자유 - 아무 태그나</value>
     <comment>Views/Datacenter/DatacenterOptions</comment>
   </data>
   <data name="DcOpt_UserAllowDefault" xml:space="preserve">
@@ -8477,7 +8647,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/DatacenterOptions</comment>
   </data>
   <data name="DcOpt_BadMacPrefix" xml:space="preserve">
-    <value>MAC 접두사 형식이 아닙니다(예: BC:24:11 — 첫 바이트는 짝수).</value>
+    <value>MAC 접두사 형식이 아닙니다(예: BC:24:11 - 첫 바이트는 짝수).</value>
     <comment>Views/Datacenter/DatacenterOptions</comment>
   </data>
   <data name="DcOpt_BadMaxWorkers" xml:space="preserve">
@@ -8505,7 +8675,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/DatacenterOptions</comment>
   </data>
   <data name="DcOpt_ProxyHint" xml:space="preserve">
-    <value>예: http://proxy.example.com:3128 — 비우면 사용 안 함</value>
+    <value>예: http://proxy.example.com:3128 - 비우면 사용 안 함</value>
     <comment>Views/Datacenter/DatacenterOptions</comment>
   </data>
   <data name="DcOpt_EmailHint" xml:space="preserve">
@@ -8581,7 +8751,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/DatacenterOptions</comment>
   </data>
   <data name="DcOpt_NetworkHint" xml:space="preserve">
-    <value>CIDR (예: 10.1.1.0/24) — 비우면 기본 네트워크</value>
+    <value>CIDR (예: 10.1.1.0/24) - 비우면 기본 네트워크</value>
     <comment>Views/Datacenter/DatacenterOptions</comment>
   </data>
   <data name="DcOpt_Replication" xml:space="preserve">
@@ -8689,7 +8859,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/UserActions</comment>
   </data>
   <data name="DcGroups_EditTitle" xml:space="preserve">
-    <value>그룹 수정 — {0}</value>
+    <value>그룹 수정 - {0}</value>
     <comment>Views/Datacenter/UserActions</comment>
   </data>
   <data name="DcGroups_Updated" xml:space="preserve">
@@ -8709,7 +8879,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/UserActions</comment>
   </data>
   <data name="DcUsers_ExpireHint" xml:space="preserve">
-    <value>{0} — 비우면 만료 없음</value>
+    <value>{0} - 비우면 만료 없음</value>
     <comment>Views/Datacenter/UserActions</comment>
   </data>
   <data name="DcUsers_ConfirmPassword" xml:space="preserve">
@@ -8725,7 +8895,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/UserActions</comment>
   </data>
   <data name="DcUsers_MyPasswordHint" xml:space="preserve">
-    <value>지금 로그인한 {0} 의 암호 — root@pam 은 생략 가능</value>
+    <value>지금 로그인한 {0} 의 암호 - root@pam 은 생략 가능</value>
     <comment>Views/Datacenter/UserActions</comment>
   </data>
   <data name="DcUsers_NameNoRealm" xml:space="preserve">
@@ -8733,7 +8903,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/UserActions</comment>
   </data>
   <data name="DcUsers_PasswordPveOnly" xml:space="preserve">
-    <value>PVE 영역만 사용 — {0}자 이상</value>
+    <value>PVE 영역만 사용 - {0}자 이상</value>
     <comment>Views/Datacenter/UserActions</comment>
   </data>
   <data name="DcUsers_PasswordRealmOnly" xml:space="preserve">
@@ -8753,7 +8923,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/UserActions</comment>
   </data>
   <data name="DcUsers_PermissionsTitle" xml:space="preserve">
-    <value>권한 — {0}</value>
+    <value>권한 - {0}</value>
     <comment>Views/Datacenter/UserActions</comment>
   </data>
   <data name="DcUsers_TfaUnlocked" xml:space="preserve">
@@ -8769,7 +8939,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/UserActions</comment>
   </data>
   <data name="DcReplication_RateHint" xml:space="preserve">
-    <value>MB/s — 비우면 제한 없음</value>
+    <value>MB/s - 비우면 제한 없음</value>
     <comment>Views/Datacenter/ClusterActions</comment>
   </data>
   <data name="DcReplication_PickGuest" xml:space="preserve">
@@ -8793,7 +8963,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Guest/Tabs/FirewallRules</comment>
   </data>
   <data name="FwRule_AddressHint" xml:space="preserve">
-    <value>IP·CIDR·별칭·IP 집합(+이름) — 비우면 모두</value>
+    <value>IP·CIDR·별칭·IP 집합(+이름) - 비우면 모두</value>
     <comment>Views/Guest/Tabs/FirewallRules</comment>
   </data>
   <data name="FwRule_AlreadyTop" xml:space="preserve">
@@ -8805,7 +8975,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Guest/Tabs/FirewallRules</comment>
   </data>
   <data name="FwRule_CopyTitle" xml:space="preserve">
-    <value>규칙 복사 — {0}번</value>
+    <value>규칙 복사 - {0}번</value>
     <comment>Views/Guest/Tabs/FirewallRules</comment>
   </data>
   <data name="FwRule_Dest" xml:space="preserve">
@@ -8813,7 +8983,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Guest/Tabs/FirewallRules</comment>
   </data>
   <data name="FwRule_EditTitle" xml:space="preserve">
-    <value>규칙 수정 — {0}번</value>
+    <value>규칙 수정 - {0}번</value>
     <comment>Views/Guest/Tabs/FirewallRules</comment>
   </data>
   <data name="FwRule_Hint" xml:space="preserve">
@@ -8833,7 +9003,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Guest/Tabs/FirewallRules</comment>
   </data>
   <data name="FwRule_IfaceHint" xml:space="preserve">
-    <value>예: net0 — 비우면 모든 인터페이스</value>
+    <value>예: net0 - 비우면 모든 인터페이스</value>
     <comment>Views/Guest/Tabs/FirewallRules</comment>
   </data>
   <data name="FwRule_InsertGroup" xml:space="preserve">
@@ -8893,15 +9063,15 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Guest/Tabs/FirewallRules</comment>
   </data>
   <data name="DcFirewall_EditGroup" xml:space="preserve">
-    <value>보안 그룹 수정 — {0}</value>
+    <value>보안 그룹 수정 - {0}</value>
     <comment>Views/Datacenter/FirewallTabs</comment>
   </data>
   <data name="DcFirewall_EditIpSet" xml:space="preserve">
-    <value>IP 집합 수정 — {0}</value>
+    <value>IP 집합 수정 - {0}</value>
     <comment>Views/Datacenter/FirewallTabs</comment>
   </data>
   <data name="DcFirewall_EditEntry" xml:space="preserve">
-    <value>IP 집합 항목 수정 — {0}</value>
+    <value>IP 집합 항목 수정 - {0}</value>
     <comment>Views/Datacenter/FirewallTabs</comment>
   </data>
   <data name="DcStorage_BadKeep" xml:space="preserve">
@@ -9077,7 +9247,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/StorageActions</comment>
   </data>
   <data name="StorageHint_BlockSize" xml:space="preserve">
-    <value>예: 16k — 비우면 기본값</value>
+    <value>예: 16k - 비우면 기본값</value>
     <comment>Views/Datacenter/StorageActions</comment>
   </data>
   <data name="StorageHint_CephUser" xml:space="preserve">
@@ -9085,7 +9255,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/StorageActions</comment>
   </data>
   <data name="StorageHint_External" xml:space="preserve">
-    <value>외부 Ceph 클러스터일 때만 — 이 클러스터의 Ceph 는 비워 둡니다</value>
+    <value>외부 Ceph 클러스터일 때만 - 이 클러스터의 Ceph 는 비워 둡니다</value>
     <comment>Views/Datacenter/StorageActions</comment>
   </data>
   <data name="StorageHint_Fingerprint" xml:space="preserve">
@@ -9113,7 +9283,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/StorageActions</comment>
   </data>
   <data name="StorageHint_Monhost" xml:space="preserve">
-    <value>외부 Ceph 모니터 주소(공백 구분) — 이 클러스터의 Ceph 는 비워 둡니다</value>
+    <value>외부 Ceph 모니터 주소(공백 구분) - 이 클러스터의 Ceph 는 비워 둡니다</value>
     <comment>Views/Datacenter/StorageActions</comment>
   </data>
   <data name="StorageHint_Nodes" xml:space="preserve">
@@ -9189,7 +9359,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/RealmActions</comment>
   </data>
   <data name="DcRealms_ClassesHint" xml:space="preserve">
-    <value>쉼표로 구분 — 비우면 기본값</value>
+    <value>쉼표로 구분 - 비우면 기본값</value>
     <comment>Views/Datacenter/RealmActions</comment>
   </data>
   <data name="DcRealms_GroupClasses" xml:space="preserve">
@@ -9333,7 +9503,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/HaActions</comment>
   </data>
   <data name="DcCluster_JoinLinks" xml:space="preserve">
-    <value>클러스터 링크 — {0} 에 가입</value>
+    <value>클러스터 링크 - {0} 에 가입</value>
     <comment>Views/Datacenter/ClusterTabs</comment>
   </data>
   <data name="DcCluster_LinkN" xml:space="preserve">
@@ -9341,7 +9511,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/ClusterTabs</comment>
   </data>
   <data name="DcCluster_PeerLinkHint" xml:space="preserve">
-    <value>이 노드의 주소 (상대 노드: {0}) — 같은 네트워크여야 합니다</value>
+    <value>이 노드의 주소 (상대 노드: {0}) - 같은 네트워크여야 합니다</value>
     <comment>Views/Datacenter/ClusterTabs</comment>
   </data>
   <data name="DcCluster_LinkHint" xml:space="preserve">
@@ -9373,7 +9543,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/SdnActions</comment>
   </data>
   <data name="DcSdn_DhcpHint" xml:space="preserve">
-    <value>영역의 자동 DHCP 가 켜져 있을 때 — 비우면 DHCP 없음</value>
+    <value>영역의 자동 DHCP 가 켜져 있을 때 - 비우면 DHCP 없음</value>
     <comment>Views/Datacenter/SdnActions</comment>
   </data>
   <data name="DcSdn_DhcpRange" xml:space="preserve">
@@ -9393,7 +9563,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/SdnActions</comment>
   </data>
   <data name="DcSdn_EditTitle" xml:space="preserve">
-    <value>SDN 수정 — {0}</value>
+    <value>SDN 수정 - {0}</value>
     <comment>Views/Datacenter/SdnActions</comment>
   </data>
   <data name="DcSdn_ExitLocalRouting" xml:space="preserve">
@@ -9481,11 +9651,11 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcMetrics_MaxBodyHint" xml:space="preserve">
-    <value>바이트 — 비우면 25000000</value>
+    <value>바이트 - 비우면 25000000</value>
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcMetrics_MtuHint" xml:space="preserve">
-    <value>UDP 일 때 — 비우면 1500</value>
+    <value>UDP 일 때 - 비우면 1500</value>
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcMetrics_Timeout" xml:space="preserve">
@@ -9493,7 +9663,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcMetrics_TimeoutHint" xml:space="preserve">
-    <value>TCP·HTTP 일 때 — 비우면 1</value>
+    <value>TCP·HTTP 일 때 - 비우면 1</value>
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcNotify_Author" xml:space="preserve">
@@ -9509,11 +9679,11 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcNotify_BodyHint" xml:space="preserve">
-    <value>Handlebars 템플릿 — 예: {{ title }}: {{ message }}</value>
+    <value>Handlebars 템플릿 - 예: {{ title }}: {{ message }}</value>
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcNotify_EditTarget" xml:space="preserve">
-    <value>알림 대상 수정 — {0}</value>
+    <value>알림 대상 수정 - {0}</value>
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcNotify_Headers" xml:space="preserve">
@@ -9533,7 +9703,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcNotify_MatchCalendarHint" xml:space="preserve">
-    <value>줄마다 하나 — 예: mon..fri 8-17</value>
+    <value>줄마다 하나 - 예: mon..fri 8-17</value>
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcNotify_MatchField" xml:space="preserve">
@@ -9541,7 +9711,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcNotify_MatchFieldHint" xml:space="preserve">
-    <value>줄마다 하나 — 예: exact:type=vzdump / regex:hostname=^pve</value>
+    <value>줄마다 하나 - 예: exact:type=vzdump / regex:hostname=^pve</value>
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcNotify_Method" xml:space="preserve">
@@ -9565,7 +9735,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/NotificationActions</comment>
   </data>
   <data name="DcMapping_EditTitle" xml:space="preserve">
-    <value>매핑 수정 — {0}</value>
+    <value>매핑 수정 - {0}</value>
     <comment>Views/Datacenter/ClusterTabs</comment>
   </data>
   <data name="DcMapping_Updated" xml:space="preserve">
@@ -9597,7 +9767,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/BackupJobEditor</comment>
   </data>
   <data name="DcBackup_BwlimitHint" xml:space="preserve">
-    <value>KiB/s — 비우면 데이터센터 기본값</value>
+    <value>KiB/s - 비우면 데이터센터 기본값</value>
     <comment>Views/Datacenter/BackupJobEditor</comment>
   </data>
   <data name="DcBackup_Fleecing" xml:space="preserve">
@@ -9661,11 +9831,11 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/BackupJobEditor</comment>
   </data>
   <data name="DcBackup_MaxWorkersHint" xml:space="preserve">
-    <value>VM 백업의 동시 IO 작업 수 — 비우면 16</value>
+    <value>VM 백업의 동시 IO 작업 수 - 비우면 16</value>
     <comment>Views/Datacenter/BackupJobEditor</comment>
   </data>
   <data name="DcBackup_NotesHint" xml:space="preserve">
-    <value>예: {{guestname}} — 백업 메모로 남습니다</value>
+    <value>예: {{guestname}} - 백업 메모로 남습니다</value>
     <comment>Views/Datacenter/BackupJobEditor</comment>
   </data>
   <data name="DcBackup_NotesTemplate" xml:space="preserve">
@@ -9725,7 +9895,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/BackupJobEditor</comment>
   </data>
   <data name="DcPools_EditTitle" xml:space="preserve">
-    <value>풀 수정 — {0}</value>
+    <value>풀 수정 - {0}</value>
     <comment>Views/Datacenter</comment>
   </data>
   <data name="DcPools_Updated" xml:space="preserve">
@@ -9745,7 +9915,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/TfaRegistration</comment>
   </data>
   <data name="DcTfa_YubicoHint" xml:space="preserve">
-    <value>입력 칸을 누른 뒤 YubiKey 를 터치하세요 — 영역에 Yubico 설정이 있어야 합니다</value>
+    <value>입력 칸을 누른 뒤 YubiKey 를 터치하세요 - 영역에 Yubico 설정이 있어야 합니다</value>
     <comment>Views/Datacenter/TfaRegistration</comment>
   </data>
   <data name="DcTfa_YubicoInvalid" xml:space="preserve">
@@ -9789,7 +9959,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter</comment>
   </data>
   <data name="DcSdn_StatusHint" xml:space="preserve">
-    <value>노드마다 SDN 영역이 적용된 상태 — 설정을 바꾼 뒤 '적용'해야 반영됩니다</value>
+    <value>노드마다 SDN 영역이 적용된 상태 - 설정을 바꾼 뒤 '적용'해야 반영됩니다</value>
     <comment>Views/Datacenter</comment>
   </data>
   <data name="DcBackup_Simulate" xml:space="preserve">
@@ -9797,7 +9967,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter</comment>
   </data>
   <data name="DcBackup_SimulateTitle" xml:space="preserve">
-    <value>다음 실행 시각 — {0}</value>
+    <value>다음 실행 시각 - {0}</value>
     <comment>Views/Datacenter</comment>
   </data>
   <data name="DcBackup_SimulateHint" xml:space="preserve">
@@ -9825,7 +9995,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
   </data>
   <data name="DcRealmJob_EditTitle" xml:space="preserve">
-    <value>동기화 작업 편집 — {0} ({1})</value>
+    <value>동기화 작업 편집 - {0} ({1})</value>
     <comment>Views/Datacenter/RealmSyncJobs.cs</comment>
   </data>
   <data name="DcRealmJob_Added" xml:space="preserve">
@@ -9933,7 +10103,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_AreaHint" xml:space="preserve">
-    <value>OSPF 영역 — 숫자(예: 0) 또는 IPv4 형식(예: 0.0.0.0)</value>
+    <value>OSPF 영역 - 숫자(예: 0) 또는 IPv4 형식(예: 0.0.0.0)</value>
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_PrefixHint" xml:space="preserve">
@@ -9969,11 +10139,11 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_AddTypeTitle" xml:space="preserve">
-    <value>패브릭 추가 — {0} ({1})</value>
+    <value>패브릭 추가 - {0} ({1})</value>
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_EditTitle" xml:space="preserve">
-    <value>패브릭 편집 — {0}</value>
+    <value>패브릭 편집 - {0}</value>
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_Added" xml:space="preserve">
@@ -10001,7 +10171,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_NodesTitle" xml:space="preserve">
-    <value>패브릭 노드 — {0}</value>
+    <value>패브릭 노드 - {0}</value>
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_NodesHint" xml:space="preserve">
@@ -10025,11 +10195,11 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_InterfacesHint" xml:space="preserve">
-    <value>한 줄에 하나: name=ens19[,ip=10.0.0.1/31][,ip6=…][,hello_multiplier=10] — 이름만 적어도 됩니다.</value>
+    <value>한 줄에 하나: name=ens19[,ip=10.0.0.1/31][,ip6=…][,hello_multiplier=10] - 이름만 적어도 됩니다.</value>
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_InterfacesHintOspf" xml:space="preserve">
-    <value>한 줄에 하나: name=ens19[,ip=10.0.0.1/31] — 이름만 적어도 됩니다.</value>
+    <value>한 줄에 하나: name=ens19[,ip=10.0.0.1/31] - 이름만 적어도 됩니다.</value>
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_NeedNodeIp" xml:space="preserve">
@@ -10045,7 +10215,7 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_NodeEditTitle" xml:space="preserve">
-    <value>패브릭 노드 편집 — {0}</value>
+    <value>패브릭 노드 편집 - {0}</value>
     <comment>Views/Datacenter/SdnFabrics.cs</comment>
   </data>
   <data name="DcFabric_NodeAdded" xml:space="preserve">
@@ -10075,5 +10245,144 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   <data name="DcMapping_LiveMigrationHint" xml:space="preserve">
     <value>PVE 8.3 이상에서만 적용됩니다.</value>
     <comment>Views/Datacenter/ClusterTabs.cs</comment>
+  </data>
+  <data name="Sftp_Connect" xml:space="preserve"><value>SFTP 연결</value></data>
+  <data name="Sftp_Host" xml:space="preserve"><value>호스트</value></data>
+  <data name="Sftp_Port" xml:space="preserve"><value>포트</value></data>
+  <data name="Sftp_User" xml:space="preserve"><value>사용자명</value></data>
+  <data name="Sftp_Password" xml:space="preserve"><value>비밀번호</value></data>
+  <data name="Sftp_PasswordHint" xml:space="preserve"><value>저장된 비밀번호를 사용하려면 비워 두세요.</value></data>
+  <data name="Sftp_Remember" xml:space="preserve"><value>비밀번호 기억 (Windows 자격 증명 관리자)</value></data>
+  <data name="Sftp_BadPort" xml:space="preserve"><value>포트는 1~65535 사이의 숫자여야 합니다.</value></data>
+  <data name="Sftp_PasswordLong" xml:space="preserve"><value>비밀번호가 Windows 자격 증명 저장 한도를 초과합니다.</value></data>
+  <data name="Sftp_AuthFailed" xml:space="preserve"><value>SFTP 인증 실패 — 비밀번호를 다시 입력하세요.</value></data>
+  <data name="Sftp_HostKey" xml:space="preserve"><value>SFTP 서버 키 확인</value></data>
+  <data name="Sftp_TrustKey" xml:space="preserve"><value>{0} 서버의 SSH 키를 신뢰하시겠습니까?
+
+SHA256:{1}
+
+서버의 키 지문과 비교한 뒤 확인하세요.</value></data>
+  <data name="Sftp_KeyChanged" xml:space="preserve"><value>{0} 서버의 SSH 키가 변경되었습니다.
+
+기존: SHA256:{2}
+새 키: SHA256:{1}
+
+서버 관리자가 변경한 키인지 확인한 경우에만 신뢰하세요. 새 키를 신뢰하시겠습니까?</value></data>
+  <data name="Sftp_Agent" xml:space="preserve"><value>게스트 에이전트</value></data>
+  <data name="Sftp_Settings" xml:space="preserve"><value>SFTP 연결 설정…</value></data>
+  <data name="Sftp_Container" xml:space="preserve"><value>노드 셸</value></data>
+  <data name="Sftp_ForgetPassword" xml:space="preserve"><value>저장된 SFTP 비밀번호 삭제</value></data>
+  <data name="Sftp_Connections" xml:space="preserve"><value>접속 프로필</value></data>
+  <data name="Sftp_Accounts" xml:space="preserve"><value>계정 관리</value></data>
+  <data name="Sftp_Account" xml:space="preserve"><value>계정 프로필</value></data>
+  <data name="Sftp_ProfileName" xml:space="preserve"><value>프로필 이름</value></data>
+  <data name="Sftp_Add" xml:space="preserve"><value>추가</value></data>
+  <data name="Sftp_Delete" xml:space="preserve"><value>삭제</value></data>
+  <data name="Sftp_ManageAccounts" xml:space="preserve"><value>계정 관리…</value></data>
+  <data name="Sftp_SaveProfile" xml:space="preserve"><value>저장</value></data>
+  <data name="Sftp_Close" xml:space="preserve"><value>닫기</value></data>
+  <data name="Sftp_UseForGuest" xml:space="preserve"><value>이 게스트에 연결</value></data>
+  <data name="Sftp_AccountPasswordHint" xml:space="preserve"><value>비워 두면 저장된 비밀번호를 유지합니다. 계정을 수정하면 이 계정을 사용하는 모든 접속 프로필에 적용됩니다.</value></data>
+  <data name="Sftp_HasSavedPassword" xml:space="preserve"><value>저장된 비밀번호 있음</value></data>
+  <data name="Sftp_NoSavedPassword" xml:space="preserve"><value>저장된 비밀번호 없음</value></data>
+  <data name="Sftp_SelectAccount" xml:space="preserve"><value>접속 프로필에서 사용할 계정을 선택하세요.</value></data>
+  <data name="Sftp_AccountInUse" xml:space="preserve"><value>이 계정을 사용하는 접속 프로필이 있습니다. 먼저 해당 프로필의 계정을 변경하거나 프로필을 삭제하세요.</value></data>
+  <data name="Sftp_RequiredFields" xml:space="preserve"><value>프로필 이름과 필수 연결 정보를 입력하세요.</value></data>
+  <data name="Sftp_Saved" xml:space="preserve"><value>저장했습니다.</value></data>
+  <data name="Sftp_PasswordFor" xml:space="preserve"><value>{0} 계정으로 {1} 연결</value></data>
+  <data name="Sftp_AccountChanged" xml:space="preserve"><value>연결 중 계정 정보가 변경되었습니다. 다시 연결하세요.</value></data>
+  <data name="Sftp_FilesButton" xml:space="preserve"><value>파일 (SFTP)</value></data>
+  <data name="Sftp_AgentFilesButton" xml:space="preserve"><value>파일 (게스트 에이전트)</value></data>
+  <data name="Sftp_NodeFilesButton" xml:space="preserve"><value>파일 (노드 셸)</value></data>
+  <data name="Settings_General" xml:space="preserve"><value>일반</value></data>
+  <data name="Settings_Sftp" xml:space="preserve"><value>SFTP · 계정</value></data>
+  <data name="GuestFiles_BreadcrumbHint" xml:space="preserve"><value>폴더를 눌러 이동합니다. 빈 영역을 누르거나 Alt+D를 누르면 경로를 입력할 수 있습니다.</value></data>
+  <data name="GuestFiles_Subfolders" xml:space="preserve"><value>하위 폴더</value></data>
+  <data name="GuestFiles_NoSubfolders" xml:space="preserve"><value>하위 폴더 없음</value></data>
+  <data name="Sftp_Authentication" xml:space="preserve"><value>인증 방식</value></data>
+  <data name="Sftp_AuthPassword" xml:space="preserve"><value>비밀번호</value></data>
+  <data name="Sftp_AuthPrivateKey" xml:space="preserve"><value>개인 키 파일</value></data>
+  <data name="Sftp_AuthDefaultKeys" xml:space="preserve"><value>이 PC의 기본 .ssh 키</value></data>
+  <data name="Sftp_AuthCertificate" xml:space="preserve"><value>OpenSSH 사용자 인증서</value></data>
+  <data name="Sftp_PrivateKeyPath" xml:space="preserve"><value>개인 키 파일</value></data>
+  <data name="Sftp_CertificatePath" xml:space="preserve"><value>OpenSSH 인증서 파일</value></data>
+  <data name="Sftp_Browse" xml:space="preserve"><value>찾아보기…</value></data>
+  <data name="Sftp_DefaultKeysHint" xml:space="preserve"><value>%USERPROFILE%\.ssh의 id_ed25519, id_ecdsa, id_rsa를 찾아 연결에 사용합니다.</value></data>
+  <data name="Sftp_CertificateHint" xml:space="preserve"><value>서버가 신뢰하는 CA에서 발급한 OpenSSH 사용자 인증서와 해당 개인 키를 선택하세요.</value></data>
+  <data name="Sftp_Passphrase" xml:space="preserve"><value>개인 키 암호 (있는 경우)</value></data>
+  <data name="Sftp_RememberPassphrase" xml:space="preserve"><value>개인 키 암호 기억 (Windows 자격 증명 관리자)</value></data>
+  <data name="Sftp_PassphraseHint" xml:space="preserve"><value>암호 없는 키는 비워 두세요. 기존 계정에서 비워 두면 저장된 키 암호를 유지합니다. 계정 수정은 이 계정을 사용하는 모든 접속 프로필에 적용됩니다.</value></data>
+  <data name="Sftp_HasSavedPassphrase" xml:space="preserve"><value>저장된 개인 키 암호 있음</value></data>
+  <data name="Sftp_NoSavedPassphrase" xml:space="preserve"><value>저장된 개인 키 암호 없음</value></data>
+  <data name="Sftp_ForgetPassphrase" xml:space="preserve"><value>저장된 개인 키 암호 삭제</value></data>
+  <data name="Sftp_KeyFileMissing" xml:space="preserve"><value>개인 키 파일을 찾을 수 없습니다. 파일 경로를 확인하세요.</value></data>
+  <data name="Sftp_CertificateFileMissing" xml:space="preserve"><value>OpenSSH 인증서 파일을 찾을 수 없습니다. 파일 경로를 확인하세요.</value></data>
+  <data name="Sftp_KeyPrompt" xml:space="preserve"><value>SFTP 개인 키 암호</value></data>
+  <data name="Sftp_PassphraseFor" xml:space="preserve"><value>{0} 계정의 개인 키 암호 — {1}</value></data>
+  <data name="Sftp_KeyAuthFailed" xml:space="preserve"><value>SFTP 키 인증에 실패했습니다. 키 암호와 서버의 키 등록 또는 인증서 설정을 확인하세요.</value></data>
+  <data name="Sftp_PassphraseLong" xml:space="preserve"><value>개인 키 암호가 Windows 자격 증명 저장 한도를 초과합니다.</value></data>
+  <data name="Sftp_KeyFilter" xml:space="preserve"><value>개인 키 파일|id_*;*.pem;*.key|모든 파일|*.*</value></data>
+  <data name="Sftp_CertificateFilter" xml:space="preserve"><value>OpenSSH 인증서|*-cert.pub;*.pub|모든 파일|*.*</value></data>
+  <data name="Sftp_KeyPathRequired" xml:space="preserve"><value>개인 키 파일을 선택하세요.</value></data>
+  <data name="Sftp_CertificatePathRequired" xml:space="preserve"><value>OpenSSH 사용자 인증서 파일을 선택하세요.</value></data>
+  <data name="Sftp_DefaultKeysMissing" xml:space="preserve"><value>{0}에서 기본 개인 키를 찾을 수 없습니다. id_ed25519, id_ecdsa, id_rsa 중 하나를 추가하거나 개인 키 파일을 직접 선택하세요.</value></data>
+  <data name="Sftp_KeyLoadFailed" xml:space="preserve"><value>개인 키 파일 {0}을 읽을 수 없습니다: {1}</value></data>
+  <data name="Sftp_PassphraseRequired" xml:space="preserve"><value>개인 키 파일 {0}의 암호를 입력하세요.</value></data>
+  <data name="Sftp_PassphraseInvalid" xml:space="preserve"><value>개인 키 파일 {0}의 암호가 올바르지 않거나 파일을 읽을 수 없습니다.</value></data>
+  <data name="Sftp_CertificateInvalid" xml:space="preserve"><value>OpenSSH 사용자 인증서를 읽을 수 없습니다: {0}</value></data>
+  <data name="Sftp_KeySetup" xml:space="preserve"><value>키 생성·서버 등록 안내…</value></data>
+  <data name="SshSetup_Title" xml:space="preserve"><value>SSH 키 생성 및 서버 등록</value></data>
+  <data name="SshSetup_RegistrationTab" xml:space="preserve"><value>공개 키 · 서버 등록</value></data>
+  <data name="SshSetup_GenerationTab" xml:space="preserve"><value>새 키 생성</value></data>
+  <data name="SshSetup_PrivateKey" xml:space="preserve"><value>등록할 공개 키의 개인 키 파일</value></data>
+  <data name="SshSetup_ExistingKeyHint" xml:space="preserve"><value>개인 키를 선택한 뒤 공개 키를 불러오세요. .pub 파일이 없어도 개인 키에서 공개 키를 추출할 수 있습니다.</value></data>
+  <data name="SshSetup_ReadPublicKey" xml:space="preserve"><value>공개 키 불러오기 · 추출</value></data>
+  <data name="SshSetup_PublicKey" xml:space="preserve"><value>사용자 공개 키 (.pub)</value></data>
+  <data name="SshSetup_CopyPublicKey" xml:space="preserve"><value>공개 키 복사</value></data>
+  <data name="SshSetup_SavePublicKey" xml:space="preserve"><value>공개 키 파일 저장…</value></data>
+  <data name="SshSetup_RegistrationDescription" xml:space="preserve"><value>Linux 서버에 {0} 사용자로 로그인한 콘솔에서 아래 명령을 실행하세요. ~/.ssh와 authorized_keys가 없으면 만들고, 기존 키를 유지하면서 이 공개 키를 등록합니다. 같은 키는 중복으로 추가하지 않습니다.</value></data>
+  <data name="SshSetup_TargetUser" xml:space="preserve"><value>SFTP 대상</value></data>
+  <data name="SshSetup_CopyCommand" xml:space="preserve"><value>authorized_keys 등록 명령 복사</value></data>
+  <data name="SshSetup_PasteCommandHint" xml:space="preserve"><value>복사 버튼은 위 명령과 같은 작업을 하는 한 줄 명령을 복사합니다. 서버 콘솔에 붙여넣고 Enter를 누르세요. added는 새 등록, already는 이미 등록된 키이며, 뒤에 실제 authorized_keys 경로가 표시됩니다.</value></data>
+  <data name="SshSetup_RegistrationNote" xml:space="preserve"><value>파일 이름은 authorized_keys입니다. 대상 사용자 홈에 등록해야 하므로 sudo로 다른 사용자의 홈에 실행하지 마세요. 권한은 .ssh 700, authorized_keys 600으로 설정합니다. 개인 키는 이 PC에 보관하고 서버에는 공개 키만 등록합니다. 이 명령은 Linux · Unix용이며, 서버의 AuthorizedKeysFile 설정이 다르면 해당 경로를 사용해야 합니다.</value></data>
+  <data name="SshSetup_CertificateRegistration" xml:space="preserve"><value>인증서 모드에서는 {0} 사용자의 공개 키를 CA에 전달하여 OpenSSH 사용자 인증서를 발급받으세요. 발급된 인증서와 같은 개인 키를 계정 프로필에 지정합니다.</value></data>
+  <data name="SshSetup_CertificateNote" xml:space="preserve"><value>서버는 발급 CA를 신뢰해야 합니다. 관리자가 sshd_config의 TrustedUserCAKeys에 CA 공개 키 파일을 지정하거나 대상 사용자의 authorized_keys에 cert-authority 옵션을 붙인 CA 공개 키를 등록할 수 있습니다. 인증서의 사용자 principal도 허용되어야 합니다. 일반 사용자 공개 키를 등록하는 것만으로 인증서 인증이 설정되지는 않습니다. 새 키 생성 후에는 그 공개 키에 대한 인증서를 별도로 발급받아야 합니다.</value></data>
+  <data name="SshSetup_OpenDocs" xml:space="preserve"><value>OpenSSH 등록 안내 열기</value></data>
+  <data name="SshSetup_GenerationHint" xml:space="preserve"><value>키가 없으면 이 PC에 개인 키와 .pub 공개 키 파일을 생성하세요. 기존 파일은 덮어쓰지 않습니다. 생성한 키 경로는 계정 편집기에 반영되며 계정 저장 버튼으로 적용합니다.</value></data>
+  <data name="SshSetup_KeyType" xml:space="preserve"><value>키 종류</value></data>
+  <data name="SshSetup_Rsa3072" xml:space="preserve"><value>RSA 3072 (키 암호 선택 가능)</value></data>
+  <data name="SshSetup_Ed25519" xml:space="preserve"><value>Ed25519 (암호 없는 키)</value></data>
+  <data name="SshSetup_Ed25519Hint" xml:space="preserve"><value>Ed25519 생성은 암호 없는 OpenSSH 키를 만듭니다. 키 암호로 파일을 보호하려면 RSA 3072를 선택하세요. 기존의 암호화된 Ed25519 키는 SFTP 인증에 사용할 수 있습니다.</value></data>
+  <data name="SshSetup_NewPath" xml:space="preserve"><value>새 개인 키 저장 위치</value></data>
+  <data name="SshSetup_NewPassphrase" xml:space="preserve"><value>새 개인 키 암호 (선택)</value></data>
+  <data name="SshSetup_ConfirmPassphrase" xml:space="preserve"><value>개인 키 암호 확인</value></data>
+  <data name="SshSetup_PassphraseHint" xml:space="preserve"><value>입력한 암호로 개인 키 파일을 암호화합니다. 비워 두면 암호 없는 키를 만듭니다. 키 암호 기억 여부는 계정 편집기의 Windows 자격 증명 저장 옵션에서 선택하세요.</value></data>
+  <data name="SshSetup_Comment" xml:space="preserve"><value>공개 키 설명</value></data>
+  <data name="SshSetup_Generate" xml:space="preserve"><value>개인 키와 공개 키 생성</value></data>
+  <data name="SshSetup_Working" xml:space="preserve"><value>처리 중…</value></data>
+  <data name="SshSetup_PublicKeyReady" xml:space="preserve"><value>공개 키를 추출했습니다. 대상 서버에 등록하세요.</value></data>
+  <data name="SshSetup_UnlockKey" xml:space="preserve"><value>공개 키 추출을 위한 개인 키 암호</value></data>
+  <data name="SshSetup_PublicKeyFilter" xml:space="preserve"><value>OpenSSH 공개 키|*.pub|모든 파일|*.*</value></data>
+  <data name="SshSetup_PublicKeySaved" xml:space="preserve"><value>공개 키를 저장했습니다: {0}</value></data>
+  <data name="SshSetup_PassphraseMismatch" xml:space="preserve"><value>입력한 두 개인 키 암호가 일치하지 않습니다.</value></data>
+  <data name="SshSetup_Generated" xml:space="preserve"><value>새 키를 생성했습니다: {0} · 서버 등록 후 계정 편집기에서 저장하세요.</value></data>
+  <data name="Sftp_PublicKeyInvalid" xml:space="preserve"><value>올바른 OpenSSH 사용자 공개 키 한 줄을 사용하세요.</value></data>
+  <data name="Sftp_RegistrationCommandLong" xml:space="preserve"><value>이 키의 등록 명령은 콘솔 붙여넣기에 너무 깁니다. 공개 키 파일을 저장하여 대상 사용자의 authorized_keys에 등록하세요.</value></data>
+  <data name="SshSetup_CertificatePublicKeyReady" xml:space="preserve"><value>공개 키를 추출했습니다. 이 공개 키를 CA에 전달하여 사용자 인증서를 발급받으세요.</value></data>
+  <data name="SshSetup_NewCertificateRequired" xml:space="preserve"><value>새 키에 대한 OpenSSH 사용자 인증서를 발급받아 인증서 파일을 다시 지정하세요.</value></data>
+  <data name="GuestFiles_MoreFolders" xml:space="preserve">
+    <value>상위 폴더 더 보기</value>
+  </data>
+  <data name="ConsoleSettings_DirectRender" xml:space="preserve">
+    <value>화면 그리기</value>
+  </data>
+  <data name="ConsoleSettings_DirectRenderOn" xml:space="preserve">
+    <value>GPU로 바로 그리기 (화면 지연 감소)</value>
+  </data>
+  <data name="ConsoleSettings_DirectRenderHint" xml:space="preserve">
+    <value>WPF를 거치지 않고 Direct3D로 그려 화면이 더 빨리 바뀝니다. 화면이 깜빡이거나 이상하면 끄세요. VNC·RDP 공통.</value>
+  </data>
+  <data name="Console_DirectFailed" xml:space="preserve">
+    <value>GPU로 바로 그리기를 시작하지 못해 기본 방식으로 그립니다.</value>
   </data>
 </root>

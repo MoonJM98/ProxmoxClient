@@ -71,6 +71,13 @@ public partial class ConsoleSettingsWindow : Window
             ? encoding
             : ConsoleSettings.VncEncoding.Tight;
 
+    /// <summary>GPU 그리기는 VNC·RDP 가 같은 설정 — 두 탭의 체크를 함께 바꾼다.</summary>
+    private void OnDirectRenderClick(object sender, RoutedEventArgs e)
+    {
+        var on = ((CheckBox)sender).IsChecked == true;
+        DirectRenderCheck.IsChecked = RdpDirectRenderCheck.IsChecked = on;
+    }
+
     private void Apply(ConsoleSettings settings)
     {
         ComboChoices.Select(EncodingBox, settings.Encoding.ToString());
@@ -78,6 +85,7 @@ public partial class ConsoleSettingsWindow : Window
         CompressionSlider.Value = settings.CompressionLevel;
         ExtendedKeysCheck.IsChecked = settings.UseQemuExtendedKeys;
         SmoothScalingCheck.IsChecked = settings.SmoothScaling;
+        DirectRenderCheck.IsChecked = RdpDirectRenderCheck.IsChecked = settings.DirectRendering;
         ClipboardSyncCheck.IsChecked = settings.AutoClipboardSync;
         ComboChoices.Select(CursorBox, settings.LocalCursor.ToString());
         RdpDynamicCheck.IsChecked = settings.RdpDynamicResolution;
@@ -142,6 +150,7 @@ public partial class ConsoleSettingsWindow : Window
             CompressionLevel = (int)Math.Round(CompressionSlider.Value),
             UseQemuExtendedKeys = ExtendedKeysCheck.IsChecked == true,
             SmoothScaling = SmoothScalingCheck.IsChecked == true,
+            DirectRendering = DirectRenderCheck.IsChecked == true,
             AutoClipboardSync = ClipboardSyncCheck.IsChecked == true,
             LocalCursor = SelectedCursor(CursorBox, ConsoleSettings.LocalCursorMode.Both),
             RdpDynamicResolution = RdpDynamicCheck.IsChecked == true,
@@ -156,7 +165,14 @@ public partial class ConsoleSettingsWindow : Window
         BtnSave.IsEnabled = false;
         try
         {
-            await _store.SaveAsync(settings);
+            settings = await _store.UpdateAsync(current => settings with
+            {
+                ShowHiddenGuestFiles = current.ShowHiddenGuestFiles,
+                GuestFileConnections = current.GuestFileConnections,
+                SftpAccounts = current.SftpAccounts,
+                SftpConnections = current.SftpConnections,
+                SftpHostKeys = current.SftpHostKeys
+            });
             SavedSettings = settings;
             DialogResult = true;
         }

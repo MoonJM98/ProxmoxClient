@@ -1,0 +1,206 @@
+<UserControl x:Class="ProxmoxClient.App.Views.Shared.GuestFilesPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
+             xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+             AllowDrop="True" DragEnter="OnDragOver" DragOver="OnDragOver" Drop="OnDrop" PreviewKeyDown="OnAddressShortcut">
+    <UserControl.Resources>
+        <Style x:Key="BreadcrumbButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource BrushText}" /><Setter Property="Padding" Value="7,0" />
+            <!-- 위에 붙이고 아래는 비운다(탐색기처럼 아래 빈 줄을 누르면 경로 편집) -->
+            <Setter Property="Height" Value="23" /><Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+                <Border x:Name="Surface" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="3">
+                    <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{StaticResource BrushHover}" /></Trigger>
+                    <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="Background" Value="{StaticResource BrushSelection}" /></Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate></Setter.Value></Setter>
+        </Style>
+        <Style x:Key="BreadcrumbMenu" TargetType="ContextMenu" BasedOn="{StaticResource {x:Type ContextMenu}}">
+            <Setter Property="MaxHeight" Value="360" />
+            <Setter Property="MaxWidth" Value="360" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="4">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                          CanContentScroll="False" Focusable="False">
+                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    <!-- 게스트 파일 패널(파일 창) — 폴더 탐색, 내려받기·올리기(끌어다 놓기), 새 폴더·이름 바꾸기·지우기 -->
+    <DockPanel Background="{StaticResource BrushBg}">
+        <Border DockPanel.Dock="Top" Padding="8,5" Background="{StaticResource BrushPanel}"
+                BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" x:Name="ActionButtons">
+                    <Button x:Name="BtnUpload" ic:IconAssist.Icon="{StaticResource IconUpload}"
+                            ToolTip="{loc:Tr GuestFiles_Upload}" Margin="6,0,0,0" Click="OnUpload" />
+                    <Button x:Name="BtnDownload" ic:IconAssist.Icon="{StaticResource IconDownload}"
+                            ToolTip="{loc:Tr GuestFiles_Download}" Margin="4,0,0,0" Click="OnDownload" />
+                    <Border Width="1" Background="{StaticResource BrushBorder}" Margin="8,4" />
+                    <Button x:Name="BtnNewFolder" ic:IconAssist.Icon="{StaticResource IconFolderPlus}"
+                            ToolTip="{loc:Tr GuestFiles_NewFolder}" Click="OnNewFolder" />
+                    <Button x:Name="BtnRename" ic:IconAssist.Icon="{StaticResource IconPencil}"
+                            ToolTip="{loc:Tr GuestFiles_Rename}" Margin="4,0,0,0" Click="OnRename" />
+                    <Button x:Name="BtnDelete" ic:IconAssist.Icon="{StaticResource IconTrash}"
+                            ic:IconAssist.Brush="{StaticResource BrushErr}"
+                            ToolTip="{loc:Tr GuestFiles_Delete}" Margin="4,0,0,0" Click="OnDelete" />
+                </StackPanel>
+                <Button x:Name="BtnUp" DockPanel.Dock="Left" ic:IconAssist.Icon="{StaticResource IconArrowUp}"
+                        ToolTip="{loc:Tr GuestFiles_Up}" Click="OnUp" />
+                <Button x:Name="BtnRefresh" DockPanel.Dock="Left" ic:IconAssist.Icon="{StaticResource IconRefresh}"
+                        ToolTip="{loc:Tr GuestFiles_Refresh}" Margin="4,0,0,0" Click="OnRefresh" />
+                <!-- 숨김·시스템 항목 보이기(흐리게) — 설정에 기억 -->
+                <ToggleButton x:Name="BtnHidden" DockPanel.Dock="Left" Style="{StaticResource KeyToggle}"
+                              IsChecked="True" MinWidth="0" Margin="4,0,6,0" Padding="8,5" Click="OnToggleHidden"
+                              ToolTip="{loc:Tr GuestFiles_ShowHidden}">
+                    <Path Data="{StaticResource IconEye}" Width="15" Height="15" Stretch="Uniform"
+                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
+                          StrokeThickness="1.8" StrokeLineJoin="Round" />
+                </ToggleButton>
+                <Border x:Name="AddressBar" Background="{StaticResource BrushBg}" BorderBrush="{StaticResource BrushBorder}"
+                        BorderThickness="1" CornerRadius="4" MinHeight="30" VerticalAlignment="Center"
+                        PreviewMouseLeftButtonDown="OnAddressClick" ToolTip="{loc:Tr GuestFiles_BreadcrumbHint}">
+                    <Grid Background="Transparent">
+                        <ic:BreadcrumbPanel x:Name="Breadcrumbs" VerticalAlignment="Top" Margin="2,1,2,0" />
+                        <TextBox x:Name="PathBox" Visibility="Collapsed" KeyDown="OnPathKeyDown" LostKeyboardFocus="OnPathLostFocus"
+                                 BorderThickness="0" Background="{StaticResource BrushBg}" ToolTip="{loc:Tr GuestFiles_PathHint}" />
+                    </Grid>
+                </Border>
+            </DockPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Padding="8,4" Background="{StaticResource BrushPanel}"
+                BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,1,0,0">
+            <DockPanel>
+                <Button x:Name="BtnCancel" DockPanel.Dock="Right" Style="{StaticResource RoundCloseButton}"
+                        ToolTip="{loc:Tr AppSettingsWindow_13}" Visibility="Collapsed" Margin="8,0,0,0"
+                        VerticalAlignment="Center" Click="OnCancel" />
+                <ProgressBar x:Name="Progress" DockPanel.Dock="Right" Width="160" Height="6" Maximum="1"
+                             VerticalAlignment="Center" Visibility="Collapsed" />
+                <TextBlock x:Name="StatusText" Foreground="{StaticResource BrushDim}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" Text="{loc:Tr GuestFiles_DropHint}" />
+            </DockPanel>
+        </Border>
+
+        <Grid>
+            <DataGrid x:Name="FileGrid" SelectionMode="Extended" BorderThickness="0" RowHeight="26"
+                      IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
+                      MouseDoubleClick="OnRowDoubleClick" PreviewKeyDown="OnGridKeyDown" CanUserSortColumns="True"
+                      PreviewMouseLeftButtonDown="OnGridPreviewMouseDown" PreviewMouseMove="OnGridPreviewMouseMove"
+                      PreviewMouseRightButtonDown="OnGridPreviewRightDown" ContextMenuOpening="OnGridMenuOpening">
+                <!-- 숨김·시스템 항목은 흐리게 -->
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                        <Setter Property="Opacity" Value="{Binding RowOpacity}" />
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem x:Name="MenuOpen" Header="{loc:Tr GuestFiles_Open}" InputGestureText="Enter"
+                                  Click="OnMenuOpen" />
+                        <MenuItem x:Name="MenuDownload" Header="{loc:Tr GuestFiles_Download}"
+                                  ic:IconAssist.Icon="{StaticResource IconDownload}" Click="OnDownload" />
+                        <MenuItem x:Name="MenuCopyPath" Header="{loc:Tr GuestFiles_CopyPath}"
+                                  ic:IconAssist.Icon="{StaticResource IconCopy}" InputGestureText="Ctrl+Shift+C"
+                                  Click="OnCopyPath" />
+                        <Separator />
+                        <MenuItem x:Name="MenuRename" Header="{loc:Tr GuestFiles_Rename}"
+                                  ic:IconAssist.Icon="{StaticResource IconPencil}" InputGestureText="F2"
+                                  Click="OnRename" />
+                        <MenuItem x:Name="MenuDelete" Header="{loc:Tr GuestFiles_Delete}"
+                                  ic:IconAssist.Icon="{StaticResource IconTrash}" InputGestureText="Del"
+                                  Click="OnDelete" />
+                        <Separator />
+                        <MenuItem x:Name="MenuUpload" Header="{loc:Tr GuestFiles_Upload}"
+                                  ic:IconAssist.Icon="{StaticResource IconUpload}" Click="OnUpload" />
+                        <MenuItem x:Name="MenuNewFolder" Header="{loc:Tr GuestFiles_NewFolder}"
+                                  ic:IconAssist.Icon="{StaticResource IconFolderPlus}" Click="OnNewFolder" />
+                        <MenuItem x:Name="MenuRefresh" Header="{loc:Tr GuestFiles_Refresh}"
+                                  ic:IconAssist.Icon="{StaticResource IconRefresh}" InputGestureText="F5"
+                                  Click="OnRefresh" />
+                        <Separator />
+                        <MenuItem x:Name="MenuHidden" Header="{loc:Tr GuestFiles_ShowHidden}"
+                                  ic:IconAssist.Icon="{StaticResource IconCheck}"
+                                  Click="OnToggleHidden" />
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="{loc:Tr GuestFiles_Name}" Width="*" MinWidth="200"
+                                            SortMemberPath="SortName">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0">
+                                    <Grid Width="14" Height="14" Margin="0,0,8,0">
+                                        <Path Data="{Binding Icon}" Stretch="Uniform"
+                                              Stroke="{Binding IconBrush}" StrokeThickness="1.6"
+                                              StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                        <!-- 폴더 링크 표시(왼쪽 아래 작은 배지) -->
+                                        <Border Visibility="{Binding LinkBadge}" Width="9" Height="9" CornerRadius="2"
+                                                HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-3,0,0,-3"
+                                                Background="{StaticResource BrushBg}">
+                                            <Path Data="{StaticResource IconLink}" Stretch="Uniform" Margin="1"
+                                                  Stroke="{StaticResource BrushText}" StrokeThickness="1.3"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                        </Border>
+                                    </Grid>
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding NameTip}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="{loc:Tr GuestFiles_Size}" Binding="{Binding SizeText}" Width="100"
+                                        SortMemberPath="SortSize">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right" />
+                                <Setter Property="Margin" Value="0,0,10,0" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="{loc:Tr GuestFiles_Modified}" Binding="{Binding ModifiedText}"
+                                        Width="150" SortMemberPath="SortModified" />
+                    <DataGridTextColumn Header="{loc:Tr GuestFiles_Mode}" Binding="{Binding Entry.Mode}" Width="70" />
+                    <DataGridTextColumn Header="{loc:Tr GuestFiles_Owner}" Binding="{Binding OwnerText}" Width="140" />
+                </DataGrid.Columns>
+            </DataGrid>
+            <TextBlock x:Name="Placeholder" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       TextWrapping="Wrap" TextAlignment="Center" MaxWidth="520" Margin="20"
+                       Foreground="{StaticResource BrushDim}" Visibility="Collapsed" />
+            <!-- 에이전트가 명령 실행을 막았을 때 — 게스트 OS 에 맞는 해제 명령(복사) + 다시 연결 -->
+            <Border x:Name="Guidance" Visibility="Collapsed" MaxWidth="760" Margin="20" Padding="16"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="6" BorderThickness="1"
+                    Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder}">
+                <StackPanel>
+                    <TextBlock x:Name="GuidanceTitle" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
+                               Margin="0,0,0,8" />
+                    <TextBlock x:Name="GuidanceText" TextWrapping="Wrap" Foreground="{StaticResource BrushDim}"
+                               Margin="0,0,0,10" />
+                    <TextBox x:Name="GuidanceCommands" IsReadOnly="True" TextWrapping="NoWrap" Padding="8"
+                             FontFamily="Cascadia Mono, Consolas, Courier New"
+                             HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" />
+                    <TextBlock x:Name="GuidanceNote" TextWrapping="Wrap" Foreground="{StaticResource BrushDim}"
+                               Margin="0,8,0,0" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                        <Button Content="{loc:Tr GuestFiles_CopyCommands}" Click="OnCopyCommands"
+                                ic:IconAssist.Icon="{StaticResource IconCopy}" />
+                        <Button Content="{loc:Tr GuestFiles_Retry}" ic:IconAssist.Icon="{StaticResource IconRefresh}"
+                                Style="{StaticResource AccentButton}" Margin="8,0,0,0" Click="OnRetryConnect" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</UserControl>

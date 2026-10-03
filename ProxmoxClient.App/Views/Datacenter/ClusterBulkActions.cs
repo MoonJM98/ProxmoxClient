@@ -94,7 +94,7 @@ internal static class ClusterBulkActions
             .ToList();
         if (guests.Count == 0) return Loc.T("DcBulk_NoGuests");
 
-        var choices = guests.Select(g => (g.VmId.ToString(), $"{g.VmId}  {g.Name} — {g.Node}")).ToList();
+        var choices = guests.Select(g => (g.VmId.ToString(), $"{g.VmId}  {g.Name} - {g.Node}")).ToList();
         return await SubmitTaskAsync(api, owner, Loc.T(labelKey),
         [
             new FormField

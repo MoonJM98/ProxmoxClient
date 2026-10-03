@@ -131,7 +131,7 @@ internal static partial class PassthroughEditors
     {
         var id = NormalizeUsbId($"{ActionHelpers.Value(d, "vendid")}:{ActionHelpers.Value(d, "prodid")}");
         var name = $"{ActionHelpers.Value(d, "manufacturer")} {ActionHelpers.Value(d, "product")}".Trim();
-        return (id, name.Length > 0 ? $"{id} — {name}" : id);
+        return (id, name.Length > 0 ? $"{id} - {name}" : id);
     }
 
     private static string NormalizeUsbId(string value)

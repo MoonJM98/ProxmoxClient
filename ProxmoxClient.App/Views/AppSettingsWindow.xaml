@@ -3,9 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:ProxmoxClient.App.Localization"
         xmlns:ic="clr-namespace:ProxmoxClient.App.Controls"
+        xmlns:shared="clr-namespace:ProxmoxClient.App.Views.Shared"
         Style="{StaticResource ThemedWindow}"
         Title="{loc:Tr MainWindow_04}"
-        Width="600" SizeToContent="Height" MinWidth="540" MinHeight="300"
+        Width="1040" Height="660" MinWidth="920" MinHeight="600"
         WindowStartupLocation="CenterOwner" ResizeMode="CanResize" ShowInTaskbar="False">
     <Grid>
         <Grid.RowDefinitions>
@@ -13,7 +14,20 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="170" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+            <Border Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,1,0">
+                <ListBox x:Name="SettingsNavigation" Style="{StaticResource NavListBox}" ItemContainerStyle="{StaticResource NavListBoxItem}"
+                         SelectedIndex="0" SelectionChanged="OnSettingsTabChanged">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Orientation="Vertical" /></ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBoxItem Content="{loc:Tr Settings_General}" />
+                    <ListBoxItem Content="{loc:Tr MainWindow_09}" />
+                    <ListBoxItem Content="{loc:Tr Settings_Sftp}" />
+                </ListBox>
+            </Border>
+        <ScrollViewer x:Name="GeneralPanel" Grid.Column="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="20,16,20,10">
                 <TextBlock Text="{loc:Tr MainWindow_03}" Style="{StaticResource FormSection}" />
                 <ic:FormRow x:Name="RowInterval" Label="{loc:Tr AppSettingsWindow_01}">
@@ -31,13 +45,17 @@
                     <ComboBox x:Name="ByteUnitBox" Width="200" HorizontalAlignment="Left" />
                 </ic:FormRow>
 
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel x:Name="ConsolePanel" Grid.Column="1" Margin="20,16" Visibility="Collapsed">
                 <TextBlock Text="{loc:Tr MainWindow_09}" Style="{StaticResource FormSection}" />
                 <ic:FormRow Label="{loc:Tr AppSettingsWindow_09}" Hint="{loc:Tr AppSettingsWindow_10}">
                     <Button ic:IconAssist.Icon="{StaticResource IconSettings}" Content="{loc:Tr AppSettingsWindow_11}"
                             HorizontalAlignment="Left" Click="OnOpenConsoleSettings" />
                 </ic:FormRow>
-            </StackPanel>
-        </ScrollViewer>
+        </StackPanel>
+        <shared:SftpProfilesEditor x:Name="SftpPanel" Grid.Column="1" Visibility="Collapsed" />
+        </Grid>
 
         <Border Grid.Row="1" Style="{StaticResource DialogFooter}">
             <DockPanel>
@@ -45,7 +63,7 @@
                     <Button ic:IconAssist.Icon="{StaticResource IconSave}" x:Name="BtnSave"
                             Content="{loc:Tr AppSettingsWindow_12}"
                             Style="{StaticResource DialogPrimaryButton}" Click="OnSave" IsDefault="True" />
-                    <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr AppSettingsWindow_13}"
+                    <Button x:Name="BtnClose" ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr AppSettingsWindow_13}"
                             Style="{StaticResource DialogButton}" IsCancel="True" />
                 </StackPanel>
                 <TextBlock x:Name="StatusText" Style="{StaticResource DialogStatus}" />

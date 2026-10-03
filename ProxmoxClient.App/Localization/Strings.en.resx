@@ -559,7 +559,7 @@
     <value>Only changed items are sent to the server. Some settings (such as reducing cores or memory) apply only while the guest is stopped.</value>
   </data>
     <data name="LoginWindow_01" xml:space="preserve">
-    <value>Sign in — Proxmox Client</value>
+    <value>Sign in - Proxmox Client</value>
   </data>
     <data name="LoginWindow_02" xml:space="preserve">
     <value>Proxmox Client</value>
@@ -940,7 +940,7 @@ Detailed log: {1}</value>
     <value>Task finished: {0} {1}</value>
   </data>
     <data name="MainViewModel_M11" xml:space="preserve">
-    <value>Task failed: {0} {1} — {2}</value>
+    <value>Task failed: {0} {1} - {2}</value>
   </data>
     <data name="MainViewModel_M12" xml:space="preserve">
     <value>Could not track the task: {0}</value>
@@ -1012,7 +1012,7 @@ Detailed log: {1}</value>
     <value>Connecting to the VNC proxy...</value>
   </data>
     <data name="ConsoleWindow_M04" xml:space="preserve">
-    <value>Connected — {0}x{1} · {2} (click the console window to give it keyboard/mouse focus)</value>
+    <value>Connected - {0}x{1} · {2} (click the console window to give it keyboard/mouse focus)</value>
   </data>
     <data name="ConsoleWindow_M05" xml:space="preserve">
     <value>The connection was closed.</value>
@@ -1190,7 +1190,7 @@ The setup window downloads the Windows installer (about 80 MB) from the official
     <value>Connecting to the server...</value>
   </data>
     <data name="ProfileRegisterWindow_M04" xml:space="preserve">
-    <value>Server verified — click [Register] to add it to the list.</value>
+    <value>Server verified - click [Register] to add it to the list.</value>
   </data>
     <data name="ProfileRegisterWindow_M05" xml:space="preserve">
     <value>Could not verify the server: {0}
@@ -1234,7 +1234,7 @@ A running guest will be stopped by force.</value>
     <value>Delete the snapshot '{0}'?</value>
   </data>
     <data name="TerminalWindow_M01" xml:space="preserve">
-    <value>Connected — use the toolbar buttons to copy and paste (Ctrl+C is passed to the shell)</value>
+    <value>Connected - use the toolbar buttons to copy and paste (Ctrl+C is passed to the shell)</value>
   </data>
     <data name="TerminalWindow_M02" xml:space="preserve">
     <value>Select the text with the mouse first.</value>
@@ -1252,7 +1252,7 @@ A running guest will be stopped by force.</value>
     <value>Settings saved.</value>
   </data>
     <data name="VirtViewerSetupWindow_M01" xml:space="preserve">
-    <value>Not installed — VirtViewer is required for the SPICE console.</value>
+    <value>Not installed - VirtViewer is required for the SPICE console.</value>
   </data>
     <data name="VirtViewerSetupWindow_M02" xml:space="preserve">
     <value>Installed: {0}</value>
@@ -1341,7 +1341,7 @@ Try again, or install it yourself with [Open download page].</value>
     <value>Only public certificate authorities are accepted (self-signed certificates are refused).</value>
   </data>
     <data name="ProfileEditor_CertNoTrusted" xml:space="preserve">
-    <value>No trusted certificate — the fingerprint is confirmed on the first connection.</value>
+    <value>No trusted certificate - the fingerprint is confirmed on the first connection.</value>
   </data>
     <data name="ProfileEditor_CertThumbprint" xml:space="preserve">
     <value>Trusted fingerprint (SHA-256): {0}</value>
@@ -1389,7 +1389,7 @@ Try again, or install it yourself with [Open download page].</value>
     <value>The VNC console is for VMs only. Use the terminal window for CTs.</value>
   </data>
     <data name="ConsoleWindow_Header" xml:space="preserve">
-    <value>Console — {0}</value>
+    <value>Console - {0}</value>
   </data>
     <data name="ConsoleWindow_StartedConnecting" xml:space="preserve">
     <value>The guest started. Connecting the console...</value>
@@ -1461,7 +1461,7 @@ Try again, or install it yourself with [Open download page].</value>
     <value>Delete snapshot '{0}'</value>
   </data>
     <data name="TerminalWindow_Header" xml:space="preserve">
-    <value>Terminal — {0}</value>
+    <value>Terminal - {0}</value>
   </data>
     <data name="TerminalWindow_StartedConnecting" xml:space="preserve">
     <value>The guest started. Connecting the terminal...</value>
@@ -1503,7 +1503,7 @@ Try again, or install it yourself with [Open download page].</value>
     <value>{0} {1} ({2})</value>
   </data>
   <data name="GuestWindow_Header" xml:space="preserve">
-    <value>{0} {1} ({2}) — node {3}</value>
+    <value>{0} {1} ({2}) - node {3}</value>
   </data>
   <data name="ConsoleTab_Open" xml:space="preserve">
     <value>Open console</value>
@@ -2670,7 +2670,7 @@ Try again, or install it yourself with [Open download page].</value>
     <value>Shut down node</value>
   </data>
   <data name="NodePower_CommandTitle" xml:space="preserve">
-    <value>{0}: {1} — all guests on this node will stop</value>
+    <value>{0}: {1} - all guests on this node will stop</value>
   </data>
   <data name="NodePower_CommandSent" xml:space="preserve">
     <value>Request sent. The connection to the node may drop for a while.</value>
@@ -3431,7 +3431,7 @@ Paste the join information below into 'Join cluster' on the new node (same forma
     <value>Delete guest</value>
   </data>
   <data name="GuestLife_DeleteTitle" xml:space="preserve">
-    <value>Delete guest {0} ({1}) — all disks will be destroyed</value>
+    <value>Delete guest {0} ({1}) - all disks will be destroyed</value>
   </data>
   <data name="GuestLife_Purge" xml:space="preserve">
     <value>Also remove from backup jobs, replication and HA</value>
@@ -3764,7 +3764,7 @@ Paste the join information below into 'Join cluster' on the new node (same forma
     <value>Download</value>
   </data>
   <data name="TaskLog_Running" xml:space="preserve">
-    <value>Running — new log lines every second.</value>
+    <value>Running - new log lines every second.</value>
   </data>
   <data name="TaskLog_Finished" xml:space="preserve">
     <value>Finished: {0}</value>
@@ -3779,7 +3779,7 @@ Paste the join information below into 'Join cluster' on the new node (same forma
     <value>Searching on the server…</value>
   </data>
   <data name="FormDialog_NothingFound" xml:space="preserve">
-    <value>Nothing found — check the fields above or type a value.</value>
+    <value>Nothing found - check the fields above or type a value.</value>
   </data>
   <data name="FormDialog_ScanFailed" xml:space="preserve">
     <value>Search failed: {0}</value>
@@ -3797,7 +3797,7 @@ Paste the join information below into 'Join cluster' on the new node (same forma
     <value>Prune</value>
   </data>
   <data name="Prune_Title" xml:space="preserve">
-    <value>Prune backups — {0} ({1})</value>
+    <value>Prune backups - {0} ({1})</value>
   </data>
   <data name="Prune_NoGuest" xml:space="preserve">
     <value>This backup has no guest ID, so it can't be pruned.</value>
@@ -3870,7 +3870,7 @@ Continue?</value>
     <value>Edit notes</value>
   </data>
   <data name="SnapshotDialog_EditNoteTitle" xml:space="preserve">
-    <value>Snapshot notes — {0}</value>
+    <value>Snapshot notes - {0}</value>
   </data>
   <data name="SnapshotDialog_NoteSaved" xml:space="preserve">
     <value>Saved notes of snapshot '{0}'.</value>
@@ -3930,7 +3930,7 @@ Continue?</value>
     <value>Set guest password</value>
   </data>
   <data name="GuestAgent_SetPasswordTitle" xml:space="preserve">
-    <value>VM {0} — guest user password</value>
+    <value>VM {0} - guest user password</value>
   </data>
   <data name="GuestAgent_PasswordConfirm" xml:space="preserve">
     <value>Confirm password</value>
@@ -3984,7 +3984,7 @@ Continue?</value>
     <value>Relocate</value>
   </data>
   <data name="DcHa_MoveTitle" xml:space="preserve">
-    <value>HA {0} — {1}</value>
+    <value>HA {0} - {1}</value>
   </data>
   <data name="DcHa_MoveRequested" xml:space="preserve">
     <value>Requested from the HA manager: {0} (the move shows up shortly)</value>
@@ -4011,7 +4011,7 @@ Continue?</value>
     <value>Changed Ceph flags: {0}</value>
   </data>
   <data name="CephPool_EditTitle" xml:space="preserve">
-    <value>Edit pool — {0}</value>
+    <value>Edit pool - {0}</value>
   </data>
   <data name="CephPool_TargetRatio" xml:space="preserve">
     <value>Target ratio</value>
@@ -4053,7 +4053,7 @@ Continue?</value>
     <value>Change contact</value>
   </data>
   <data name="DcAcme_EditContactTitle" xml:space="preserve">
-    <value>ACME account contact — {0}</value>
+    <value>ACME account contact - {0}</value>
   </data>
   <data name="DcAcme_ContactUpdated" xml:space="preserve">
     <value>Account contact updated: {0}</value>
@@ -4218,7 +4218,7 @@ Continue?</value>
     <value>File restore</value>
   </data>
   <data name="FileRestore_Title" xml:space="preserve">
-    <value>File restore — {0}</value>
+    <value>File restore - {0}</value>
   </data>
   <data name="FileRestore_Hint" xml:space="preserve">
     <value>Double-click to open a folder. The first listing can take a while while the server starts a restore VM.</value>
@@ -4266,13 +4266,13 @@ Continue?</value>
     <value>Check code</value>
   </data>
   <data name="CephMute_CodeHint" xml:space="preserve">
-    <value>E.g. OSD_NEARFULL — the code from Ceph status</value>
+    <value>E.g. OSD_NEARFULL - the code from Ceph status</value>
   </data>
   <data name="CephMute_Ttl" xml:space="preserve">
     <value>Duration</value>
   </data>
   <data name="CephMute_TtlHint" xml:space="preserve">
-    <value>E.g. 1h, 30m — empty keeps it until unmuted</value>
+    <value>E.g. 1h, 30m - empty keeps it until unmuted</value>
   </data>
   <data name="CephMute_Sticky" xml:space="preserve">
     <value>Sticky</value>
@@ -4323,7 +4323,7 @@ Continue?</value>
     <value>Unsupported</value>
   </data>
   <data name="CephFs_DeleteTitle" xml:space="preserve">
-    <value>Delete CephFS — {0}</value>
+    <value>Delete CephFS - {0}</value>
   </data>
   <data name="CephFs_RemovePools" xml:space="preserve">
     <value>Also remove data and metadata pools</value>
@@ -4395,13 +4395,13 @@ Continue?</value>
     <value>Reported model</value>
   </data>
   <data name="CpuModel_BaseHint" xml:space="preserve">
-    <value>E.g. x86-64-v2-AES, host — empty means kvm64</value>
+    <value>E.g. x86-64-v2-AES, host - empty means kvm64</value>
   </data>
   <data name="CpuModel_Flags" xml:space="preserve">
     <value>CPU flags</value>
   </data>
   <data name="CpuModel_FlagsHint" xml:space="preserve">
-    <value>Semicolon separated, +on -off — e.g. +aes;-pcid</value>
+    <value>Semicolon separated, +on -off - e.g. +aes;-pcid</value>
   </data>
   <data name="CpuModel_Hidden" xml:space="preserve">
     <value>Hidden</value>
@@ -4428,7 +4428,7 @@ Continue?</value>
     <value>Add CPU model</value>
   </data>
   <data name="CpuModel_EditTitle" xml:space="preserve">
-    <value>Edit CPU model — {0}</value>
+    <value>Edit CPU model - {0}</value>
   </data>
   <data name="CpuModel_Added" xml:space="preserve">
     <value>CPU model added.</value>
@@ -4495,7 +4495,7 @@ Continue anyway?</value>
     <value>Public network</value>
   </data>
   <data name="CephInit_NetworkHint" xml:space="preserve">
-    <value>E.g. 10.10.10.0/24 — empty uses the node's default</value>
+    <value>E.g. 10.10.10.0/24 - empty uses the node's default</value>
   </data>
   <data name="CephInit_ClusterNetwork" xml:space="preserve">
     <value>Cluster network</value>
@@ -4600,13 +4600,13 @@ Continue anyway?</value>
     <value>Match</value>
   </data>
   <data name="SdnRoute_MatchHint" xml:space="preserve">
-    <value>One per line — e.g. key=ip-address-prefix-list,value=internal</value>
+    <value>One per line - e.g. key=ip-address-prefix-list,value=internal</value>
   </data>
   <data name="SdnRoute_Set" xml:space="preserve">
     <value>Set</value>
   </data>
   <data name="SdnRoute_SetHint" xml:space="preserve">
-    <value>One per line — e.g. key=local-preference,value=200</value>
+    <value>One per line - e.g. key=local-preference,value=200</value>
   </data>
   <data name="SdnRoute_Call" xml:space="preserve">
     <value>Call</value>
@@ -4618,7 +4618,7 @@ Continue anyway?</value>
     <value>Add route map entry</value>
   </data>
   <data name="SdnRoute_EditMap" xml:space="preserve">
-    <value>Route map {0} — entry {1}</value>
+    <value>Route map {0} - entry {1}</value>
   </data>
   <data name="DcSdn_IpNoVnet" xml:space="preserve">
     <value>Rows without a VNet (e.g. gateways) can't be deleted.</value>
@@ -4687,13 +4687,13 @@ Continue anyway?</value>
     <value>Run command</value>
   </data>
   <data name="AgentTool_ExecTitle" xml:space="preserve">
-    <value>VM {0} — run a command in the guest</value>
+    <value>VM {0} - run a command in the guest</value>
   </data>
   <data name="AgentTool_Command" xml:space="preserve">
     <value>Command</value>
   </data>
   <data name="AgentTool_CommandHint" xml:space="preserve">
-    <value>E.g. ls -la /var/log — no shell, so use bash -c "…" for pipes or variables</value>
+    <value>E.g. ls -la /var/log - no shell, so use bash -c "…" for pipes or variables</value>
   </data>
   <data name="AgentTool_Input" xml:space="preserve">
     <value>Standard input</value>
@@ -4706,13 +4706,13 @@ Continue anyway?</value>
 Continue?</value>
   </data>
   <data name="AgentTool_ExecResultTitle" xml:space="preserve">
-    <value>Result — {0}</value>
+    <value>Result - {0}</value>
   </data>
   <data name="AgentTool_ExecDone" xml:space="preserve">
     <value>Command finished (exit code {0}).</value>
   </data>
   <data name="AgentTool_ExecStillRunning" xml:space="preserve">
-    <value>The command is still running (pid {0}) — it keeps running in the guest.</value>
+    <value>The command is still running (pid {0}) - it keeps running in the guest.</value>
   </data>
   <data name="AgentTool_ExitCode" xml:space="preserve">
     <value>Exit code: {0}{1}</value>
@@ -4730,16 +4730,16 @@ Continue?</value>
     <value>Read file</value>
   </data>
   <data name="AgentTool_ReadTitle" xml:space="preserve">
-    <value>VM {0} — read a guest file</value>
+    <value>VM {0} - read a guest file</value>
   </data>
   <data name="AgentTool_PathHint" xml:space="preserve">
-    <value>Full path inside the guest — e.g. /etc/hostname, C:\Windows\win.ini</value>
+    <value>Full path inside the guest - e.g. /etc/hostname, C:\Windows\win.ini</value>
   </data>
   <data name="AgentTool_Write" xml:space="preserve">
     <value>Write file</value>
   </data>
   <data name="AgentTool_WriteTitle" xml:space="preserve">
-    <value>VM {0} — write a guest file</value>
+    <value>VM {0} - write a guest file</value>
   </data>
   <data name="AgentTool_Content" xml:space="preserve">
     <value>Content</value>
@@ -4769,7 +4769,7 @@ Continue?</value>
     <value>{0}: {1}</value>
   </data>
   <data name="OpenId_Hint" xml:space="preserve">
-    <value>OpenID realm — Login opens your browser. The identity provider must allow {0} as a redirect URL.</value>
+    <value>OpenID realm - Login opens your browser. The identity provider must allow {0} as a redirect URL.</value>
   </data>
   <data name="OpenId_Waiting" xml:space="preserve">
     <value>Finish signing in in your browser…</value>
@@ -4805,7 +4805,7 @@ Continue?</value>
     <value>Import</value>
   </data>
   <data name="Import_Title" xml:space="preserve">
-    <value>Import guest — {0}</value>
+    <value>Import guest - {0}</value>
   </data>
   <data name="Import_TargetStorage" xml:space="preserve">
     <value>Target storage</value>
@@ -4854,7 +4854,7 @@ Continue?</value>
     <value>Create disk</value>
   </data>
   <data name="AllocDisk_VmidHint" xml:space="preserve">
-    <value>Owner VM ID — also used in the name.</value>
+    <value>Owner VM ID - also used in the name.</value>
   </data>
   <data name="AllocDisk_FileName" xml:space="preserve">
     <value>File name</value>
@@ -4878,7 +4878,7 @@ Continue?</value>
     <value>No unused disks.</value>
   </data>
   <data name="GuestLife_UnlinkTitle" xml:space="preserve">
-    <value>VM {0} — delete unused disks</value>
+    <value>VM {0} - delete unused disks</value>
   </data>
   <data name="GuestLife_UnlinkPick" xml:space="preserve">
     <value>Disks to delete</value>
@@ -4929,7 +4929,7 @@ Continue?</value>
     <value>Serial terminal</value>
   </data>
   <data name="GuestPower_Confirm" xml:space="preserve">
-    <value>{0} {1} ({2}) — run '{3}'?</value>
+    <value>{0} {1} ({2}) - run '{3}'?</value>
   </data>
   <data name="NodePower_BulkMenu" xml:space="preserve">
     <value>Bulk actions</value>
@@ -4944,7 +4944,7 @@ Continue?</value>
     <value>Ceph is not installed. Log in as root to install.</value>
   </data>
   <data name="GuestPower_ShutdownNeedsRunning" xml:space="preserve">
-    <value>{0} is not running — if paused, resume or stop it from ▾.</value>
+    <value>{0} is not running - if paused, resume or stop it from ▾.</value>
   </data>
   <data name="Console_SpecialKeys" xml:space="preserve">
     <value>Special keys</value>
@@ -4956,7 +4956,7 @@ Continue?</value>
     <value>Send the PC clipboard to the guest. Text copied in the guest comes to the PC clipboard automatically.</value>
   </data>
   <data name="Console_ClipNeedsVnc" xml:space="preserve">
-    <value>Clipboard sharing is off — set Clipboard to VNC under VM Hardware → Display (needs spice-vdagent in the guest) and restart the VM.</value>
+    <value>Clipboard sharing is off - set Clipboard to VNC under VM Hardware → Display (needs spice-vdagent in the guest) and restart the VM.</value>
   </data>
   <data name="Console_ClipFromGuest" xml:space="preserve">
     <value>Copied the guest clipboard to the PC clipboard.</value>
@@ -4971,10 +4971,10 @@ Continue?</value>
     <value>Works only when the VM uses the VNC clipboard (display clipboard=vnc, spice-vdagent in the guest). Returning to the console sends the PC clipboard to the guest; leaving it brings the guest clipboard to the PC.</value>
   </data>
   <data name="Console_ModifiersHint" xml:space="preserve">
-    <value>Modifier keys held in the guest — from Special keys or the keyboard</value>
+    <value>Modifier keys held in the guest - from Special keys or the keyboard</value>
   </data>
   <data name="NavWindow_Refresh" xml:space="preserve">
-    <value>Refresh (F5) — reload the current tab</value>
+    <value>Refresh (F5) - reload the current tab</value>
   </data>
   <data name="Console_NoCursorShape" xml:space="preserve">
     <value>This VM display (e.g. standard VGA) does not send a cursor shape, so the guest-drawn cursor also shows. Set Hardware → Display to VirtIO-GPU or SPICE (qxl) to see only the PC cursor.</value>
@@ -5007,19 +5007,189 @@ Continue?</value>
     <value>Graphical console (RDP)</value>
   </data>
   <data name="Console_ClipRdp" xml:space="preserve">
-    <value>The RDP clipboard is shared automatically — copy on one side and paste on the other right away.</value>
+    <value>The RDP clipboard is shared automatically - copy on one side and paste on the other right away.</value>
   </data>
   <data name="ConsoleWindow_HeaderRdp" xml:space="preserve">
-    <value>RDP console — {0}</value>
+    <value>RDP console - {0}</value>
   </data>
   <data name="Console_ClipRdpOff" xml:space="preserve">
-    <value>RDP clipboard sharing is off — turn it on in the RDP tab of Console settings and reconnect.</value>
+    <value>RDP clipboard sharing is off - turn it on in the RDP tab of Console settings and reconnect.</value>
   </data>
   <data name="ConsoleSettings_RdpClipboardAuto" xml:space="preserve">
     <value>Share the clipboard with the guest automatically</value>
   </data>
   <data name="ConsoleSettings_RdpClipboardHint" xml:space="preserve">
     <value>Copy on one side and paste on the other right away (text, images and other standard formats). The guest may need a clipboard agent such as spice-vdagent. Takes effect on reconnect.</value>
+  </data>
+  <data name="GuestFiles_Title" xml:space="preserve">
+    <value>Files</value>
+  </data>
+  <data name="GuestFiles_WindowTitle" xml:space="preserve">
+    <value>Files - {0}</value>
+  </data>
+  <data name="GuestFiles_ShowHidden" xml:space="preserve">
+    <value>Show hidden files</value>
+  </data>
+  <data name="GuestFiles_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="GuestFiles_CopyPath" xml:space="preserve">
+    <value>Copy path</value>
+  </data>
+  <data name="GuestFiles_CountHidden" xml:space="preserve">
+    <value>{0} items ({1} hidden) - drop files to upload them here.</value>
+  </data>
+  <data name="GuestFiles_DragFailed" xml:space="preserve">
+    <value>Some files could not be dragged out. See the log for details.</value>
+  </data>
+  <data name="GuestFiles_ExecBlockedTitle" xml:space="preserve">
+    <value>The guest agent blocks command execution</value>
+  </data>
+  <data name="GuestFiles_UnblockLinux" xml:space="preserve">
+    <value>Run the commands below as root inside the guest, then click [Reconnect]. RHEL, Rocky, Alma, Oracle Linux and similar block command execution by default (/etc/sysconfig/qemu-ga): with an allow list (FILTER_RPC_ARGS="--allow-rpcs=…") only the commands the file view needs (guest-exec, guest-file-*) are added; with a block list (--block-rpcs, BLACKLIST_RPC) that line is commented out. The agent is then restarted.</value>
+  </data>
+  <data name="GuestFiles_UnblockSelinux" xml:space="preserve">
+    <value>With SELinux the last command (virt_qemu_ga_run_unconfined) is also needed - it lets commands run by the agent read and write files.</value>
+  </data>
+  <data name="GuestFiles_UnblockLinuxOther" xml:space="preserve">
+    <value>If it is still blocked, check the agent arguments (systemctl cat qemu-guest-agent) and /etc/qemu/qemu-ga.conf for block-rpcs/allow-rpcs. With SELinux, setsebool -P virt_qemu_ga_run_unconfined on may also be needed.</value>
+  </data>
+  <data name="GuestFiles_UnblockWindows" xml:space="preserve">
+    <value>In an administrator PowerShell inside the guest, run the commands below to remove the command filter (-b/--block-rpcs, -a/--allow-rpcs) from the QEMU Guest Agent service arguments and restart the service, then click [Reconnect]. The second line shows the current arguments.</value>
+  </data>
+  <data name="GuestFiles_CopyCommands" xml:space="preserve">
+    <value>Copy commands</value>
+  </data>
+  <data name="GuestFiles_Retry" xml:space="preserve">
+    <value>Reconnect</value>
+  </data>
+  <data name="GuestFiles_Copied" xml:space="preserve">
+    <value>Commands copied.</value>
+  </data>
+  <data name="GuestFiles_LoadingCount" xml:space="preserve">
+    <value>Reading folder... ({0} items)</value>
+  </data>
+  <data name="GuestFiles_UnblockScript" xml:space="preserve">
+    <value>The agent allows file writes, so an unblock script was written into the guest - run the line above inside the guest as root (administrator on Windows). It runs the commands below and then deletes itself.
+
+{0}</value>
+  </data>
+  <data name="GuestFiles_Toggle" xml:space="preserve">
+    <value>Files</value>
+  </data>
+  <data name="GuestFiles_ToggleTip" xml:space="preserve">
+    <value>Guest files - browse folders, download and upload (drag and drop)</value>
+  </data>
+  <data name="GuestFiles_Upload" xml:space="preserve">
+    <value>Upload (you can also drag files here)</value>
+  </data>
+  <data name="GuestFiles_Download" xml:space="preserve">
+    <value>Download (folders as tar)</value>
+  </data>
+  <data name="GuestFiles_NewFolder" xml:space="preserve">
+    <value>New folder</value>
+  </data>
+  <data name="GuestFiles_Rename" xml:space="preserve">
+    <value>Rename (F2)</value>
+  </data>
+  <data name="GuestFiles_Delete" xml:space="preserve">
+    <value>Delete (Delete)</value>
+  </data>
+  <data name="GuestFiles_Up" xml:space="preserve">
+    <value>Parent folder (Backspace)</value>
+  </data>
+  <data name="GuestFiles_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="GuestFiles_PathHint" xml:space="preserve">
+    <value>Type a path and press Enter</value>
+  </data>
+  <data name="GuestFiles_DropHint" xml:space="preserve">
+    <value>Drop files here to upload them to the current folder.</value>
+  </data>
+  <data name="GuestFiles_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="GuestFiles_Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="GuestFiles_Modified" xml:space="preserve">
+    <value>Modified</value>
+  </data>
+  <data name="GuestFiles_Mode" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="GuestFiles_Owner" xml:space="preserve">
+    <value>Owner</value>
+  </data>
+  <data name="GuestFiles_Connecting" xml:space="preserve">
+    <value>Connecting to files...</value>
+  </data>
+  <data name="GuestFiles_Loading" xml:space="preserve">
+    <value>Reading folder...</value>
+  </data>
+  <data name="GuestFiles_Count" xml:space="preserve">
+    <value>{0} items - drop files to upload them here.</value>
+  </data>
+  <data name="GuestFiles_LinkIsFile" xml:space="preserve">
+    <value>{0} is not a folder, downloading it.</value>
+  </data>
+  <data name="GuestFiles_Cancelled" xml:space="preserve">
+    <value>Cancelled.</value>
+  </data>
+  <data name="GuestFiles_Error" xml:space="preserve">
+    <value>Failed: {0}</value>
+  </data>
+  <data name="GuestFiles_DownloadTo" xml:space="preserve">
+    <value>Download to folder</value>
+  </data>
+  <data name="GuestFiles_Downloading" xml:space="preserve">
+    <value>Downloading...</value>
+  </data>
+  <data name="GuestFiles_NoFolderDownload" xml:space="preserve">
+    <value>{0}: folders cannot be downloaded from this guest (files only).</value>
+  </data>
+  <data name="GuestFiles_Downloaded" xml:space="preserve">
+    <value>Downloaded {0}.</value>
+  </data>
+  <data name="GuestFiles_OverwriteConfirm" xml:space="preserve">
+    <value>These names already exist: {0} ({1} in total)
+Overwrite them?</value>
+  </data>
+  <data name="GuestFiles_Uploading" xml:space="preserve">
+    <value>Uploading...</value>
+  </data>
+  <data name="GuestFiles_Uploaded" xml:space="preserve">
+    <value>Uploaded {0}.</value>
+  </data>
+  <data name="GuestFiles_UploadedSkipped" xml:space="preserve">
+    <value>Uploaded {0} (skipped {1} folders - only files can be uploaded).</value>
+  </data>
+  <data name="GuestFiles_Working" xml:space="preserve">
+    <value>Working...</value>
+  </data>
+  <data name="GuestFiles_DeleteConfirm" xml:space="preserve">
+    <value>Delete {0} ({1} in total, in {2})?
+This cannot be undone.</value>
+  </data>
+  <data name="GuestFiles_BadName" xml:space="preserve">
+    <value>A name cannot contain / or be . or ..</value>
+  </data>
+  <data name="GuestFiles_ToggleTipVm" xml:space="preserve">
+    <value>Guest files (guest agent) - browse, download and upload. You can also drop files onto the console screen.</value>
+  </data>
+  <data name="GuestFiles_NeedTicket" xml:space="preserve">
+    <value>CT files need a password (ticket) login - consoles cannot be opened with an API token.</value>
+  </data>
+  <data name="GuestFiles_Busy" xml:space="preserve">
+    <value>Another operation is running - drop again when it finishes.</value>
+  </data>
+  <data name="GuestFiles_NotReady" xml:space="preserve">
+    <value>The file panel is not connected yet.</value>
+  </data>
+  <data name="GuestFiles_LocalOverwrite" xml:space="preserve">
+    <value>These names already exist on the PC or collide: {0} ({1} in total)
+Overwrite them?</value>
   </data>
   <data name="MainWindow_TaskLogHint" xml:space="preserve">
     <value>Double-click a row to view the task log.</value>
@@ -5106,7 +5276,7 @@ Continue?</value>
     <value>Create pool: {0}</value>
   </data>
   <data name="CephTab_DeletePoolTitle" xml:space="preserve">
-    <value>Delete Ceph pool {0} — all data in it is lost</value>
+    <value>Delete Ceph pool {0} - all data in it is lost</value>
   </data>
   <data name="CephTab_PoolDeleted" xml:space="preserve">
     <value>Delete pool: {0}</value>
@@ -5243,7 +5413,7 @@ Continue?</value>
     <value>Create OSD: {0}</value>
   </data>
   <data name="CephTab_DeleteOsdTitle" xml:space="preserve">
-    <value>Destroy {0} — it must be out and stopped first</value>
+    <value>Destroy {0} - it must be out and stopped first</value>
   </data>
   <data name="CephTab_OsdDeleted" xml:space="preserve">
     <value>Destroy OSD: {0}</value>
@@ -5951,10 +6121,10 @@ Continue?</value>
     <value>Only selectable on file-based storages (dir, NFS, CIFS).</value>
   </data>
   <data name="HwEd_EditDisk" xml:space="preserve">
-    <value>Hard Disk ({0}) — {1}</value>
+    <value>Hard Disk ({0}) - {1}</value>
   </data>
   <data name="HwEd_AttachUnused" xml:space="preserve">
-    <value>Attach unused disk — {0}</value>
+    <value>Attach unused disk - {0}</value>
   </data>
   <data name="HwEd_ImportImage" xml:space="preserve">
     <value>Select Image</value>
@@ -6131,7 +6301,7 @@ Continue?</value>
     <value>Limit (Bytes/Period)</value>
   </data>
   <data name="HwEd_RngLimitHint" xml:space="preserve">
-    <value>Empty: unlimited — a guest could drain host entropy. Default 1024.</value>
+    <value>Empty: unlimited - a guest could drain host entropy. Default 1024.</value>
   </data>
   <data name="HwEd_RngPeriod" xml:space="preserve">
     <value>Period (ms)</value>
@@ -6647,7 +6817,7 @@ Continue?</value>
     <value>Cursor display</value>
   </data>
   <data name="ConsoleSettings_LocalCursorHint" xml:space="preserve">
-    <value>Both: shows the PC arrow and the guest cursor. PC cursor only: guests that send a cursor shape (VirtIO-GPU, QXL, …) get it as a lag-free PC cursor; otherwise (standard VGA, …) an arrow or dot is used — the cursor the guest draws on screen stays visible too.</value>
+    <value>Both: shows the PC arrow and the guest cursor. PC cursor only: guests that send a cursor shape (VirtIO-GPU, QXL, …) get it as a lag-free PC cursor; otherwise (standard VGA, …) an arrow or dot is used - the cursor the guest draws on screen stays visible too.</value>
   </data>
   <data name="ConsoleSettings_CursorArrow" xml:space="preserve">
     <value>PC cursor only (arrow fallback)</value>
@@ -6662,16 +6832,16 @@ Continue?</value>
     <value>Show both (PC arrow + guest cursor)</value>
   </data>
   <data name="DcOpt_AllowNone" xml:space="preserve">
-    <value>none — users cannot set tags</value>
+    <value>none - users cannot set tags</value>
   </data>
   <data name="DcOpt_AllowList" xml:space="preserve">
-    <value>list — only tags from the allow list</value>
+    <value>list - only tags from the allow list</value>
   </data>
   <data name="DcOpt_AllowExisting" xml:space="preserve">
-    <value>existing — list plus tags already in use</value>
+    <value>existing - list plus tags already in use</value>
   </data>
   <data name="DcOpt_AllowFree" xml:space="preserve">
-    <value>free — any tag</value>
+    <value>free - any tag</value>
   </data>
   <data name="DcOpt_UserAllowDefault" xml:space="preserve">
     <value>Default (existing)</value>
@@ -6701,7 +6871,7 @@ Continue?</value>
     <value>Not a valid email address.</value>
   </data>
   <data name="DcOpt_BadMacPrefix" xml:space="preserve">
-    <value>Not a valid MAC prefix (e.g. BC:24:11 — first byte must be even).</value>
+    <value>Not a valid MAC prefix (e.g. BC:24:11 - first byte must be even).</value>
   </data>
   <data name="DcOpt_BadMaxWorkers" xml:space="preserve">
     <value>Max workers must be 1–64.</value>
@@ -6722,7 +6892,7 @@ Continue?</value>
     <value>Must be http://host[:port].</value>
   </data>
   <data name="DcOpt_ProxyHint" xml:space="preserve">
-    <value>e.g. http://proxy.example.com:3128 — empty = none</value>
+    <value>e.g. http://proxy.example.com:3128 - empty = none</value>
   </data>
   <data name="DcOpt_EmailHint" xml:space="preserve">
     <value>Empty = root@hostname</value>
@@ -6779,7 +6949,7 @@ Continue?</value>
     <value>Network</value>
   </data>
   <data name="DcOpt_NetworkHint" xml:space="preserve">
-    <value>CIDR (e.g. 10.1.1.0/24) — empty = default network</value>
+    <value>CIDR (e.g. 10.1.1.0/24) - empty = default network</value>
   </data>
   <data name="DcOpt_Replication" xml:space="preserve">
     <value>Replication Settings</value>
@@ -6860,7 +7030,7 @@ Continue?</value>
     <value>API Token  {0}</value>
   </data>
   <data name="DcGroups_EditTitle" xml:space="preserve">
-    <value>Edit Group — {0}</value>
+    <value>Edit Group - {0}</value>
   </data>
   <data name="DcGroups_Updated" xml:space="preserve">
     <value>Group updated.</value>
@@ -6875,7 +7045,7 @@ Continue?</value>
     <value>Expiry must be {0} (empty = never).</value>
   </data>
   <data name="DcUsers_ExpireHint" xml:space="preserve">
-    <value>{0} — empty = never</value>
+    <value>{0} - empty = never</value>
   </data>
   <data name="DcUsers_ConfirmPassword" xml:space="preserve">
     <value>Confirm Password</value>
@@ -6887,13 +7057,13 @@ Continue?</value>
     <value>Yubico key IDs (comma-separated)</value>
   </data>
   <data name="DcUsers_MyPasswordHint" xml:space="preserve">
-    <value>Password of the logged-in {0} — optional for root@pam</value>
+    <value>Password of the logged-in {0} - optional for root@pam</value>
   </data>
   <data name="DcUsers_NameNoRealm" xml:space="preserve">
     <value>Do not include @ in the user name (pick the realm separately).</value>
   </data>
   <data name="DcUsers_PasswordPveOnly" xml:space="preserve">
-    <value>Proxmox VE realm only — at least {0} characters</value>
+    <value>Proxmox VE realm only - at least {0} characters</value>
   </data>
   <data name="DcUsers_PasswordRealmOnly" xml:space="preserve">
     <value>Passwords of {0} realm users are changed on that authentication server (only PAM and PVE realms here).</value>
@@ -6908,7 +7078,7 @@ Continue?</value>
     <value>Effective privileges per path (including groups, roles and propagation)</value>
   </data>
   <data name="DcUsers_PermissionsTitle" xml:space="preserve">
-    <value>Permissions — {0}</value>
+    <value>Permissions - {0}</value>
   </data>
   <data name="DcUsers_TfaUnlocked" xml:space="preserve">
     <value>Unlocked TFA for {0}.</value>
@@ -6920,7 +7090,7 @@ Continue?</value>
     <value>Unlock TFA for {0} (locked after too many failures)?</value>
   </data>
   <data name="DcReplication_RateHint" xml:space="preserve">
-    <value>MB/s — empty = unlimited</value>
+    <value>MB/s - empty = unlimited</value>
   </data>
   <data name="DcReplication_PickGuest" xml:space="preserve">
     <value>Select a guest to replicate.</value>
@@ -6938,7 +7108,7 @@ Continue?</value>
     <value>forward</value>
   </data>
   <data name="FwRule_AddressHint" xml:space="preserve">
-    <value>IP, CIDR, alias or IPSet (+name) — empty = any</value>
+    <value>IP, CIDR, alias or IPSet (+name) - empty = any</value>
   </data>
   <data name="FwRule_AlreadyTop" xml:space="preserve">
     <value>Already at the top.</value>
@@ -6947,13 +7117,13 @@ Continue?</value>
     <value>Copy</value>
   </data>
   <data name="FwRule_CopyTitle" xml:space="preserve">
-    <value>Copy Rule — #{0}</value>
+    <value>Copy Rule - #{0}</value>
   </data>
   <data name="FwRule_Dest" xml:space="preserve">
     <value>Destination</value>
   </data>
   <data name="FwRule_EditTitle" xml:space="preserve">
-    <value>Edit Rule — #{0}</value>
+    <value>Edit Rule - #{0}</value>
   </data>
   <data name="FwRule_Hint" xml:space="preserve">
     <value>Rules are applied top to bottom. Use up/down to reorder.</value>
@@ -6968,7 +7138,7 @@ Continue?</value>
     <value>Interface</value>
   </data>
   <data name="FwRule_IfaceHint" xml:space="preserve">
-    <value>e.g. net0 — empty = all interfaces</value>
+    <value>e.g. net0 - empty = all interfaces</value>
   </data>
   <data name="FwRule_InsertGroup" xml:space="preserve">
     <value>Insert: Security Group</value>
@@ -7013,13 +7183,13 @@ Continue?</value>
     <value>Rule updated.</value>
   </data>
   <data name="DcFirewall_EditGroup" xml:space="preserve">
-    <value>Edit Security Group — {0}</value>
+    <value>Edit Security Group - {0}</value>
   </data>
   <data name="DcFirewall_EditIpSet" xml:space="preserve">
-    <value>Edit IPSet — {0}</value>
+    <value>Edit IPSet - {0}</value>
   </data>
   <data name="DcFirewall_EditEntry" xml:space="preserve">
-    <value>Edit IPSet Entry — {0}</value>
+    <value>Edit IPSet Entry - {0}</value>
   </data>
   <data name="DcStorage_BadKeep" xml:space="preserve">
     <value>Retention counts must be whole numbers of 0 or more.</value>
@@ -7151,13 +7321,13 @@ Continue?</value>
     <value>Only when creating the VG on an iSCSI LUN</value>
   </data>
   <data name="StorageHint_BlockSize" xml:space="preserve">
-    <value>e.g. 16k — empty = default</value>
+    <value>e.g. 16k - empty = default</value>
   </data>
   <data name="StorageHint_CephUser" xml:space="preserve">
     <value>Empty = admin</value>
   </data>
   <data name="StorageHint_External" xml:space="preserve">
-    <value>Only for an external Ceph cluster — leave empty for this cluster's Ceph</value>
+    <value>Only for an external Ceph cluster - leave empty for this cluster's Ceph</value>
   </data>
   <data name="StorageHint_Fingerprint" xml:space="preserve">
     <value>Needed for self-signed certificates (SHA-256)</value>
@@ -7178,7 +7348,7 @@ Continue?</value>
     <value>Empty = default, -1 = unlimited</value>
   </data>
   <data name="StorageHint_Monhost" xml:space="preserve">
-    <value>External Ceph monitor addresses (space-separated) — leave empty for this cluster's Ceph</value>
+    <value>External Ceph monitor addresses (space-separated) - leave empty for this cluster's Ceph</value>
   </data>
   <data name="StorageHint_Nodes" xml:space="preserve">
     <value>None selected = all nodes</value>
@@ -7235,7 +7405,7 @@ Continue?</value>
     <value>Check connection on save</value>
   </data>
   <data name="DcRealms_ClassesHint" xml:space="preserve">
-    <value>Comma-separated — empty = default</value>
+    <value>Comma-separated - empty = default</value>
   </data>
   <data name="DcRealms_GroupClasses" xml:space="preserve">
     <value>Group Classes</value>
@@ -7343,13 +7513,13 @@ Continue?</value>
     <value>Select a guest to manage with HA.</value>
   </data>
   <data name="DcCluster_JoinLinks" xml:space="preserve">
-    <value>Cluster links — join {0}</value>
+    <value>Cluster links - join {0}</value>
   </data>
   <data name="DcCluster_LinkN" xml:space="preserve">
     <value>Link {0}</value>
   </data>
   <data name="DcCluster_PeerLinkHint" xml:space="preserve">
-    <value>This node's address (peer: {0}) — must be on the same network</value>
+    <value>This node's address (peer: {0}) - must be on the same network</value>
   </data>
   <data name="DcCluster_LinkHint" xml:space="preserve">
     <value>Empty = IP of this node's hostname</value>
@@ -7373,7 +7543,7 @@ Continue?</value>
     <value>DHCP DNS Server</value>
   </data>
   <data name="DcSdn_DhcpHint" xml:space="preserve">
-    <value>When the zone's automatic DHCP is on — empty = no DHCP</value>
+    <value>When the zone's automatic DHCP is on - empty = no DHCP</value>
   </data>
   <data name="DcSdn_DhcpRange" xml:space="preserve">
     <value>DHCP Ranges</value>
@@ -7388,7 +7558,7 @@ Continue?</value>
     <value>EBGP Multihop</value>
   </data>
   <data name="DcSdn_EditTitle" xml:space="preserve">
-    <value>Edit SDN — {0}</value>
+    <value>Edit SDN - {0}</value>
   </data>
   <data name="DcSdn_ExitLocalRouting" xml:space="preserve">
     <value>Exit Nodes Local Routing</value>
@@ -7454,16 +7624,16 @@ Continue?</value>
     <value>Max Body Size</value>
   </data>
   <data name="DcMetrics_MaxBodyHint" xml:space="preserve">
-    <value>bytes — empty = 25000000</value>
+    <value>bytes - empty = 25000000</value>
   </data>
   <data name="DcMetrics_MtuHint" xml:space="preserve">
-    <value>For UDP — empty = 1500</value>
+    <value>For UDP - empty = 1500</value>
   </data>
   <data name="DcMetrics_Timeout" xml:space="preserve">
     <value>Timeout (s)</value>
   </data>
   <data name="DcMetrics_TimeoutHint" xml:space="preserve">
-    <value>For TCP/HTTP — empty = 1</value>
+    <value>For TCP/HTTP - empty = 1</value>
   </data>
   <data name="DcNotify_Author" xml:space="preserve">
     <value>Author</value>
@@ -7475,10 +7645,10 @@ Continue?</value>
     <value>Body</value>
   </data>
   <data name="DcNotify_BodyHint" xml:space="preserve">
-    <value>Handlebars template — e.g. {{ title }}: {{ message }}</value>
+    <value>Handlebars template - e.g. {{ title }}: {{ message }}</value>
   </data>
   <data name="DcNotify_EditTarget" xml:space="preserve">
-    <value>Edit Notification Target — {0}</value>
+    <value>Edit Notification Target - {0}</value>
   </data>
   <data name="DcNotify_Headers" xml:space="preserve">
     <value>Headers</value>
@@ -7493,13 +7663,13 @@ Continue?</value>
     <value>Match Calendar</value>
   </data>
   <data name="DcNotify_MatchCalendarHint" xml:space="preserve">
-    <value>One per line — e.g. mon..fri 8-17</value>
+    <value>One per line - e.g. mon..fri 8-17</value>
   </data>
   <data name="DcNotify_MatchField" xml:space="preserve">
     <value>Match Field</value>
   </data>
   <data name="DcNotify_MatchFieldHint" xml:space="preserve">
-    <value>One per line — e.g. exact:type=vzdump / regex:hostname=^pve</value>
+    <value>One per line - e.g. exact:type=vzdump / regex:hostname=^pve</value>
   </data>
   <data name="DcNotify_Method" xml:space="preserve">
     <value>Method</value>
@@ -7517,7 +7687,7 @@ Continue?</value>
     <value>e.g. https://gotify.example.com</value>
   </data>
   <data name="DcMapping_EditTitle" xml:space="preserve">
-    <value>Edit Mapping — {0}</value>
+    <value>Edit Mapping - {0}</value>
   </data>
   <data name="DcMapping_Updated" xml:space="preserve">
     <value>Mapping updated.</value>
@@ -7541,7 +7711,7 @@ Continue?</value>
     <value>Bandwidth Limit</value>
   </data>
   <data name="DcBackup_BwlimitHint" xml:space="preserve">
-    <value>KiB/s — empty = datacenter default</value>
+    <value>KiB/s - empty = datacenter default</value>
   </data>
   <data name="DcBackup_Fleecing" xml:space="preserve">
     <value>Fleecing</value>
@@ -7589,10 +7759,10 @@ Continue?</value>
     <value>Max Workers</value>
   </data>
   <data name="DcBackup_MaxWorkersHint" xml:space="preserve">
-    <value>Concurrent IO workers for VM backups — empty = 16</value>
+    <value>Concurrent IO workers for VM backups - empty = 16</value>
   </data>
   <data name="DcBackup_NotesHint" xml:space="preserve">
-    <value>e.g. {{guestname}} — stored as the backup note</value>
+    <value>e.g. {{guestname}} - stored as the backup note</value>
   </data>
   <data name="DcBackup_NotesTemplate" xml:space="preserve">
     <value>Note Template</value>
@@ -7637,7 +7807,7 @@ Continue?</value>
     <value>Zstd Threads</value>
   </data>
   <data name="DcPools_EditTitle" xml:space="preserve">
-    <value>Edit Pool — {0}</value>
+    <value>Edit Pool - {0}</value>
   </data>
   <data name="DcPools_Updated" xml:space="preserve">
     <value>Pool updated.</value>
@@ -7652,7 +7822,7 @@ Continue?</value>
     <value>Yubico OTP</value>
   </data>
   <data name="DcTfa_YubicoHint" xml:space="preserve">
-    <value>Click the field, then touch your YubiKey — the realm needs a Yubico configuration</value>
+    <value>Click the field, then touch your YubiKey - the realm needs a Yubico configuration</value>
   </data>
   <data name="DcTfa_YubicoInvalid" xml:space="preserve">
     <value>Enter the full OTP produced by touching the YubiKey (about 44 characters).</value>
@@ -7685,13 +7855,13 @@ Continue?</value>
     <value>Status</value>
   </data>
   <data name="DcSdn_StatusHint" xml:space="preserve">
-    <value>SDN zone state per node — changes take effect after Apply</value>
+    <value>SDN zone state per node - changes take effect after Apply</value>
   </data>
   <data name="DcBackup_Simulate" xml:space="preserve">
     <value>Schedule Simulator</value>
   </data>
   <data name="DcBackup_SimulateTitle" xml:space="preserve">
-    <value>Next runs — {0}</value>
+    <value>Next runs - {0}</value>
   </data>
   <data name="DcBackup_SimulateHint" xml:space="preserve">
     <value>The next 10 run times computed by the server</value>
@@ -7712,7 +7882,7 @@ Continue?</value>
     <value>Add Sync Job</value>
   </data>
   <data name="DcRealmJob_EditTitle" xml:space="preserve">
-    <value>Edit Sync Job — {0} ({1})</value>
+    <value>Edit Sync Job - {0} ({1})</value>
   </data>
   <data name="DcRealmJob_Added" xml:space="preserve">
     <value>Sync job added.</value>
@@ -7793,7 +7963,7 @@ Continue?</value>
     <value>Area</value>
   </data>
   <data name="DcFabric_AreaHint" xml:space="preserve">
-    <value>OSPF area — a number (e.g. 0) or IPv4 notation (e.g. 0.0.0.0)</value>
+    <value>OSPF area - a number (e.g. 0) or IPv4 notation (e.g. 0.0.0.0)</value>
   </data>
   <data name="DcFabric_PrefixHint" xml:space="preserve">
     <value>Range the node router IDs must belong to (CIDR, e.g. 10.15.15.0/24)</value>
@@ -7820,10 +7990,10 @@ Continue?</value>
     <value>Add Fabric</value>
   </data>
   <data name="DcFabric_AddTypeTitle" xml:space="preserve">
-    <value>Add Fabric — {0} ({1})</value>
+    <value>Add Fabric - {0} ({1})</value>
   </data>
   <data name="DcFabric_EditTitle" xml:space="preserve">
-    <value>Edit Fabric — {0}</value>
+    <value>Edit Fabric - {0}</value>
   </data>
   <data name="DcFabric_Added" xml:space="preserve">
     <value>Fabric added. Press 'Apply' to activate it.</value>
@@ -7844,7 +8014,7 @@ Continue?</value>
     <value>Nodes</value>
   </data>
   <data name="DcFabric_NodesTitle" xml:space="preserve">
-    <value>Fabric Nodes — {0}</value>
+    <value>Fabric Nodes - {0}</value>
   </data>
   <data name="DcFabric_NodesHint" xml:space="preserve">
     <value>Nodes in this fabric and the interfaces that connect them. SDN 'Apply' is needed afterwards.</value>
@@ -7862,10 +8032,10 @@ Continue?</value>
     <value>Interfaces</value>
   </data>
   <data name="DcFabric_InterfacesHint" xml:space="preserve">
-    <value>One per line: name=ens19[,ip=10.0.0.1/31][,ip6=…][,hello_multiplier=10] — a bare name is fine.</value>
+    <value>One per line: name=ens19[,ip=10.0.0.1/31][,ip6=…][,hello_multiplier=10] - a bare name is fine.</value>
   </data>
   <data name="DcFabric_InterfacesHintOspf" xml:space="preserve">
-    <value>One per line: name=ens19[,ip=10.0.0.1/31] — a bare name is fine.</value>
+    <value>One per line: name=ens19[,ip=10.0.0.1/31] - a bare name is fine.</value>
   </data>
   <data name="DcFabric_NeedNodeIp" xml:space="preserve">
     <value>Enter an IPv4 or IPv6 router ID.</value>
@@ -7877,7 +8047,7 @@ Continue?</value>
     <value>Add Fabric Node</value>
   </data>
   <data name="DcFabric_NodeEditTitle" xml:space="preserve">
-    <value>Edit Fabric Node — {0}</value>
+    <value>Edit Fabric Node - {0}</value>
   </data>
   <data name="DcFabric_NodeAdded" xml:space="preserve">
     <value>Node added to the fabric.</value>
@@ -7899,5 +8069,144 @@ Continue?</value>
   </data>
   <data name="DcMapping_LiveMigrationHint" xml:space="preserve">
     <value>Applies to PVE 8.3 or later only.</value>
+  </data>
+  <data name="Sftp_Connect" xml:space="preserve"><value>SFTP connection</value></data>
+  <data name="Sftp_Host" xml:space="preserve"><value>Host</value></data>
+  <data name="Sftp_Port" xml:space="preserve"><value>Port</value></data>
+  <data name="Sftp_User" xml:space="preserve"><value>User name</value></data>
+  <data name="Sftp_Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Sftp_PasswordHint" xml:space="preserve"><value>Leave blank to use the saved password.</value></data>
+  <data name="Sftp_Remember" xml:space="preserve"><value>Remember password (Windows Credential Manager)</value></data>
+  <data name="Sftp_BadPort" xml:space="preserve"><value>Port must be a number between 1 and 65535.</value></data>
+  <data name="Sftp_PasswordLong" xml:space="preserve"><value>Password exceeds the Windows credential size limit.</value></data>
+  <data name="Sftp_AuthFailed" xml:space="preserve"><value>SFTP authentication failed — enter your password again.</value></data>
+  <data name="Sftp_HostKey" xml:space="preserve"><value>SFTP host key verification</value></data>
+  <data name="Sftp_TrustKey" xml:space="preserve"><value>Trust the SSH host key for {0}?
+
+SHA256:{1}
+
+Compare this fingerprint with the server's host key before accepting.</value></data>
+  <data name="Sftp_KeyChanged" xml:space="preserve"><value>The SSH host key for {0} has changed.
+
+Previous: SHA256:{2}
+New: SHA256:{1}
+
+Accept only if you have verified this change with the server administrator. Trust the new key?</value></data>
+  <data name="Sftp_Agent" xml:space="preserve"><value>Guest agent</value></data>
+  <data name="Sftp_Settings" xml:space="preserve"><value>SFTP connection settings…</value></data>
+  <data name="Sftp_Container" xml:space="preserve"><value>Node shell</value></data>
+  <data name="Sftp_ForgetPassword" xml:space="preserve"><value>Delete saved SFTP password</value></data>
+  <data name="Sftp_Connections" xml:space="preserve"><value>Connection profiles</value></data>
+  <data name="Sftp_Accounts" xml:space="preserve"><value>Accounts</value></data>
+  <data name="Sftp_Account" xml:space="preserve"><value>Account profile</value></data>
+  <data name="Sftp_ProfileName" xml:space="preserve"><value>Profile name</value></data>
+  <data name="Sftp_Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Sftp_Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Sftp_ManageAccounts" xml:space="preserve"><value>Manage accounts…</value></data>
+  <data name="Sftp_SaveProfile" xml:space="preserve"><value>Save</value></data>
+  <data name="Sftp_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Sftp_UseForGuest" xml:space="preserve"><value>Connect this guest</value></data>
+  <data name="Sftp_AccountPasswordHint" xml:space="preserve"><value>Leave blank to keep the saved password. Account changes apply to every connection using this account.</value></data>
+  <data name="Sftp_HasSavedPassword" xml:space="preserve"><value>Password saved</value></data>
+  <data name="Sftp_NoSavedPassword" xml:space="preserve"><value>No saved password</value></data>
+  <data name="Sftp_SelectAccount" xml:space="preserve"><value>Select an account for this connection profile.</value></data>
+  <data name="Sftp_AccountInUse" xml:space="preserve"><value>This account is used by a connection profile. Change or delete those connections first.</value></data>
+  <data name="Sftp_RequiredFields" xml:space="preserve"><value>Enter a profile name and the required connection information.</value></data>
+  <data name="Sftp_Saved" xml:space="preserve"><value>Saved.</value></data>
+  <data name="Sftp_PasswordFor" xml:space="preserve"><value>Connect to {1} using {0}</value></data>
+  <data name="Sftp_AccountChanged" xml:space="preserve"><value>The account changed during connection. Connect again.</value></data>
+  <data name="Sftp_FilesButton" xml:space="preserve"><value>Files (SFTP)</value></data>
+  <data name="Sftp_AgentFilesButton" xml:space="preserve"><value>Files (Guest agent)</value></data>
+  <data name="Sftp_NodeFilesButton" xml:space="preserve"><value>Files (Node shell)</value></data>
+  <data name="Settings_General" xml:space="preserve"><value>General</value></data>
+  <data name="Settings_Sftp" xml:space="preserve"><value>SFTP · Accounts</value></data>
+  <data name="GuestFiles_BreadcrumbHint" xml:space="preserve"><value>Click a folder to navigate; click empty space or press Alt+D to edit the path.</value></data>
+  <data name="GuestFiles_Subfolders" xml:space="preserve"><value>Subfolders</value></data>
+  <data name="GuestFiles_NoSubfolders" xml:space="preserve"><value>No subfolders</value></data>
+  <data name="Sftp_Authentication" xml:space="preserve"><value>Authentication</value></data>
+  <data name="Sftp_AuthPassword" xml:space="preserve"><value>Password</value></data>
+  <data name="Sftp_AuthPrivateKey" xml:space="preserve"><value>Private key file</value></data>
+  <data name="Sftp_AuthDefaultKeys" xml:space="preserve"><value>This PC's default .ssh keys</value></data>
+  <data name="Sftp_AuthCertificate" xml:space="preserve"><value>OpenSSH user certificate</value></data>
+  <data name="Sftp_PrivateKeyPath" xml:space="preserve"><value>Private key file</value></data>
+  <data name="Sftp_CertificatePath" xml:space="preserve"><value>OpenSSH certificate file</value></data>
+  <data name="Sftp_Browse" xml:space="preserve"><value>Browse…</value></data>
+  <data name="Sftp_DefaultKeysHint" xml:space="preserve"><value>Uses id_ed25519, id_ecdsa and id_rsa found in %USERPROFILE%\.ssh.</value></data>
+  <data name="Sftp_CertificateHint" xml:space="preserve"><value>Select an OpenSSH user certificate issued by a CA trusted by the server, and its matching private key.</value></data>
+  <data name="Sftp_Passphrase" xml:space="preserve"><value>Private key passphrase (if set)</value></data>
+  <data name="Sftp_RememberPassphrase" xml:space="preserve"><value>Remember key passphrase (Windows Credential Manager)</value></data>
+  <data name="Sftp_PassphraseHint" xml:space="preserve"><value>Leave blank for an unencrypted key or to keep an existing saved passphrase. Account changes apply to every connection using this account.</value></data>
+  <data name="Sftp_HasSavedPassphrase" xml:space="preserve"><value>Key passphrase saved</value></data>
+  <data name="Sftp_NoSavedPassphrase" xml:space="preserve"><value>No saved key passphrase</value></data>
+  <data name="Sftp_ForgetPassphrase" xml:space="preserve"><value>Delete saved key passphrase</value></data>
+  <data name="Sftp_KeyFileMissing" xml:space="preserve"><value>The private key file was not found. Check the file path.</value></data>
+  <data name="Sftp_CertificateFileMissing" xml:space="preserve"><value>The OpenSSH certificate file was not found. Check the file path.</value></data>
+  <data name="Sftp_KeyPrompt" xml:space="preserve"><value>SFTP key passphrase</value></data>
+  <data name="Sftp_PassphraseFor" xml:space="preserve"><value>Private key passphrase for {0} — {1}</value></data>
+  <data name="Sftp_KeyAuthFailed" xml:space="preserve"><value>SFTP key authentication failed. Check the passphrase and the server's authorized key or certificate settings.</value></data>
+  <data name="Sftp_PassphraseLong" xml:space="preserve"><value>The key passphrase exceeds the Windows credential size limit.</value></data>
+  <data name="Sftp_KeyFilter" xml:space="preserve"><value>Private key files|id_*;*.pem;*.key|All files|*.*</value></data>
+  <data name="Sftp_CertificateFilter" xml:space="preserve"><value>OpenSSH certificates|*-cert.pub;*.pub|All files|*.*</value></data>
+  <data name="Sftp_KeyPathRequired" xml:space="preserve"><value>Select a private key file.</value></data>
+  <data name="Sftp_CertificatePathRequired" xml:space="preserve"><value>Select an OpenSSH user certificate file.</value></data>
+  <data name="Sftp_DefaultKeysMissing" xml:space="preserve"><value>No default private keys were found in {0}. Add id_ed25519, id_ecdsa or id_rsa, or select a private key file.</value></data>
+  <data name="Sftp_KeyLoadFailed" xml:space="preserve"><value>Cannot load private key file {0}: {1}</value></data>
+  <data name="Sftp_PassphraseRequired" xml:space="preserve"><value>Enter the passphrase for private key file {0}.</value></data>
+  <data name="Sftp_PassphraseInvalid" xml:space="preserve"><value>The passphrase for private key file {0} is incorrect, or the file could not be read.</value></data>
+  <data name="Sftp_CertificateInvalid" xml:space="preserve"><value>Cannot load the OpenSSH user certificate: {0}</value></data>
+  <data name="Sftp_KeySetup" xml:space="preserve"><value>Create key / server registration…</value></data>
+  <data name="SshSetup_Title" xml:space="preserve"><value>SSH key generation and server registration</value></data>
+  <data name="SshSetup_RegistrationTab" xml:space="preserve"><value>Public key · Server registration</value></data>
+  <data name="SshSetup_GenerationTab" xml:space="preserve"><value>Generate a key</value></data>
+  <data name="SshSetup_PrivateKey" xml:space="preserve"><value>Private key for the public key to register</value></data>
+  <data name="SshSetup_ExistingKeyHint" xml:space="preserve"><value>Select a private key and load its public key. The public key can be derived even when the .pub file is missing.</value></data>
+  <data name="SshSetup_ReadPublicKey" xml:space="preserve"><value>Load · Extract public key</value></data>
+  <data name="SshSetup_PublicKey" xml:space="preserve"><value>User public key (.pub)</value></data>
+  <data name="SshSetup_CopyPublicKey" xml:space="preserve"><value>Copy public key</value></data>
+  <data name="SshSetup_SavePublicKey" xml:space="preserve"><value>Save public key file…</value></data>
+  <data name="SshSetup_RegistrationDescription" xml:space="preserve"><value>Run the command below in a Linux server console logged in as {0}. It creates ~/.ssh and authorized_keys when missing, preserves existing keys, and registers this public key without duplicates.</value></data>
+  <data name="SshSetup_TargetUser" xml:space="preserve"><value>the SFTP target user</value></data>
+  <data name="SshSetup_CopyCommand" xml:space="preserve"><value>Copy authorized_keys registration command</value></data>
+  <data name="SshSetup_PasteCommandHint" xml:space="preserve"><value>The copy button copies a single-line command with the same registration behavior as the script above. Paste it into the server console and press Enter. added means a new key was registered; already means it was present. The actual authorized_keys path follows.</value></data>
+  <data name="SshSetup_RegistrationNote" xml:space="preserve"><value>The file is named authorized_keys. Register the key in the target user's home; do not use sudo to run this in another user's home. Permissions are set to 700 for .ssh and 600 for authorized_keys. Keep the private key on this PC; register only the public key on the server. This command is for Linux · Unix. If the server uses a different AuthorizedKeysFile path, use that location.</value></data>
+  <data name="SshSetup_CertificateRegistration" xml:space="preserve"><value>For certificate authentication, send the public key for {0} to your CA to issue an OpenSSH user certificate. Configure the issued certificate and its matching private key in the account profile.</value></data>
+  <data name="SshSetup_CertificateNote" xml:space="preserve"><value>The server must trust the issuing CA. An administrator can configure the CA public key file with TrustedUserCAKeys in sshd_config, or register the CA public key with the cert-authority option in the target user's authorized_keys. The certificate's user principal must also be allowed. Registering an ordinary user public key alone does not configure certificate authentication. A newly generated key needs a separately issued certificate.</value></data>
+  <data name="SshSetup_OpenDocs" xml:space="preserve"><value>Open OpenSSH registration documentation</value></data>
+  <data name="SshSetup_GenerationHint" xml:space="preserve"><value>If you have no key, generate a private key and a .pub public key file on this PC. Existing files are never overwritten. The generated key path is returned to the account editor; apply it with the account's Save button.</value></data>
+  <data name="SshSetup_KeyType" xml:space="preserve"><value>Key type</value></data>
+  <data name="SshSetup_Rsa3072" xml:space="preserve"><value>RSA 3072 (optional passphrase)</value></data>
+  <data name="SshSetup_Ed25519" xml:space="preserve"><value>Ed25519 (unencrypted key)</value></data>
+  <data name="SshSetup_Ed25519Hint" xml:space="preserve"><value>Ed25519 generation creates an unencrypted OpenSSH key. Select RSA 3072 to protect the key file with a passphrase. Existing encrypted Ed25519 keys can still be used for SFTP authentication.</value></data>
+  <data name="SshSetup_NewPath" xml:space="preserve"><value>New private key location</value></data>
+  <data name="SshSetup_NewPassphrase" xml:space="preserve"><value>New private key passphrase (optional)</value></data>
+  <data name="SshSetup_ConfirmPassphrase" xml:space="preserve"><value>Confirm passphrase</value></data>
+  <data name="SshSetup_PassphraseHint" xml:space="preserve"><value>The passphrase encrypts the private key file. Leave blank to create an unencrypted key. Choose whether to remember it in the account editor's Windows credential option.</value></data>
+  <data name="SshSetup_Comment" xml:space="preserve"><value>Public key comment</value></data>
+  <data name="SshSetup_Generate" xml:space="preserve"><value>Generate private and public keys</value></data>
+  <data name="SshSetup_Working" xml:space="preserve"><value>Working…</value></data>
+  <data name="SshSetup_PublicKeyReady" xml:space="preserve"><value>Public key extracted. Register it on the target server.</value></data>
+  <data name="SshSetup_UnlockKey" xml:space="preserve"><value>Private key passphrase for public key extraction</value></data>
+  <data name="SshSetup_PublicKeyFilter" xml:space="preserve"><value>OpenSSH public key|*.pub|All files|*.*</value></data>
+  <data name="SshSetup_PublicKeySaved" xml:space="preserve"><value>Public key saved: {0}</value></data>
+  <data name="SshSetup_PassphraseMismatch" xml:space="preserve"><value>The two private key passphrases do not match.</value></data>
+  <data name="SshSetup_Generated" xml:space="preserve"><value>New key created: {0} · Register it on the server and save the account in the editor.</value></data>
+  <data name="Sftp_PublicKeyInvalid" xml:space="preserve"><value>Use a single valid OpenSSH user public key line.</value></data>
+  <data name="Sftp_RegistrationCommandLong" xml:space="preserve"><value>This key's registration command is too long for console pasting. Save the public key file and register it in the target user's authorized_keys.</value></data>
+  <data name="SshSetup_CertificatePublicKeyReady" xml:space="preserve"><value>Public key extracted. Send it to your CA to issue a user certificate.</value></data>
+  <data name="SshSetup_NewCertificateRequired" xml:space="preserve"><value>Issue a new OpenSSH user certificate for this key and select the new certificate file.</value></data>
+  <data name="GuestFiles_MoreFolders" xml:space="preserve">
+    <value>More parent folders</value>
+  </data>
+  <data name="ConsoleSettings_DirectRender" xml:space="preserve">
+    <value>Rendering</value>
+  </data>
+  <data name="ConsoleSettings_DirectRenderOn" xml:space="preserve">
+    <value>Draw directly with the GPU (lower display latency)</value>
+  </data>
+  <data name="ConsoleSettings_DirectRenderHint" xml:space="preserve">
+    <value>Draws with Direct3D instead of WPF so the screen updates sooner. Turn off if the screen flickers or looks wrong. Applies to VNC and RDP.</value>
+  </data>
+  <data name="Console_DirectFailed" xml:space="preserve">
+    <value>Could not start GPU drawing; using the standard renderer.</value>
   </data>
 </root>

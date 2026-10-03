@@ -414,7 +414,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var title = $"{guest.Kind.Label()} {guest.VmId} — {guest.Name}";
+        var title = $"{guest.Kind.Label()} {guest.VmId} - {guest.Name}";
         // Owner 미지정: 부모창과 독립된 최상위 창(작업 표시줄 개별 표시, 부모 최소화에 영향받지 않음)
         // 같은 게스트 콘솔이 이미 열려 있으면 새로 열지 않고 그 창을 앞으로
         var canPowerManage = _vm.Permissions?.CanPowerMgmt ?? true;

@@ -48,7 +48,7 @@ internal static partial class PassthroughEditors
         var multifunction = host.Length > 0 && !host.Contains('.');
         var devices = (await HostDevicesAsync(ctx, "pci"))
             .Select(d => (ActionHelpers.Value(d, "id"),
-                $"{ActionHelpers.Value(d, "id")} — {ActionHelpers.Value(d, "vendor_name")} "
+                $"{ActionHelpers.Value(d, "id")} - {ActionHelpers.Value(d, "vendor_name")} "
                 + ActionHelpers.Value(d, "device_name")))
             .Where(d => d.Item1.Length > 0).ToList();
         var hostChoice = multifunction ? host + ".0" : host;
