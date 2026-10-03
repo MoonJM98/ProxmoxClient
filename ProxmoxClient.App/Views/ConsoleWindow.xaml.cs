@@ -56,6 +56,7 @@ public partial class ConsoleWindow : Window
     private readonly int _vmid;
     private bool _autoConnecting;
     private WriteableBitmap? _bitmap;
+    private double _bitmapDpiScale;
     private bool _closed;
     private int _fbHeight;
     private int _fbWidth;
@@ -125,6 +126,8 @@ public partial class ConsoleWindow : Window
         StoppedPanel.IsVisibleChanged += (_, _) => UpdateDirectSlot();
         DpiChanged += (_, _) =>
         {
+            RebuildBitmap();
+            if (!_fitMode && _fbWidth > 0) FitWindowToFramebuffer(_fbWidth, _fbHeight, false); // 1:1 — 끌어 옮기는 중이니 크기만
             RefreshCursor();
             UpdateDirectLayout(); // GPU 화면의 그릴 자리는 물리 픽셀 기준
             QueueDesktopResize(); // RDP — WPF 크기는 같아도 실제 픽셀 수가 바뀐다
@@ -307,13 +310,40 @@ public partial class ConsoleWindow : Window
     {
         if (width <= 0 || height <= 0) return;
 
-        if (_bitmap is not null && _fbWidth == width && _fbHeight == height) return;
+        var dpiScale = BitmapDpiScale();
+        if (_bitmap is not null && _fbWidth == width && _fbHeight == height && _bitmapDpiScale == dpiScale) return;
 
         _fbWidth = width;
         _fbHeight = height;
+        _bitmapDpiScale = dpiScale;
         // Bgr32: 4번째 바이트(서버 패딩) 무시 — 픽셀 단위 후처리 없이 곧장 업로드
-        _bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgr32, null);
+        var dpi = 96 * dpiScale;
+        _bitmap = new WriteableBitmap(width, height, dpi, dpi, PixelFormats.Bgr32, null);
         ScreenImage.Source = _bitmap;
+    }
+
+    /// <summary>
+    ///     비트맵 DPI(모니터 배율 단위) — Image 가 그리는 기본 크기를 정한다(맞춤 모드는 이 크기보다 키우지 않는다).
+    ///     1:1·RDP 창 맞춤 해상도: 모니터 배율 — 게스트 픽셀 하나가 물리 픽셀 하나(150% 에서 1.5배로 번지지 않게).
+    ///     그 밖의 맞춤(VNC 등 게스트 해상도 고정): 1 — 게스트에 DPI 를 전할 방법이 없으므로(VNC 엔 없고, IronRDP 는 배율을
+    ///     열어 두지 않는다) Windows 가 배율 미지원 앱을 키우듯 모니터 배율까지 키워 보여 준다.
+    /// </summary>
+    private double BitmapDpiScale()
+    {
+        return !_fitMode || FitsGuestToWindow ? VisualTreeHelper.GetDpi(this).DpiScaleX : 1;
+    }
+
+    /// <summary>모니터 배율·맞춤 모드가 바뀌었을 때 — 비트맵을 새 DPI 로 다시 만들고 화면 전체를 다시 올린다.</summary>
+    private void RebuildBitmap()
+    {
+        if (_bitmap is null || _fbWidth == 0 || _fbHeight == 0) return;
+
+        var (width, height) = (_fbWidth, _fbHeight);
+        if (_bitmapDpiScale == BitmapDpiScale()) return;
+
+        _bitmap = null;
+        EnsureBitmap(width, height);
+        if (_direct is null) QueueFrameFlush(0, 0, width, height); // GPU 화면은 원본 버퍼를 직접 그린다
     }
     /// <summary>프레임 병합 — flush 대기 중 도착한 갱신은 dirty 영역만 확장(업로드 최신 상태에 자동 포함).</summary>
     private void OnCompositionRendering(object? sender, EventArgs e)
@@ -488,21 +518,27 @@ public partial class ConsoleWindow : Window
     ///     화면 영역이 프레임버퍼와 정확히 같아지도록 창 크기를 맞춘다.
     ///     고정 오프셋 대신 실제 창 크기와 화면 영역의 차이(제목 표시줄·테두리·도구 모음·상태 표시줄)를 사용한다.
     /// </summary>
-    private void FitWindowToFramebuffer(int fbWidth, int fbHeight)
+    private void FitWindowToFramebuffer(int fbWidth, int fbHeight, bool center = true)
     {
         UpdateLayout();
         var chromeWidth = Math.Max(0, ActualWidth - ConsoleScroll.ActualWidth);
         var chromeHeight = Math.Max(0, ActualHeight - ConsoleScroll.ActualHeight);
-        var workArea = SystemParameters.WorkArea;
+        // 창이 놓인 모니터 기준 — SystemParameters.WorkArea 는 주 모니터뿐이라 보조 모니터 창이 주 모니터로 옮겨졌다
+        var workArea = MonitorArea.WorkAreaOf(this);
+        // 비트맵이 그려질 기본 크기(WPF 단위) — 1:1 이면 물리 픽셀 그대로라 모니터 배율만큼 작다
+        var scale = _bitmapDpiScale > 0 ? _bitmapDpiScale : BitmapDpiScale();
 
-        Width = Math.Min(fbWidth + chromeWidth, workArea.Width);
-        Height = Math.Min(fbHeight + chromeHeight, workArea.Height);
+        Width = Math.Min(fbWidth / scale + chromeWidth, workArea.Width);
+        Height = Math.Min(fbHeight / scale + chromeHeight, workArea.Height);
+        if (!center) return;
+
         Left = workArea.Left + (workArea.Width - Width) / 2;
         Top = workArea.Top + (workArea.Height - Height) / 2;
     }
     /// <summary>맞춤(축소) 모드 + 부드러운 스케일링 설정 시 Linear, 그 외(1:1 포함)는 NearestNeighbor 로 픽셀 선명도 유지.</summary>
     private void ApplyScalingMode()
     {
+        RebuildBitmap(); // 맞춤 전환·RDP 창 맞춤 해상도 설정 — 기본 크기(비트맵 DPI)가 바뀔 수 있다
         RenderOptions.SetBitmapScalingMode(ScreenImage, _fitMode && SmoothScaling
             ? BitmapScalingMode.Linear
             : BitmapScalingMode.NearestNeighbor);
@@ -551,21 +587,11 @@ public partial class ConsoleWindow : Window
     {
         if (_bitmap is null || _fbWidth == 0 || _fbHeight == 0) return (0, 0);
 
-        double x;
-        double y;
-        if (_fitMode)
-        {
-            var scale = Math.Min(ScreenImage.ActualWidth / _fbWidth, ScreenImage.ActualHeight / _fbHeight);
-            var offsetX = (ScreenImage.ActualWidth - _fbWidth * scale) / 2;
-            var offsetY = (ScreenImage.ActualHeight - _fbHeight * scale) / 2;
-            x = (position.X - offsetX) / scale;
-            y = (position.Y - offsetY) / scale;
-        }
-        else
-        {
-            x = position.X;
-            y = position.Y;
-        }
+        var scale = DisplayScale();
+        var offsetX = _fitMode ? (ScreenImage.ActualWidth - _fbWidth * scale) / 2 : 0;
+        var offsetY = _fitMode ? (ScreenImage.ActualHeight - _fbHeight * scale) / 2 : 0;
+        var x = (position.X - offsetX) / scale;
+        var y = (position.Y - offsetY) / scale;
 
         return ((int)Math.Clamp(x, 0, _fbWidth - 1), (int)Math.Clamp(y, 0, _fbHeight - 1));
     }

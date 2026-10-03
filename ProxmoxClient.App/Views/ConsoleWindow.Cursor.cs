@@ -38,10 +38,14 @@ public partial class ConsoleWindow
         RefreshCursor();
     }
 
-    /// <summary>화면 배율 — 맞춤 모드면 축소 비율, 아니면 1.</summary>
+    /// <summary>
+    ///     화면 배율 — 게스트 픽셀 하나가 차지하는 WPF 단위. 맞춤 모드면 축소 비율,
+    ///     1:1 이면 물리 픽셀 하나(= 1 / 모니터 배율).
+    /// </summary>
     private double DisplayScale()
     {
-        if (!_fitMode || _fbWidth == 0 || _fbHeight == 0) return 1;
+        if (_fbWidth == 0 || _fbHeight == 0) return 1;
+        if (!_fitMode) return 1 / (_bitmapDpiScale > 0 ? _bitmapDpiScale : VisualTreeHelper.GetDpi(this).DpiScaleX);
         return Math.Min(ScreenImage.ActualWidth / _fbWidth, ScreenImage.ActualHeight / _fbHeight);
     }
 
