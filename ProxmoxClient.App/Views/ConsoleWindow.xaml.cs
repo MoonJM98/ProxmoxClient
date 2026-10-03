@@ -594,14 +594,16 @@ public partial class ConsoleWindow : Window
     private void OnOpenSettings(object sender, RoutedEventArgs e)
     {
         var tab = IsRdp ? ConsoleSettingsTab.Rdp : ConsoleSettingsTab.Vnc;
-        var dialog = new ConsoleSettingsWindow(_settings, tab) { Owner = this };
-        if (dialog.ShowDialog() != true || dialog.SavedSettings is not { } saved) return;
+        ConsoleSettingsWindow.ShowBeside(this, _settings, tab, saved =>
+        {
+            if (_closed) return;
 
-        _settings = saved;
-        ApplyScalingMode();
-        ApplyDirectRendering();
-        QueueDesktopResize(); // RDP 창 맞춤 해상도를 방금 켰으면 바로 맞춘다
-        SetState(Loc.T("ConsoleWindow_M14"));
+            _settings = saved;
+            ApplyScalingMode();
+            ApplyDirectRendering();
+            QueueDesktopResize(); // RDP 창 맞춤 해상도를 방금 켰으면 바로 맞춘다
+            SetState(Loc.T("ConsoleWindow_M14"));
+        });
     }
     private (int X, int Y) ToVncCoordinates(Point position)
     {

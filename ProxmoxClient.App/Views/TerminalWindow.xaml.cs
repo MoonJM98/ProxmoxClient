@@ -413,14 +413,14 @@ public partial class TerminalWindow : Window
 
     private void OnOpenSettings(object sender, RoutedEventArgs e)
     {
-        var dialog = new ConsoleSettingsWindow(_settings, ConsoleSettingsTab.Terminal) { Owner = this };
-        if (dialog.ShowDialog() == true && dialog.SavedSettings is { } saved)
+        ConsoleSettingsWindow.ShowBeside(this, _settings, ConsoleSettingsTab.Terminal, saved =>
         {
+            if (_closed) return;
+
             _settings = saved;
             ApplyTheme(); // 글꼴·크기는 즉시 적용
             SetState(Loc.T("TerminalWindow_M06"));
-        }
-
-        Terminal.Focus();
+            Terminal.Focus();
+        });
     }
 }

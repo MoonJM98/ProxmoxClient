@@ -132,7 +132,7 @@
                             Content="{loc:Tr AppSettingsWindow_12}"
                             Style="{StaticResource DialogPrimaryButton}" Click="OnSave" IsDefault="True" />
                     <Button ic:IconAssist.Icon="{StaticResource IconX}" Content="{loc:Tr AppSettingsWindow_13}"
-                            Style="{StaticResource DialogButton}" IsCancel="True" />
+                            Style="{StaticResource DialogButton}" IsCancel="True" Click="OnCancel" />
                 </StackPanel>
                 <TextBlock x:Name="StatusText" Style="{StaticResource DialogStatus}"
                            Foreground="{StaticResource BrushDim}"
