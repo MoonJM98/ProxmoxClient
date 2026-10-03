@@ -72,6 +72,14 @@ public sealed class ProxmoxVncSession : IConsoleSession
         IsConnected = false;
     }
 
+    /// <summary>연결 도중 실패 — 이 연결의 소켓만 버린다(그사이 다른 연결로 바뀌었으면 그것은 두고).</summary>
+    private void AbandonConnection(ClientWebSocket websocket)
+    {
+        if (Interlocked.CompareExchange(ref _websocket, null, websocket) == websocket) _rfb = null;
+        websocket.Abort();
+        websocket.Dispose();
+    }
+
     /// <summary>UI 표시용 상태 문자열.</summary>
     public event Action<string>? StatusChanged;
 
@@ -188,9 +196,14 @@ public sealed class ProxmoxVncSession : IConsoleSession
             {
                 await rfb.HandshakeAsync(proxy.Ticket, handshakeCts.Token).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (!connectCts.IsCancellationRequested && !_disposed)
+            catch (Exception ex)
             {
-                throw new TimeoutException(Res.T("ProxmoxVncSession_06"));
+                // 핸드셰이크 실패(보안 유형 미지원·인증 실패·시간 초과 등) — 연 웹소켓을 닫는다. 남기면 창을 닫거나
+                // 다시 연결할 때까지 PVE 의 vncproxy 연결이 열린 채로 남는다
+                AbandonConnection(websocket);
+                if (ex is OperationCanceledException && !connectCts.IsCancellationRequested && !_disposed)
+                    throw new TimeoutException(Res.T("ProxmoxVncSession_06"));
+                throw;
             }
         }
 

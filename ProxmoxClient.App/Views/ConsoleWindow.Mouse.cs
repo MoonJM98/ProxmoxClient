@@ -5,12 +5,27 @@ namespace ProxmoxClient.App.Views;
 /// <summary>마우스 — 화면 좌표를 게스트 좌표로 바꿔 포인터 이벤트를 보낸다.</summary>
 public partial class ConsoleWindow
 {
+    private (int X, int Y) _lastPointer; // 마지막으로 보낸 게스트 좌표 — 캡처를 잃었을 때 그 자리에서 뗀다
+
     private void SendPointer(int extraMask)
     {
         if (_session?.IsConnected != true) return;
 
         var pos = ToVncCoordinates(Mouse.GetPosition(ScreenImage));
+        _lastPointer = pos;
         _ = _session.SendPointerAsync(extraMask, pos.X, pos.Y);
+    }
+
+    /// <summary>
+    ///     마우스 캡처를 잃었다(다른 창이 포커스를 가져감 등) — 눌린 버튼이 있으면 마지막 자리에서 게스트에도 뗀다.
+    ///     로컬 상태만 지우면 게스트는 끌기를 계속하다 마우스가 돌아온 엉뚱한 자리에 놓는다.
+    /// </summary>
+    private void OnScreenLostMouseCapture()
+    {
+        if (_pointerMask == 0) return;
+
+        _pointerMask = 0;
+        if (_session?.IsConnected == true) _ = _session.SendPointerAsync(0, _lastPointer.X, _lastPointer.Y);
     }
     private void OnImageMouseDown(object sender, MouseButtonEventArgs e)
     {

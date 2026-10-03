@@ -127,7 +127,7 @@ public sealed partial class ProxmoxRdpSession
 
     /// <summary>
     ///     서버가 해상도를 바꿨다(Deactivate-All) — 연결 활성화 단계를 다시 밟고 새 크기로 버퍼를 만든다.
-    ///     그동안 들어온 입력은 버린다(IronRDP 가 옛 채널로 만들 수 있다).
+    ///     그동안 들어온 입력은 붙잡아 두었다가(옛 채널로 나가지 않게) 끝나면 보낸다.
     /// </summary>
     private async Task ReactivateAsync(RdpChannel channel, ConnectionActivationSequence activation)
     {
@@ -163,6 +163,7 @@ public sealed partial class ProxmoxRdpSession
             {
                 _reactivating = false;
                 FlushHeldClipboardFrames();
+                FlushHeldInputs();
             }
         }
     }

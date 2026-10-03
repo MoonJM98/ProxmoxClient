@@ -112,7 +112,7 @@ public partial class ConsoleWindow : Window
             if (WindowState == WindowState.Minimized) RemoveKeyboardHook();
             else InstallKeyboardHook();
         };
-        ScreenImage.LostMouseCapture += (_, _) => _pointerMask = 0; // 캡처를 잃으면 눌림 상태가 남지 않게
+        ScreenImage.LostMouseCapture += (_, _) => OnScreenLostMouseCapture(); // 캡처를 잃으면 눌림 상태가 남지 않게
         // 화면 크기(맞춤 배율)·모니터 DPI 가 바뀌면 커서 크기도 게스트 화면과 같은 비율로 다시 만든다
         ScreenImage.SizeChanged += (_, _) => RefreshCursor();
         ConsoleScroll.SizeChanged += (_, _) => QueueDesktopResize(); // RDP — 게스트 해상도를 창에 맞춘다
@@ -129,6 +129,7 @@ public partial class ConsoleWindow : Window
         Loaded += async (_, _) =>
         {
             _settings = await _settingsStore.LoadAsync();
+            if (_closed) return; // 설정을 읽는 사이 닫혔다 — 연결하면 주인 없는 세션이 남는다
             ApplyScalingMode();
             ApplyDirectRendering();
             if (_runState.IsStopped)
@@ -210,6 +211,8 @@ public partial class ConsoleWindow : Window
     /// <summary>연결 시도. 핸드셰이크까지 성공하면 true.</summary>
     private async Task<bool> ConnectAsync()
     {
+        if (_closed) return false;
+
         _session?.Dispose();
         _session = null;
         ResetCursor();

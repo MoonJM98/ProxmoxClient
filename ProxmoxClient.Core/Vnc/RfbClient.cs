@@ -38,6 +38,9 @@ public sealed class RfbRect
 /// </summary>
 public sealed partial class RfbClient
 {
+    /// <summary>ServerInit 의 데스크톱 이름 길이 상한.</summary>
+    private const uint MaxServerNameBytes = 64 * 1024;
+
     private const int EncRaw = 0;
     private const int EncCopyRect = 1;
     private const int EncTight = 7;
@@ -197,8 +200,10 @@ public sealed partial class RfbClient
         FramebufferHeight = await ReadU16Async(ct).ConfigureAwait(false);
         ValidateFramebufferSize(FramebufferWidth, FramebufferHeight);
         _ = await ReadPixelFormatAsync(ct).ConfigureAwait(false); // 서버 기본 형식 (무시)
-        var nameLen = (int)await ReadU32Async(ct).ConfigureAwait(false);
-        ServerName = nameLen > 0 ? await ReadStringAsciiAsync(nameLen, ct).ConfigureAwait(false) : string.Empty;
+        var nameLen = await ReadU32Async(ct).ConfigureAwait(false);
+        // 고장 난 서버가 2GB 넘는 길이를 보내면 int 로 바꾸며 음수가 된다 — 이름은 짧으니 터무니없으면 끊는다
+        if (nameLen > MaxServerNameBytes) throw new IOException(Res.T("RfbClient_BadLength", nameLen));
+        ServerName = nameLen > 0 ? await ReadStringAsciiAsync((int)nameLen, ct).ConfigureAwait(false) : string.Empty;
 
         // RFB 6143 §7.4: 타입(1) + 패딩(3) + 16바이트 포맷 — 포맷은 오프셋 4부터 시작
         Span<byte> setPixelFormat = stackalloc byte[20];
@@ -433,6 +438,8 @@ public sealed partial class RfbClient
                 case 3: // ServerCutText — 종류(1) 뒤에 빈칸 3바이트, 그다음 길이(4)
                     await ReadExactlyAsync(_scratch, 0, 7, ct).ConfigureAwait(false);
                     var length = BinaryPrimitives.ReadInt32BigEndian(_scratch.AsSpan(3, 4));
+                    // -int.MinValue 은 다시 int.MinValue(음수)라 길이로 쓸 수 없다 — 건너뛸 수도 없으니 끊는다
+                    if (length == int.MinValue) throw new IOException(Res.T("RfbClient_BadLength", (uint)length));
                     if (length < 0) // 확장 클립보드(UTF-8) — RfbClient.Clipboard.cs
                         await HandleExtendedClipboardAsync(-length, ct).ConfigureAwait(false);
                     else if (length > 0 && length < 1_000_000)

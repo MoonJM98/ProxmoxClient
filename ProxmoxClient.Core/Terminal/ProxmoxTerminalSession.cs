@@ -156,8 +156,13 @@ public sealed class ProxmoxTerminalSession : IDisposable
         if (IsConnected) _outgoing.Writer.TryWrite(ResizeMessage(columns, rows));
     }
 
+    /// <summary>
+    ///     정상 종료(닫기 핸드셰이크) — 이 세션의 끝이다(다시 연결하려면 새 세션). 연결하는 중이었으면 그 시도도 멈춘다:
+    ///     소켓이 아직 없으면 닫을 것이 없으므로, 표시해 두지 않으면 연결이 끝난 뒤 주인 없는 셸이 ping 으로 서버에 남는다.
+    /// </summary>
     public async Task DisconnectAsync()
     {
+        _disposed = true; // 진행 중인 ConnectAsync 가 소켓을 받은 뒤 이것을 보고 버린다
         var socket = Interlocked.Exchange(ref _socket, null);
         var cts = Interlocked.Exchange(ref _cts, null);
         if (socket is { State: WebSocketState.Open })
@@ -178,6 +183,7 @@ public sealed class ProxmoxTerminalSession : IDisposable
         cts?.Cancel();
         socket?.Dispose();
         cts?.Dispose();
+        _lifetimeCts.Cancel(); // termproxy 만들기·소켓 연결을 기다리는 중이면 거기서 멈춘다
         IsConnected = false;
     }
 
@@ -254,7 +260,12 @@ public sealed class ProxmoxTerminalSession : IDisposable
         while (!ct.IsCancellationRequested)
         {
             var result = await socket.ReceiveAsync(buffer.AsMemory(), ct).ConfigureAwait(false);
-            if (result.MessageType == WebSocketMessageType.Close) return;
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                // "OK" 전에 닫혔다 — 서버가 인증(만료된 티켓·Sys.Console 권한 없음)을 거부한 것이지 정상 종료가 아니다
+                if (authMatched < AuthOk.Length) throw new IOException(Res.T("ProxmoxTerminalSession_06"));
+                return;
+            }
 
             var offset = 0;
             var count = result.Count;
