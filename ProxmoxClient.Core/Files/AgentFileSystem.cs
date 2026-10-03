@@ -179,6 +179,8 @@ public sealed class AgentFileSystem : IGuestFileSystem
 
     /// <summary>
     ///     파일 전체를 받는다 — 16 MiB 이하면 에이전트 파일 API 로 한 번에(실패하면 조각으로), 아니면 조각으로.
+    ///     size 는 목록의 크기(어림값)일 뿐 — 심볼릭 링크는 링크 자체 크기(대상 경로 길이·0)이고, 목록 뒤에 커진 파일도 있다.
+    ///     그래서 끝은 실제로 읽은 데이터로 정한다.
     /// </summary>
     private async Task ReadAllAsync(string path, long size, Stream destination, IProgress<long>? progress,
         CancellationToken ct)
@@ -191,11 +193,11 @@ public sealed class AgentFileSystem : IGuestFileSystem
             return;
         }
 
-        await ReadChunksAsync(path, size, destination, progress, ct).ConfigureAwait(false);
+        await ReadChunksAsync(path, destination, progress, ct).ConfigureAwait(false);
     }
 
     /// <summary>
-    ///     에이전트 파일 API 로 읽기 — 서버는 바이트를 한 글자씩(0~255) 싣는다. 잘렸거나 크기가 다르거나(그사이 바뀜)
+    ///     에이전트 파일 API 로 읽기 — 서버는 바이트를 한 글자씩(0~255) 싣는다. 잘렸거나
     ///     글자가 바이트가 아니면 null(조각 방식으로). 막혔거나 권한이 없으면 이 연결 동안 쓰지 않는다.
     /// </summary>
     private async Task<byte[]?> TryFileReadAsync(string path, long size, CancellationToken ct)
@@ -211,32 +213,35 @@ public sealed class AgentFileSystem : IGuestFileSystem
             return null;
         }
 
-        return FileReadBytes(result, size);
+        return FileReadBytes(result);
     }
 
-    /// <summary>file-read 결과를 바이트로 — 잘렸거나 크기가 다르거나 바이트가 아닌 글자가 있으면 null.</summary>
-    internal static byte[]? FileReadBytes(IReadOnlyDictionary<string, string> result, long size)
+    /// <summary>
+    ///     file-read 결과를 바이트로 — 잘렸거나 바이트가 아닌 글자가 있으면 null. 목록 크기와 달라도 잘리지 않았으면
+    ///     그것이 지금의 파일 전체다(링크 대상·그사이 바뀐 파일).
+    /// </summary>
+    internal static byte[]? FileReadBytes(IReadOnlyDictionary<string, string> result)
     {
         var content = result.GetValueOrDefault("content", string.Empty);
-        if (result.GetValueOrDefault("truncated") is "1" or "true" or "True" || content.Length != size
-            || content.Any(c => c > 0xFF))
+        if (result.GetValueOrDefault("truncated") is "1" or "true" or "True" || content.Any(c => c > 0xFF))
             return null;
 
         return content.Select(c => (byte)c).ToArray();
     }
 
-    /// <summary>크기만큼 조각으로 읽는다 — 파일이 그사이 줄었으면 빈 조각에서 멈춘다.</summary>
-    private async Task ReadChunksAsync(string path, long size, Stream destination, IProgress<long>? progress,
+    /// <summary>
+    ///     빈 조각(파일 끝)이 올 때까지 조각으로 읽는다 — 조각이 짧게 와도(네트워크·FUSE 파일 시스템) 이어 읽는다.
+    ///     목록 크기에서 멈추지 않는다: 링크는 대상 파일 끝까지, 그사이 커진 파일은 지금 끝까지 받는다.
+    /// </summary>
+    private async Task ReadChunksAsync(string path, Stream destination, IProgress<long>? progress,
         CancellationToken ct)
     {
-        // 조각이 짧게 와도(네트워크·FUSE 파일 시스템) 크기에 이를 때까지 이어 읽고, 파일이 그사이 줄면 실패로 알린다
         long done = 0;
-        while (done < size)
+        while (true)
         {
-            var count = (int)Math.Min(ReadChunk, size - done);
-            var text = await RunAsync(_dialect.ReadChunk(path, done, count), null, ct).ConfigureAwait(false);
+            var text = await RunAsync(_dialect.ReadChunk(path, done, ReadChunk), null, ct).ConfigureAwait(false);
             var bytes = Convert.FromBase64String(text.Trim());
-            if (bytes.Length == 0) throw new GuestFileException(Res.T("AgentFiles_Shrunk", done, size));
+            if (bytes.Length == 0) break;
 
             await destination.WriteAsync(bytes, ct).ConfigureAwait(false);
             done += bytes.Length;

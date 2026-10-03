@@ -75,12 +75,15 @@ internal static class ContainerScripts
                                + "cat -- \"$R$f\"";
     }
 
-    /// <summary>폴더를 tar 로(안의 링크는 링크 그대로).</summary>
+    /// <summary>
+    ///     폴더를 tar 로(안의 링크는 링크 그대로). 노드(GNU tar)의 종료 코드 1 은 "읽는 중에 파일이 바뀜" 경고일 뿐
+    ///     묶음은 온전하므로 성공으로 본다 — 실행 중인 CT 의 로그·DB 폴더를 받을 수 있게.
+    /// </summary>
     public static string TarDirectory(string path)
     {
         // dirname·basename 은 $(…) 가 이름 끝 줄바꿈을 지우므로 셸 문자열 연산으로 나눈다
         return Real("f", path) + "[ \"$f\" != / ] || exit 2; p=${f%/*}; [ -n \"$p\" ] || p=/; "
-                               + "cd -- \"$R$p\" && tar -cf - -- \"${f##*/}\"";
+                               + "cd -- \"$R$p\" && { tar -cf - -- \"${f##*/}\"; rc=$?; [ $rc -ne 1 ] || rc=0; exit $rc; }";
     }
 
     /// <summary>

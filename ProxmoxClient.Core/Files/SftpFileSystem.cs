@@ -117,13 +117,55 @@ public sealed class SftpFileSystem : IGuestFileSystem
         await CopyAsync(source, destination, progress, ct).ConfigureAwait(false);
     }, ct);
 
+    // Writes to a temporary file next to the target and swaps it in only after the copy completes, so a cancelled or
+    // failed upload never truncates the existing file (the agent and container paths work the same way).
     public Task UploadAsync(string directory, string name, Stream source, long length, IProgress<long>? progress,
         CancellationToken ct = default) => RunAsync(async () =>
     {
-        using var destination = await _client.OpenAsync(Combine(directory, GuestPaths.CheckName(name)),
-            FileMode.Create, FileAccess.Write, ct).ConfigureAwait(false);
-        await CopyAsync(source, destination, progress, ct).ConfigureAwait(false);
+        var target = Combine(directory, GuestPaths.CheckName(name));
+        var temp = Combine(directory, ".pvc-up." + Guid.NewGuid().ToString("N"));
+        try
+        {
+            using (var destination = await _client.OpenAsync(temp, FileMode.CreateNew, FileAccess.Write, ct)
+                       .ConfigureAwait(false))
+                await CopyAsync(source, destination, progress, ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            await Task.Run(() => Replace(temp, target), CancellationToken.None).ConfigureAwait(false);
+        }
+        catch
+        {
+            try { await _client.DeleteFileAsync(temp, CancellationToken.None).ConfigureAwait(false); }
+            catch (Exception ex) when (ex is SshException or SocketException or IOException or InvalidOperationException) { }
+            throw;
+        }
     }, ct);
+
+    // Keeps the existing file's permission bits (overwriting in place used to), then renames over it. POSIX rename
+    // replaces atomically; servers without that extension need the old file removed first.
+    private void Replace(string temp, string target)
+    {
+        if (_client.Exists(target))
+        {
+            try
+            {
+                var attributes = _client.GetAttributes(target);
+                if (attributes.IsRegularFile)
+                    _client.ChangePermissions(temp, Convert.ToInt16(Permissions(attributes), 8));
+            }
+            catch (SshException) { }
+
+            try
+            {
+                _client.RenameFile(temp, target, true);
+                return;
+            }
+            catch (Exception ex) when (ex is SshException or NotSupportedException) { }
+
+            _client.DeleteFile(target);
+        }
+
+        _client.RenameFile(temp, target);
+    }
 
     private static async Task CopyAsync(Stream source, Stream destination, IProgress<long>? progress, CancellationToken ct)
     {

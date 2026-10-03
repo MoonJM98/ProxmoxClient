@@ -130,9 +130,14 @@ internal sealed class PosixAgentDialect : IAgentDialect
 
     public IReadOnlyList<string> Delete(string directory, string name) => Sh("rm -rf -- \"$1/$2\"", directory, name);
 
+    /// <summary>
+    ///     폴더를 게스트 임시 tar 로 — GNU tar 의 종료 코드 1 은 "읽는 중에 파일이 바뀜"(로그·DB 폴더) 경고일 뿐 묶음은
+    ///     온전하므로 받는다. BusyBox tar(Alpine 등)는 1 이 진짜 실패라 GNU 일 때만.
+    /// </summary>
     public IReadOnlyList<string> TarToTemp(string path, string temp)
     {
-        return Sh("umask 077; tar -C \"$(dirname -- \"$1\")\" -cf \"$2\" -- \"$(basename -- \"$1\")\" || exit 1; "
+        return Sh("umask 077; tar -C \"$(dirname -- \"$1\")\" -cf \"$2\" -- \"$(basename -- \"$1\")\"; rc=$?; "
+                  + "if [ $rc -eq 1 ] && tar --version 2>/dev/null | grep -q GNU; then rc=0; fi; [ $rc -eq 0 ] || exit 1; "
                   + "wc -c < \"$2\"", path, temp);
     }
 
@@ -145,7 +150,7 @@ internal sealed class PosixAgentDialect : IAgentDialect
     }
 }
 
-/// <summary>Windows 게스트 — PowerShell(-EncodedCommand). 경로는 PowerShell 작은따옴표 글자로 넣는다.</summary>
+/// <summary>Windows 게스트 — PowerShell(-EncodedCommand). 경로는 base64 로 실어 넣는다(<see cref="L" />).</summary>
 internal sealed class WindowsAgentDialect : IAgentDialect
 {
     public char Separator => '\\';
@@ -282,8 +287,16 @@ internal sealed class WindowsAgentDialect : IAgentDialect
 
     public string TempPath(string directory, string id) => Combine(directory, ".pvc-up." + id);
 
-    /// <summary>PowerShell 작은따옴표 글자 — 안의 ' 는 '' 로.</summary>
-    private static string L(string value) => "'" + value.Replace("'", "''") + "'";
+    /// <summary>
+    ///     PowerShell 문자열 값 — 글자를 스크립트에 넣지 않고 UTF-8 base64 로 실어 풀어 쓴다(괄호 식이라 인자·식 어디든).
+    ///     작은따옴표 글자로 감싸면 ' 만이 아니라 ‘ ’ ‚ ‛ 도 PowerShell 에선 따옴표라, 게스트의 파일 이름
+    ///     (Bob’s report.docx 같은 흔한 이름, 또는 일부러 만든 이름)이 문자열을 끝내고 명령으로 실행될 수 있다(qemu-ga = SYSTEM).
+    /// </summary>
+    private static string L(string value)
+    {
+        return "([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('"
+               + Convert.ToBase64String(Encoding.UTF8.GetBytes(value)) + "')))";
+    }
 
     /// <summary>
     ///     PowerShell 한 줄 — 오류는 글로 표준 오류에(직렬화된 CLIXML 이 아니라), 종료 코드 1. 스크립트는 UTF-16 base64 로

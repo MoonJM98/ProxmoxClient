@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Media;
 using Microsoft.Win32;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.Core.Files;
@@ -150,8 +151,35 @@ public partial class GuestFilesPanel
 
         var sources = paths.Where(File.Exists).ToList();
         var skipped = paths.Count - sources.Count;
+        var directory = _current;
+        // 같은 이름 확인은 다 읽은 목록으로 — 캐시·빈 목록·받는 도중의 목록이면 빠진 파일을 묻지 않고 덮어쓰게 된다
+        var known = _lastEntries ?? [];
+        if (!_entriesComplete)
+        {
+            StatusText.Text = Loc.T("GuestFiles_Loading");
+            try
+            {
+                known = await files.RefreshAsync(directory, _loadCancel.Token);
+            }
+            catch (Exception ex) when (IsExpected(ex) || ex is OperationCanceledException)
+            {
+                StatusText.Foreground = (Brush)FindResource("BrushWarn");
+                StatusText.Text = ex is OperationCanceledException
+                    ? Loc.T("GuestFiles_Cancelled")
+                    : Loc.T("GuestFiles_Error", ex.Message);
+                return;
+            }
+
+            if (directory == _current)
+            {
+                ++_listing;
+                ShowEntries(directory, known);
+                _entriesComplete = true;
+            }
+        }
+
         // 숨겨 둔 항목까지(보기에서 뺐어도 덮어쓰게 된다), 게스트 규칙대로(Windows 는 README.md = readme.md)
-        var existing = (_lastEntries ?? []).Select(e => e.Name).ToHashSet(files.NameComparer);
+        var existing = known.Select(e => e.Name).ToHashSet(files.NameComparer);
         var clashes = sources.Select(Path.GetFileName).Where(n => existing.Contains(n!)).ToList();
         if (clashes.Count > 0 && !Confirm(Loc.T("GuestFiles_OverwriteConfirm", string.Join(", ", clashes.Take(5)),
                 clashes.Count)))
@@ -159,7 +187,6 @@ public partial class GuestFilesPanel
 
         await RunAsync(Loc.T("GuestFiles_Uploading"), async ct =>
         {
-            var directory = _current;
             foreach (var path in sources)
             {
                 var name = Path.GetFileName(path);

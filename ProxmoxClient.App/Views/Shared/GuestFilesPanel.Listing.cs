@@ -23,6 +23,7 @@ public partial class GuestFilesPanel
     });
 
     private IReadOnlyList<GuestFileEntry>? _lastEntries; // 지금 폴더의 전체 목록(숨김 포함) — 보기 전환용
+    private bool _entriesComplete; // _lastEntries 가 게스트에서 방금 다 읽은 목록인가(캐시·빈 목록·받는 도중이면 아님)
     private int _listing; // 폴더를 옮길 때마다 올린다 — 옛 결과를 가려낸다
     private int _loads; // 읽는 중인 목록 수(진행 막대)
     private ObservableCollection<GuestFileRow> _rows = [];
@@ -40,10 +41,14 @@ public partial class GuestFilesPanel
         var cached = files.Peek(directory);
         var back = cached is null ? (_current, _lastEntries) : default; // 못 읽으면 돌아갈 곳
         ShowEntries(directory, cached ?? []);
+        _entriesComplete = false;
         if (cached is null) StatusText.Text = Loc.T("GuestFiles_Loading");
         if (!await RevalidateAsync(files, directory, generation, cached is null) && back._lastEntries is { } entries
             && generation == _listing)
+        {
             ShowEntries(back._current, entries, false); // 없는 폴더 등 — 그 폴더에 머물지 않고 되돌린다
+            _entriesComplete = false;
+        }
     }
 
     /// <summary>새로 고침 — 보이는 목록은 그대로 두고 게스트에서 다시 읽어 바뀐 줄만 반영한다.</summary>
@@ -74,7 +79,11 @@ public partial class GuestFilesPanel
             var fresh = await files.RefreshAsync(directory, partial, _loadCancel.Token);
             done = true;
             // 작업이 상태 줄(진행률 등)을 쓰는 중이면 목록만 바꾼다
-            if (generation == _listing) ShowEntries(directory, fresh, _busy is null);
+            if (generation == _listing)
+            {
+                ShowEntries(directory, fresh, _busy is null);
+                _entriesComplete = true;
+            }
             return true;
         }
         catch (Exception ex) when (IsExpected(ex) || ex is OperationCanceledException)
@@ -100,6 +109,7 @@ public partial class GuestFilesPanel
         if (generation != _listing) return;
 
         ShowEntries(directory, list, false);
+        _entriesComplete = false;
         if (_busy is null) StatusText.Text = Loc.T("GuestFiles_LoadingCount", list.Count);
     }
 
@@ -119,6 +129,7 @@ public partial class GuestFilesPanel
         var entries = await files.RefreshAsync(directory, ct);
         ++_listing; // 그 전에 시작한 목록 결과가 이것을 덮지 않게
         ShowEntries(directory, entries);
+        _entriesComplete = true;
     }
 
     /// <summary>
