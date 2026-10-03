@@ -268,10 +268,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _runtimeProfile = null;
         if (profile is null) return;
 
+        // 서버 전환 — 옛 연결의 목록·상태를 먼저 비운다. 남겨 두면 새로 고침이 VMID 가 같은 옛 행 객체를
+        // 새 서버 값으로 덮어써(옛 콘솔 창이 쥔 객체) 서버가 섞이고, 로그인 중에도 타이머가 새 클라이언트로 새로 고친다
+        if (Api is not null) await DisconnectCoreAsync().ConfigureAwait(true);
+
         IsBusy = true;
         ConnectionStatus = Loc.T("ConsoleWindow_06");
         try
         {
+            // 다른 .ovpn 이 필요한 서버로 바꾸면 지금 터널을 끊고 그 프로필의 터널로 — 옛 터널로는 닿지 않거나 엉뚱한 곳에 닿는다
+            if (profile.UseVpn && _vpn.State is (VpnState.Connected or VpnState.Reconnecting or VpnState.Connecting)
+                && !SameVpnConfig(_vpn.ConfigPath, profile.VpnConfigPath))
+                await _vpn.DisconnectAsync().ConfigureAwait(true);
+
             if (profile.UseVpn && _vpn.State is not (VpnState.Connected or VpnState.Reconnecting))
             {
                 StatusMessage = Loc.T("MainViewModel_M03");
@@ -327,6 +336,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
             IsBusy = false;
         }
     }
+    private static bool SameVpnConfig(string? current, string? wanted)
+    {
+        if (current is null || string.IsNullOrEmpty(wanted)) return false;
+
+        try
+        {
+            return string.Equals(current, Path.GetFullPath(wanted), StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
+    }
     private bool CanDisconnect()
     {
         return IsConnected && !IsBusy;
@@ -355,6 +377,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Guests.Clear();
         Nodes.Clear();
         Tasks.Clear();
+        _liveStatusOverrides.Clear();
         NodeStatus = null;
         GuestGraphSeries = null;
         NodeGraphSeries = null;

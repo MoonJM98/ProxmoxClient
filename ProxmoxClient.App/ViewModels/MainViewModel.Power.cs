@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using ProxmoxClient.App.Localization;
+using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
 
 namespace ProxmoxClient.App.ViewModels;
@@ -100,6 +101,15 @@ public partial class MainViewModel
         return RunGuestPowerAsync(
             g => Api!.ResetGuestAsync(g.Node, g.VmId), Loc.T("GuestPower_Reset"), SelectedGuest!);
     }
+    /// <summary>
+    ///     그 연결(api)로 연 창에 넘길 전원 동작 — 서버를 바꾸거나 다시 연결한 뒤에는 아무것도 하지 않는다.
+    ///     콘솔 창은 주인 없이 남으므로, 지금 Api(다른 서버일 수 있음)로 보내면 같은 VMID 의 엉뚱한 게스트가 꺼진다.
+    /// </summary>
+    public GuestPowerRunner PowerRunnerFor(ProxmoxApiClient api)
+    {
+        return (guest, action) => ReferenceEquals(Api, api) ? RunGuestPowerForAsync(guest, action) : Task.CompletedTask;
+    }
+
     /// <summary>콘솔 창 등 외부에서 특정 게스트의 전원 동작 실행(선택된 게스트와 무관). 상태상 불가능한 동작은 무시.</summary>
     public Task RunGuestPowerForAsync(PveResource guest, GuestPowerAction action)
     {

@@ -203,7 +203,7 @@ public partial class MainWindow : Window
     private void OpenGuestWindow(ProxmoxClient.Core.Api.ProxmoxApiClient api, PveResource guest, string tabId)
     {
         var permissions = _vm.Permissions ?? PermissionsInfo.Admin;
-        var window = Views.Guest.GuestNavigator.Create(api, guest, permissions, _vm.RunGuestPowerForAsync, tabId);
+        var window = Views.Guest.GuestNavigator.Create(api, guest, permissions, _vm.PowerRunnerFor(api), tabId);
         window.Owner = this;
         window.ShowDialog();
         _ = _vm.RefreshDataAsync();
@@ -251,7 +251,7 @@ public partial class MainWindow : Window
             "node" => Views.Node.NodeNavigator.Create(api, node, permissions),
             "qemu" or "lxc" when int.TryParse(Value("vmid"), out var vmid)
                                  && _vm.Guests.FirstOrDefault(g => g.VmId == vmid) is { } guest =>
-                Views.Guest.GuestNavigator.Create(api, guest, permissions, _vm.RunGuestPowerForAsync, null),
+                Views.Guest.GuestNavigator.Create(api, guest, permissions, _vm.PowerRunnerFor(api), null),
             "storage" => Views.Storage.StorageNavigator.Create(api, node, Value("storage"),
                 _vm.Storages.FirstOrDefault(s => s.Node == node && s.Storage == Value("storage"))?.Content
                 ?? Value("content"), permissions, Value("plugintype") is { Length: > 0 } type ? type : null),
@@ -421,9 +421,9 @@ public partial class MainWindow : Window
         try
         {
             if (protocol is { } chosen)
-                Services.ConsoleWindows.ShowGuest(api, guest, title, _vm.RunGuestPowerForAsync, canPowerManage, chosen);
+                Services.ConsoleWindows.ShowGuest(api, guest, title, _vm.PowerRunnerFor(api), canPowerManage, chosen);
             else
-                await Services.ConsoleWindows.ShowPreferredAsync(api, guest, title, _vm.RunGuestPowerForAsync,
+                await Services.ConsoleWindows.ShowPreferredAsync(api, guest, title, _vm.PowerRunnerFor(api),
                     canPowerManage);
         }
         catch (Exception ex)

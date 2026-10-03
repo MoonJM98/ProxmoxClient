@@ -30,7 +30,7 @@ public partial class MainWindow
             async () => await SpiceLauncher.LaunchAsync(this, api, guest.Node, guest.VmId, title,
                 text => _vm.StatusMessage = text));
         var serial = MenuItem("Console_KindSerial", "IconTerminal", false,
-            () => ConsoleWindows.ShowSerial(api, guest, title, _vm.RunGuestPowerForAsync, canPower));
+            () => ConsoleWindows.ShowSerial(api, guest, title, _vm.PowerRunnerFor(api), canPower));
 
         var menu = new ContextMenu { PlacementTarget = button, Placement = PlacementMode.Bottom };
         menu.Items.Add(MenuItem("Console_KindVnc", "IconMonitor", true,
