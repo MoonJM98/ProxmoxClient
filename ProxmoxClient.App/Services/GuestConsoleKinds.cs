@@ -23,8 +23,11 @@ internal sealed record GuestConsoleKinds(bool Spice, bool Serial, bool Rdp, bool
                 config.Keys.Any(key => key.StartsWith("serial", StringComparison.Ordinal)),
                 display == "rdp");
         }
+        // 인증서 거부도 — 세션 중 서버 인증서가 바뀌면 메뉴(async void)에서 전역 오류 창으로 올라간다. 연결 끊기는
+        // 메인 새로 고침이 맡는다
         catch (Exception ex) when (ex is ProxmoxApiException or System.Net.Http.HttpRequestException
-                                       or TaskCanceledException or ObjectDisposedException)
+                                       or TaskCanceledException or ObjectDisposedException
+                                       or CertificateTrustException)
         {
             App.Log($"[콘솔 종류] {guest.VmId} 설정 읽기 실패: {ex.Message}");
             return Unknown;

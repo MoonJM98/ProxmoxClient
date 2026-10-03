@@ -312,9 +312,6 @@
   <data name="HiddenShell_InputChanged" xml:space="preserve">
     <value>The file changed size while uploading - try again.</value>
   </data>
-  <data name="AgentFiles_Shrunk" xml:space="preserve">
-    <value>The file shrank while downloading ({0} / {1} bytes) - download it again.</value>
-  </data>
   <data name="GuestFiles_MountBusy" xml:space="preserve">
     <value>Another file panel is using the stopped CT {0} - try again when it finishes.</value>
   </data>
@@ -349,4 +346,13 @@
   <data name="SshKey_Ed25519Passphrase" xml:space="preserve"><value>This key generator creates Ed25519 keys without a passphrase. Choose RSA 3072 to use a passphrase.</value></data>
   <data name="SshKey_CleanupFailed" xml:space="preserve"><value>Key generation did not complete and these files could not be removed. Check their permissions and delete them.
 {0}</value></data>
+  <data name="ProxmoxApiClient_NeedTfa" xml:space="preserve">
+    <value>This account uses two-factor authentication (TOTP etc.), which is not supported yet. Connect with an API token instead.</value>
+  </data>
+  <data name="ProxmoxApiClient_SessionExpired" xml:space="preserve">
+    <value>The session expired and could not be renewed. Disconnect and connect again.</value>
+  </data>
+  <data name="RfbClient_BadLength" xml:space="preserve">
+    <value>The server sent an invalid length ({0}). Disconnecting.</value>
+  </data>
 </root>

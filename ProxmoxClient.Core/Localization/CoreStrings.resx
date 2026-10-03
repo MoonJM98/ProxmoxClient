@@ -372,9 +372,6 @@
   <data name="HiddenShell_InputChanged" xml:space="preserve">
     <value>올리는 동안 파일 크기가 바뀌었습니다 - 다시 시도하세요.</value>
   </data>
-  <data name="AgentFiles_Shrunk" xml:space="preserve">
-    <value>받는 동안 파일이 줄었습니다({0} / {1} 바이트) - 다시 받으세요.</value>
-  </data>
   <data name="GuestFiles_MountBusy" xml:space="preserve">
     <value>꺼진 CT {0} 를 다른 파일 패널이 쓰고 있습니다 - 그 작업이 끝난 뒤 다시 시도하세요.</value>
   </data>
@@ -409,4 +406,13 @@
   <data name="SshKey_Ed25519Passphrase" xml:space="preserve"><value>이 키 생성 기능에서 Ed25519는 키 암호 없이 생성합니다. 키 암호를 사용하려면 RSA 3072를 선택하세요.</value></data>
   <data name="SshKey_CleanupFailed" xml:space="preserve"><value>키 생성을 완료하지 못했고 다음 파일을 정리할 수 없습니다. 파일 권한을 확인한 뒤 삭제하세요.
 {0}</value></data>
+    <data name="ProxmoxApiClient_NeedTfa" xml:space="preserve">
+    <value>이 계정은 2단계 인증(TOTP 등)을 사용합니다. 아직 지원하지 않으므로 API 토큰으로 연결하세요.</value>
+  </data>
+    <data name="ProxmoxApiClient_SessionExpired" xml:space="preserve">
+    <value>세션이 만료되어 다시 로그인할 수 없습니다. 연결을 끊고 다시 연결하세요.</value>
+  </data>
+  <data name="RfbClient_BadLength" xml:space="preserve">
+    <value>서버가 잘못된 길이({0})를 보냈습니다. 연결을 끊습니다.</value>
+  </data>
 </root>
