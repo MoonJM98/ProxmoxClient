@@ -90,8 +90,10 @@
                             <ContextMenu>
                                 <MenuItem x:Name="FilesNodeShell" Header="{loc:Tr Sftp_Container}" Click="OnFilesMethod" />
                                 <MenuItem x:Name="FilesSftp" Header="SFTP" Click="OnFilesMethod" />
+                            <MenuItem x:Name="FilesSmb" Header="{loc:Tr Files_Smb}" Click="OnFilesMethod" />
+                            <MenuItem x:Name="FilesFtp" Header="{loc:Tr Files_Ftp}" Click="OnFilesMethod" />
                                 <Separator />
-                                <MenuItem x:Name="FilesConfigure" Header="{loc:Tr Sftp_Settings}" Click="OnFilesMethod" />
+                                <MenuItem x:Name="FilesConfigure" Header="{loc:Tr Files_ConnectionSettings}" Click="OnFilesMethod" />
                             </ContextMenu>
                         </ic:SplitButton.DropDownMenu>
                     </ic:SplitButton>

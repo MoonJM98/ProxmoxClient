@@ -415,4 +415,34 @@
   <data name="RfbClient_BadLength" xml:space="preserve">
     <value>서버가 잘못된 길이({0})를 보냈습니다. 연결을 끊습니다.</value>
   </data>
+  <data name="Smb_LogonFailed" xml:space="preserve">
+    <value>SMB 로그인 실패 — 사용자 이름이나 비밀번호를 확인하세요. ({0})</value>
+  </data>
+  <data name="Smb_CredentialConflict" xml:space="preserve">
+    <value>이 서버에 이미 다른 계정으로 연결돼 있습니다. Windows는 서버마다 한 계정만 쓸 수 있으니, 탐색기 등의 기존 연결을 끊거나 같은 계정을 쓰세요.</value>
+  </data>
+  <data name="Smb_ShareNotFound" xml:space="preserve">
+    <value>공유를 찾을 수 없습니다: {0}</value>
+  </data>
+  <data name="Smb_Unreachable" xml:space="preserve">
+    <value>서버에 연결할 수 없습니다: {0} — 게스트의 파일 공유(SMB 445 포트)와 방화벽을 확인하세요.</value>
+  </data>
+  <data name="Remote_FolderExists" xml:space="preserve">
+    <value>같은 이름의 폴더가 있어 올릴 수 없습니다: {0}</value>
+  </data>
+  <data name="Remote_Exists" xml:space="preserve">
+    <value>이미 같은 이름이 있습니다: {0}</value>
+  </data>
+  <data name="Remote_DownloadFailed" xml:space="preserve">
+    <value>받기 실패: {0}</value>
+  </data>
+  <data name="Remote_UploadFailed" xml:space="preserve">
+    <value>올리기 실패: {0}</value>
+  </data>
+  <data name="Ftp_LoginFailed" xml:space="preserve">
+    <value>FTP 로그인 실패: {0}</value>
+  </data>
+  <data name="Ftp_CertificateRejected" xml:space="preserve">
+    <value>FTPS 서버 인증서를 신뢰하지 않아 연결하지 않았습니다.</value>
+  </data>
 </root>

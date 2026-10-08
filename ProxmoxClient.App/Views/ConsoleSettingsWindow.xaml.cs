@@ -211,7 +211,8 @@ public partial class ConsoleSettingsWindow : Window
                 GuestFileConnections = current.GuestFileConnections,
                 SftpAccounts = current.SftpAccounts,
                 SftpConnections = current.SftpConnections,
-                SftpHostKeys = current.SftpHostKeys
+                SftpHostKeys = current.SftpHostKeys,
+                FtpCertificates = current.FtpCertificates
             });
             SavedSettings = settings;
             Saved?.Invoke(settings);

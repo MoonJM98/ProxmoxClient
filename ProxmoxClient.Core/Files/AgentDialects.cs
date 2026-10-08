@@ -32,6 +32,15 @@ internal interface IAgentDialect
     IReadOnlyList<string> Truncate(string path);
     IReadOnlyList<string> Append(string path);
 
+    /// <summary>
+    ///     에이전트 파일 API 로 쓴 조각(temp.p000000 …) 중 first 부터 count 개를 temp 뒤에 잇고 그 조각을 지운다
+    ///     (first 가 0 이면 temp 를 새로 만든다). 큰 파일은 여러 번 나눠 부른다 — 명령 하나의 실행 제한 안에서.
+    /// </summary>
+    IReadOnlyList<string> Assemble(string temp, int first, int count);
+
+    /// <summary>남은 조각 지우기(올리기가 중간에 멈췄을 때).</summary>
+    IReadOnlyList<string> RemoveParts(string temp);
+
     /// <summary>임시 파일을 제자리로 — 덮어쓰면 기존 권한·소유자를 잇는다. 같은 이름의 폴더가 있으면 실패.</summary>
     IReadOnlyList<string> Finish(string temp, string directory, string name);
 
@@ -108,6 +117,15 @@ internal sealed class PosixAgentDialect : IAgentDialect
     public IReadOnlyList<string> Truncate(string path) => Sh("umask 077; : > \"$1\"", path);
 
     public IReadOnlyList<string> Append(string path) => Sh("base64 -d >> \"$1\"", path);
+
+    public IReadOnlyList<string> Assemble(string temp, int first, int count) =>
+        Sh("umask 077; if [ \"$2\" -eq 0 ]; then : > \"$1\" || exit 1; fi; i=$2; end=$(($2 + $3)); "
+           + "while [ \"$i\" -lt \"$end\" ]; do p=\"$1.p$(printf %06d \"$i\")\"; "
+           + "cat -- \"$p\" >> \"$1\" || exit 1; rm -f -- \"$p\"; i=$((i + 1)); done",
+            temp, first.ToString(CultureInfo.InvariantCulture), count.ToString(CultureInfo.InvariantCulture));
+
+    public IReadOnlyList<string> RemoveParts(string temp) =>
+        Sh("rm -f -- \"$1\".p[0-9][0-9][0-9][0-9][0-9][0-9]", temp);
 
     public IReadOnlyList<string> Finish(string temp, string directory, string name)
     {
@@ -223,6 +241,21 @@ internal sealed class WindowsAgentDialect : IAgentDialect
     }
 
     public IReadOnlyList<string> Truncate(string path) => Ps($"[IO.File]::WriteAllBytes({L(path)}, [byte[]]@())");
+
+    public IReadOnlyList<string> Assemble(string temp, int first, int count)
+    {
+        var mode = first == 0 ? "Create" : "Append";
+        return Ps($"$t = {L(temp)}; $d = [IO.File]::Open($t, '{mode}', 'Write'); try {{ "
+                  + $"for ($i = {first}; $i -lt {first + count}; $i++) {{ $p = $t + '.p' + $i.ToString('D6'); "
+                  + "$s = [IO.File]::OpenRead($p); try { $s.CopyTo($d) } finally { $s.Close() }; "
+                  + "[IO.File]::Delete($p) } } finally { $d.Close() }");
+    }
+
+    public IReadOnlyList<string> RemoveParts(string temp)
+    {
+        return Ps($"$t = {L(temp)}; Get-ChildItem -LiteralPath ([IO.Path]::GetDirectoryName($t)) -Force "
+                  + "-Filter (([IO.Path]::GetFileName($t)) + '.p??????') | Remove-Item -Force");
+    }
 
     public IReadOnlyList<string> Append(string path)
     {

@@ -8209,4 +8209,125 @@ Accept only if you have verified this change with the server administrator. Trus
   <data name="Console_DirectFailed" xml:space="preserve">
     <value>Could not start GPU drawing; using the standard renderer.</value>
   </data>
+  <data name="Files_Smb" xml:space="preserve">
+    <value>SMB (Windows share)</value>
+  </data>
+  <data name="Files_Ftp" xml:space="preserve">
+    <value>FTP / FTPS</value>
+  </data>
+  <data name="Files_ConnectionSettings" xml:space="preserve">
+    <value>Connection settings…</value>
+  </data>
+  <data name="Files_SmbButton" xml:space="preserve">
+    <value>Files (SMB)</value>
+  </data>
+  <data name="Files_FtpButton" xml:space="preserve">
+    <value>Files (FTP)</value>
+  </data>
+  <data name="Files_RemoteTip" xml:space="preserve">
+    <value>Open the guest file window</value>
+  </data>
+  <data name="Remote_SmbTitle" xml:space="preserve">
+    <value>SMB connection - {0}</value>
+  </data>
+  <data name="Remote_FtpTitle" xml:space="preserve">
+    <value>FTP connection - {0}</value>
+  </data>
+  <data name="Remote_Host" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Remote_Share" xml:space="preserve">
+    <value>Share name</value>
+  </data>
+  <data name="Remote_ShareHint" xml:space="preserve">
+    <value>For example C$ (admin share, requires an administrator account) or a shared folder name. You can include a subfolder (Users\Public).</value>
+  </data>
+  <data name="Remote_Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Remote_PortHint" xml:space="preserve">
+    <value>Leave empty for 21 (990 for implicit FTPS)</value>
+  </data>
+  <data name="Remote_Security" xml:space="preserve">
+    <value>Encryption</value>
+  </data>
+  <data name="Remote_SecExplicit" xml:space="preserve">
+    <value>Explicit FTPS (AUTH TLS, recommended)</value>
+  </data>
+  <data name="Remote_SecImplicit" xml:space="preserve">
+    <value>Implicit FTPS (usually port 990)</value>
+  </data>
+  <data name="Remote_SecNone" xml:space="preserve">
+    <value>No encryption (password is sent in plain text)</value>
+  </data>
+  <data name="Remote_User" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="Remote_UserHintSmb" xml:space="preserve">
+    <value>Leave empty to use your current Windows account. DOMAIN\user and user@domain also work.</value>
+  </data>
+  <data name="Remote_UserHintFtp" xml:space="preserve">
+    <value>Leave empty for anonymous</value>
+  </data>
+  <data name="Remote_Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Remote_PasswordHint" xml:space="preserve">
+    <value>Leave empty to be asked when connecting</value>
+  </data>
+  <data name="Remote_Remember" xml:space="preserve">
+    <value>Remember password (Windows Credential Manager)</value>
+  </data>
+  <data name="Remote_Detected" xml:space="preserve">
+    <value>Guest IP: {0}</value>
+  </data>
+  <data name="Remote_OpenPorts" xml:space="preserve">
+    <value>Open ports: {0}</value>
+  </data>
+  <data name="Remote_NoOpenPorts" xml:space="preserve">
+    <value>No SSH, SMB or FTP port is open or reachable from this PC</value>
+  </data>
+  <data name="Remote_NoAddress" xml:space="preserve">
+    <value>Guest IP unknown (VMs need the guest agent; containers need PVE 8.1 or later)</value>
+  </data>
+  <data name="Remote_BadHost" xml:space="preserve">
+    <value>Enter an address.</value>
+  </data>
+  <data name="Remote_BadShare" xml:space="preserve">
+    <value>Enter a share name.</value>
+  </data>
+  <data name="Remote_BadPort" xml:space="preserve">
+    <value>The port must be a number from 1 to 65535.</value>
+  </data>
+  <data name="Remote_PasswordFor" xml:space="preserve">
+    <value>Password for {0} - {1}</value>
+  </data>
+  <data name="Remote_AuthFailed" xml:space="preserve">
+    <value>Sign-in failed - enter the password for {0} again ({1})</value>
+  </data>
+  <data name="Remote_CertTitle" xml:space="preserve">
+    <value>Verify FTPS server certificate</value>
+  </data>
+  <data name="Remote_CertNew" xml:space="preserve">
+    <value>This FTPS server certificate has not been seen before. Trust it only if this is the right server.
+
+Server: {0}
+Subject: {1}
+Issuer: {2}
+Valid: {3} to {4}
+SHA-256: {5}</value>
+  </data>
+  <data name="Remote_CertChanged" xml:space="preserve">
+    <value>The FTPS server certificate has changed. Unless the server was reinstalled or its certificate replaced, this could be a man-in-the-middle attack. Trust it anyway?
+
+Server: {0}
+Subject: {1}
+Issuer: {2}
+Valid: {3} to {4}
+New SHA-256: {5}
+Previous SHA-256: {6}</value>
+  </data>
+  <data name="Remote_GuestInfo" xml:space="preserve">
+    <value>Guest network</value>
+  </data>
 </root>

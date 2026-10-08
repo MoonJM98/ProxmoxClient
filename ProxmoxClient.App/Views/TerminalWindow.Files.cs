@@ -39,10 +39,13 @@ public partial class TerminalWindow
 
     private void ApplyFilesMenu(GuestFileConnection connection)
     {
-        FilesNodeShell.IsChecked = !connection.UseSftp;
-        FilesSftp.IsChecked = connection.UseSftp;
-        BtnFiles.Content = Loc.T(connection.UseSftp ? "Sftp_FilesButton" : "Sftp_NodeFilesButton");
-        BtnFiles.ToolTip = Loc.T(connection.UseSftp ? "Sftp_Connect" : "GuestFiles_ToggleTip");
+        var transport = connection.EffectiveTransport;
+        FilesNodeShell.IsChecked = transport == GuestFileTransport.Agent;
+        FilesSftp.IsChecked = transport == GuestFileTransport.Sftp;
+        FilesSmb.IsChecked = transport == GuestFileTransport.Smb;
+        FilesFtp.IsChecked = transport == GuestFileTransport.Ftp;
+        BtnFiles.Content = Loc.T(ConsoleWindow.FilesButtonKey(transport, "Sftp_NodeFilesButton"));
+        BtnFiles.ToolTip = Loc.T(transport == GuestFileTransport.Agent ? "GuestFiles_ToggleTip" : "Files_RemoteTip");
     }
 
     private async void OnFilesMethod(object sender, RoutedEventArgs e)
@@ -51,7 +54,10 @@ public partial class TerminalWindow
         try
         {
             var configured = ReferenceEquals(sender, FilesConfigure);
-            var selected = await _fileConnections.SelectAsync(!ReferenceEquals(sender, FilesNodeShell), configured);
+            var current = (await _fileConnections.LoadAsync()).EffectiveTransport;
+            var transport = ConsoleWindow.MenuTransport(sender, FilesNodeShell, FilesSftp, FilesSmb, FilesConfigure,
+                current);
+            var selected = await _fileConnections.SelectAsync(transport, configured);
             if (selected || !configured) _filesWindow?.Close();
             await UpdateFilesMenuAsync();
             if (selected) await ShowFilesWindowAsync();

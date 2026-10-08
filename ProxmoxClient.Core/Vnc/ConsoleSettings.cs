@@ -99,6 +99,9 @@ public sealed record ConsoleSettings
 
     public Dictionary<string, Files.GuestFileConnection> GuestFileConnections { get; init; } = [];
     public Dictionary<string, string> SftpHostKeys { get; init; } = [];
+
+    /// <summary>신뢰한 FTPS 서버 인증서([주소]:포트 → SHA-256 지문) — 처음·바뀌었을 때만 묻는다.</summary>
+    public Dictionary<string, string> FtpCertificates { get; init; } = [];
     public Dictionary<Guid, Files.SftpAccountProfile> SftpAccounts { get; init; } = [];
     public Dictionary<Guid, Files.SftpConnectionProfile> SftpConnections { get; init; } = [];
 
@@ -114,6 +117,8 @@ public sealed record ConsoleSettings
             GuestFileConnections = (GuestFileConnections ?? []).Where(pair => pair.Value is not null)
                 .ToDictionary(pair => pair.Key, pair => pair.Value.Normalize()),
             SftpHostKeys = (SftpHostKeys ?? []).Where(pair => !string.IsNullOrWhiteSpace(pair.Value))
+                .ToDictionary(pair => pair.Key, pair => pair.Value),
+            FtpCertificates = (FtpCertificates ?? []).Where(pair => !string.IsNullOrWhiteSpace(pair.Value))
                 .ToDictionary(pair => pair.Key, pair => pair.Value),
             Encoding = Enum.IsDefined(Encoding) ? Encoding : VncEncoding.Tight,
             LocalCursor = Enum.IsDefined(LocalCursor) ? LocalCursor : LocalCursorMode.Both,

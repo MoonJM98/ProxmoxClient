@@ -110,6 +110,15 @@ Signer  : CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washin
 
 ---
 
+## 7. FluentFTP 55.0.0
+
+- 저작권: (c) Robin Rodricks 및 FluentFTP 기여자
+- 라이선스: MIT
+- 출처: https://github.com/robinrodricks/FluentFTP
+- 포함 형태: NuGet 패키지 참조(`FluentFTP.dll` 배포) — 게스트 파일 창의 FTP·FTPS 연결(`Core/Files/FtpFileSystem.cs`).
+
+---
+
 ## 함께 사용하지만 포함하지 않는 소프트웨어
 
 아래 프로그램은 배포물에 **포함되지 않으며**, 사용자의 PC 에 설치된 것을 별도 프로세스로

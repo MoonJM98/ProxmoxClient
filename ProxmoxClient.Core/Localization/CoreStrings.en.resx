@@ -355,4 +355,34 @@
   <data name="RfbClient_BadLength" xml:space="preserve">
     <value>The server sent an invalid length ({0}). Disconnecting.</value>
   </data>
+  <data name="Smb_LogonFailed" xml:space="preserve">
+    <value>SMB sign-in failed. Check the user name and password. ({0})</value>
+  </data>
+  <data name="Smb_CredentialConflict" xml:space="preserve">
+    <value>This server is already connected with a different account. Windows allows only one account per server, so disconnect the existing connection (e.g. in File Explorer) or use the same account.</value>
+  </data>
+  <data name="Smb_ShareNotFound" xml:space="preserve">
+    <value>Share not found: {0}</value>
+  </data>
+  <data name="Smb_Unreachable" xml:space="preserve">
+    <value>Cannot reach the server: {0}. Check file sharing (SMB port 445) and the firewall on the guest.</value>
+  </data>
+  <data name="Remote_FolderExists" xml:space="preserve">
+    <value>A folder with that name already exists: {0}</value>
+  </data>
+  <data name="Remote_Exists" xml:space="preserve">
+    <value>An item with that name already exists: {0}</value>
+  </data>
+  <data name="Remote_DownloadFailed" xml:space="preserve">
+    <value>Download failed: {0}</value>
+  </data>
+  <data name="Remote_UploadFailed" xml:space="preserve">
+    <value>Upload failed: {0}</value>
+  </data>
+  <data name="Ftp_LoginFailed" xml:space="preserve">
+    <value>FTP sign-in failed: {0}</value>
+  </data>
+  <data name="Ftp_CertificateRejected" xml:space="preserve">
+    <value>Not connected because the FTPS server certificate was not trusted.</value>
+  </data>
 </root>
