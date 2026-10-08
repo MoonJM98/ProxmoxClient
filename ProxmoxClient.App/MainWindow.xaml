@@ -388,7 +388,7 @@
                                         <TextBlock Grid.Row="4" Text="{loc:Tr MainWindow_22}"
                                                    Foreground="{StaticResource BrushDim}" Margin="0,0,0,8" />
                                         <TextBlock Grid.Row="4" Grid.Column="1" FontSize="12" Margin="0,0,0,8"
-                                                   Text="{Binding SelectedGuest.Pool, Mode=OneWay, TargetNullValue='—'}" />
+                                                   Text="{Binding SelectedGuest.Pool, Mode=OneWay, TargetNullValue='-'}" />
 
                                         <TextBlock Grid.Row="5" Text="{loc:Tr MainWindow_23}"
                                                    Foreground="{StaticResource BrushDim}" />
@@ -760,31 +760,31 @@
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="{loc:Tr MainWindow_46}"
                                                Style="{StaticResource FieldLabel}" />
                                     <TextBlock Grid.Row="0" Grid.Column="1"
-                                               Text="{Binding NodeStatus.KernelVersion, TargetNullValue='—'}"
+                                               Text="{Binding NodeStatus.KernelVersion, TargetNullValue='-'}"
                                                Margin="0,0,0,6" />
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="{loc:Tr MainWindow_47}"
                                                Style="{StaticResource FieldLabel}" />
                                     <TextBlock Grid.Row="1" Grid.Column="1"
-                                               Text="{Binding NodeStatus.CpuCores, TargetNullValue='—'}"
+                                               Text="{Binding NodeStatus.CpuCores, TargetNullValue='-'}"
                                                Margin="0,0,0,6" />
                                     <TextBlock Grid.Row="2" Grid.Column="0" Text="{loc:Tr MainWindow_48}"
                                                Style="{StaticResource FieldLabel}" />
                                     <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,0,0,6">
                                         <Run
-                                            Text="{Binding NodeStatus.LoadAverage1, Mode=OneWay, StringFormat={}{0:F2}, FallbackValue='—'}" />
+                                            Text="{Binding NodeStatus.LoadAverage1, Mode=OneWay, StringFormat={}{0:F2}, FallbackValue='-'}" />
                                         <Run Text=" / " Foreground="{StaticResource BrushDim}" />
                                         <Run
-                                            Text="{Binding NodeStatus.LoadAverage5, Mode=OneWay, StringFormat={}{0:F2}, FallbackValue='—'}" />
+                                            Text="{Binding NodeStatus.LoadAverage5, Mode=OneWay, StringFormat={}{0:F2}, FallbackValue='-'}" />
                                         <Run Text=" / " Foreground="{StaticResource BrushDim}" />
                                         <Run
-                                            Text="{Binding NodeStatus.LoadAverage15, Mode=OneWay, StringFormat={}{0:F2}, FallbackValue='—'}" />
+                                            Text="{Binding NodeStatus.LoadAverage15, Mode=OneWay, StringFormat={}{0:F2}, FallbackValue='-'}" />
                                         <Run Text="{loc:Tr MainWindow_49}" Foreground="{StaticResource BrushDim}"
                                              FontSize="11" />
                                     </TextBlock>
                                     <TextBlock Grid.Row="3" Grid.Column="0" Text="{loc:Tr MainWindow_21}"
                                                Style="{StaticResource FieldLabel}" />
                                     <TextBlock Grid.Row="3" Grid.Column="1"
-                                               Text="{Binding NodeStatus.UptimeSeconds, Converter={StaticResource UptimeFmt}, TargetNullValue='—'}"
+                                               Text="{Binding NodeStatus.UptimeSeconds, Converter={StaticResource UptimeFmt}, TargetNullValue='-'}"
                                                Margin="0,0,0,6" />
                                     <!-- 사용량은 막대 위에 값을 겹쳐 한 줄로 — 이름과 막대가 같은 줄에 놓여 어느 항목인지 헷갈리지 않는다 -->
                                     <TextBlock Grid.Row="4" Grid.Column="0" Text="{loc:Tr MainWindow_19}"
@@ -797,10 +797,10 @@
                                         <TextBlock FontSize="11" HorizontalAlignment="Center"
                                                    VerticalAlignment="Center">
                                             <Run
-                                                Text="{Binding NodeStatus.MemUsedBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='—'}" />
+                                                Text="{Binding NodeStatus.MemUsedBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='-'}" />
                                             <Run Text=" / " />
                                             <Run
-                                                Text="{Binding NodeStatus.MemTotalBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='—'}" />
+                                                Text="{Binding NodeStatus.MemTotalBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='-'}" />
                                         </TextBlock>
                                     </Grid>
                                     <TextBlock Grid.Row="5" Grid.Column="0" Text="{loc:Tr MainWindow_50}"
@@ -813,10 +813,10 @@
                                         <TextBlock FontSize="11" HorizontalAlignment="Center"
                                                    VerticalAlignment="Center">
                                             <Run
-                                                Text="{Binding NodeStatus.SwapUsedBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='—'}" />
+                                                Text="{Binding NodeStatus.SwapUsedBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='-'}" />
                                             <Run Text=" / " />
                                             <Run
-                                                Text="{Binding NodeStatus.SwapTotalBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='—'}" />
+                                                Text="{Binding NodeStatus.SwapTotalBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='-'}" />
                                         </TextBlock>
                                     </Grid>
                                     <TextBlock Grid.Row="6" Grid.Column="0" Text="{loc:Tr MainWindow_51}"
@@ -829,10 +829,10 @@
                                         <TextBlock FontSize="11" HorizontalAlignment="Center"
                                                    VerticalAlignment="Center">
                                             <Run
-                                                Text="{Binding NodeStatus.RootFsUsedBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='—'}" />
+                                                Text="{Binding NodeStatus.RootFsUsedBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='-'}" />
                                             <Run Text=" / " />
                                             <Run
-                                                Text="{Binding NodeStatus.RootFsTotalBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='—'}" />
+                                                Text="{Binding NodeStatus.RootFsTotalBytes, Mode=OneWay, Converter={StaticResource BytesFmt}, TargetNullValue='-'}" />
                                         </TextBlock>
                                     </Grid>
                                 </Grid>

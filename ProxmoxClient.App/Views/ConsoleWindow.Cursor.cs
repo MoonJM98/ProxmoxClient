@@ -38,10 +38,14 @@ public partial class ConsoleWindow
         RefreshCursor();
     }
 
-    /// <summary>화면 배율 — 맞춤 모드면 축소 비율, 아니면 1.</summary>
+    /// <summary>
+    ///     화면 배율 — 게스트 픽셀 하나가 차지하는 WPF 단위. 맞춤 모드면 축소 비율,
+    ///     1:1 이면 물리 픽셀 하나(= 1 / 모니터 배율).
+    /// </summary>
     private double DisplayScale()
     {
-        if (!_fitMode || _fbWidth == 0 || _fbHeight == 0) return 1;
+        if (_fbWidth == 0 || _fbHeight == 0) return 1;
+        if (!_fitMode) return 1 / (_bitmapDpiScale > 0 ? _bitmapDpiScale : VisualTreeHelper.GetDpi(this).DpiScaleX);
         return Math.Min(ScreenImage.ActualWidth / _fbWidth, ScreenImage.ActualHeight / _fbHeight);
     }
 
@@ -92,6 +96,16 @@ public partial class ConsoleWindow
         {
             CursorImage.Source = null;
             CursorImage.Visibility = Visibility.Collapsed;
+            _direct?.SetCursorShape(null);
+            return;
+        }
+
+        if (_direct is { } direct) // GPU 화면이면 커서도 거기에 그린다(WPF 그림은 자식 창 아래에 가려진다)
+        {
+            CursorImage.Source = null;
+            CursorImage.Visibility = Visibility.Collapsed;
+            direct.SetCursorShape(shape);
+            MoveCursorOverlay(Mouse.GetPosition(ScreenHost));
             return;
         }
 
@@ -106,6 +120,13 @@ public partial class ConsoleWindow
     private void MoveCursorOverlay(Point position)
     {
         var inside = ScreenImage.IsMouseOver || ScreenImage.IsMouseCaptured;
+        if (_direct is { } direct)
+        {
+            var shown = inside && CursorMode == ConsoleSettings.LocalCursorMode.Both && _cursor is { IsEmpty: false };
+            MoveDirectCursor(direct, position, shown);
+            return;
+        }
+
         if (CursorImage.Source is null || _cursor is not { IsEmpty: false } shape || !inside)
         {
             CursorImage.Visibility = Visibility.Collapsed;

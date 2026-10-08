@@ -32,6 +32,13 @@ public sealed partial class ProxmoxApiClient : IDisposable
     private readonly HttpClient _http;
     private readonly SemaphoreSlim _renewGate = new(1, 1);
     private volatile AuthSession? _auth;
+
+    /// <summary>
+    ///     티켓 갱신이 인증 거부(401)로 끝났다 — 티켓과 보관한 비밀번호(OpenID 면 처음 티켓)가 모두 통하지 않는다.
+    ///     이후 요청은 서버에 로그인을 다시 보내지 않고 바로 실패한다(요청마다 실패한 로그인이 쌓여 차단되지 않게).
+    ///     다시 로그인하면 풀린다.
+    /// </summary>
+    private volatile bool _authRejected;
     private bool _disposed;
     /// <summary>Builds a client for the given profile (proxy + TLS validation are applied here).</summary>
     public ProxmoxApiClient(ConnectionProfile profile)
@@ -70,6 +77,9 @@ public sealed partial class ProxmoxApiClient : IDisposable
     /// <summary>True once ticket auth succeeded (or immediately in token mode).</summary>
     public bool IsAuthenticated =>
         Profile.AuthMode == AuthMode.ApiToken || _auth is not null;
+    /// <summary>로그인한 사용자 ID(user@realm, 서버 응답 기준) — 로그인 전이거나 API 토큰이면 null.</summary>
+    public string? AuthenticatedUser { get; private set; }
+
     /// <summary>세션 인증 티켓(비밀번호 모드). 콘솔 웹소켓 연결에 필요.</summary>
     public string? AuthTicket => _auth?.Ticket;
     /// <summary>이 클라이언트를 만든 연결 프로필.</summary>
@@ -110,6 +120,7 @@ public sealed partial class ProxmoxApiClient : IDisposable
     private async Task EnsureFreshTicketAsync(bool force, CancellationToken ct)
     {
         if (Profile.AuthMode != AuthMode.Password || _auth is not { } current) return;
+        if (_authRejected) throw SessionExpired();
 
         if (!force && Environment.TickCount64 - current.IssuedAtTick < (long)TicketRenewAge.TotalMilliseconds) return;
 
@@ -117,21 +128,35 @@ public sealed partial class ProxmoxApiClient : IDisposable
         try
         {
             if (!ReferenceEquals(_auth, current)) return; // 기다리는 사이 다른 요청이 이미 갱신함
+            if (_authRejected) throw SessionExpired();
 
             try
             {
-                await AcquireTicketAsync(current.Ticket, ct).ConfigureAwait(false);
+                try
+                {
+                    await AcquireTicketAsync(current.Ticket, ct).ConfigureAwait(false);
+                }
+                catch (ProxmoxApiException) when (Profile.Password is not null)
+                {
+                    await AcquireTicketAsync(SecureStringHelper.ToPlainString(Profile.Password) ?? string.Empty, ct)
+                        .ConfigureAwait(false);
+                }
             }
-            catch (ProxmoxApiException) when (Profile.Password is not null)
+            catch (ProxmoxApiException ex) when (ex.StatusCode == (int)HttpStatusCode.Unauthorized)
             {
-                await AcquireTicketAsync(SecureStringHelper.ToPlainString(Profile.Password) ?? string.Empty, ct)
-                    .ConfigureAwait(false);
+                // 연결 실패(상태 0)는 다음 요청 때 다시 해 본다 — 거부만 세션 만료로 본다
+                _authRejected = true;
+                throw SessionExpired();
             }
         }
         finally
         {
             _renewGate.Release();
         }
+    }
+    private static ProxmoxApiException SessionExpired()
+    {
+        return new ProxmoxApiException((int)HttpStatusCode.Unauthorized, null, Res.T("ProxmoxApiClient_SessionExpired"));
     }
     private async Task AcquireTicketAsync(string password, CancellationToken ct)
     {
@@ -146,8 +171,20 @@ public sealed partial class ProxmoxApiClient : IDisposable
         var csrfToken = data.TryGetProperty("CSRFPreventionToken", out var csrfEl) ? csrfEl.GetString() : null;
 
         if (string.IsNullOrEmpty(ticket)) throw new ProxmoxApiException(0, Res.T("ProxmoxApiClient_03"));
+        // 2단계 인증 계정 — 서버는 TFA 를 기다리는 반쪽 티켓을 준다. 받아 두면 로그인은 "성공"인데 모든 요청이 401 이다
+        if (data.TryGetProperty("NeedTFA", out var needTfa) && needTfa.ValueKind switch
+            {
+                JsonValueKind.Number => needTfa.TryGetInt32(out var flag) && flag != 0,
+                JsonValueKind.String => needTfa.GetString() is { Length: > 0 } text && text != "0",
+                JsonValueKind.True => true,
+                _ => false
+            })
+            throw new ProxmoxApiException(0, null, Res.T("ProxmoxApiClient_NeedTfa"));
 
         _auth = new AuthSession(ticket, csrfToken, Environment.TickCount64);
+        _authRejected = false;
+        // 서버가 알려 준 실제 사용자 ID — 프로필에 영역 없이 "root" 로 적어 두어도 "root@pam" 으로 온다
+        AuthenticatedUser = GetString(data, "username") is { Length: > 0 } user ? user : Profile.UserName;
     }
     /// <summary>Gets the cluster version (GET /version) — handy as a connection test.</summary>
     [Versioning.PveApi("GET", "/version")]

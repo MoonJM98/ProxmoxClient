@@ -25,11 +25,18 @@ public sealed class OpenVpnManager : IDisposable
     private NetworkStream? _mgmtStream;
 
     private Process? _process;
+
+    // openvpn writes its log to stdout and, after "log on", also as >LOG: notifications. Once the management log is on
+    // the stdout copy is dropped, otherwise every line shows twice (and the log view fills up twice as fast).
+    private volatile bool _managementLog;
     private CancellationTokenSource? _readCts;
     private Task? _readLoop;
 
     /// <summary>Current tunnel state (thread-safe read; transitions raise <see cref="StateChanged" />).</summary>
     public VpnState State { get; private set; } = VpnState.Disconnected;
+
+    /// <summary>Full path of the .ovpn config the current (or last) tunnel was started with.</summary>
+    public string? ConfigPath { get; private set; }
 
     /// <summary>Tunnel local IP once connected (e.g. "10.8.0.2"), when reported.</summary>
     public string? VirtualIp { get; private set; }
@@ -115,6 +122,7 @@ public sealed class OpenVpnManager : IDisposable
                 Res.T("OpenVpnManager_04"));
 
         await CleanupAsync().ConfigureAwait(false);
+        ConfigPath = Path.GetFullPath(configPath);
         LastError = null;
         VirtualIp = null;
         BytesIn = 0;
@@ -135,9 +143,10 @@ public sealed class OpenVpnManager : IDisposable
         };
 
         var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+        _managementLog = false;
         process.OutputDataReceived += (_, e) =>
         {
-            if (e.Data is { Length: > 0 }) RaiseLog(e.Data);
+            if (e.Data is { Length: > 0 } && !_managementLog) RaiseLog(e.Data);
         };
         process.ErrorDataReceived += (_, e) =>
         {
@@ -158,6 +167,7 @@ public sealed class OpenVpnManager : IDisposable
             await AttachManagementAsync(process, port, ct).ConfigureAwait(false);
 
             await SendCommandAsync("state on").ConfigureAwait(false);
+            _managementLog = true;
             await SendCommandAsync("log on").ConfigureAwait(false);
             await SendCommandAsync("bytecount 1").ConfigureAwait(false);
             await SendCommandAsync("version").ConfigureAwait(false);

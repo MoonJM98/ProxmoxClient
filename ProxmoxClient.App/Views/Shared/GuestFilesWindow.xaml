@@ -1,0 +1,10 @@
+<Window x:Class="ProxmoxClient.App.Views.Shared.GuestFilesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shared="clr-namespace:ProxmoxClient.App.Views.Shared"
+        Style="{StaticResource ThemedWindow}"
+        Width="860" Height="520" MinWidth="520" MinHeight="300"
+        WindowStartupLocation="Manual" ShowInTaskbar="True">
+    <!-- 게스트 파일 창 — 콘솔 창에 딸린 창(콘솔을 닫으면 함께 닫힌다) -->
+    <shared:GuestFilesPanel x:Name="Panel" />
+</Window>

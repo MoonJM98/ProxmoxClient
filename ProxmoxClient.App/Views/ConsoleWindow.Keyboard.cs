@@ -84,7 +84,7 @@ public partial class ConsoleWindow
     /// <summary>
     ///     저수준 키보드 훅 — 창이 포어그라운드일 때 모든 키를 가로채 VM에 전달.
     ///     IME(한/영), Win, Alt+Tab 등 호스트 OS에 도달하지 않게 차단.
-    ///     Alt+F4만 예외로 통과.
+    ///     Alt+F4만 예외로 통과. 연결돼 있지 않으면 가로채지 않는다.
     /// </summary>
     private IntPtr KeyboardHookCallback(int code, IntPtr wParam, IntPtr lParam)
     {
@@ -130,6 +130,10 @@ public partial class ConsoleWindow
             else
                 _heldModifiers.Remove(vk);
         }
+
+        // 연결 전·끊긴 뒤(정지 안내 등)에는 보낼 곳이 없다 — 키를 삼키지 않고 넘긴다(Alt+Tab·Win·Tab·Enter 가 먹게).
+        // 수정 키 상태는 위에서 계속 따라가 둔다(연결된 뒤 Alt 를 떼도 어긋나지 않게)
+        if (_session?.IsConnected != true) return CallNextHookEx(_keyboardHook, code, wParam, lParam);
 
         // Ctrl+Alt+Del: Windows SAS를 차단하고 VM에 직접 전송
         if (vk == 0x2E && down && _heldModifiers.Contains(0xA2) && _heldModifiers.Contains(0xA4))

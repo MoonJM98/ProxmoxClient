@@ -46,6 +46,9 @@ public partial class ConsoleSettingsWindow : Window
 
     private bool _saving;
 
+    /// <summary>콘솔 옆에 따로 띄웠다(<see cref="ShowBeside" />) — 모달이 아니라 취소 버튼이 직접 닫아야 한다.</summary>
+    private bool _modeless;
+
     public ConsoleSettingsWindow(ConsoleSettings current, ConsoleSettingsTab tab = ConsoleSettingsTab.Vnc)
     {
         InitializeComponent();
@@ -66,10 +69,45 @@ public partial class ConsoleSettingsWindow : Window
     /// <summary>저장에 성공한 설정(취소 시 null).</summary>
     public ConsoleSettings? SavedSettings { get; private set; }
 
+    /// <summary>저장했다(창은 곧 닫힌다) — 콘솔 옆에 따로 띄운 창은 이것으로 결과를 받는다.</summary>
+    public event Action<ConsoleSettings>? Saved;
+
+    /// <summary>
+    ///     콘솔·터미널 창 옆에 따로 연다 — 콘솔을 가리거나 막지 않게(설정을 보며 콘솔을 계속 쓸 수 있다). 콘솔 창에 딸려
+    ///     있어 콘솔을 닫으면 함께 닫힌다. 그 창에 이미 열려 있으면 앞으로 가져온다.
+    /// </summary>
+    public static void ShowBeside(Window owner, ConsoleSettings current, ConsoleSettingsTab tab,
+        Action<ConsoleSettings> saved)
+    {
+        if (owner.OwnedWindows.OfType<ConsoleSettingsWindow>().FirstOrDefault() is { } open)
+        {
+            if (open.WindowState == WindowState.Minimized) open.WindowState = WindowState.Normal;
+            open.Activate();
+            return;
+        }
+
+        var window = new ConsoleSettingsWindow(current, tab)
+        {
+            Owner = owner,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            _modeless = true
+        };
+        BesideOwner.Place(window, owner, false);
+        window.Saved += saved;
+        window.Show();
+    }
+
     private ConsoleSettings.VncEncoding SelectedEncoding =>
         Enum.TryParse<ConsoleSettings.VncEncoding>(ComboChoices.Selected(EncodingBox), out var encoding)
             ? encoding
             : ConsoleSettings.VncEncoding.Tight;
+
+    /// <summary>GPU 그리기는 VNC·RDP 가 같은 설정 — 두 탭의 체크를 함께 바꾼다.</summary>
+    private void OnDirectRenderClick(object sender, RoutedEventArgs e)
+    {
+        var on = ((CheckBox)sender).IsChecked == true;
+        DirectRenderCheck.IsChecked = RdpDirectRenderCheck.IsChecked = on;
+    }
 
     private void Apply(ConsoleSettings settings)
     {
@@ -78,6 +116,7 @@ public partial class ConsoleSettingsWindow : Window
         CompressionSlider.Value = settings.CompressionLevel;
         ExtendedKeysCheck.IsChecked = settings.UseQemuExtendedKeys;
         SmoothScalingCheck.IsChecked = settings.SmoothScaling;
+        DirectRenderCheck.IsChecked = RdpDirectRenderCheck.IsChecked = settings.DirectRendering;
         ClipboardSyncCheck.IsChecked = settings.AutoClipboardSync;
         ComboChoices.Select(CursorBox, settings.LocalCursor.ToString());
         RdpDynamicCheck.IsChecked = settings.RdpDynamicResolution;
@@ -123,6 +162,15 @@ public partial class ConsoleSettingsWindow : Window
         RowCompression.IsEnabled = SelectedEncoding != ConsoleSettings.VncEncoding.Raw;
     }
 
+    /// <summary>
+    ///     취소 — 따로 띄운 창은 IsCancel 만으로 닫히지 않는다(모달일 때만 DialogResult 로 닫힘). 모달이면 IsCancel 이
+    ///     이 처리기 뒤에 닫으므로 여기서는 닫지 않는다.
+    /// </summary>
+    private void OnCancel(object sender, RoutedEventArgs e)
+    {
+        if (_modeless) Close();
+    }
+
     private async void OnSave(object sender, RoutedEventArgs e)
     {
         if (_saving) return;
@@ -142,6 +190,7 @@ public partial class ConsoleSettingsWindow : Window
             CompressionLevel = (int)Math.Round(CompressionSlider.Value),
             UseQemuExtendedKeys = ExtendedKeysCheck.IsChecked == true,
             SmoothScaling = SmoothScalingCheck.IsChecked == true,
+            DirectRendering = DirectRenderCheck.IsChecked == true,
             AutoClipboardSync = ClipboardSyncCheck.IsChecked == true,
             LocalCursor = SelectedCursor(CursorBox, ConsoleSettings.LocalCursorMode.Both),
             RdpDynamicResolution = RdpDynamicCheck.IsChecked == true,
@@ -156,9 +205,17 @@ public partial class ConsoleSettingsWindow : Window
         BtnSave.IsEnabled = false;
         try
         {
-            await _store.SaveAsync(settings);
+            settings = await _store.UpdateAsync(current => settings with
+            {
+                ShowHiddenGuestFiles = current.ShowHiddenGuestFiles,
+                GuestFileConnections = current.GuestFileConnections,
+                SftpAccounts = current.SftpAccounts,
+                SftpConnections = current.SftpConnections,
+                SftpHostKeys = current.SftpHostKeys
+            });
             SavedSettings = settings;
-            DialogResult = true;
+            Saved?.Invoke(settings);
+            Close(); // 모달(앱 설정에서 연 경우)이든 따로 띄운 창이든 — 부르는 쪽은 SavedSettings·Saved 로 받는다
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

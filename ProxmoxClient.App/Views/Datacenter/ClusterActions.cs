@@ -169,7 +169,7 @@ internal static class ClusterActions
             {
                 Key = "guest", LabelKey = "Table_Guest", Kind = FormFieldKind.Choice, Required = true,
                 Choices = guests.Select(r => (Value(r, "vmid"),
-                    $"{Value(r, "vmid")} ({Value(r, "name")}) — {Value(r, "node")}")).ToList()
+                    $"{Value(r, "vmid")} ({Value(r, "name")}) - {Value(r, "node")}")).ToList()
             },
             new FormField { Key = "target", LabelKey = "Table_Target", Kind = FormFieldKind.Choice, Choices = nodes,
                 Required = true },

@@ -98,12 +98,27 @@
                 <Button ic:IconAssist.Icon="{StaticResource IconExternal}" x:Name="BtnSpice" Visibility="Collapsed"
                         Content="{loc:Tr ConsoleWindow_05}" MinWidth="110" Style="{StaticResource AccentButton}"
                         Click="OnOpenSpice" />
+                <!-- 게스트 파일(게스트 에이전트) — 파일 창을 따로 연다 -->
+                <ic:SplitButton x:Name="BtnFiles" ic:IconAssist.Icon="{StaticResource IconFolder}"
+                        Content="{loc:Tr GuestFiles_Toggle}"
+                        Margin="6,0,0,0" Click="OnOpenFiles" ToolTip="{loc:Tr GuestFiles_ToggleTipVm}">
+                    <ic:SplitButton.DropDownMenu>
+                        <ContextMenu>
+                            <MenuItem x:Name="FilesAgent" Header="{loc:Tr Sftp_Agent}" Click="OnFilesMethod" />
+                            <MenuItem x:Name="FilesSftp" Header="SFTP" Click="OnFilesMethod" />
+                            <Separator />
+                            <MenuItem x:Name="FilesConfigure" Header="{loc:Tr Sftp_Settings}" Click="OnFilesMethod" />
+                        </ContextMenu>
+                    </ic:SplitButton.DropDownMenu>
+                </ic:SplitButton>
                 <Button ic:IconAssist.Icon="{StaticResource IconSettings}" x:Name="BtnSettings"
                         Content="{loc:Tr MainWindow_04}" MinWidth="80" Margin="6,0,0,0" Click="OnOpenSettings" />
             </WrapPanel>
         </Border>
 
-        <ScrollViewer Grid.Row="1" x:Name="ConsoleScroll" Background="#000000"
+        <!-- 파일을 콘솔 화면에 끌어다 놓으면 파일 창을 열고 지금 폴더로 올린다 -->
+        <ScrollViewer Grid.Row="1" x:Name="ConsoleScroll" Background="#000000" AllowDrop="True"
+                      DragEnter="OnScreenDragOver" DragOver="OnScreenDragOver" Drop="OnScreenDrop"
                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                       VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
             <Grid x:Name="ScreenHost">
@@ -121,6 +136,10 @@
                 </Image>
             </Grid>
         </ScrollViewer>
+
+        <!-- GPU 로 바로 그리기 — 스크롤 뷰포트 크기의 자식 창을 화면 위에 겹친다(입력은 아래 Image 가 받는다) -->
+        <Grid Grid.Row="1" x:Name="DirectSlot" HorizontalAlignment="Left" VerticalAlignment="Top"
+              IsHitTestVisible="False" />
 
         <ic:GuestStoppedPanel Grid.Row="1" x:Name="StoppedPanel" Visibility="Collapsed" />
 

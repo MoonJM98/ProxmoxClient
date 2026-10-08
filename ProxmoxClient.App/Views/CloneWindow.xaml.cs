@@ -20,7 +20,7 @@ public partial class CloneWindow : Window
         WindowTheme.ApplyDarkTitleBar(this);
         _api = api;
         _guest = guest;
-        HeaderText.Text = $"{guest.Kind.Label()} {guest.VmId} — {guest.Name}";
+        HeaderText.Text = $"{guest.Kind.Label()} {guest.VmId} - {guest.Name}";
         NewIdBox.Text = (guest.VmId + 1).ToString();
 
         ComboChoices.Fill(TargetNodeBox, new[] { ("", Loc.T("CloneWindow_M01", guest.Node)) }

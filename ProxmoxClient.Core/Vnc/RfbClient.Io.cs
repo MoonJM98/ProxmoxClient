@@ -33,6 +33,7 @@ public sealed partial class RfbClient
     private async Task SkipAsync(int count, CancellationToken ct)
     {
         const int SkipChunkSize = 4096;
+        if (count <= 0) return; // 고장 난 길이 — ArrayPool.Rent 는 음수에 예외를 던진다
         var sink = ArrayPool<byte>.Shared.Rent(Math.Min(count, SkipChunkSize));
         try
         {

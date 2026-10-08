@@ -48,6 +48,10 @@ public sealed partial class RfbClient
         var pixels = MemoryMarshal.Cast<byte, uint>(framebuffer.AsSpan());
         for (var row = 0; row < h; row++) pixels.Slice((y + row) * framebufferWidth + x, w).Fill(pixel);
     }
+    /// <summary>
+    ///     JPEG/PNG 조각 — 받기만 하고 디코드는 스레드 풀에 맡긴다(브라우저 noVNC 처럼 여러 조각을 함께 푼다).
+    ///     읽기 루프는 곧바로 다음 조각을 읽고, 겹치는 rect·CopyRect·크기 변경·갱신 끝에서 기다린다.
+    /// </summary>
     private async Task HandleTightImageAsync(int x, int y, int w, int h, CancellationToken ct)
     {
         var length = await ReadTightLengthAsync(ct).ConfigureAwait(false);
@@ -55,18 +59,72 @@ public sealed partial class RfbClient
         try
         {
             await ReadExactlyAsync(data, 0, length, ct).ConfigureAwait(false);
-            EnsureFramebuffer(FramebufferWidth, FramebufferHeight);
-            var decoder = ImageDecoder ?? throw new IOException(Res.T("RfbClient_16"));
-
-            // 풀에서 빌린 버퍼를 복사 없이 넘기고, 디코더가 프레임버퍼 위치에 직접 기록한다
-            decoder(data, length, Framebuffer, FramebufferWidth, x, y, w, h);
-            Interlocked.Increment(ref _tightImageRects);
         }
-        finally
+        catch
         {
             ArrayPool<byte>.Shared.Return(data);
+            throw;
         }
+
+        var decoder = ImageDecoder;
+        if (decoder is null)
+        {
+            ArrayPool<byte>.Shared.Return(data);
+            throw new IOException(Res.T("RfbClient_16"));
+        }
+
+        EnsureFramebuffer(FramebufferWidth, FramebufferHeight);
+        var framebuffer = Framebuffer;
+        var framebufferWidth = FramebufferWidth;
+        // 풀에서 빌린 버퍼를 복사 없이 넘기고, 디코더가 프레임버퍼 위치에 직접 기록한다(끝나면 반환)
+        var decode = Task.Run(() =>
+        {
+            try
+            {
+                decoder(data, length, framebuffer, framebufferWidth, x, y, w, h);
+                Interlocked.Increment(ref _tightImageRects);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(data);
+            }
+        }, CancellationToken.None);
+        _decodes.Add(new PendingDecode(decode, x, y, w, h));
     }
+
+    /// <summary>진행 중인 디코드를 모두 기다린다 — 실패한 것이 있으면 그 예외로 연결을 끊는다.</summary>
+    private Task DrainDecodesAsync()
+    {
+        if (_decodes.Count == 0) return Task.CompletedTask;
+
+        var tasks = new Task[_decodes.Count];
+        for (var i = 0; i < tasks.Length; i++) tasks[i] = _decodes[i].Task;
+        _decodes.Clear();
+        return Task.WhenAll(tasks);
+    }
+
+    /// <summary>이 영역에 아직 쓰는 중인 디코드가 있으면 모두 기다린다(그리는 순서 유지).</summary>
+    private Task DrainOverlappingAsync(int x, int y, int w, int h)
+    {
+        foreach (var d in _decodes)
+            if (x < d.X + d.W && d.X < x + w && y < d.Y + d.H && d.Y < y + h)
+                return DrainDecodesAsync();
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    ///     갱신을 마치지 못하고 끝날 때 — 남은 디코드의 예외가 관찰되지 않은 채 남지 않게. 기다리지는 않는다:
+    ///     연결이 끝난 뒤 잠깐 옛 프레임버퍼에 써도 이 클라이언트는 다시 쓰이지 않는다(연결마다 새로 만든다).
+    /// </summary>
+    private void AbandonDecodes()
+    {
+        foreach (var d in _decodes) ObserveRemaining(d.Task);
+        _decodes.Clear();
+    }
+
+    /// <summary>스레드 풀에서 프레임버퍼 (X, Y, W, H) 에 쓰는 중인 디코드.</summary>
+    private readonly record struct PendingDecode(Task Task, int X, int Y, int W, int H);
     private async Task HandleTightBasicAsync(int streamId, int filter, int x, int y, int w, int h, CancellationToken ct)
     {
         var size = w * h * 3;

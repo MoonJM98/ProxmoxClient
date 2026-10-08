@@ -167,6 +167,13 @@ public sealed class GraphLine : FrameworkElement
         return index == 0 ? _hoverVisual : throw new ArgumentOutOfRangeException(nameof(index));
     }
 
+    /// <summary>배율이 다른 모니터로 옮기면 라벨 글자를 그 DPI 로 다시 그린다.</summary>
+    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+    {
+        base.OnDpiChanged(oldDpi, newDpi);
+        InvalidateVisual();
+    }
+
     protected override void OnRender(DrawingContext dc)
     {
         base.OnRender(dc);

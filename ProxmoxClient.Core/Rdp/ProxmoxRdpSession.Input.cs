@@ -26,6 +26,15 @@ public sealed partial class ProxmoxRdpSession
     private readonly Channel<Operation> _inputs =
         Channel.CreateUnbounded<Operation>(new UnboundedChannelOptions { SingleReader = true });
 
+    /// <summary>재활성화 중에 붙잡아 둘 입력의 상한 — 끝나지 않는 재활성화에 마우스 이동이 끝없이 쌓이지 않게.</summary>
+    private const int MaxHeldInputs = 4096;
+
+    /// <summary>
+    ///     재활성화(해상도 변경) 중에 들어온 입력 — 끝나면 순서대로 보낸다(잠금 안에서만). 버리면 그 사이 뗀 키·버튼이
+    ///     게스트에 눌린 채 남는다(Shift 가 계속 눌림 등). 버튼 마스크는 넣을 때 이미 바뀌어 다시 보내지도 않는다.
+    /// </summary>
+    private readonly List<Operation> _heldInputs = [];
+
     /// <summary>마지막으로 넣은 버튼 마스크(휠 제외) — 바뀐 버튼만 누름/뗌으로 보낸다. 입력 스레드(UI) 전용.</summary>
     private int _buttons;
 
@@ -126,6 +135,33 @@ public sealed partial class ProxmoxRdpSession
         _buttons = now ? _buttons | bit : _buttons & ~bit;
     }
 
+    /// <summary>(잠금 안에서) 재활성화 중이면 붙잡아 두고 true(해제는 보낼 때), 아니면 보내고 false.</summary>
+    private bool ApplyOrHold(Operation operation)
+    {
+        if (_reactivating && IsConnected && _heldInputs.Count < MaxHeldInputs)
+        {
+            _heldInputs.Add(operation);
+            return true;
+        }
+
+        ApplyInput(operation);
+        return false;
+    }
+
+    /// <summary>(잠금 안에서) 재활성화가 끝났다 — 붙잡아 둔 입력을 순서대로 보낸다. 닫는 중이면 버리기만 한다.</summary>
+    private void FlushHeldInputs()
+    {
+        try
+        {
+            foreach (var operation in _heldInputs) ApplyInput(operation);
+        }
+        finally
+        {
+            foreach (var operation in _heldInputs) operation.Dispose();
+            _heldInputs.Clear();
+        }
+    }
+
     /// <summary>(잠금 안에서) 입력 하나를 빠른 경로 PDU 로 만들어 보내기 줄에 넣는다.</summary>
     private void ApplyInput(Operation operation)
     {
@@ -143,9 +179,16 @@ public sealed partial class ProxmoxRdpSession
         {
             await foreach (var operation in _inputs.Reader.ReadAllAsync(token).ConfigureAwait(false))
             {
-                using (operation)
+                var held = false;
+                try
+                {
                     lock (_gate)
-                        ApplyInput(operation);
+                        held = ApplyOrHold(operation);
+                }
+                finally
+                {
+                    if (!held) operation.Dispose();
+                }
             }
         }
         catch (OperationCanceledException)

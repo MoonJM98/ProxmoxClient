@@ -96,6 +96,8 @@ public sealed partial class ProxmoxRdpSession
             _input = null;
             _channel?.Complete();
             _channel = null;
+            foreach (var operation in _heldInputs) operation.Dispose(); // 재활성화 중에 닫혔다
+            _heldInputs.Clear();
         }
     }
 

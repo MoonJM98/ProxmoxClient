@@ -160,7 +160,7 @@ internal static class HaActions
                 .Select(r => (Sid: $"{(Value(r, "type") == "lxc" ? "ct" : "vm")}:{Value(r, "vmid")}", Row: r))
                 .Where(g => !managed.Contains(g.Sid))
                 .OrderBy(g => int.TryParse(Value(g.Row, "vmid"), out var id) ? id : int.MaxValue)
-                .Select(g => (g.Sid, $"{g.Sid} ({Value(g.Row, "name")}) — {Value(g.Row, "node")}"))
+                .Select(g => (g.Sid, $"{g.Sid} ({Value(g.Row, "name")}) - {Value(g.Row, "node")}"))
                 .ToList();
             fields.Add(new FormField { Key = "sid", LabelKey = "Table_Guest", Kind = FormFieldKind.Choice,
                 Choices = guests, Required = true, Hint = Loc.T("DcHa_GuestHint") });

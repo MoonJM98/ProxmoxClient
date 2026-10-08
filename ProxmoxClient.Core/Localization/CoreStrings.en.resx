@@ -276,4 +276,83 @@
   <data name="Rdp_Failed" xml:space="preserve">
     <value>RDP error: {0}</value>
   </data>
+  <data name="HiddenShell_NotReady" xml:space="preserve">
+    <value>The node shell did not become ready (slow login, or not root@pam).</value>
+  </data>
+  <data name="HiddenShell_TooLong" xml:space="preserve">
+    <value>The command is too long (use a shorter path).</value>
+  </data>
+  <data name="HiddenShell_Closed" xml:space="preserve">
+    <value>The node shell connection was closed.</value>
+  </data>
+  <data name="HiddenShell_BadOutput" xml:space="preserve">
+    <value>The node shell returned an unrecognized response.</value>
+  </data>
+  <data name="GuestFiles_BadName" xml:space="preserve">
+    <value>Invalid name: {0}</value>
+  </data>
+  <data name="GuestFiles_MountFailed" xml:space="preserve">
+    <value>Could not mount the stopped CT {0} (another task may hold a lock): {1}</value>
+  </data>
+  <data name="GuestFiles_Failed" xml:space="preserve">
+    <value>The operation failed (exit code {0}).</value>
+  </data>
+  <data name="AgentFiles_NoExec" xml:space="preserve">
+    <value>The guest agent blocks command execution (guest-exec) - check the qemu-guest-agent settings in the guest (block-rpcs/allow-rpcs).</value>
+  </data>
+  <data name="AgentFiles_NoFolder" xml:space="preserve">
+    <value>Folders cannot be downloaded from this (Windows) guest - files only.</value>
+  </data>
+  <data name="AgentFiles_Truncated" xml:space="preserve">
+    <value>The guest agent output was truncated (limit exceeded).</value>
+  </data>
+  <data name="AgentFiles_Timeout" xml:space="preserve">
+    <value>The guest command (pid {0}) did not finish in time.</value>
+  </data>
+  <data name="HiddenShell_InputChanged" xml:space="preserve">
+    <value>The file changed size while uploading - try again.</value>
+  </data>
+  <data name="GuestFiles_MountBusy" xml:space="preserve">
+    <value>Another file panel is using the stopped CT {0} - try again when it finishes.</value>
+  </data>
+  <data name="Sftp_KeyPathRequired" xml:space="preserve">
+    <value>Select an SSH private key file.</value>
+  </data>
+  <data name="Sftp_CertificatePathRequired" xml:space="preserve">
+    <value>Select an OpenSSH user certificate file.</value>
+  </data>
+  <data name="Sftp_DefaultKeysMissing" xml:space="preserve">
+    <value>No default SSH private key (id_ed25519, id_ecdsa, id_rsa) was found in {0}.</value>
+  </data>
+  <data name="Sftp_KeyLoadFailed" xml:space="preserve">
+    <value>Cannot read the SSH private key: {0}
+{1}</value>
+  </data>
+  <data name="Sftp_PassphraseRequired" xml:space="preserve">
+    <value>The SSH private key requires a passphrase: {0}</value>
+  </data>
+  <data name="Sftp_PassphraseInvalid" xml:space="preserve">
+    <value>Cannot decrypt the SSH private key. Check the passphrase: {0}</value>
+  </data>
+  <data name="Sftp_CertificateInvalid" xml:space="preserve">
+    <value>Cannot use the OpenSSH user certificate: {0}</value>
+  </data>
+  <data name="SshKey_PathRequired" xml:space="preserve"><value>Choose a path for the new private key.</value></data>
+  <data name="SshKey_AlreadyExists" xml:space="preserve"><value>The private or public key file already exists. Choose another path.
+{0}
+{1}</value></data>
+  <data name="SshKey_CurrentUserRequired" xml:space="preserve"><value>Cannot determine the current Windows user to restrict access to the private key.</value></data>
+  <data name="SshKey_CommentSingleLine" xml:space="preserve"><value>Enter a one-line public key comment without control characters.</value></data>
+  <data name="SshKey_Ed25519Passphrase" xml:space="preserve"><value>This key generator creates Ed25519 keys without a passphrase. Choose RSA 3072 to use a passphrase.</value></data>
+  <data name="SshKey_CleanupFailed" xml:space="preserve"><value>Key generation did not complete and these files could not be removed. Check their permissions and delete them.
+{0}</value></data>
+  <data name="ProxmoxApiClient_NeedTfa" xml:space="preserve">
+    <value>This account uses two-factor authentication (TOTP etc.), which is not supported yet. Connect with an API token instead.</value>
+  </data>
+  <data name="ProxmoxApiClient_SessionExpired" xml:space="preserve">
+    <value>The session expired and could not be renewed. Disconnect and connect again.</value>
+  </data>
+  <data name="RfbClient_BadLength" xml:space="preserve">
+    <value>The server sent an invalid length ({0}). Disconnecting.</value>
+  </data>
 </root>
