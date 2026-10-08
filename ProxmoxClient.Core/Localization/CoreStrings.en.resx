@@ -385,4 +385,10 @@
   <data name="Ftp_CertificateRejected" xml:space="preserve">
     <value>Not connected because the FTPS server certificate was not trusted.</value>
   </data>
+  <data name="Smb_NeedAccount" xml:space="preserve">
+    <value>Access was denied for your current Windows account ({0}). Even an Everyone share is denied unless the guest has the same account, and Windows can block guest/anonymous shares (blocked by default since Windows 11 24H2). Create a sharing account on the guest and enter its user name and password.</value>
+  </data>
+  <data name="Smb_GuestBlocked" xml:space="preserve">
+    <value>Windows on this PC blocked an unauthenticated guest (anonymous) SMB logon. Create a sharing account on the guest and enter its user name and password.</value>
+  </data>
 </root>

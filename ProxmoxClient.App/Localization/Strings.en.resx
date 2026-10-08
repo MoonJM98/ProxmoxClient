@@ -8330,4 +8330,7 @@ Previous SHA-256: {6}</value>
   <data name="Remote_GuestInfo" xml:space="preserve">
     <value>Guest network</value>
   </data>
+  <data name="FormDialog_Refresh" xml:space="preserve">
+    <value>Search again with the values entered</value>
+  </data>
 </root>

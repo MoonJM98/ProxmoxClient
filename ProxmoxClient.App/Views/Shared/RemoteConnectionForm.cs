@@ -46,8 +46,10 @@ internal static class RemoteConnectionForm
         };
         if (smb)
             fields.Add(new FormField
-                { Key = "share", LabelKey = "Remote_Share", Required = true, Initial = current.Share,
-                  Hint = Loc.T("Remote_ShareHint") });
+            {
+                Key = "share", LabelKey = "Remote_Share", Required = true, Initial = current.Share,
+                Hint = Loc.T("Remote_ShareHint"), Suggest = SmbShareSuggestions
+            });
         else
         {
             fields.Add(new FormField
@@ -83,6 +85,19 @@ internal static class RemoteConnectionForm
             UserName = r["user"], RememberPassword = r["remember"] == "1"
         }.Normalize();
         return (settings, r["password"]);
+    }
+
+    /// <summary>공유 이름 고르기 — 지금 적은 주소·사용자·비밀번호로 서버의 공유 목록을 묻는다.</summary>
+    private static async Task<IReadOnlyList<(string Value, string Description)>> SmbShareSuggestions(
+        IReadOnlyDictionary<string, string> values)
+    {
+        var host = values.GetValueOrDefault("host", string.Empty).Trim();
+        if (host.Length == 0) return [];
+
+        var user = values.GetValueOrDefault("user", string.Empty).Trim();
+        var password = values.GetValueOrDefault("password", string.Empty);
+        var shares = await SmbShares.ListAsync(host, user, password.Length > 0 ? password : null);
+        return shares.Select(s => (s.Name, s.Remark)).ToList();
     }
 
     private static IEnumerable<FormField> CredentialFields(bool smb, RemoteFileSettings current) =>

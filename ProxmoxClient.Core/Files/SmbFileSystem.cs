@@ -39,7 +39,7 @@ public sealed class SmbFileSystem : IGuestFileSystem
             var connection = SmbConnection.Open(root, userName, password);
             try
             {
-                CheckReachable(root);
+                CheckReachable(root, userName);
                 return new SmbFileSystem(root, connection);
             }
             catch
@@ -50,8 +50,11 @@ public sealed class SmbFileSystem : IGuestFileSystem
         }, ct);
     }
 
-    /// <summary>공유가 보이는지 — 없으면 "찾을 수 없음", 접근이 막혔으면 로그인 실패(계정을 적게)로 알린다.</summary>
-    private static void CheckReachable(string root)
+    /// <summary>
+    ///     공유가 보이는지 — 없으면 "찾을 수 없음", 접근이 막혔으면 로그인 실패로 알린다. 사용자를 비웠으면
+    ///     (지금 Windows 계정) 게스트·익명 공유가 막혔을 수 있다고 함께 알린다.
+    /// </summary>
+    private static void CheckReachable(string root, string? userName)
     {
         if (Directory.Exists(root)) return;
 
@@ -61,7 +64,7 @@ public sealed class SmbFileSystem : IGuestFileSystem
         }
         catch (UnauthorizedAccessException ex)
         {
-            throw new SmbAuthenticationException(Res.T("Smb_LogonFailed", ex.Message));
+            throw AccessDenied(userName, ex.Message);
         }
         catch (IOException)
         {
@@ -70,6 +73,10 @@ public sealed class SmbFileSystem : IGuestFileSystem
 
         throw new GuestFileException(Res.T("Smb_ShareNotFound", root));
     }
+
+    /// <summary>접근 거부 — 사용자를 비웠으면 공유용 계정을 적으라고(게스트·익명은 Windows 가 막을 수 있다).</summary>
+    internal static SmbAuthenticationException AccessDenied(string? userName, string detail) =>
+        new(string.IsNullOrEmpty(userName) ? Res.T("Smb_NeedAccount", detail) : Res.T("Smb_LogonFailed", detail));
 
     /// <summary>UNC 에 쓸 주소 — IPv6 는 ipv6-literal.net 이름으로(UNC 는 ':' 를 받지 않는다).</summary>
     internal static string UncHost(string host)

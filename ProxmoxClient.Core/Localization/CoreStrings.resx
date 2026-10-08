@@ -445,4 +445,10 @@
   <data name="Ftp_CertificateRejected" xml:space="preserve">
     <value>FTPS 서버 인증서를 신뢰하지 않아 연결하지 않았습니다.</value>
   </data>
+  <data name="Smb_NeedAccount" xml:space="preserve">
+    <value>지금 Windows 계정으로는 접근이 거부됐습니다 ({0}). Everyone 공유도 게스트에 같은 계정이 없으면 거부되고, 게스트·익명 공유는 Windows가 막을 수 있습니다(Windows 11 24H2부터 기본 차단). 게스트에 공유용 계정을 만들어 사용자와 비밀번호를 입력하세요.</value>
+  </data>
+  <data name="Smb_GuestBlocked" xml:space="preserve">
+    <value>이 PC의 Windows가 인증 없는 게스트(익명) SMB 접속을 막았습니다. 게스트에 공유용 계정을 만들어 사용자와 비밀번호를 입력하세요.</value>
+  </data>
 </root>

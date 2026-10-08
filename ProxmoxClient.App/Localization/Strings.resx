@@ -10506,4 +10506,7 @@ SHA-256: {5}</value>
   <data name="Remote_GuestInfo" xml:space="preserve">
     <value>게스트 네트워크</value>
   </data>
+  <data name="FormDialog_Refresh" xml:space="preserve">
+    <value>지금 입력한 값으로 다시 찾기</value>
+  </data>
 </root>

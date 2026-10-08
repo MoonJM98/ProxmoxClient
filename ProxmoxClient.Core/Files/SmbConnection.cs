@@ -15,6 +15,7 @@ public sealed class SmbAuthenticationException(string message) : GuestFileExcept
 /// </summary>
 internal sealed class SmbConnection : IDisposable
 {
+    private const int ResourceTypeAny = 0;
     private const int ResourceTypeDisk = 1;
     private const int ConnectTemporary = 4;
     private const int ErrorAccessDenied = 5;
@@ -26,6 +27,9 @@ internal sealed class SmbConnection : IDisposable
     private const int ErrorPasswordExpired = 1330;
     private const int ErrorAccountDisabled = 1331;
     private const int ErrorBadNetworkPath = 1203;
+
+    /// <summary>ERROR_SMB_GUEST_LOGON_BLOCKED — PC 의 Windows 가 인증 없는 게스트 접속을 막았다.</summary>
+    private const int ErrorGuestLogonBlocked = 1272;
 
     /// <summary>이 앱이 붙인 연결(공유 경로 → 붙인 계정, 쓰는 창 수) — 대소문자 무시.</summary>
     private static readonly Dictionary<string, (string User, int Count)> Shared =
@@ -55,7 +59,9 @@ internal sealed class SmbConnection : IDisposable
                 return new SmbConnection(root);
             }
 
-            var resource = new NetResource { Type = ResourceTypeDisk, RemoteName = root };
+            // 공유 목록을 물을 때 붙는 IPC$ 는 디스크가 아니다
+            var type = root.EndsWith(@"\IPC$", StringComparison.OrdinalIgnoreCase) ? ResourceTypeAny : ResourceTypeDisk;
+            var resource = new NetResource { Type = type, RemoteName = root };
             var result = WNetAddConnection2(ref resource, password ?? string.Empty, userName, ConnectTemporary);
             if (result != 0) throw Error(result, root);
 
@@ -89,6 +95,7 @@ internal sealed class SmbConnection : IDisposable
             or ErrorAccessDenied => new SmbAuthenticationException(Res.T("Smb_LogonFailed", new Win32Exception(code)
                 .Message)),
         ErrorSessionCredentialConflict => new GuestFileException(Res.T("Smb_CredentialConflict")),
+        ErrorGuestLogonBlocked => new SmbAuthenticationException(Res.T("Smb_GuestBlocked")),
         ErrorBadNetName => new GuestFileException(Res.T("Smb_ShareNotFound", root)),
         ErrorBadNetPath or ErrorBadNetworkPath => new GuestFileException(Res.T("Smb_Unreachable", root)),
         _ => new GuestFileException(new Win32Exception(code).Message)
