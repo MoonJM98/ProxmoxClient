@@ -12,8 +12,13 @@ using Renci.SshNet.Common;
 
 namespace ProxmoxClient.App.Services;
 
-/// <summary>게스트 → 접속 프로필 → 계정 프로필. 비밀번호의 저장 키는 계정 ID다.</summary>
-internal sealed class GuestFileConnections(Window owner, ProxmoxApiClient api, PveResource guest, bool defaultSftp = false)
+/// <summary>
+///     게스트별 파일 연결 — 에이전트(CT 노드 셸)·SFTP·SMB·FTP 중 고른 방식으로 파일 시스템을 연다.
+///     SFTP 는 게스트 → 접속 프로필 → 계정 프로필(비밀번호 저장 키는 계정 ID), SMB·FTP 는 게스트별 설정
+///     (GuestFileConnections.Remote.cs).
+/// </summary>
+internal sealed partial class GuestFileConnections(
+    Window owner, ProxmoxApiClient api, PveResource guest, bool defaultSftp = false)
 {
     private readonly ConsoleSettingsStore _store = new();
     private readonly SftpProfileStore _profiles = new();
@@ -25,7 +30,10 @@ internal sealed class GuestFileConnections(Window owner, ProxmoxApiClient api, P
     {
         var settings = await _profiles.LoadAsync();
         var connection = settings.GuestFileConnections.GetValueOrDefault(_key) ?? new GuestFileConnection();
-        return defaultSftp ? connection with { UseSftp = true } : connection;
+        // 노드 셸을 못 쓰는 계정(CT, root@pam 아님) — 에이전트 대신 SFTP 가 기본
+        return defaultSftp && connection.EffectiveTransport == GuestFileTransport.Agent
+            ? connection.WithTransport(GuestFileTransport.Sftp)
+            : connection;
     }
 
     private Task<ConsoleSettings> SaveAsync(GuestFileConnection connection) => _store.UpdateAsync(settings => settings with
@@ -33,17 +41,23 @@ internal sealed class GuestFileConnections(Window owner, ProxmoxApiClient api, P
         GuestFileConnections = new Dictionary<string, GuestFileConnection>(settings.GuestFileConnections) { [_key] = connection }
     });
 
-    public async Task<bool> SelectAsync(bool sftp, bool configure = false)
+    /// <summary>방식을 고른다 — 설정이 없거나 configure 면 설정 창을 연다. 취소하면 false.</summary>
+    public async Task<bool> SelectAsync(GuestFileTransport transport, bool configure = false)
     {
         _secret = null;
         _secretAccount = null;
+        _remoteSecret = null;
         var connection = await LoadAsync();
         // 메뉴에서 고른 방식은 접속 설정 완료·인증 성공 여부와 무관하게 게스트 기본값으로 기억한다.
         if (!configure)
         {
-            connection = connection with { UseSftp = sftp };
+            connection = connection.WithTransport(transport);
             await SaveAsync(connection);
         }
+        if (transport is GuestFileTransport.Smb or GuestFileTransport.Ftp)
+            return await ConfigureRemoteAsync(transport, connection, configure);
+
+        var sftp = transport == GuestFileTransport.Sftp;
         var settings = await _profiles.LoadAsync();
         if (sftp && (configure || connection.SftpProfileId is not { } id || !settings.SftpConnections.ContainsKey(id)))
         {
@@ -51,11 +65,11 @@ internal sealed class GuestFileConnections(Window owner, ProxmoxApiClient api, P
             if (dialog.ShowDialog() != true || dialog.SelectedProfileId is not { } selected) return false;
             settings = await _profiles.LoadAsync();
             if (!settings.SftpConnections.TryGetValue(selected, out var profile)) return false;
-            connection = new GuestFileConnection { UseSftp = true, SftpProfileId = selected };
+            connection = connection.WithTransport(GuestFileTransport.Sftp) with { SftpProfileId = selected };
             _secret = dialog.SelectedPassword;
             _secretAccount = dialog.SelectedAccount;
         }
-        await SaveAsync(connection with { UseSftp = sftp });
+        await SaveAsync(connection.WithTransport(transport));
         return true;
     }
 
@@ -78,14 +92,16 @@ internal sealed class GuestFileConnections(Window owner, ProxmoxApiClient api, P
     {
         var connection = await LoadAsync();
         ct.ThrowIfCancellationRequested();
-        if (!connection.UseSftp)
+        if (connection.EffectiveTransport is GuestFileTransport.Smb or GuestFileTransport.Ftp)
+            return await OpenRemoteAsync(connection, ct);
+        if (connection.EffectiveTransport == GuestFileTransport.Agent)
             return guest.Kind == ResourceKind.Qemu
                 ? await AgentFileSystem.OpenAsync(api, guest.Node, guest.VmId, ct)
                 : await ContainerFileSystem.OpenAsync(api, guest.Node, guest.VmId, ct);
         var settings = await _profiles.LoadAsync(ct);
         if (connection.SftpProfileId is not { } profileId || !settings.SftpConnections.ContainsKey(profileId))
         {
-            if (!await SelectAsync(true, true)) throw new OperationCanceledException(ct);
+            if (!await SelectAsync(GuestFileTransport.Sftp, true)) throw new OperationCanceledException(ct);
             connection = await LoadAsync();
             settings = await _profiles.LoadAsync(ct);
         }

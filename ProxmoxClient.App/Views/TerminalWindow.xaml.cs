@@ -87,6 +87,10 @@ public partial class TerminalWindow : Window
     {
         InitializeComponent();
         _toast = new Toast(TerminalHost);
+        // 최소화에서 돌아옴·터미널 영역이 다시 보임·모니터 배율 변경 — 그동안 보내지 않은 최종 크기를 맞춘다
+        StateChanged += (_, _) => QueueSizeSync();
+        TerminalHost.IsVisibleChanged += (_, _) => QueueSizeSync();
+        DpiChanged += (_, _) => QueueSizeSync();
         WindowTheme.ApplyDarkTitleBar(this);
         _api = api;
         _target = target;
@@ -221,13 +225,35 @@ public partial class TerminalWindow : Window
         }
     }
 
+    /// <summary>이보다 작은 크기는 숨김·최소화 중의 잠깐 값으로 보고 서버에 보내지 않는다.</summary>
+    private const int MinTerminalColumns = 10;
+
+    private const int MinTerminalRows = 2;
+
     /// <summary>
     ///     컨트롤이 이미 계산한 행·열을 서버 PTY 에 알린다. 컨트롤은 창 크기가 바뀔 때만 연결에 크기를 알리는데,
     ///     창 배치는 연결을 붙이기 전에 끝나므로 이대로 두면 서버는 창을 다시 조절할 때까지 기본 80×24 로 그린다.
     /// </summary>
     private void SyncTerminalSize(ProxmoxTerminalSession session)
     {
-        if (Terminal.Columns > 0 && Terminal.Rows > 0) session.Resize(Terminal.Columns, Terminal.Rows);
+        if (IsSizeReliable(Terminal.Columns, Terminal.Rows)) session.Resize(Terminal.Columns, Terminal.Rows);
+    }
+
+    /// <summary>
+    ///     지금 컨트롤 크기를 서버에 보내도 되는지 — 터미널 영역이 보이고, 창이 최소화되지 않았고, 크기가 정상일 때만.
+    ///     숨김·최소화 중의 크기를 보내면 서버 프로그램이 그 크기로 다시 그리고, 돌아올 때 또 그려 스크롤 기록이 쌓인다.
+    /// </summary>
+    private bool IsSizeReliable(int columns, int rows) =>
+        !_closed && WindowState != WindowState.Minimized && TerminalHost.IsVisible
+        && columns >= MinTerminalColumns && rows >= MinTerminalRows;
+
+    /// <summary>상태가 바뀐 뒤 — 배치가 끝난 다음(ContextIdle) 최종 크기를 한 번 맞춘다(같으면 세션이 보내지 않는다).</summary>
+    private void QueueSizeSync()
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_session is { } session) SyncTerminalSize(session);
+        }, System.Windows.Threading.DispatcherPriority.ContextIdle);
     }
 
     /// <summary>연결 시도(termproxy 생성·웹소켓·인증 전송). 성공하면 true — 최종 인증 결과는 Connected/Closed 이벤트.</summary>
@@ -255,7 +281,7 @@ public partial class TerminalWindow : Window
             if (!IsCurrent()) return;
 
             SetStoppedView(false);
-            SyncTerminalSize(session);
+            QueueSizeSync(); // 방금 보이게 한 터미널 영역은 아직 배치 전 — 배치가 끝난 뒤의 크기로
             SetState(Loc.T("TerminalWindow_M01"));
             UpdateButtons(true);
             Terminal.Focus();
@@ -275,6 +301,7 @@ public partial class TerminalWindow : Window
 
         _session = session;
         _connection = connection;
+        connection.CanResize = IsSizeReliable;
         Terminal.Connection = connection;
         SyncTerminalSize(session);
 

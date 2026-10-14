@@ -37,10 +37,33 @@ public partial class ConsoleWindow
 
     private void ApplyFilesMenu(GuestFileConnection connection)
     {
-        FilesAgent.IsChecked = !connection.UseSftp;
-        FilesSftp.IsChecked = connection.UseSftp;
-        BtnFiles.Content = Loc.T(connection.UseSftp ? "Sftp_FilesButton" : "Sftp_AgentFilesButton");
-        BtnFiles.ToolTip = Loc.T(connection.UseSftp ? "Sftp_Connect" : "GuestFiles_ToggleTipVm");
+        var transport = connection.EffectiveTransport;
+        FilesAgent.IsChecked = transport == GuestFileTransport.Agent;
+        FilesSftp.IsChecked = transport == GuestFileTransport.Sftp;
+        FilesSmb.IsChecked = transport == GuestFileTransport.Smb;
+        FilesFtp.IsChecked = transport == GuestFileTransport.Ftp;
+        BtnFiles.Content = Loc.T(FilesButtonKey(transport, "Sftp_AgentFilesButton"));
+        BtnFiles.ToolTip = Loc.T(transport == GuestFileTransport.Agent ? "GuestFiles_ToggleTipVm" : "Files_RemoteTip");
+    }
+
+    /// <summary>[파일] 버튼 글 — 고른 방식을 괄호로(에이전트·노드 셸은 창마다 다른 글).</summary>
+    internal static string FilesButtonKey(GuestFileTransport transport, string agentKey) => transport switch
+    {
+        GuestFileTransport.Sftp => "Sftp_FilesButton",
+        GuestFileTransport.Smb => "Files_SmbButton",
+        GuestFileTransport.Ftp => "Files_FtpButton",
+        _ => agentKey
+    };
+
+    /// <summary>메뉴에서 고른 방식 — 연결 설정은 지금 방식의 설정(에이전트면 SFTP 설정, 전과 같이).</summary>
+    internal static GuestFileTransport MenuTransport(object sender, object agentItem, object sftpItem, object smbItem,
+        object configureItem, GuestFileTransport current)
+    {
+        if (ReferenceEquals(sender, configureItem))
+            return current == GuestFileTransport.Agent ? GuestFileTransport.Sftp : current;
+        if (ReferenceEquals(sender, agentItem)) return GuestFileTransport.Agent;
+        if (ReferenceEquals(sender, sftpItem)) return GuestFileTransport.Sftp;
+        return ReferenceEquals(sender, smbItem) ? GuestFileTransport.Smb : GuestFileTransport.Ftp;
     }
 
     private async void OnFilesMethod(object sender, RoutedEventArgs e)
@@ -48,9 +71,10 @@ public partial class ConsoleWindow
         if (_fileConnections is null) return;
         try
         {
-            var sftp = !ReferenceEquals(sender, FilesAgent);
             var configured = ReferenceEquals(sender, FilesConfigure);
-            var selected = await _fileConnections.SelectAsync(sftp, configured);
+            var current = (await _fileConnections.LoadAsync()).EffectiveTransport;
+            var transport = MenuTransport(sender, FilesAgent, FilesSftp, FilesSmb, FilesConfigure, current);
+            var selected = await _fileConnections.SelectAsync(transport, configured);
             if (selected || !configured) _filesWindow?.Close();
             await UpdateFilesMenuAsync();
             if (selected) await ShowFilesWindowAsync();

@@ -22,6 +22,12 @@ public sealed class AgentFileSystem : IGuestFileSystem
     /// <summary>목록 한 페이지 — 첫 화면이 곧 보일 만큼, Windows(PowerShell 시작)가 너무 여러 번 돌지 않을 만큼.</summary>
     private const int ListPage = 1000;
 
+    /// <summary>조각 이름은 6자리(p000000) — 그보다 많아질 큰 파일(약 45GB 이상)은 명령 방식으로.</summary>
+    private const int MaxParts = 999_999;
+
+    /// <summary>한 번에 잇는 조각 수(약 90MB) — 느린 디스크에서도 명령 하나가 몇 분을 넘지 않게.</summary>
+    private const int AssembleBatch = 2000;
+
     /// <summary>에이전트 파일 API(file-read) 로 한 번에 받을 수 있는 크기 — 서버 한도 16 MiB.</summary>
     private const long FileReadLimit = 16 * 1024 * 1024;
 
@@ -255,11 +261,25 @@ public sealed class AgentFileSystem : IGuestFileSystem
         _dialect.CheckName(name);
         var temp = _dialect.TempPath(directory, Guid.NewGuid().ToString("N"));
         var finished = false;
+        var parts = 0;
         try
         {
             if (length <= WriteChunk && await TryFileWriteAsync(temp, source, length, ct).ConfigureAwait(false))
             {
                 progress?.Report(length);
+                await RunAsync(_dialect.Finish(temp, directory, name), null, ct).ConfigureAwait(false);
+                finished = true;
+                return;
+            }
+
+            if (length > WriteChunk && length <= (long)MaxParts * WriteChunk)
+                parts = await TryWritePartsAsync(temp, source, progress, ct).ConfigureAwait(false);
+            if (parts > 0)
+            {
+                // 묶음마다 명령 하나 — 수 GB 도 한 명령의 실행 제한(AgentExec)에 걸리지 않게
+                for (var first = 0; first < parts; first += AssembleBatch)
+                    await RunAsync(_dialect.Assemble(temp, first, Math.Min(AssembleBatch, parts - first)), null, ct)
+                        .ConfigureAwait(false);
                 await RunAsync(_dialect.Finish(temp, directory, name), null, ct).ConfigureAwait(false);
                 finished = true;
                 return;
@@ -282,7 +302,70 @@ public sealed class AgentFileSystem : IGuestFileSystem
         }
         finally
         {
-            if (!finished) await CleanupAsync(temp).ConfigureAwait(false);
+            if (!finished)
+            {
+                await CleanupAsync(temp).ConfigureAwait(false);
+                if (parts > 0) await CleanupAsync(_dialect.RemoveParts(temp)).ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>
+    ///     큰 파일 — 에이전트 파일 API 로 조각(temp.p000000 …)을 쓴다. 조각마다 명령(셸·PowerShell)을 띄우지
+    ///     않아 훨씬 빠르고, 끝에 명령 한 번으로 잇는다. 쓴 조각 수(막혔으면 0 — 원본을 되돌려 명령 방식으로).
+    /// </summary>
+    private async Task<int> TryWritePartsAsync(string temp, Stream source, IProgress<long>? progress,
+        CancellationToken ct)
+    {
+        if (!_fileWrite || !source.CanSeek) return 0;
+
+        var start = source.Position;
+        var buffer = new byte[WriteChunk];
+        long sent = 0;
+        var parts = 0;
+        int read;
+        try
+        {
+            while ((read = await source.ReadAtLeastAsync(buffer, buffer.Length, false, ct).ConfigureAwait(false)) > 0)
+            {
+                var part = temp + ".p" + parts.ToString("D6", CultureInfo.InvariantCulture);
+                try
+                {
+                    await _api.Agent.FileWriteBytesAsync(_node, _vmid, part, buffer.AsMemory(0, read), ct)
+                        .ConfigureAwait(false);
+                }
+                catch (ProxmoxApiException) when (parts == 0)
+                {
+                    _fileWrite = false; // 막혔다 — 이 연결 동안은 명령 방식으로
+                    source.Position = start;
+                    return 0;
+                }
+
+                parts++;
+                sent += read;
+                progress?.Report(sent);
+            }
+        }
+        catch when (parts > 0)
+        {
+            await CleanupAsync(_dialect.RemoveParts(temp)).ConfigureAwait(false); // 중간에 멈췄다 — 쓴 조각을 치운다
+            throw;
+        }
+
+        return parts;
+    }
+
+    /// <summary>남은 조각 지우기 — 취소된 뒤에도, 실패는 무시한다.</summary>
+    private async Task CleanupAsync(IReadOnlyList<string> command)
+    {
+        try
+        {
+            await RunAsync(command, null, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is GuestFileException or ProxmoxApiException or TimeoutException
+                                       or HttpRequestException)
+        {
+            // 게스트에 .pvc-up.*.p?????? 이 남을 수 있다
         }
     }
 

@@ -41,6 +41,11 @@ public sealed class ProxmoxTerminalSession : IDisposable
     private volatile bool _isConnected;
     private volatile int _rows = DefaultRows;
 
+    /// <summary>서버에 마지막으로 보낸 크기(열, 행) — 같은 크기를 거듭 보내지 않게. _sizeGate 보호.</summary>
+    private (int Columns, int Rows)? _sentSize;
+
+    private readonly object _sizeGate = new();
+
     private ClientWebSocket? _socket;
 
     public ProxmoxTerminalSession(ProxmoxApiClient api)
@@ -54,8 +59,19 @@ public sealed class ProxmoxTerminalSession : IDisposable
         private set => _isConnected = value;
     }
 
-    /// <summary>아직 보내지 않은 메시지 수 — 큰 입력을 흘려 보낼 때 이만큼 쌓이면 잠시 기다린다(메모리에 다 쌓지 않게).</summary>
-    public int PendingSends => _outgoing.Reader.Count;
+    /// <summary>
+    ///     아직 보내지 않은 메시지 수 — 큰 입력을 흘려 보낼 때 이만큼 쌓이면 잠시 기다린다(메모리에 다 쌓지 않게).
+    ///     단일 소비자 채널은 Reader.Count 를 지원하지 않으므로(NotSupportedException) 넣고 꺼낼 때 직접 센다.
+    /// </summary>
+    public int PendingSends => Volatile.Read(ref _pendingSends);
+
+    private int _pendingSends;
+
+    /// <summary>보낼 메시지를 줄 세운다(보낸 수를 센다).</summary>
+    private void Enqueue(string message)
+    {
+        if (_outgoing.Writer.TryWrite(message)) Interlocked.Increment(ref _pendingSends);
+    }
 
     /// <summary>서버 인증 성공 응답 접두어.</summary>
     private static ReadOnlySpan<byte> AuthOk => "OK"u8;
@@ -143,17 +159,36 @@ public sealed class ProxmoxTerminalSession : IDisposable
         if (string.IsNullOrEmpty(data)) return;
 
         // 길이는 문자 수가 아니라 UTF-8 바이트 수 — 한글 등 멀티바이트 입력 시 필수
-        _outgoing.Writer.TryWrite($"0:{Encoding.UTF8.GetByteCount(data)}:{data}");
+        Enqueue($"0:{Encoding.UTF8.GetByteCount(data)}:{data}");
     }
 
-    /// <summary>터미널 크기 변경 — 인증 전이면 저장해 두었다가 연결 직후 보낸다.</summary>
+    /// <summary>
+    ///     터미널 크기 변경 — 인증 전이면 저장해 두었다가 연결 직후 보낸다. 마지막으로 보낸 크기와 같으면 보내지 않는다
+    ///     (같은 크기라도 서버 프로그램이 화면을 지우고 다시 그려, 그 화면이 스크롤 기록으로 쌓인다).
+    /// </summary>
     public void Resize(int columns, int rows)
     {
         if (columns <= 0 || rows <= 0) return;
 
-        _columns = columns;
-        _rows = rows;
-        if (IsConnected) _outgoing.Writer.TryWrite(ResizeMessage(columns, rows));
+        lock (_sizeGate)
+        {
+            _columns = columns;
+            _rows = rows;
+            if (IsConnected) SendSizeLocked(false);
+        }
+    }
+
+    /// <summary>
+    ///     지금 크기를 보낸다(_sizeGate 안에서) — 크기 기록·비교·줄 세우기를 한 잠금 안에서 해야 인증 직후 전송과
+    ///     UI 스레드의 변경이 엇갈려 옛 크기가 나중에 나가는 일이 없다.
+    /// </summary>
+    private void SendSizeLocked(bool always)
+    {
+        var size = (_columns, _rows);
+        if (!always && _sentSize == size) return;
+
+        _sentSize = size;
+        Enqueue(ResizeMessage(size.Item1, size.Item2));
     }
 
     /// <summary>
@@ -284,7 +319,7 @@ public sealed class ProxmoxTerminalSession : IDisposable
 
                 count -= offset;
                 IsConnected = true;
-                _outgoing.Writer.TryWrite(ResizeMessage(_columns, _rows));
+                lock (_sizeGate) SendSizeLocked(true); // 새 연결의 서버 PTY 는 크기를 모른다 — 늘 한 번
                 Connected?.Invoke();
             }
 
@@ -299,13 +334,16 @@ public sealed class ProxmoxTerminalSession : IDisposable
     private async Task SendLoopAsync(ClientWebSocket socket, CancellationToken ct)
     {
         await foreach (var message in _outgoing.Reader.ReadAllAsync(ct).ConfigureAwait(false))
+        {
+            Interlocked.Decrement(ref _pendingSends);
             await SendTextAsync(socket, message, ct).ConfigureAwait(false);
+        }
     }
 
     private async Task PingLoopAsync(CancellationToken ct)
     {
         using var timer = new PeriodicTimer(PingInterval);
-        while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false)) _outgoing.Writer.TryWrite("2");
+        while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false)) Enqueue("2");
     }
 
     /// <summary>UTF-8 인코딩 버퍼를 풀에서 빌려 전송 — 키 입력마다 byte[] 를 새로 만들지 않는다.</summary>

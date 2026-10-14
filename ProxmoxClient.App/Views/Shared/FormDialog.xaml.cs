@@ -147,7 +147,9 @@ public partial class FormDialog : Window
     {
         var combo = new ComboBox { IsEditable = true, IsTextSearchEnabled = false, Text = field.Initial };
         var loading = false;
-        combo.DropDownOpened += async (_, _) =>
+        var justLoaded = false; // 새로고침 버튼이 방금 불러와 펼쳤다 — 펼칠 때 또 부르지 않는다
+
+        async Task LoadAsync()
         {
             if (loading) return;
 
@@ -160,8 +162,28 @@ public partial class FormDialog : Window
             {
                 loading = false;
             }
+        }
+
+        combo.DropDownOpened += async (_, _) =>
+        {
+            if (justLoaded) justLoaded = false;
+            else await LoadAsync();
         };
-        AddRow(label, combo);
+        var refresh = new Button
+        {
+            ToolTip = Loc.T("FormDialog_Refresh"), Margin = new Thickness(4, 0, 0, 0), MinWidth = 0, Padding =
+                new Thickness(7, 4, 7, 4)
+        };
+        IconAssist.SetIcon(refresh, (System.Windows.Media.Geometry)FindResource("IconRefresh"));
+        refresh.Click += async (_, _) =>
+        {
+            await LoadAsync();
+            if (combo.Items.Count == 0) return;
+            justLoaded = true;
+            combo.IsDropDownOpen = true;
+        };
+        DockPanel.SetDock(refresh, Dock.Right);
+        AddRow(label, new DockPanel { Children = { refresh, combo } });
         return () => field.Trim ? combo.Text.Trim() : combo.Text;
     }
 
