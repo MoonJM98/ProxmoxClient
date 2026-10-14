@@ -29,6 +29,12 @@ internal sealed class ProxmoxTerminalConnection : ITerminalConnection, IDisposab
     private bool _flushScheduled;
     private (int Columns, int Rows) _pendingSize;
 
+    /// <summary>
+    ///     지금 컨트롤 크기를 믿어도 되는지(창이 보이고 최소화되지 않음 등) — 아니면 보내지 않고, 상태가 돌아온 뒤
+    ///     창이 다시 맞춘다. 없으면 늘 보낸다.
+    /// </summary>
+    public Func<int, int, bool>? CanResize { get; set; }
+
     /// <summary>컨트롤이 Start 를 부르기 전 출력(로그인 배너 등)은 버퍼에만 쌓는다.</summary>
     private bool _started;
 
@@ -77,6 +83,8 @@ internal sealed class ProxmoxTerminalConnection : ITerminalConnection, IDisposab
     private void OnResizeTimer(object? sender, EventArgs e)
     {
         _resizeTimer.Stop();
+        if (CanResize?.Invoke(_pendingSize.Columns, _pendingSize.Rows) == false) return;
+
         _session.Resize(_pendingSize.Columns, _pendingSize.Rows);
     }
 
