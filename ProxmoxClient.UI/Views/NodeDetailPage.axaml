@@ -9,7 +9,7 @@
              Header="{Binding Title}">
 
     <NavigationPage.TopCommandBar>
-        <Button Classes="icon" Command="{Binding ReloadCommand}">
+        <Button Classes="icon" Command="{Binding ReloadCommand}" ToolTip.Tip="{l:Tr Common_Refresh}">
             <Path Classes="icon" Data="{StaticResource IconRefresh}" />
         </Button>
     </NavigationPage.TopCommandBar>

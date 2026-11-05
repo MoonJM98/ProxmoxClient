@@ -121,7 +121,7 @@
                     BorderThickness="0,0,0,1" Padding="20,10,10,10">
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBlock x:Name="DetailTitle" Classes="title" FontSize="18" VerticalAlignment="Center" />
-                    <Button x:Name="DetailReload" Grid.Column="1" Classes="icon" IsVisible="False">
+                    <Button x:Name="DetailReload" Grid.Column="1" Classes="icon" IsVisible="False" ToolTip.Tip="{l:Tr Common_Refresh}">
                         <Path Classes="icon" Data="{StaticResource IconRefresh}" />
                     </Button>
                 </Grid>

@@ -116,6 +116,8 @@ internal sealed class WizardView : UserControl
 
         SetBusy(true);
         SetStatus(Loc.T("Hw_Loading"));
+        // 첫 단계가 뜨기 전 빈 화면 대신 진행 표시(목록을 읽는 동안)
+        _page.Children.Add(new ProgressBar { IsIndeterminate = true, Margin = new Thickness(16, 24), MinHeight = 4 });
         _ = StartAsync(load);
     }
 

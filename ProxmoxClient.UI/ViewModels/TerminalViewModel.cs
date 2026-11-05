@@ -57,17 +57,48 @@ public sealed partial class TerminalViewModel : ViewModelBase
 
     [ObservableProperty] public partial bool IsConnecting { get; private set; }
 
+    private bool _paused;
+
     public override async void OnAppearing()
     {
         if (_started) return;
 
         _started = true;
+        AppLifecycle.ForegroundChanged += OnForegroundChanged;
+        await ConnectAsync();
+    }
+
+    /// <summary>
+    ///     휴대폰·태블릿에서 앱이 배경으로 가면 콘솔(CT 콘솔·노드 셸) 연결을 끊고, 돌아오면 다시 연결한다(사용자 요청).
+    ///     데스크톱은 창 포커스만 바뀌므로 그대로 둔다.
+    /// </summary>
+    private async void OnForegroundChanged(bool foreground)
+    {
+        if (!Platform.PlatformInfo.IsTouch || IsRemoved) return;
+
+        if (!foreground)
+        {
+            if (!IsConnected || _session is not { } session) return;
+
+            _paused = true;
+            _session = null; // 늦게 오는 닫힘 이벤트는 버린다
+            IsConnected = false;
+            SetState(L.T("Console_PausedBackground"), true);
+            await session.DisconnectAsync();
+            return;
+        }
+
+        if (!_paused) return;
+
+        _paused = false;
         await ConnectAsync();
     }
 
     public override void OnDisappearing(bool removed)
     {
         if (!removed) return;
+
+        AppLifecycle.ForegroundChanged -= OnForegroundChanged;
 
         var session = _session;
         _session = null;

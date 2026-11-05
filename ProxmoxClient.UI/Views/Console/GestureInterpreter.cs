@@ -238,6 +238,9 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
         return true;
     }
 
+    /// <summary>손가락이 하나라도 닿아 있다.</summary>
+    public bool HasFingers => _fingers.Count > 0;
+
     /// <summary>손가락이 닿아 있거나 클릭을 기다리는 중 — 화면이 <see cref="Tick" /> 을 계속 불러야 한다.</summary>
     public bool NeedsTicks => _fingers.Count > 0 || _pendingClick;
 

@@ -79,6 +79,8 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         {
             if (_vm is not null && await AppServicesConfirm()) await _vm.Vnc.SendCtrlAltDelAsync();
         }));
+        // 콘솔 설정(화질·압축·키보드 등) — 데스크톱의 연결 설정과 같은 화면. 저장하고 돌아오면 다시 연결해 적용
+        extra.Children.Add(KeyButton(L.T("ConsoleSettingsWindow_01"), async (_, _) => await OpenSettingsAsync()));
         _more = new Border { IsVisible = false, Child = Row(extra) };
 
         // 특수키 막대 — 화면 위에 반투명하게 겹쳐 한 줄로, 넘치면 옆으로 밀어 본다(원격 화면을 가리지 않게)
@@ -160,6 +162,18 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
     }
 
     private Action _moreToggle => () => _more.IsVisible = !_more.IsVisible;
+
+    private async Task OpenSettingsAsync()
+    {
+        if (_vm is not { } vm) return;
+
+        var current = await new ProxmoxClient.Core.Vnc.ConsoleSettingsStore().LoadAsync();
+        var tab = vm.Protocol == ProxmoxClient.Core.Vnc.ConsoleProtocol.Rdp
+            ? Settings.ConsoleSettingsTab.Rdp
+            : Settings.ConsoleSettingsTab.Vnc;
+        await Services.AppServices.Navigator.PushViewAsync(L.T("ConsoleSettingsWindow_01"),
+            new Settings.ConsoleSettingsPage(current, tab, _ => vm.ReconnectWhenBack = true));
+    }
 
     private static Task<bool> AppServicesConfirm()
     {

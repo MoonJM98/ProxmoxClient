@@ -295,7 +295,7 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
     {
         var button = new Button
         {
-            Content = label, MinWidth = 40, MinHeight = 38, Margin = new Thickness(2), Padding = new Thickness(8, 4),
+            Content = label, MinWidth = 40, MinHeight = 40, Margin = new Thickness(2), Padding = new Thickness(8, 4),
             Foreground = Brushes.White, Background = new SolidColorBrush(Color.Parse("#3A3A3A")),
             HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, Focusable = false
         };
@@ -308,7 +308,7 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
     {
         return new ToggleButton
         {
-            Content = label, MinWidth = 46, MinHeight = 38, Margin = new Thickness(2), Padding = new Thickness(8, 4),
+            Content = label, MinWidth = 46, MinHeight = 40, Margin = new Thickness(2), Padding = new Thickness(8, 4),
             Foreground = Brushes.White, Background = new SolidColorBrush(Color.Parse("#3A3A3A")),
             HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, Focusable = false
         };

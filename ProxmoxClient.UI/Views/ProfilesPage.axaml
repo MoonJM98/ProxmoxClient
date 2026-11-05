@@ -40,7 +40,7 @@
                                     </Button>
                                     <Button Grid.Column="1" Classes="icon" Margin="0,0,6,0"
                                             Command="{Binding $parent[ItemsControl].((vm:ProfilesViewModel)DataContext).EditCommand}"
-                                            CommandParameter="{Binding}">
+                                            CommandParameter="{Binding}" ToolTip.Tip="{l:Tr Action_Edit}">
                                         <Path Classes="icon" Data="{StaticResource IconPencil}" />
                                     </Button>
                                 </Grid>

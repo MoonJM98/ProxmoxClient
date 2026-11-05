@@ -15,6 +15,7 @@ public partial class App : Application
     public override void Initialize()
     {
         L.InitializeCulture();
+        AccessibleNames.Install();
         AvaloniaXamlLoader.Load(this);
         // 휴대폰·태블릿은 같은 모양에 손가락 크기만 키운다(데스크톱은 WPF 와 같은 크기)
         if (PlatformInfo.IsTouch)

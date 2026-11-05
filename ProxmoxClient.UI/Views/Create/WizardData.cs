@@ -24,24 +24,38 @@ internal sealed class WizardData
     public int HostCpus { get; private init; }
     public long HostMemoryMiB { get; private init; }
 
+    /// <summary>목록 하나를 기다리는 한도 — 응답 없는 저장소(끊긴 NFS 등) 하나가 마법사 전체를 붙잡지 않게.</summary>
+    private static readonly TimeSpan ListTimeout = TimeSpan.FromSeconds(15);
+
+    /// <summary>목록을 한꺼번에(동시에) 읽는다 — 하나씩 읽으면 요청 수 × 왕복 시간만큼 빈 화면으로 기다린다.</summary>
     public static async Task<WizardData> LoadAsync(ProxmoxApiClient api, string node)
     {
-        var host = await TryAsync<Core.Models.PveNodeStatus?>(async () => await api.GetNodeStatusAsync(node), null);
+        using var cts = new CancellationTokenSource(ListTimeout);
+        var ct = cts.Token;
+        var host = TryAsync<Core.Models.PveNodeStatus?>(async () => await api.GetNodeStatusAsync(node, ct), null);
+        var nextId = TryAsync<int?>(() => api.GetNextVmIdAsync(ct), null);
+        var images = StoragesAsync(api, node, "images", ct);
+        var roots = StoragesAsync(api, node, "rootdir", ct);
+        var isos = ContentAsync(api, node, "iso", ct);
+        var templates = ContentAsync(api, node, "vztmpl", ct);
+        var bridges = TryAsync(() => api.GetNodeBridgesAsync(node, ct), []);
+        var pools = TryAsync(() => api.Pools.ListAsync(ct), []);
+        var cpus = TryAsync(() => api.Guests.CpuModelsAsync(node, null, ct), []);
+        await Task.WhenAll(host, nextId, images, roots, isos, templates, bridges, pools, cpus);
+
         return new WizardData
         {
-            NextId = (await TryAsync<int?>(() => api.GetNextVmIdAsync(), null))?.ToString() ?? string.Empty,
-            ImageStorages = await StoragesAsync(api, node, "images"),
-            RootStorages = await StoragesAsync(api, node, "rootdir"),
-            Isos = await ContentAsync(api, node, "iso"),
-            Templates = await ContentAsync(api, node, "vztmpl"),
-            Bridges = (await TryAsync(() => api.GetNodeBridgesAsync(node), [])).Select(b => (b, b)).ToList(),
-            Pools = (await TryAsync(() => api.Pools.ListAsync(), []))
-                .Select(r => ActionHelpers.Value(r, "poolid")).Where(p => p.Length > 0).Select(p => (p, p)).ToList(),
-            CpuModels = (await TryAsync(() => api.Guests.CpuModelsAsync(node), []))
-                .Select(r => ActionHelpers.Value(r, "name")).Where(n => n.Length > 0)
+            NextId = nextId.Result?.ToString() ?? string.Empty,
+            ImageStorages = images.Result,
+            RootStorages = roots.Result,
+            Isos = isos.Result,
+            Templates = templates.Result,
+            Bridges = bridges.Result.Select(b => (b, b)).ToList(),
+            Pools = pools.Result.Select(r => ActionHelpers.Value(r, "poolid")).Where(p => p.Length > 0).Select(p => (p, p)).ToList(),
+            CpuModels = cpus.Result.Select(r => ActionHelpers.Value(r, "name")).Where(n => n.Length > 0)
                 .OrderBy(n => n, StringComparer.OrdinalIgnoreCase).Select(n => (n, n)).ToList(),
-            HostCpus = host?.CpuCores ?? 0,
-            HostMemoryMiB = (host?.MemTotalBytes ?? 0) / (1024 * 1024)
+            HostCpus = host.Result?.CpuCores ?? 0,
+            HostMemoryMiB = (host.Result?.MemTotalBytes ?? 0) / (1024 * 1024)
         };
     }
 
@@ -57,30 +71,29 @@ internal sealed class WizardData
         {
             return await load();
         }
-        catch (ProxmoxApiException ex)
+        catch (Exception ex) when (ex is ProxmoxApiException or OperationCanceledException)
         {
-            Trace.TraceWarning($"[만들기] 목록 조회 실패: {ex.Message}");
+            Trace.TraceWarning($"[만들기] 목록 조회 실패(나머지로 연다): {ex.Message}");
             return fallback;
         }
     }
 
     private static async Task<IReadOnlyList<StorageInfo>> StoragesAsync(ProxmoxApiClient api, string node,
-        string content)
+        string content, CancellationToken ct)
     {
-        var rows = await TryAsync(() => api.Storage.NodeStoragesAsync(node, content), []);
+        var rows = await TryAsync(() => api.Storage.NodeStoragesAsync(node, content, ct), []);
         return rows.Select(r => new StorageInfo(ActionHelpers.Value(r, "storage"), ActionHelpers.Value(r, "type")))
             .Where(s => s.Id.Length > 0).OrderBy(s => s.Id, StringComparer.Ordinal).ToList();
     }
 
     /// <summary>이 콘텐츠를 담는 모든 저장소의 파일(볼륨 ID, 파일 이름).</summary>
     private static async Task<IReadOnlyList<(string, string)>> ContentAsync(ProxmoxApiClient api, string node,
-        string content)
+        string content, CancellationToken ct)
     {
-        var result = new List<(string, string)>();
-        foreach (var storage in await StoragesAsync(api, node, content))
-            result.AddRange((await TryAsync(() => api.GetStorageContentAsync(node, storage.Id, content), []))
-                .Select(f => (f.Volid, f.Volid)));
-        return result;
+        var storages = await StoragesAsync(api, node, content, ct);
+        var lists = await Task.WhenAll(storages.Select(storage =>
+            TryAsync(() => api.GetStorageContentAsync(node, storage.Id, content, ct), [])));
+        return lists.SelectMany(files => files.Select(f => (f.Volid, f.Volid))).ToList();
     }
 
     /// <summary>

@@ -179,7 +179,7 @@
                                                          FontFamily="fonts:App#JetBrains Mono, fonts:App#Pretendard" />
                                     <Button Grid.Column="1" Classes="icon"
                                             Command="{Binding $parent[ItemsControl].((vm:GuestDetailViewModel)DataContext).CopyTextCommand}"
-                                            CommandParameter="{Binding}">
+                                            CommandParameter="{Binding}" ToolTip.Tip="{l:Tr Common_Copy}">
                                         <Path Classes="icon" Width="16" Height="16" Data="{StaticResource IconCopy}" />
                                     </Button>
                                 </Grid>
@@ -194,7 +194,7 @@
             <!-- 스냅숏 -->
             <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Classes="section" Text="{l:Tr Guest_Snapshots}" VerticalAlignment="Center" />
-                <Button Grid.Column="1" Classes="icon" Command="{Binding CreateSnapshotCommand}"
+                <Button Grid.Column="1" Classes="icon" Command="{Binding CreateSnapshotCommand}" ToolTip.Tip="{l:Tr Snapshot_Create}"
                         IsEnabled="{Binding !IsTaskRunning}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Path Classes="icon" Width="16" Height="16" Data="{StaticResource IconPlus}" />
@@ -218,12 +218,12 @@
                                     </StackPanel>
                                     <Button Grid.Column="1" Classes="icon"
                                             Command="{Binding $parent[ItemsControl].((vm:GuestDetailViewModel)DataContext).RollbackSnapshotCommand}"
-                                            CommandParameter="{Binding}">
+                                            CommandParameter="{Binding}" ToolTip.Tip="{l:Tr Snapshot_Rollback}">
                                         <Path Classes="icon" Data="{StaticResource IconUndo}" />
                                     </Button>
                                     <Button Grid.Column="2" Classes="icon danger"
                                             Command="{Binding $parent[ItemsControl].((vm:GuestDetailViewModel)DataContext).DeleteSnapshotCommand}"
-                                            CommandParameter="{Binding}">
+                                            CommandParameter="{Binding}" ToolTip.Tip="{l:Tr Action_Delete}">
                                         <Path Classes="icon" Data="{StaticResource IconTrash}" />
                                     </Button>
                                 </Grid>

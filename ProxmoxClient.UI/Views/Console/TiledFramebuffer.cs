@@ -81,21 +81,25 @@ internal sealed class TiledFramebuffer : IDisposable
     }
 
     /// <summary>
-    ///     보기 좌표 <paramref name="offset" />·배율 <paramref name="scale" /> 로 그린다. 타일 가장자리는 화면 픽셀에 맞춰 반올림해
-    ///     확대·축소해도 타일 사이에 틈이 보이지 않게 한다.
+    ///     보기 좌표 <paramref name="offset" />·배율 <paramref name="scale" /> 로 그린다. 타일 가장자리는 실제 화면 픽셀
+    ///     (<paramref name="pixelScale" /> = 논리 단위당 픽셀, 폰은 2.625 처럼 소수)에 맞춰 반올림한다 — 논리 단위로만
+    ///     반올림하면 경계가 픽셀 사이에 걸려 반투명하게 칠해지고, 그 틈으로 검은 바탕이 비쳐 격자무늬가 보였다(실기기 보고).
     /// </summary>
-    public void Render(DrawingContext context, Point offset, double scale, Rect clip)
+    public void Render(DrawingContext context, Point offset, double scale, Rect clip, double pixelScale = 1)
     {
+        if (pixelScale <= 0) pixelScale = 1;
+        double Snap(double v) => Math.Round(v * pixelScale) / pixelScale;
+
         for (var r = 0; r < _rows; r++)
         {
-            var y0 = Math.Round(offset.Y + r * TileSize * scale);
-            var y1 = Math.Round(offset.Y + Math.Min(Height, (r + 1) * TileSize) * scale);
+            var y0 = Snap(offset.Y + r * TileSize * scale);
+            var y1 = Snap(offset.Y + Math.Min(Height, (r + 1) * TileSize) * scale);
             if (y1 < clip.Top || y0 > clip.Bottom) continue;
 
             for (var c = 0; c < _columns; c++)
             {
-                var x0 = Math.Round(offset.X + c * TileSize * scale);
-                var x1 = Math.Round(offset.X + Math.Min(Width, (c + 1) * TileSize) * scale);
+                var x0 = Snap(offset.X + c * TileSize * scale);
+                var x1 = Snap(offset.X + Math.Min(Width, (c + 1) * TileSize) * scale);
                 if (x1 < clip.Left || x0 > clip.Right) continue;
 
                 var tile = _tiles[r * _columns + c];

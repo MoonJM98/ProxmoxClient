@@ -12,10 +12,10 @@
 
     <NavigationPage.TopCommandBar>
         <StackPanel Orientation="Horizontal" Spacing="2">
-            <Button Classes="icon" Command="{Binding RefreshCommand}">
+            <Button Classes="icon" Command="{Binding RefreshCommand}" ToolTip.Tip="{l:Tr Common_Refresh}">
                 <Path Classes="icon" Data="{StaticResource IconRefresh}" />
             </Button>
-            <Button Classes="icon" Command="{Binding LogoutCommand}">
+            <Button Classes="icon" Command="{Binding LogoutCommand}" ToolTip.Tip="{l:Tr Cluster_Logout}">
                 <Path Classes="icon" Data="{StaticResource IconLogOut}" />
             </Button>
         </StackPanel>

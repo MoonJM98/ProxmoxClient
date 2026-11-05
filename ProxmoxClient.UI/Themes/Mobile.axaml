@@ -7,8 +7,18 @@
     <Style Selector="ComboBox">
         <Setter Property="MinHeight" Value="44" />
     </Style>
-    <Style Selector="Button">
+    <!-- 손가락 크기 — 단추·토글·선택 칸은 40×40 이상(스크롤 막대의 작은 단추는 제외) -->
+    <Style Selector="Button, ToggleButton, RadioButton">
         <Setter Property="MinHeight" Value="40" />
+        <Setter Property="MinWidth" Value="40" />
+    </Style>
+    <Style Selector="CheckBox, ToggleSwitch">
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="MinWidth" Value="40" />
+    </Style>
+    <!-- 휴대폰은 폭이 좁아 한 줄로 두면 긴 이름(볼륨 ID·파일 이름)이 '…'로 잘린다 — 줄을 바꿔 다 보인다 -->
+    <Style Selector="TextBlock.title, TextBlock.subtle">
+        <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <Style Selector="DataGrid">
         <Setter Property="RowHeight" Value="40" />

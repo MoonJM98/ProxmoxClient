@@ -275,7 +275,7 @@ public sealed class TableTab : UserControl
                     : row[column.Key];
                 if (i == 0)
                 {
-                    panel.Children.Add(new TextBlock { Text = text, FontWeight = FontWeight.SemiBold, FontSize = 14 });
+                    panel.Children.Add(new TextBlock { Text = text, FontWeight = FontWeight.SemiBold, FontSize = 14, TextWrapping = TextWrapping.Wrap }); // 긴 볼륨 ID·파일 이름도 다 보이게
                     continue;
                 }
 

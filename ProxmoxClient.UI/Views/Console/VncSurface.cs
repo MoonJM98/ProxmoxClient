@@ -112,7 +112,7 @@ public sealed class VncSurface : Control, IRemotePointer
                {
                    BitmapInterpolationMode = vp.Scale >= 1.5 ? BitmapInterpolationMode.None : BitmapInterpolationMode.MediumQuality
                }))
-            bitmap.Render(context, vp.Offset, vp.Scale, new Rect(Bounds.Size));
+            bitmap.Render(context, vp.Offset, vp.Scale, new Rect(Bounds.Size), TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
 
         // 커서는 서버 응답을 기다리지 않고 지금 손가락·커서 자리에 그린다(서버는 커서를 화면에 그리지 않는다 — 모양만 보냄)
         if (_shape is { } shape && _touchSeen)
@@ -261,7 +261,9 @@ public sealed class VncSurface : Control, IRemotePointer
     protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
     {
         base.OnPointerCaptureLost(e);
-        if (e.Pointer.Type == PointerType.Touch) Gestures.Cancel();
+        // 손을 뗀 뒤에도 캡처 해제가 따로 온다(Android) — 그때 지우면 두 번 탭 뒤 기다리던 클릭이 사라진다(실기기 보고).
+        // 손가락이 아직 닿아 있는데 캡처를 잃었을 때만(다른 컨트롤이 가져감) 손짓을 거둔다
+        if (e.Pointer.Type == PointerType.Touch && Gestures.HasFingers) Gestures.Cancel();
     }
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)

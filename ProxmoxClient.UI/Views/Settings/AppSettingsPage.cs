@@ -132,24 +132,16 @@ public sealed class AppSettingsPage : UserControl
 
     private static Control BuildSftp()
     {
-        // SFTP 계정 편집기(WPF SftpProfilesEditor)는 게스트 파일 기능과 함께 옮긴다 — 지금은 안내만
-        return new StackPanel
-        {
-            Margin = new Thickness(20, 16, 20, 10),
-            Children =
-            {
-                new TextBlock
-                {
-                    Text = Loc.T("Settings_SftpPending"), TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-                    Foreground = BrushOf("BrushDim")
-                }
-            }
-        };
+        // SFTP 접속·계정 편집기(WPF 설정 창의 SFTP 탭과 같은 편집기) — 닫기는 편집기 안의 [닫기]
+        var editor = new Files.SftpProfilesEditor(null, allowConnect: false);
+        editor.CloseRequested += (_, _) => Leave();
+        return editor;
     }
 
     private void OnTabChanged(int index)
     {
         _save.IsVisible = index == 0; // 저장은 일반 탭에서만(WPF 와 같다)
+        _close.IsVisible = index != 2; // SFTP 탭은 편집기에 [닫기]가 있다(닫기 두 개가 되지 않게)
         CompactButton.SetLabel(_close, Loc.T(index == 0 ? "AppSettingsWindow_13" : "Sftp_Close"));
         SetStatus(null);
     }

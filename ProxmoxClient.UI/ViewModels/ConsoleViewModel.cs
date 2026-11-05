@@ -33,6 +33,7 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         Vnc.Closed += ex => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             IsConnected = false;
+            if (_paused) return; // 배경으로 가며 일부러 끊었다 — 돌아오면 다시 연결
             CanReconnect = true;
             Status = ex is null ? L.T("Console_Closed") : L.T("Console_ClosedError", ex.Message);
         });
@@ -75,11 +76,52 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         await AppServices.Navigator.PushAsync(new ConsoleViewModel(SessionInfo, Guest, Protocol));
     }
 
+    /// <summary>콘솔 설정을 저장하고 돌아왔다 — 화질·압축 등은 새 연결에서 적용되므로 돌아오면 다시 연결한다.</summary>
+    public bool ReconnectWhenBack { get; set; }
+
+    private bool _visible;
+    private bool _paused;
+
+    /// <summary>
+    ///     휴대폰·태블릿에서 앱이 배경으로 가면 원격 화면 연결을 끊고(배경에서는 OS 가 어차피 소켓을 끊고 배터리·데이터만 쓴다),
+    ///     돌아오면 새로 연결한다(사용자 요청). 데스크톱은 창 포커스가 바뀔 뿐이라 그대로 둔다.
+    /// </summary>
+    private void OnForegroundChanged(bool foreground)
+    {
+        if (!Platform.PlatformInfo.IsTouch || IsRemoved) return;
+
+        if (!foreground)
+        {
+            if (!IsConnected) return;
+
+            _paused = true;
+            IsConnected = false;
+            Status = L.T("Console_PausedBackground");
+            Vnc.Dispose();
+            return;
+        }
+
+        if (!_paused) return;
+
+        _paused = false;
+        if (_visible) Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = ReconnectAsync());
+        else ReconnectWhenBack = true; // 다른 화면(설정 등)을 보고 있다 — 콘솔로 돌아오면
+    }
+
     public override async void OnAppearing()
     {
-        if (_started) return;
+        _visible = true;
+        if (_started)
+        {
+            if (!ReconnectWhenBack) return;
+
+            ReconnectWhenBack = false;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = ReconnectAsync()); // 돌아오는 화면 전환이 끝난 뒤
+            return;
+        }
 
         _started = true;
+        AppLifecycle.ForegroundChanged += OnForegroundChanged;
         try
         {
             // 설정 화면에서 저장한 콘솔 설정(화질·압축·키보드 등)을 연결 전에 읽는다 — 읽기 실패는 기본값
@@ -95,7 +137,11 @@ public sealed partial class ConsoleViewModel : ViewModelBase
 
     public override void OnDisappearing(bool removed)
     {
-        if (removed) Vnc.Dispose();
+        _visible = false;
+        if (!removed) return;
+
+        AppLifecycle.ForegroundChanged -= OnForegroundChanged;
+        Vnc.Dispose();
     }
 
     public void SendKey(int keysym, bool down)

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using ProxmoxClient.UI.Platform;
 using ProxmoxClient.UI.Services;
@@ -11,15 +12,15 @@ namespace ProxmoxClient.UI.Views.Controls;
 /// <summary>
 ///     좁은 화면용 작업 버튼 규칙(모바일).
 ///     <list type="bullet">
-///         <item>화면 폭이 <see cref="NarrowWidth" /> 미만(휴대폰 세로)이면 글자를 숨기고 아이콘만 보인다 — 버튼 줄이 여러 줄로 넘어가
-///         표가 가려지지 않게. 넓어지면(가로 회전·태블릿) 다시 글자를 보인다. 데스크톱은 항상 WPF 와 같이 아이콘 + 글자.</item>
+///         <item>같은 줄의 버튼이 글자까지 다 넣으면 한 줄을 넘칠 때만 글자를 숨기고 아이콘만 보인다(사용자 규칙 — 버튼이 많거나
+///         한 줄로 표현되지 않을 때만 생략). 한 줄에 들어가면 글자를 그대로 보인다. 폭이 바뀌면(회전·태블릿) 다시 판단한다.
+///         데스크톱은 항상 WPF 와 같이 아이콘 + 글자.</item>
 ///         <item>길게 누르면 이름을 알림(토스트)으로 보여 주고 실행하지 않는다 — Android 의 아이콘 버튼과 같은 관례.</item>
 ///     </list>
 ///     확인·취소 같은 대화상자 버튼에는 쓰지 않는다(글자를 늘 보인다).
 /// </summary>
 public static class CompactButton
 {
-    public const double NarrowWidth = 600;
 
     private static readonly AttachedProperty<string?> LabelProperty =
         AvaloniaProperty.RegisterAttached<Button, string?>("CompactLabel", typeof(CompactButton));
@@ -55,33 +56,26 @@ public static class CompactButton
         ToolTip.SetTip(button, label);
         AutomationLabel(button, label);
         button.SetValue(LabelProperty, label);
-        TopLevel? topLevel = null;
+        Panel? row = null;
 
-        void Update()
-        {
-            var narrow = topLevel is not null && topLevel.Bounds.Width > 0 && topLevel.Bounds.Width < NarrowWidth &&
-                         IconAssist.GetIcon(button) is not null;
-            button.SetValue(NarrowProperty, narrow);
-            button.Content = narrow ? null : button.GetValue(LabelProperty);
-            button.MinWidth = narrow ? 44 : 0;
-            button.Padding = narrow ? new Thickness(10, 6) : new Thickness(12, 6);
-        }
+        void Schedule() => Dispatcher.UIThread.Post(() => UpdateRow(row), DispatcherPriority.Loaded);
 
-        void OnTopLevelChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+        void OnRowChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
         {
-            if (e.Property == Visual.BoundsProperty) Update();
+            if (e.Property == Visual.BoundsProperty &&
+                Math.Abs(((Rect)e.OldValue!).Width - ((Rect)e.NewValue!).Width) > 0.5) Schedule();
         }
 
         button.AttachedToVisualTree += (_, _) =>
         {
-            topLevel = TopLevel.GetTopLevel(button);
-            if (topLevel is not null) topLevel.PropertyChanged += OnTopLevelChanged;
-            Update();
+            row = RowOf(button);
+            if (row is not null) row.PropertyChanged += OnRowChanged;
+            Schedule();
         };
         button.DetachedFromVisualTree += (_, _) =>
         {
-            if (topLevel is not null) topLevel.PropertyChanged -= OnTopLevelChanged;
-            topLevel = null;
+            if (row is not null) row.PropertyChanged -= OnRowChanged;
+            row = null;
         };
 
         // 길게 누르기 → 이름 알림, 이번 누름은 실행하지 않는다
@@ -132,6 +126,58 @@ public static class CompactButton
             suppress = false;
             e.Handled = true;
         };
+    }
+
+    /// <summary>버튼이 놓인 한 줄 — 위로 이어진 가로 패널(WrapPanel·가로 StackPanel) 중 가장 바깥.</summary>
+    private static Panel? RowOf(Control button)
+    {
+        Panel? row = null;
+        for (var parent = button.Parent; parent is Panel panel &&
+                                         (panel is WrapPanel || panel is StackPanel { Orientation: Avalonia.Layout.Orientation.Horizontal });
+             parent = panel.Parent)
+            row = panel;
+        return row;
+    }
+
+    /// <summary>
+    ///     줄 안의 버튼이 모두 글자를 보일 때의 한 줄 폭을 어림해 줄 폭과 비교한다. 지금 아이콘만인 버튼은 글자 폭만큼 더한다 —
+    ///     그래서 글자를 숨겼다 보였다 해도 같은 값이 나와 깜빡이지 않는다.
+    /// </summary>
+    private static void UpdateRow(Panel? row)
+    {
+        if (row is null || row.Bounds.Width <= 0) return;
+
+        var available = row is WrapPanel ? row.Bounds.Width : (row.Parent as Control)?.Bounds.Width ?? row.Bounds.Width;
+        var managed = row.GetLogicalDescendants().OfType<Button>()
+            .Where(b => b.IsVisible && b.GetValue(LabelProperty) is not null && IconAssist.GetIcon(b) is not null).ToList();
+        if (managed.Count == 0) return;
+
+        var need = row.Children.Where(c => c.IsVisible).Sum(c => c.DesiredSize.Width);
+        foreach (var b in managed.Where(b => b.GetValue(NarrowProperty)))
+            need += LabelExtra(b);
+        var narrow = need > available + 0.5;
+        foreach (var b in managed) SetNarrow(b, narrow);
+    }
+
+    /// <summary>글자를 보일 때 더 필요한 폭(글자 + 아이콘과의 간격 + 넓은 여백) — 아이콘만일 때와의 차이.</summary>
+    private static double LabelExtra(Button button)
+    {
+        var label = button.GetValue(LabelProperty) ?? string.Empty;
+        var text = new Avalonia.Media.TextFormatting.TextLayout(label,
+            new Avalonia.Media.Typeface(button.FontFamily, button.FontStyle, button.FontWeight), button.FontSize, null).Width;
+        var labeled = text + 16 + 6 + 24 + 2;
+        var iconOnly = Math.Max(44, 16 + 20 + 2);
+        return Math.Max(0, labeled - iconOnly);
+    }
+
+    private static void SetNarrow(Button button, bool narrow)
+    {
+        if (button.GetValue(NarrowProperty) == narrow && (narrow ? button.Content is null : button.Content is not null)) return;
+
+        button.SetValue(NarrowProperty, narrow);
+        button.Content = narrow ? null : button.GetValue(LabelProperty);
+        button.MinWidth = narrow ? 44 : 0;
+        button.Padding = narrow ? new Thickness(10, 6) : new Thickness(12, 6);
     }
 
     private static void AutomationLabel(Control control, string label)

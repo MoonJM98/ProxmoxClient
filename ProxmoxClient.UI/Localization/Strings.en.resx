@@ -96,6 +96,12 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Common_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="Common_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Console_PausedBackground" xml:space="preserve">
+    <value>Disconnected while the app was in the background. It reconnects when you come back.</value>
+  </data>
   <data name="Common_Copied" xml:space="preserve">
     <value>Copied</value>
   </data>

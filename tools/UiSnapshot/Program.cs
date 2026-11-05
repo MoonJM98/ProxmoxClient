@@ -213,6 +213,7 @@ if (target.StartsWith("preview:", StringComparison.Ordinal))
 }
 
 if (target == "console") await ConsoleUsabilityCheck();
+if (target is "console" or "seams") TileSeamCheck();
 if (target == "compact") await CompactButtonCheck();
 if (target == "terminal") await TerminalCheck();
 if (target == "expiry") await ExpiryCheck();
@@ -281,8 +282,12 @@ async Task CompactButtonCheck()
     var add = nav.CurrentPage!.GetVisualDescendants().OfType<Button>()
         .First(b => ToolTip.GetTip(b) as string == L.T("Action_Add"));
     var compact = add.Content is null;
-    Console.WriteLine($"| 좁은 화면 버튼 | 아이콘만(글자 숨김) | {(compact ? "아이콘만" : "글자 보임: " + add.Content)} | {(desktop ? (compact ? "실패" : "통과(데스크톱은 글자)") : (compact ? "통과" : "실패"))} |");
-    if (desktop == compact) failures++;
+    // 규칙: 글자까지 한 줄에 들어가면 글자를 보이고, 넘칠 때만 아이콘만(데스크톱은 늘 글자)
+    var rowButtons = (add.Parent as Panel)?.Children.OfType<Button>().Where(b => b.IsVisible).ToList() ?? [];
+    var oneLine = rowButtons.Select(b => Math.Round(b.Bounds.Y)).Distinct().Count() == 1;
+    var rulePass = desktop ? !compact : compact || oneLine;
+    Console.WriteLine($"| 좁은 화면 버튼 | 한 줄에 들어가면 글자, 넘치면 아이콘만 | {(compact ? "아이콘만" : "글자 보임: " + add.Content)}, {(oneLine ? "한 줄" : "여러 줄")} | {(rulePass ? "통과" : "실패")} |");
+    if (!rulePass) failures++;
     if (desktop) return;
 
     var center = add.TranslatePoint(new Avalonia.Point(add.Bounds.Width / 2, add.Bounds.Height / 2), window)!.Value;
@@ -459,6 +464,17 @@ async Task RealShellCheck()
         buffer.Columns < oldColumns && Screen().Contains($"{buffer.Rows} {buffer.Columns}"));
     window.Width += 160;
     Pump(500);
+
+    if (!desktop)
+    {
+        SetForeground(false);
+        WaitFor(() => !vm.IsConnected, 3000);
+        var paused = !vm.IsConnected && vm.StateText == L.T("Console_PausedBackground");
+        SetForeground(true);
+        WaitFor(() => vm.IsConnected && Screen().Contains("root@pve1"), 8000);
+        Check("배경 → 복귀", "배경에서 끊김 → 돌아오면 다시 연결", $"{(paused ? "끊김" : vm.StateText)} → {(vm.IsConnected ? "다시 연결" : "연결 안 됨")}",
+            paused && vm.IsConnected);
+    }
 
     Run("exit");
     WaitFor(() => !vm.IsConnected, 5000);
@@ -1160,6 +1176,41 @@ async Task ConsoleUsabilityCheck()
         Check("실제 터치로 계속 끌기(가로 240px)", "커서가 끝까지 따라감(150px 이상), 이동 20개 이상",
             $"커서 +{midX - startX:F0}px, 이동 {moves}개, 화면 {(nav.CurrentPage == page ? "그대로" : "바뀜")}",
             midX - startX >= 150 && moves >= 20 && nav.CurrentPage == page);
+
+        // 실제 터치로 두 번 탭 = 클릭 — 손을 뗄 때 오는 캡처 해제가 기다리던 클릭을 지우면 안 된다(실기기 보고)
+        Pump(500);
+        Events();
+        var tapAt = surface.TranslatePoint(new Avalonia.Point(surface.Bounds.Width / 2, surface.Bounds.Height / 2), window)!.Value;
+        for (var i = 0; i < 2; i++)
+        {
+            var tap = window.TouchBegin(tapAt, Avalonia.Input.RawInputModifiers.None);
+            Pump(30);
+            window.TouchEnd(tap, tapAt, Avalonia.Input.RawInputModifiers.None);
+            Pump(60);
+        }
+
+        Pump(450); // 세 번째 탭을 기다리는 시간이 지나도록
+        g.Tick(Environment.TickCount64); // 헤드리스는 DispatcherTimer 가 돌지 않아 직접 부른다
+        Pump(200);
+        var tapMasks = Masks(Events());
+        Check("실제 터치로 두 번 탭", "왼쪽 클릭(0 1 0)", tapMasks, tapMasks.EndsWith("0 1 0"));
+
+        // 실제 터치로 세 번 탭 = 더블 클릭(클릭 두 번이 한 묶음으로)
+        Pump(500);
+        Events();
+        for (var i = 0; i < 3; i++)
+        {
+            var tap = window.TouchBegin(tapAt, Avalonia.Input.RawInputModifiers.None);
+            Pump(30);
+            window.TouchEnd(tap, tapAt, Avalonia.Input.RawInputModifiers.None);
+            Pump(60);
+        }
+
+        Pump(450);
+        g.Tick(Environment.TickCount64);
+        Pump(200);
+        var tripleMasks = Masks(Events());
+        Check("실제 터치로 세 번 탭", "더블 클릭(0 1 0 1 0)", tripleMasks, tripleMasks.EndsWith("0 1 0 1 0") && !tripleMasks.EndsWith("0 1 0 1 0 1 0"));
     }
 
     // 실시간 마우스 끌기 — 8ms 마다 움직인 이동이 서버에 고르게 도착하는가(보내는 쪽 간격 두기·타이머 오차 없음)
@@ -1194,8 +1245,46 @@ async Task ConsoleUsabilityCheck()
         if (!r.Pass) failures++;
     }
 
+    // 콘솔 화면에서 콘솔 설정 열기 → 저장 → 돌아오면 새 설정으로 다시 연결
+    // 숨은 줄은 아직 그려지지 않아 단추가 없다 — [⋯]로 펼친다
+    var more = page.GetVisualDescendants().OfType<Button>().First(b => b.Content as string == "⋯");
+    if (!page.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == "F1"))
+        more.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    Pump(300);
+    var settingsButton = page.GetVisualDescendants().OfType<Button>()
+        .FirstOrDefault(b => b.Content as string == L.T("ConsoleSettingsWindow_01"));
+    settingsButton?.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    WaitFor(() => nav.CurrentPage != page && nav.CurrentPage?.GetVisualDescendants().OfType<ProxmoxClient.UI.Views.Settings.ConsoleSettingsPage>().Any() == true, 5000);
+    var opened = nav.CurrentPage != page;
+    Shot("console-settings");
+    var save = nav.CurrentPage?.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => ToolTip.GetTip(b) as string == L.T("AppSettingsWindow_12")
+                                                                                            || b.Content as string == L.T("AppSettingsWindow_12"));
+    save?.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    WaitFor(() => nav.CurrentPage?.DataContext is ConsoleViewModel cv && cv != vm && cv.IsConnected, 10000);
+    var again = nav.CurrentPage?.DataContext is ConsoleViewModel cv2 && cv2 != vm && cv2.IsConnected;
+    Check0("콘솔 설정(콘솔 화면에서)", "⋯ 줄의 [콘솔 설정] → 저장 → 다시 연결", $"{(settingsButton is null ? "단추 없음" : "단추 있음")}, {(opened ? "설정 열림" : "안 열림")}, {(again ? "다시 연결됨" : "연결 안 됨")}",
+        settingsButton is not null && opened && again);
+
+    // 앱이 배경으로 가면 끊고, 돌아오면 다시 연결(휴대폰·태블릿만)
+    if (!desktop || tablet)
+    {
+        var bgVm = (ConsoleViewModel)nav.CurrentPage!.DataContext!;
+        SetForeground(false);
+        Pump(500);
+        var paused = !bgVm.IsConnected && bgVm.Status == L.T("Console_PausedBackground");
+        SetForeground(true);
+        WaitFor(() => nav.CurrentPage?.DataContext is ConsoleViewModel c && c != bgVm && c.IsConnected, 10000);
+        var back = nav.CurrentPage?.DataContext is ConsoleViewModel c2 && c2 != bgVm && c2.IsConnected;
+        Check0("콘솔 배경 → 복귀", "배경에서 끊김 → 돌아오면 다시 연결", $"{(paused ? "끊김" : "그대로")} → {(back ? "다시 연결" : "연결 안 됨")}", paused && back);
+    }
+
     await Wait(AppServices.Navigator.PopAsync());
 }
+
+void SetForeground(bool foreground) =>
+    typeof(AppServices).Assembly.GetType("ProxmoxClient.UI.Services.AppLifecycle")!
+        .GetMethod("SetForeground", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+        .Invoke(null, [foreground]);
 
 // 쓰기 확인 관문 점검: 폼 확인 뒤에도 실제 요청 전에 "변경 확인"이 뜨는지, 취소하면 요청이 안 나가는지
 void SelfTestWrites()
@@ -1303,6 +1392,7 @@ void WalkNav(string name)
             Pump(1200);
             Shot($"{name}-{i:00}-{label}");
             CheckStatus($"{name}/{label}");
+            WalkSubTabs($"{name}-{i:00}");
             Wait(AppServices.Navigator.PopAsync()).GetAwaiter().GetResult();
             Pump(300);
         }
@@ -1312,6 +1402,22 @@ void WalkNav(string name)
 void WalkSubTabs(string name)
 {
     var current = nav.CurrentPage as Control;
+    // 설정 화면의 탭(일반·콘솔·SFTP)
+    if (current?.GetVisualDescendants().FirstOrDefault(v => v.GetType().Name == "SettingsTabs") is Visual settingsTabs)
+    {
+        var bar = settingsTabs.GetVisualDescendants().OfType<ListBox>().First();
+        for (var i = 1; i < bar.ItemCount; i++)
+        {
+            bar.SelectedIndex = i;
+            Pump(800);
+            Shot($"{name}-tab{i}");
+            CheckStatus($"{name}/tab{i}");
+        }
+
+        bar.SelectedIndex = 0;
+        return;
+    }
+
     var subTabs = current?.GetVisualDescendants().OfType<SubTabsView>().FirstOrDefault();
     if (subTabs is null) return;
 
@@ -1350,6 +1456,58 @@ void CheckStatus(string name)
         Console.WriteLine($"DIALOG {name}: {dialog.Title} / {dialog.Message}");
         dialog.CancelCommand.Execute(null);
     }
+}
+
+// 타일 경계 격자무늬 — 폰처럼 화면 배율이 소수(2.625)일 때 흰 화면을 여러 배율로 그려 타일 경계에 어두운 줄이 남는지
+void TileSeamCheck()
+{
+    var type = typeof(ProxmoxClient.UI.App).Assembly.GetType("ProxmoxClient.UI.Views.Console.TiledFramebuffer")!;
+    const int w = 1280, h = 800;
+    var fb = (IDisposable)Activator.CreateInstance(type, w, h)!;
+    var white = new byte[w * h * 4];
+    Array.Fill(white, (byte)255);
+    type.GetMethod("Update")!.Invoke(fb, [white, new Avalonia.PixelRect(0, 0, w, h)]);
+    var render = type.GetMethod("Render")!;
+    const double pixelScale = 2.625;
+    var worst = 0;
+    var where = "";
+    foreach (var scale in new[] { 0.3, 0.37, 0.5, 0.61, 0.83, 1.0, 1.27 })
+    foreach (var offset in new[] { new Avalonia.Point(0, 0), new Avalonia.Point(0.37, 0.71), new Avalonia.Point(3.2, 5.9) })
+    {
+        var viewW = w * scale + offset.X + 2;
+        var viewH = h * scale + offset.Y + 2;
+        var px = new PixelSize((int)Math.Ceiling(viewW * pixelScale), (int)Math.Ceiling(viewH * pixelScale));
+        using var rtb = new Avalonia.Media.Imaging.RenderTargetBitmap(px, new Avalonia.Vector(96 * pixelScale, 96 * pixelScale));
+        using (var ctx = rtb.CreateDrawingContext())
+        {
+            ctx.FillRectangle(Avalonia.Media.Brushes.Black, new Avalonia.Rect(0, 0, viewW, viewH));
+            using (ctx.PushRenderOptions(new Avalonia.Media.RenderOptions { BitmapInterpolationMode = Avalonia.Media.Imaging.BitmapInterpolationMode.MediumQuality }))
+                render.Invoke(fb, [ctx, offset, scale, new Avalonia.Rect(0, 0, viewW, viewH), Environment.GetEnvironmentVariable("SEAM_OLD") == "1" ? 1.0 : pixelScale]);
+        }
+
+        var buf = new byte[px.Width * px.Height * 4];
+        unsafe
+        {
+            fixed (byte* p = buf) rtb.CopyPixels(new Avalonia.PixelRect(px), (nint)p, buf.Length, px.Width * 4);
+        }
+
+        // 그림 안쪽(가장자리 3픽셀 제외)에서 가장 어두운 픽셀
+        var x0 = (int)Math.Ceiling(offset.X * pixelScale) + 3;
+        var y0 = (int)Math.Ceiling(offset.Y * pixelScale) + 3;
+        var x1 = (int)Math.Floor((offset.X + w * scale) * pixelScale) - 3;
+        var y1 = (int)Math.Floor((offset.Y + h * scale) * pixelScale) - 3;
+        for (var y = y0; y < y1; y++)
+        for (var x = x0; x < x1; x++)
+        {
+            var dark = 255 - buf[(y * px.Width + x) * 4 + 1];
+            if (dark <= worst) continue;
+            worst = dark;
+            where = $"배율 {scale}, 위치 ({x},{y})";
+        }
+    }
+
+    fb.Dispose();
+    Check0("VNC 타일 경계(화면 배율 2.625)", "격자 줄 없음(가장 어두운 정도 ≤ 8/255)", worst == 0 ? "없음" : $"{worst}/255 @ {where}", worst <= 8);
 }
 
 void Shot(string name)
@@ -1391,6 +1549,7 @@ void AuditButtons(string screen)
     foreach (var button in window.GetVisualDescendants().OfType<Avalonia.Controls.Button>())
     {
         if (!button.IsEffectivelyVisible || button.Bounds.Width <= 0) continue;
+        if (button.GetVisualAncestors().Any(a => a is Avalonia.Controls.Primitives.ScrollBar or Slider)) continue; // 스크롤 막대·슬라이더 부품
         var origin = button.TranslatePoint(new Avalonia.Point(0, 0), window);
         if (origin is null) continue;
         var o = origin.Value;
@@ -1426,6 +1585,31 @@ void AuditButtons(string screen)
         }
         if (!inHScroll && o.X + button.Bounds.Width > winWidth + 1)
             Console.WriteLine($"AUDIT {screen} | 화면 밖 | '{label}' | x {o.X:F0}+{button.Bounds.Width:F0} > {winWidth:F0}");
+        // 접근성 — 화면 낭독기가 읽을 이름(AutomationProperties.Name 또는 글자 내용)이 없는 단추
+        var spoken = Avalonia.Automation.AutomationProperties.GetName(button);
+        if (string.IsNullOrWhiteSpace(spoken) && button.Content is not string && !button.GetVisualDescendants().OfType<TextBlock>()
+                .Any(t => t.IsEffectivelyVisible && !string.IsNullOrWhiteSpace(t.Text)))
+            Console.WriteLine($"AUDIT {screen} | 이름 없음 | '{label}' | {button.GetType().Name} in {button.Parent?.GetType().Name}/{button.Parent?.Parent?.GetType().Name}");
+        // 휴대폰 손가락 크기 — 40px 보다 작은 단추
+        if (!desktop && (button.Bounds.Width < 40 || button.Bounds.Height < 40))
+            Console.WriteLine($"AUDIT {screen} | 작은 터치 | '{label}' | {button.GetType().Name} {button.Bounds.Width:F0}x{button.Bounds.Height:F0}");
+    }
+
+    // 단추 밖 글자 — 한 줄로 고정돼 잘리는 글자(… 포함)
+    foreach (var tb in window.GetVisualDescendants().OfType<TextBlock>())
+    {
+        if (string.IsNullOrEmpty(tb.Text) || !tb.IsEffectivelyVisible || tb.Bounds.Width <= 0) continue;
+        if (tb.GetVisualAncestors().Any(a => a is Button or TextBox or ProxmoxClient.UI.Views.Terminal.TerminalView)) continue;
+        if (tb.TextWrapping != Avalonia.Media.TextWrapping.NoWrap) continue;
+        var origin = tb.TranslatePoint(new Avalonia.Point(0, 0), window);
+        if (origin is null || origin.Value.Y > window.Bounds.Height || origin.Value.Y + tb.Bounds.Height < 0) continue;
+        if (tb.GetVisualAncestors().OfType<ScrollViewer>().Any(sv =>
+                sv.HorizontalScrollBarVisibility != Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled)) continue;
+        var full = new Avalonia.Media.TextFormatting.TextLayout(tb.Text, new Avalonia.Media.Typeface(tb.FontFamily, tb.FontStyle, tb.FontWeight),
+            tb.FontSize, null).Width;
+        var inner = tb.Bounds.Width - tb.Padding.Left - tb.Padding.Right;
+        if (full > inner + 1.5)
+            Console.WriteLine($"AUDIT {screen} | 글자 잘림 | '{(tb.Text.Length > 40 ? tb.Text[..40] + "…" : tb.Text)}' | {full:F0}>{inner:F0}");
     }
 }
 
