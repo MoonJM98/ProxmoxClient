@@ -65,16 +65,19 @@ public sealed partial class TerminalViewModel : ViewModelBase
 
         _started = true;
         AppLifecycle.ForegroundChanged += OnForegroundChanged;
+        Platform.SessionKeepAlive.DisconnectAllRequested += OnDisconnectAllRequested;
         await ConnectAsync();
     }
 
     /// <summary>
-    ///     휴대폰·태블릿에서 앱이 배경으로 가면 콘솔(CT 콘솔·노드 셸) 연결을 끊고, 돌아오면 다시 연결한다(사용자 요청).
-    ///     데스크톱은 창 포커스만 바뀌므로 그대로 둔다.
+    ///     휴대폰·태블릿에서 앱이 배경으로 갈 때. 배경에서 연결을 살려 둘 수 있으면(Android 포그라운드 서비스,
+    ///     <see cref="Platform.SessionKeepAlive" />) 끊지 않는다 — 다시 연결하면 새 셸이 열려 하던 작업이 사라지므로(사용자 요청).
+    ///     살려 둘 수 없으면 끊고, 돌아오면 다시 연결한다. 데스크톱은 창 포커스만 바뀌므로 그대로 둔다.
     /// </summary>
     private async void OnForegroundChanged(bool foreground)
     {
         if (!Platform.PlatformInfo.IsTouch || IsRemoved) return;
+        if (!foreground && Platform.SessionKeepAlive.IsAvailable) return;
 
         if (!foreground)
         {
@@ -99,10 +102,25 @@ public sealed partial class TerminalViewModel : ViewModelBase
         if (!removed) return;
 
         AppLifecycle.ForegroundChanged -= OnForegroundChanged;
+        Platform.SessionKeepAlive.DisconnectAllRequested -= OnDisconnectAllRequested;
+        Platform.SessionKeepAlive.Release(this);
 
         var session = _session;
         _session = null;
         if (session is not null) _ = session.DisconnectAsync(); // 화면 닫기를 막지 않게
+    }
+
+    /// <summary>연결된 동안 배경에서도 살려 두도록 등록한다(알림에 제목이 보인다).</summary>
+    partial void OnIsConnectedChanged(bool value)
+    {
+        if (value && !IsRemoved) Platform.SessionKeepAlive.Acquire(this, Title);
+        else Platform.SessionKeepAlive.Release(this);
+    }
+
+    /// <summary>알림의 [모두 끊기].</summary>
+    private async void OnDisconnectAllRequested()
+    {
+        if (IsConnected) await DisconnectAsync();
     }
 
     /// <summary>키·붙여넣기 입력.</summary>

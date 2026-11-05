@@ -712,4 +712,19 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Terminal_TooManyCompletions" xml:space="preserve">
     <value>Too many candidates — type a few more letters.</value>
   </data>
+  <data name="KeepAlive_Channel" xml:space="preserve">
+    <value>Terminal connection</value>
+  </data>
+  <data name="KeepAlive_ChannelDesc" xml:space="preserve">
+    <value>Shown while open terminals (CT console, node shell) stay connected with the app in the background.</value>
+  </data>
+  <data name="KeepAlive_Title" xml:space="preserve">
+    <value>Keeping terminal connected</value>
+  </data>
+  <data name="KeepAlive_Many" xml:space="preserve">
+    <value>{0} terminals — {1}</value>
+  </data>
+  <data name="KeepAlive_DisconnectAll" xml:space="preserve">
+    <value>Disconnect all</value>
+  </data>
 </root>

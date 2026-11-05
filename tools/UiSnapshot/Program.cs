@@ -479,6 +479,33 @@ async Task RealShellCheck()
 
     if (!desktop)
     {
+        // 연결 유지 장치가 있으면(Android 포그라운드 서비스) 배경으로 가도 끊지 않는다 — 같은 셸이 그대로(사용자 요청)
+        var keep = new FakeKeepAliveHost();
+        ProxmoxClient.UI.Platform.SessionKeepAlive.Host = keep;
+        var listed = keep.Titles.SequenceEqual(["pve1 · 셸"]);
+        Run("export KEEPMARK=$((6*7))kept");
+        Pump(300);
+        SetForeground(false);
+        Pump(1500);
+        var stayed = vm.IsConnected;
+        SetForeground(true);
+        Pump(300);
+        Run("echo \"mark=$KEEPMARK\"");
+        WaitFor(() => Screen().Contains("mark=42kept"), 4000);
+        var sameShell = Screen().Contains("mark=42kept");
+        Check("배경 → 복귀(연결 유지)", "알림에 제목, 배경에서 안 끊김, 같은 셸(변수 그대로)",
+            $"알림 [{string.Join(", ", keep.Titles)}], {(stayed ? "연결 유지" : "끊김")}, {(sameShell ? "같은 셸" : "새 셸")}",
+            listed && stayed && sameShell);
+
+        ProxmoxClient.UI.Platform.SessionKeepAlive.RequestDisconnectAll(); // 알림의 [모두 끊기]
+        WaitFor(() => !vm.IsConnected, 3000);
+        Check("알림 [모두 끊기]", "터미널 끊김, 알림 사라짐", $"{(vm.IsConnected ? "연결됨" : "끊김")}, 알림 {keep.Titles.Count}개",
+            !vm.IsConnected && keep.Titles.Count == 0);
+
+        // 연결 유지 장치가 없으면(iOS 등) 예전처럼 배경에서 끊고 돌아오면 다시 연결
+        ProxmoxClient.UI.Platform.SessionKeepAlive.Host = null;
+        await Wait(vm.ConnectAsync()); // 헤드리스는 UI 를 돌리며 기다려야 한다
+        WaitFor(() => vm.IsConnected && Prompt(), 8000);
         SetForeground(false);
         WaitFor(() => !vm.IsConnected, 3000);
         var paused = !vm.IsConnected && vm.StateText == L.T("Console_PausedBackground");
@@ -1748,4 +1775,16 @@ static Dictionary<string, string> ParseArgs(string[] args)
     var map = new Dictionary<string, string>();
     for (var i = 0; i + 1 < args.Length; i += 2) map[args[i].TrimStart('-')] = args[i + 1];
     return map;
+}
+
+/// <summary>검사용 연결 유지 장치 — 알림에 보일 제목만 기억한다.</summary>
+sealed class FakeKeepAliveHost : ProxmoxClient.UI.Platform.ISessionKeepAliveHost
+{
+    public List<string> Titles { get; } = [];
+
+    public void Update(IReadOnlyList<string> titles)
+    {
+        Titles.Clear();
+        Titles.AddRange(titles);
+    }
 }

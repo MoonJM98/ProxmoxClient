@@ -25,6 +25,8 @@ public class MainApplication : AvaloniaAndroidApplication<App>
         AppServices.SecretStore = new KeystoreSecretStore(this);
         // SPICE 콘솔 — .vv 파일을 SPICE 앱(aSPICE·Opaque 등)에 ACTION_VIEW 로 넘긴다(데스크톱의 remote-viewer 대신)
         ProxmoxClient.UI.Platform.SpiceLaunchers.Current = new AndroidSpiceLauncher(this);
+        // 터미널 연결 유지 — 연결된 동안 포그라운드 서비스(알림)로 앱을 살려 두어 배경에서도 세션이 끊기지 않게
+        ProxmoxClient.UI.Platform.SessionKeepAlive.Host = new AndroidSessionKeepAliveHost(this);
         AppServices.ProfilesDirectory = Path.Combine(FilesDir!.AbsolutePath, "profiles");
         return base.CustomizeAppBuilder(builder)
             .UseAppFonts()
