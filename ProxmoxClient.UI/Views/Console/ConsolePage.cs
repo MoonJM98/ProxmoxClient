@@ -122,6 +122,17 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         _bubble.Clicked += () => SetMenuOpen(!_top.IsVisible);
 
         _surface.PointerSink = (b, x, y) => _vm?.SendPointer(b, x, y);
+        // 키보드를 연 동안 화면을 만져도 키보드 유지 — 화면이 포커스를 가져가면(누르면 저절로) 키보드가 내려간다(사용자 요청)
+        _input.GotFocus += (_, _) => UpdateSurfaceFocusable();
+        _input.LostFocus += (_, _) => UpdateSurfaceFocusable();
+        AttachedToVisualTree += (_, _) =>
+        {
+            if (TopLevel.GetTopLevel(this)?.InputPane is { } pane) pane.StateChanged += OnInputPaneChanged;
+        };
+        DetachedFromVisualTree += (_, e) =>
+        {
+            if (TopLevel.GetTopLevel(e.Root as Visual)?.InputPane is { } pane) pane.StateChanged -= OnInputPaneChanged;
+        };
         _surface.KeySink = (keysym, down) => _vm?.SendKey(keysym, down);
         _surface.ScanKeySink = (xt, keysym, down) => _vm?.SendScanKey(xt, keysym, down); // 물리 키보드: 키 위치 + keysym
         // 끊기거나 실패하면 상태 아래에 [다시 연결]
@@ -260,6 +271,30 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
             : TouchInputMode.Mouse;
         _mode.Content = ModeLabel();
         _surface.InvalidateVisual();
+    }
+
+    /// <summary>
+    ///     사용자가 화면 키보드를 열어 둔 상태 — 입력 칸에 포커스가 있고 키보드가 떠 있다. 키보드를 직접 닫았으면 아니다
+    ///     (그때는 화면을 누르면 화면이 포커스를 가져와 물리 키보드가 키 위치(스캔코드)로 바로 간다).
+    ///     키보드 상태를 알 수 없는 플랫폼은 포커스만 본다.
+    /// </summary>
+    private bool IsSoftKeyboardActive()
+    {
+        if (!_input.IsFocused) return false;
+
+        var pane = TopLevel.GetTopLevel(this)?.InputPane;
+        return pane is null || pane.State == Avalonia.Controls.Platform.InputPaneState.Open;
+    }
+
+    /// <summary>키보드를 연 동안은 원격 화면이 포커스를 받지 않게 한다(눌러도 키보드가 닫히지 않음).</summary>
+    private void UpdateSurfaceFocusable()
+    {
+        _surface.Focusable = !IsSoftKeyboardActive();
+    }
+
+    private void OnInputPaneChanged(object? sender, Avalonia.Controls.Platform.InputPaneStateEventArgs e)
+    {
+        UpdateSurfaceFocusable(); // 키보드를 직접 닫으면 다시 화면이 포커스를 받는다(물리 키보드 → 스캔코드)
     }
 
     private void ShowKeyboard()

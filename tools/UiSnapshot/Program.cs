@@ -879,6 +879,38 @@ async Task ConsoleUsabilityCheck()
         Check0("버블 누르기", "메뉴 열림(특수키·콘솔 설정 보임), 원격에 클릭 안 보냄",
             $"메뉴 {(page.IsMenuOpen ? "열림" : "닫힘")}, 특수키 {(keysShown ? "보임" : "없음")}, 설정 {(settingsShown ? "보임" : "없음")}, 포인터 {bubbleTapEvents}개",
             page.IsMenuOpen && keysShown && settingsShown && bubbleTapEvents == 0);
+
+        // 화면 키보드를 연 동안 화면을 만져 커서를 움직여도 키보드(입력 칸 포커스)가 유지된다(사용자 요청)
+        var keyboardButton = page.GetVisualDescendants().OfType<Button>().First(b => ToolTip.GetTip(b) as string == L.T("Console_Keyboard"));
+        keyboardButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Pump(200);
+        var softInput = page.GetVisualDescendants().OfType<TextBox>().First();
+        var openedKeyboard = softInput.IsFocused;
+        var dragFrom = surface.TranslatePoint(new Avalonia.Point(surface.Bounds.Width / 2, surface.Bounds.Height / 2), window)!.Value;
+        var kt = window.TouchBegin(dragFrom, Avalonia.Input.RawInputModifiers.None);
+        for (var i = 1; i <= 10; i++)
+        {
+            window.TouchMove(kt, dragFrom + new Avalonia.Vector(i * 6, i * 4), Avalonia.Input.RawInputModifiers.None);
+            Pump(16);
+        }
+        window.TouchEnd(kt, dragFrom + new Avalonia.Vector(60, 40), Avalonia.Input.RawInputModifiers.None);
+        Pump(200);
+        var keptKeyboard = softInput.IsFocused;
+        // 키보드를 쓰지 않을 때는 예전처럼 화면이 포커스를 가져온다(물리 키보드 → 스캔코드)
+        surface.Focusable = true; // 키보드를 직접 닫은 것과 같게(헤드리스에는 키보드 상태가 없다)
+        surface.Focus();
+        Pump(100);
+        kt = window.TouchBegin(dragFrom, Avalonia.Input.RawInputModifiers.None);
+        Pump(30);
+        window.TouchMove(kt, dragFrom + new Avalonia.Vector(40, 0), Avalonia.Input.RawInputModifiers.None);
+        Pump(30);
+        window.TouchEnd(kt, dragFrom + new Avalonia.Vector(40, 0), Avalonia.Input.RawInputModifiers.None);
+        Pump(200);
+        var surfaceFocused = surface.IsFocused;
+        Events();
+        Check0("키보드를 연 채 화면 끌기", "입력 칸 포커스 유지(키보드 안 닫힘), 키보드 없을 땐 화면이 포커스",
+            $"키보드 {(openedKeyboard ? "열림" : "안 열림")} → 끈 뒤 {(keptKeyboard ? "유지" : "닫힘")}, 키보드 없이 → 화면 포커스 {(surfaceFocused ? "있음" : "없음")}",
+            openedKeyboard && keptKeyboard && surfaceFocused);
     }
     g.Mode = ProxmoxClient.UI.Views.Console.TouchInputMode.Mouse;
     g.ResetCursor(new Avalonia.Point(400, 300));
