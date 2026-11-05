@@ -82,7 +82,7 @@
     <ContentPage Header="{l:Tr Cluster_TabStorage}">
         <RefreshContainer RefreshRequested="OnRefreshRequested">
             <ScrollViewer>
-                <ItemsControl Margin="16,12,16,24" ItemsSource="{Binding Storages}" ItemTemplate="{StaticResource StorageRowTemplate}"
+                <ItemsControl Margin="16,12,16,24" ItemsSource="{Binding Storages}" ItemTemplate="{StaticResource StorageRowTemplate}" Tag="{Binding OpenStorageCommand}"
                               ItemsPanel="{StaticResource CardListPanel}">
                 </ItemsControl>
             </ScrollViewer>
@@ -102,5 +102,18 @@
                 </ItemsControl>
             </ScrollViewer>
         </RefreshContainer>
+    </ContentPage>
+    <!-- 관리(데이터센터·만들기) -->
+    <ContentPage Header="{l:Tr Cluster_TabManage}">
+        <ScrollViewer>
+            <StackPanel Margin="16,12,16,24" Spacing="10">
+                <Border Classes="card" Padding="0" IsVisible="{Binding HasManagementEntries}">
+                    <ItemsControl ItemsSource="{Binding ManagementEntries}"
+                                  ItemTemplate="{StaticResource MenuEntryTemplate}" />
+                </Border>
+                <TextBlock Classes="subtle" HorizontalAlignment="Center" Margin="0,40,0,0"
+                           Text="{l:Tr Cluster_ManageEmpty}" IsVisible="{Binding !HasManagementEntries}" />
+            </StackPanel>
+        </ScrollViewer>
     </ContentPage>
 </TabbedPage>

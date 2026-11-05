@@ -508,6 +508,7 @@ public sealed partial class ProxmoxApiClient : IDisposable
         CancellationToken ct, TimeSpan? timeout = null)
     {
         ThrowIfDisposed();
+        await CheckWriteGuardAsync(createRequest, requireAuth, ct).ConfigureAwait(false);
         if (requireAuth) await EnsureFreshTicketAsync(false, ct).ConfigureAwait(false);
 
         var response = await SendOnceAsync(createRequest, requireAuth, ct, timeout).ConfigureAwait(false);
@@ -516,6 +517,32 @@ public sealed partial class ProxmoxApiClient : IDisposable
         response.Dispose();
         await EnsureFreshTicketAsync(true, ct).ConfigureAwait(false);
         return await SendOnceAsync(createRequest, requireAuth, ct, timeout).ConfigureAwait(false);
+    }
+    /// <summary>
+    ///     서버 상태를 바꿀 수 있는 요청(GET 이 아닌 인증 요청) 직전에 호출된다. false 를 돌려주면 요청을 보내지 않고
+    ///     <see cref="WriteCancelledException" /> 을 던진다. null 이면 검사하지 않는다(WPF 앱).
+    ///     크로스플랫폼 앱은 여기서 "사용자 확인 없이는 쓰기 요청이 나가지 않는다"를 보장한다.
+    ///     로그인(access/ticket)은 인증 전 요청이라 대상이 아니다.
+    /// </summary>
+    public Func<WriteRequest, CancellationToken, Task<bool>>? WriteGuard { get; set; }
+
+    private async Task CheckWriteGuardAsync(Func<HttpRequestMessage> createRequest, bool requireAuth,
+        CancellationToken ct)
+    {
+        if (!requireAuth || WriteGuard is not { } guard) return;
+
+        string method;
+        string path;
+        using (var probe = createRequest())
+        {
+            if (probe.Method == HttpMethod.Get || probe.Method == HttpMethod.Head) return;
+
+            method = probe.Method.Method;
+            path = probe.RequestUri?.OriginalString ?? string.Empty;
+        }
+
+        if (!await guard(new WriteRequest(method, path), ct).ConfigureAwait(false))
+            throw new WriteCancelledException(method, path);
     }
     private async Task<HttpResponseMessage> SendOnceAsync(Func<HttpRequestMessage> createRequest, bool requireAuth,
         CancellationToken ct, TimeSpan? timeout = null)

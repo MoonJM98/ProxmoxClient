@@ -48,6 +48,10 @@ public abstract partial class ViewModelBase : ObservableObject
             await action();
             return true;
         }
+        catch (Core.Api.WriteCancelledException)
+        {
+            return false; // 사용자가 변경 확인을 거절함
+        }
         catch (Exception ex)
         {
             busy?.Dispose();

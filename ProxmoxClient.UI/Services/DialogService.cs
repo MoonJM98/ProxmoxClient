@@ -20,6 +20,40 @@ public sealed partial class DialogService : ObservableObject
 
     [ObservableProperty] public partial string? ToastText { get; private set; }
 
+    /// <summary>직접 만든 내용의 대화상자(입력 폼 등). 한 번에 하나.</summary>
+    [ObservableProperty] public partial Avalonia.Controls.Control? Sheet { get; private set; }
+
+    public bool IsSheetOpen => Sheet is not null;
+
+    private TaskCompletionSource? _sheetClosed;
+
+    partial void OnSheetChanged(Avalonia.Controls.Control? value)
+    {
+        OnPropertyChanged(nameof(IsSheetOpen));
+    }
+
+    /// <summary>
+    ///     내용을 화면 위에 띄우고 <see cref="CloseSheet" /> 가 불릴 때까지 기다린다(결과는 내용이 스스로 보관).
+    ///     이미 열린 것이 있으면 그것이 닫힌 뒤에 띄운다.
+    /// </summary>
+    public async Task ShowSheetAsync(Avalonia.Controls.Control content)
+    {
+        while (_sheetClosed is { } open) await open.Task;
+
+        _sheetClosed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var closed = _sheetClosed.Task;
+        Sheet = content;
+        await closed;
+    }
+
+    public void CloseSheet()
+    {
+        var open = _sheetClosed;
+        _sheetClosed = null;
+        Sheet = null;
+        open?.TrySetResult();
+    }
+
     [ObservableProperty] public partial string? BusyText { get; private set; }
 
     public bool IsDialogOpen => Current is not null;
@@ -96,6 +130,12 @@ public sealed partial class DialogService : ObservableObject
     /// <summary>뒤로 가기 — 열린 대화상자가 있으면 취소하고 true.</summary>
     public bool TryCancelCurrent()
     {
+        if (Current is null && Sheet is IDismissible sheet)
+        {
+            sheet.Dismiss();
+            return true;
+        }
+
         if (Current is not { } current) return false;
 
         current.CancelCommand.Execute(null);
@@ -147,6 +187,12 @@ public sealed partial class DialogService : ObservableObject
 }
 
 public sealed record PromptResult(string Text, bool IsChecked);
+
+/// <summary>뒤로 가기로 닫을 수 있는 시트(취소와 같다).</summary>
+public interface IDismissible
+{
+    void Dismiss();
+}
 
 /// <summary>대화상자 하나 — 확인/취소를 누르면 <see cref="Result" /> 가 끝난다.</summary>
 public sealed partial class DialogRequest(string title, string message) : ObservableObject

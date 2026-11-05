@@ -53,6 +53,12 @@ public static class Conv
     public static readonly IValueConverter TaskTitle =
         new FuncValueConverter<PveTask?, string>(task => task is null ? string.Empty : TaskTypes.Describe(task));
 
+    /// <summary>아이콘 리소스 키("IconPlay") → 경로 도형.</summary>
+    public static readonly IValueConverter Icon = new FuncValueConverter<string?, Geometry?>(key =>
+        key is not null && Avalonia.Application.Current?.TryGetResource(key, Avalonia.Application.Current.ActualThemeVariant, out var value) == true
+            ? value as Geometry
+            : null);
+
     public static IBrush StatusToBrush(string? status)
     {
         return status?.ToLowerInvariant() switch

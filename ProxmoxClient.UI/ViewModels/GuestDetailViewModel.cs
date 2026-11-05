@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
 using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Services;
@@ -79,6 +80,23 @@ public sealed partial class GuestDetailViewModel : ViewModelBase, IReloadable
     [ObservableProperty] public partial bool HasNoSnapshots { get; private set; }
 
     public ObservableCollection<ConfigEntry> Config { get; } = [];
+
+    /// <summary>등록된 게스트 기능(하드웨어·옵션·백업·방화벽 등) — "관리" 목록.</summary>
+    public IReadOnlyList<MenuEntry> ManagementEntries => _managementEntries ??= FeatureRegistry.GuestFeatures
+        .Where(f => f.IsAvailable?.Invoke(Guest) ?? true)
+        .OrderBy(f => f.Order)
+        .Select(f => new MenuEntry(L.T(f.LabelKey), f.IconKey, OpenFeatureCommand, f))
+        .ToList();
+
+    private IReadOnlyList<MenuEntry>? _managementEntries;
+
+    public bool HasManagementEntries => ManagementEntries.Count > 0;
+
+    [RelayCommand]
+    private Task OpenFeature(GuestFeature feature)
+    {
+        return AppServices.Navigator.PushViewAsync($"{Title} · {L.T(feature.LabelKey)}", feature.Create(Session, Guest));
+    }
 
     public override void OnAppearing()
     {
@@ -343,6 +361,7 @@ public sealed partial class GuestDetailViewModel : ViewModelBase, IReloadable
 
         IsTaskRunning = true;
         TaskText = progressText;
+        using var flow = WriteConfirmation.Begin(confirmation.Title, confirmed: true);
         try
         {
             var upid = await start();
@@ -357,6 +376,9 @@ public sealed partial class GuestDetailViewModel : ViewModelBase, IReloadable
             }
         }
         catch (Exception) when (Lifetime.IsCancellationRequested)
+        {
+        }
+        catch (WriteCancelledException)
         {
         }
         catch (Exception ex)

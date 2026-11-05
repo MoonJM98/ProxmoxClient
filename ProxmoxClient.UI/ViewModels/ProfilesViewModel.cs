@@ -106,15 +106,25 @@ public sealed partial class ProfilesViewModel : ViewModelBase
     {
         for (var prompt = 0;; prompt++)
         {
-            var api = new ProxmoxApiClient(profile);
+            // 서버 상태를 바꾸는 요청은 모두 사용자 확인을 거친다(통신 계층에서 강제)
+            var api = new ProxmoxApiClient(profile) { WriteGuard = WriteConfirmation.GuardAsync };
             try
             {
                 await api.LoginAsync();
                 // 버전 확인과 첫 화면 데이터를 동시에 요청한다(화면 전환을 기다리지 않고 미리 받기 시작)
                 var overview = api.GetClusterOverviewAsync();
                 _ = overview.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                var permissionsTask = api.GetPermissionsSummaryAsync();
                 var version = await api.GetVersionAsync();
                 var session = new ServerSession(api, profile, version.Version);
+                try
+                {
+                    session.Permissions = await permissionsTask;
+                }
+                catch (Exception)
+                {
+                    // 권한 요약을 못 읽어도 로그인은 진행 — 서버가 요청마다 권한을 다시 확인한다
+                }
                 session.Prefetch(overview);
                 return session;
             }

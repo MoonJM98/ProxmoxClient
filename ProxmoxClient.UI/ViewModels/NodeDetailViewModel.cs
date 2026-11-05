@@ -30,6 +30,16 @@ public sealed partial class NodeDetailViewModel : ViewModelBase, IReloadable
 
     public ObservableCollection<PveResource> Guests { get; } = [];
 
+    public bool HasNodeManagement => FeatureRegistry.Node is not null;
+
+    [RelayCommand]
+    private Task OpenNodeManagement()
+    {
+        return FeatureRegistry.Node is { } create
+            ? AppServices.Navigator.PushViewAsync(Node.Node, create(Session, Node))
+            : Task.CompletedTask;
+    }
+
     [ObservableProperty] public partial PveNodeStatus? Status { get; private set; }
 
     [ObservableProperty] public partial string? ErrorMessage { get; private set; }

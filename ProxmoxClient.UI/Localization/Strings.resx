@@ -63,6 +63,9 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Cluster_LogoutTitle" xml:space="preserve">
     <value>로그아웃</value>
   </data>
+  <data name="Cluster_ManageEmpty" xml:space="preserve">
+    <value>아직 옮겨 온 관리 기능이 없습니다</value>
+  </data>
   <data name="Cluster_NoGuests" xml:space="preserve">
     <value>표시할 게스트가 없습니다</value>
   </data>
@@ -77,6 +80,9 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   </data>
   <data name="Cluster_TabGuests" xml:space="preserve">
     <value>게스트</value>
+  </data>
+  <data name="Cluster_TabManage" xml:space="preserve">
+    <value>관리</value>
   </data>
   <data name="Cluster_TabNodes" xml:space="preserve">
     <value>노드</value>
@@ -169,6 +175,9 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Guest_KindVm" xml:space="preserve">
     <value>VM</value>
   </data>
+  <data name="Guest_Manage" xml:space="preserve">
+    <value>관리</value>
+  </data>
   <data name="Guest_Power" xml:space="preserve">
     <value>전원</value>
   </data>
@@ -189,6 +198,9 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   </data>
   <data name="Node_Load" xml:space="preserve">
     <value>부하 평균</value>
+  </data>
+  <data name="Node_Manage" xml:space="preserve">
+    <value>노드 관리</value>
   </data>
   <data name="Node_RootFs" xml:space="preserve">
     <value>루트 디스크</value>
@@ -391,6 +403,12 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Status_Suspended" xml:space="preserve">
     <value>최대 절전</value>
   </data>
+  <data name="TableTab_Filter" xml:space="preserve">
+    <value>필터</value>
+  </data>
+  <data name="TableTab_SelectRow" xml:space="preserve">
+    <value>먼저 목록에서 항목을 고르세요.</value>
+  </data>
   <data name="TaskType_aptupdate" xml:space="preserve">
     <value>패키지 목록 갱신</value>
   </data>
@@ -540,5 +558,21 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   </data>
   <data name="Task_LogEmpty" xml:space="preserve">
     <value>(로그 없음)</value>
+  </data>
+  <data name="Write_Apply" xml:space="preserve">
+    <value>적용</value>
+  </data>
+  <data name="Write_ConfirmText" xml:space="preserve">
+    <value>다음 변경을 서버에 적용할까요?
+
+{0} {1}</value>
+  </data>
+  <data name="Write_ConfirmTextNamed" xml:space="preserve">
+    <value>"{0}" 작업을 서버에 적용할까요?
+
+{1} {2}</value>
+  </data>
+  <data name="Write_ConfirmTitle" xml:space="preserve">
+    <value>변경 확인</value>
   </data>
 </root>

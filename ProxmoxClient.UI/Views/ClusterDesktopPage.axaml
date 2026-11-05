@@ -20,6 +20,8 @@
                     <TextBlock Classes="subtle" Text="{Binding Subtitle}" />
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Bottom" Margin="8,8,8,12" Spacing="2">
+                    <ItemsControl ItemsSource="{Binding ManagementEntries}"
+                                  ItemTemplate="{StaticResource MenuEntryTemplate}" />
                     <Button Classes="row" Padding="12,10" Command="{Binding RefreshCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <Path Classes="icon" Data="{StaticResource IconRefresh}" />
@@ -100,7 +102,7 @@
                                       ItemsPanel="{StaticResource CardListPanel}" />
                     </StackPanel>
                     <ItemsControl IsVisible="{Binding IsStorageSection}" ItemsSource="{Binding Storages}"
-                                  ItemTemplate="{StaticResource StorageRowTemplate}"
+                                  ItemTemplate="{StaticResource StorageRowTemplate}" Tag="{Binding OpenStorageCommand}"
                                   ItemsPanel="{StaticResource CardListPanel}" />
                     <ItemsControl IsVisible="{Binding IsTasksSection}" ItemsSource="{Binding Tasks}"
                                   Tag="{Binding OpenTaskCommand}" ItemTemplate="{StaticResource TaskRowTemplate}"

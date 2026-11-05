@@ -30,6 +30,57 @@ public sealed partial class ClusterViewModel : ViewModelBase, IDisposable
 
     public ServerSession Session { get; }
 
+    /// <summary>"관리" 목록 — 데이터센터 화면과 등록된 클러스터 기능(만들기 마법사 등).</summary>
+    public IReadOnlyList<MenuEntry> ManagementEntries => _managementEntries ??= BuildManagementEntries();
+
+    private IReadOnlyList<MenuEntry>? _managementEntries;
+
+    private List<MenuEntry> BuildManagementEntries()
+    {
+        var entries = new List<MenuEntry>();
+        if (FeatureRegistry.Datacenter is not null)
+            entries.Add(new MenuEntry(L.T("DcWindow_Title"), "IconServer", OpenDatacenterCommand));
+        entries.AddRange(FeatureRegistry.ClusterFeatures.OrderBy(f => f.Order)
+            .Select(f => new MenuEntry(L.T(f.LabelKey), f.IconKey, RunClusterFeatureCommand, f)));
+        return entries;
+    }
+
+    public bool HasManagementEntries => ManagementEntries.Count > 0;
+
+    [RelayCommand]
+    private Task OpenDatacenter()
+    {
+        return FeatureRegistry.Datacenter is { } create
+            ? AppServices.Navigator.PushViewAsync(L.T("DcWindow_Title"), create(Session))
+            : Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private async Task RunClusterFeature(ClusterFeature feature)
+    {
+        try
+        {
+            await feature.Run(Session);
+        }
+        catch (Core.Api.WriteCancelledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            await AppServices.Dialogs.AlertAsync(L.T("Error_Title"), ErrorText.Describe(ex));
+        }
+
+        await RefreshAsync(false);
+    }
+
+    [RelayCommand]
+    private Task OpenStorage(PveStorage storage)
+    {
+        return FeatureRegistry.Storage is { } create
+            ? AppServices.Navigator.PushViewAsync($"{storage.Storage} ({storage.Node})", create(Session, storage))
+            : Task.CompletedTask;
+    }
+
     public override string Title => Session.DisplayName;
 
     public string Subtitle => L.T("Cluster_Subtitle", Session.UserDisplay, Session.Version);

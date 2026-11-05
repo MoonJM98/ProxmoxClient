@@ -24,6 +24,15 @@ public sealed class Navigator
         return Navigation.PushAsync(Views.PageFactory.Create(viewModel));
     }
 
+    /// <summary>
+    ///     화면 하나를 새 페이지로 쌓는다(옮겨 온 탭·표·편집 화면). 데스크톱도 같은 화면 스택을 쓴다 —
+    ///     대화상자·확인 창이 늘 같은 창 위에 뜬다.
+    /// </summary>
+    public Task PushViewAsync(string title, Avalonia.Controls.Control content)
+    {
+        return Navigation.PushAsync(new ContentPage { Header = title, Content = content });
+    }
+
     public Task PopAsync()
     {
         return Navigation.PopAsync();

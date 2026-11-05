@@ -63,6 +63,9 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Cluster_LogoutTitle" xml:space="preserve">
     <value>Log out</value>
   </data>
+  <data name="Cluster_ManageEmpty" xml:space="preserve">
+    <value>No management features yet</value>
+  </data>
   <data name="Cluster_NoGuests" xml:space="preserve">
     <value>No guests to show</value>
   </data>
@@ -77,6 +80,9 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   </data>
   <data name="Cluster_TabGuests" xml:space="preserve">
     <value>Guests</value>
+  </data>
+  <data name="Cluster_TabManage" xml:space="preserve">
+    <value>Manage</value>
   </data>
   <data name="Cluster_TabNodes" xml:space="preserve">
     <value>Nodes</value>
@@ -169,6 +175,9 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Guest_KindVm" xml:space="preserve">
     <value>VM</value>
   </data>
+  <data name="Guest_Manage" xml:space="preserve">
+    <value>Manage</value>
+  </data>
   <data name="Guest_Power" xml:space="preserve">
     <value>Power</value>
   </data>
@@ -189,6 +198,9 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   </data>
   <data name="Node_Load" xml:space="preserve">
     <value>Load average</value>
+  </data>
+  <data name="Node_Manage" xml:space="preserve">
+    <value>Manage node</value>
   </data>
   <data name="Node_RootFs" xml:space="preserve">
     <value>Root disk</value>
@@ -391,6 +403,12 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Status_Suspended" xml:space="preserve">
     <value>Hibernated</value>
   </data>
+  <data name="TableTab_Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="TableTab_SelectRow" xml:space="preserve">
+    <value>Select a row first.</value>
+  </data>
   <data name="TaskType_aptupdate" xml:space="preserve">
     <value>Update package database</value>
   </data>
@@ -540,5 +558,21 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   </data>
   <data name="Task_LogEmpty" xml:space="preserve">
     <value>(no log)</value>
+  </data>
+  <data name="Write_Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Write_ConfirmText" xml:space="preserve">
+    <value>Apply this change to the server?
+
+{0} {1}</value>
+  </data>
+  <data name="Write_ConfirmTextNamed" xml:space="preserve">
+    <value>Apply "{0}" to the server?
+
+{1} {2}</value>
+  </data>
+  <data name="Write_ConfirmTitle" xml:space="preserve">
+    <value>Confirm change</value>
   </data>
 </root>

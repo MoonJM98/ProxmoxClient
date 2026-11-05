@@ -64,6 +64,17 @@
                 </StackPanel>
             </Border>
 
+            <Border Classes="card" Padding="0" IsVisible="{Binding HasNodeManagement}">
+                <Button Classes="row" Command="{Binding OpenNodeManagementCommand}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Path Classes="icon" Data="{StaticResource IconSettings}" />
+                        <TextBlock Grid.Column="1" Margin="12,0" Text="{l:Tr Node_Manage}" VerticalAlignment="Center" />
+                        <Path Grid.Column="2" Classes="icon" Width="14" Height="14" Opacity="0.5"
+                              Data="{StaticResource IconChevronRight}" />
+                    </Grid>
+                </Button>
+            </Border>
+
             <TextBlock Classes="section" Text="{l:Tr Node_Guests}" />
             <ItemsControl ItemsSource="{Binding Guests}" Tag="{Binding OpenGuestCommand}"
                           ItemTemplate="{StaticResource GuestRowTemplate}"

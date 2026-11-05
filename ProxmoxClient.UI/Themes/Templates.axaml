@@ -2,7 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:m="using:ProxmoxClient.Core.Models"
                     xmlns:c="using:ProxmoxClient.UI.Converters"
-                    xmlns:l="using:ProxmoxClient.UI.Localization">
+                    xmlns:l="using:ProxmoxClient.UI.Localization"
+                    xmlns:vm="using:ProxmoxClient.UI.ViewModels">
 
     <!--
         게스트 한 줄 — 누르면 목록(ItemsControl)의 Tag 에 넣은 명령을 실행한다(클러스터·노드 화면 공용).
@@ -120,7 +121,8 @@
         </DataTemplate>
 
     <DataTemplate x:Key="StorageRowTemplate" x:DataType="m:PveStorage">
-            <Border Classes="card">
+            <Border Classes="card" Padding="0">
+            <Button Classes="row" Command="{Binding $parent[ItemsControl].Tag}" CommandParameter="{Binding}">
                 <StackPanel Spacing="8">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <Ellipse Classes="dot" Margin="0,0,12,0"
@@ -150,6 +152,7 @@
                     <TextBlock Classes="subtle" FontSize="12" Text="{Binding Content}"
                                TextWrapping="Wrap" TextTrimming="None" />
                 </StackPanel>
+            </Button>
             </Border>
         </DataTemplate>
 
@@ -179,6 +182,18 @@
                 </Button>
             </Border>
         </DataTemplate>
+
+    <!-- 관리 목록 한 줄 — 아이콘 + 이름 + 화살표 -->
+    <DataTemplate x:Key="MenuEntryTemplate" x:DataType="vm:MenuEntry">
+        <Button Classes="row" Padding="14,12" Command="{Binding Command}" CommandParameter="{Binding Parameter}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Path Classes="icon" Data="{Binding IconKey, Converter={x:Static c:Conv.Icon}}" />
+                <TextBlock Grid.Column="1" Margin="12,0" Text="{Binding Label}" VerticalAlignment="Center" />
+                <Path Grid.Column="2" Classes="icon" Width="14" Height="14" Opacity="0.5"
+                      Data="{StaticResource IconChevronRight}" />
+            </Grid>
+        </Button>
+    </DataTemplate>
 
     <ItemsPanelTemplate x:Key="CardListPanel">
         <StackPanel Spacing="10" />

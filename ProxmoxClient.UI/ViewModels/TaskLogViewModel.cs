@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
+using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
 using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Services;
@@ -16,14 +17,18 @@ public sealed partial class TaskLogViewModel : ViewModelBase
     private readonly StringBuilder _log = new();
     private int _lineCount;
 
-    public TaskLogViewModel(ServerSession session, PveTask task)
+    public TaskLogViewModel(ServerSession session, PveTask task) : this(session.Api, task)
     {
-        Session = session;
+    }
+
+    public TaskLogViewModel(ProxmoxApiClient api, PveTask task)
+    {
+        Api = api;
         TaskItem = task;
         _refresher = new PeriodicRefresher(TimeSpan.FromSeconds(2), RefreshAsync);
     }
 
-    public ServerSession Session { get; }
+    public ProxmoxApiClient Api { get; }
 
     public PveTask TaskItem { get; }
 
@@ -53,7 +58,7 @@ public sealed partial class TaskLogViewModel : ViewModelBase
             // 한 번에 PageSize 줄씩 — 모자라게 오면 끝까지 읽은 것
             while (true)
             {
-                var rows = await Session.Api.Tasks.LogAsync(TaskItem.Node, TaskItem.Upid, PageSize, _lineCount,
+                var rows = await Api.Tasks.LogAsync(TaskItem.Node, TaskItem.Upid, PageSize, _lineCount,
                     _lifetime.Token);
                 foreach (var row in rows) _log.AppendLine(row.GetValueOrDefault("t") ?? string.Empty);
                 _lineCount += rows.Count;
@@ -64,7 +69,7 @@ public sealed partial class TaskLogViewModel : ViewModelBase
 
             if (TaskItem.IsRunning)
             {
-                var status = await Session.Api.GetTaskStatusAsync(TaskItem.Upid, _lifetime.Token);
+                var status = await Api.GetTaskStatusAsync(TaskItem.Upid, _lifetime.Token);
                 TaskItem.CopyFrom(status);
             }
 

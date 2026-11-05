@@ -27,6 +27,9 @@ public sealed class ServerSession(ProxmoxApiClient api, ConnectionProfile profil
     /// <summary>PVE 버전 문자열(예: 9.0.3).</summary>
     public string Version { get; } = version;
 
+    /// <summary>로그인 사용자의 권한 요약(화면이 버튼·탭을 권한에 맞게 보인다). 읽지 못하면 빈 권한.</summary>
+    public PermissionsInfo Permissions { get; internal set; } = new();
+
     public string DisplayName => string.IsNullOrWhiteSpace(Profile.Name) ? Profile.Host : Profile.Name;
 
     /// <summary>로그인 사용자(user@realm) — API 토큰이면 토큰 ID.</summary>

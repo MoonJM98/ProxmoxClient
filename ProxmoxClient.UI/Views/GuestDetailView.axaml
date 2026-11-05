@@ -84,6 +84,13 @@
                 </Button>
             </WrapPanel>
 
+            <!-- 관리(등록된 기능: 하드웨어·옵션·백업·방화벽 등) -->
+            <TextBlock Classes="section" Text="{l:Tr Guest_Manage}" IsVisible="{Binding HasManagementEntries}" />
+            <Border Classes="card" Padding="0" IsVisible="{Binding HasManagementEntries}">
+                <ItemsControl ItemsSource="{Binding ManagementEntries}"
+                              ItemTemplate="{StaticResource MenuEntryTemplate}" />
+            </Border>
+
             <!-- 사용량 -->
             <TextBlock Classes="section" Text="{l:Tr Guest_Usage}" />
             <Border Classes="card">
