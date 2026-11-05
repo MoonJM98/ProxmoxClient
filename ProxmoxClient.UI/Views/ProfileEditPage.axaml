@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ProxmoxClient.UI.ViewModels"
              xmlns:l="using:ProxmoxClient.UI.Localization"
+             xmlns:m="using:ProxmoxClient.Core.Models"
              x:Class="ProxmoxClient.UI.Views.ProfileEditPage"
              x:DataType="vm:ProfileEditViewModel"
              Header="{Binding Title}">
@@ -43,6 +44,27 @@
                             <TextBlock Classes="label" Text="{l:Tr Profile_User}" />
                             <TextBox Text="{Binding UserName}" PlaceholderText="root@pam"
                                      TextInputOptions.AutoCapitalization="False" />
+                        </StackPanel>
+                        <!-- 인증 영역 — 서버에서 가져와 고르면 사용자 칸의 @영역 이 바뀐다 -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="label" Text="{l:Tr Realm_Label}" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <ComboBox ItemsSource="{Binding Realms}" SelectedItem="{Binding SelectedRealm}"
+                                          HorizontalAlignment="Stretch" IsEnabled="{Binding HasRealms}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="m:PveAuthDomain">
+                                            <TextBlock>
+                                                <Run Text="{Binding Realm}" FontWeight="SemiBold" />
+                                                <Run Text="{Binding Comment}" Foreground="Gray" />
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <Button Grid.Column="1" Content="{l:Tr Realm_Fetch}"
+                                        Command="{Binding FetchRealmsCommand}" IsEnabled="{Binding !IsFetchingRealms}" />
+                            </Grid>
+                            <TextBlock Classes="subtle" Text="{Binding RealmStatus}" TextWrapping="Wrap"
+                                       IsVisible="{Binding RealmStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                         </StackPanel>
                         <StackPanel>
                             <TextBlock Classes="label" Text="{l:Tr Profile_Password}" />

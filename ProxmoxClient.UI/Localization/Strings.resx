@@ -661,4 +661,22 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Console_ViewModeTip" xml:space="preserve">
     <value>화면 모드 — 맞춤(전체) · 채우기(빈 곳 없이) · 원본(1:1). 확대한 뒤에는 두 손가락으로 끌어 화면을 옮깁니다.</value>
   </data>
+  <data name="Realm_Fetch" xml:space="preserve">
+    <value>영역 가져오기</value>
+  </data>
+  <data name="Realm_Fetching" xml:space="preserve">
+    <value>영역을 가져오는 중...</value>
+  </data>
+  <data name="Realm_Fetched" xml:space="preserve">
+    <value>영역 {0}개를 가져왔습니다.</value>
+  </data>
+  <data name="Realm_None" xml:space="preserve">
+    <value>서버에 영역이 없습니다.</value>
+  </data>
+  <data name="Realm_Failed" xml:space="preserve">
+    <value>영역을 가져오지 못했습니다: {0}</value>
+  </data>
+  <data name="Realm_Label" xml:space="preserve">
+    <value>인증 영역</value>
+  </data>
 </root>

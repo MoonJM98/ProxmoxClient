@@ -95,6 +95,21 @@ if (!desktop)
     if (!visible) failures++;
     shell.ApplyKeyboardInset(0);
     Pump(300);
+
+    // 영역 가져오기(모바일 서버 편집) — 서버의 인증 영역을 읽어 고르면 사용자 칸이 이름@영역 으로
+    var edit = (ProfileEditViewModel)nav.CurrentPage!.DataContext!;
+    edit.FetchRealmsCommand.Execute(null);
+    WaitFor(() => AppServices.Dialogs.Current is not null || edit.Realms.Count > 0 || edit.RealmStatus.Contains(':'), 6000);
+    AppServices.Dialogs.Current?.ConfirmCommand.Execute(null); // 처음 보는 인증서 — 신뢰
+    WaitFor(() => !edit.IsFetchingRealms && edit.Realms.Count > 0, 6000);
+    var other = edit.Realms.FirstOrDefault(r => r.Realm != "pam");
+    if (other is not null) edit.SelectedRealm = other;
+    Pump(300);
+    Shot("profile-realms");
+    var realmNames = string.Join(",", edit.Realms.Select(r => r.Realm));
+    Check0("영역 가져오기(모바일)", $"영역 목록 + 고르면 root@영역", $"[{realmNames}] → {edit.UserName}",
+        edit.Realms.Count > 0 && other is not null && edit.UserName == $"root@{other.Realm}");
+    edit.SelectedRealm = edit.Realms.FirstOrDefault(r => r.Realm == "pam");
 }
 if (AppServices.Dialogs.Current is { } editorDialog) editorDialog.CancelCommand.Execute(null);
 await Wait(AppServices.Navigator.PopAsync());
@@ -226,6 +241,12 @@ Directory.Delete(profileDir, true);
 return failures == 0 ? 0 : 2;
 
 // ------------------------------------------------------------------ helpers
+
+void Check0(string name, string expect, string got, bool pass)
+{
+    Console.WriteLine($"| {name} | {expect} | {got} | {(pass ? "통과" : "실패")} |");
+    if (!pass) failures++;
+}
 
 // --vpn 로 연 터널 — 상태를 찍고 끊은 뒤 openvpn 프로세스가 남지 않았는지
 void VpnReport()

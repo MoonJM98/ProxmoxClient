@@ -101,6 +101,7 @@ public sealed partial class ProfileEditViewModel : ViewModelBase
         profile.UserName = NormalizeUser(UserName);
         profile.ApiTokenId = IsTokenAuth ? TokenId.Trim() : profile.ApiTokenId;
         profile.AcceptSelfSignedCertificate = AcceptSelfSigned;
+        ApplyTrustedThumbprint(profile);
 
         var ok = await TryAsync(async () =>
         {

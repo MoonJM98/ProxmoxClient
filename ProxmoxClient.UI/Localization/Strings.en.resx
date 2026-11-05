@@ -661,4 +661,22 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Console_ViewModeTip" xml:space="preserve">
     <value>View mode — fit (all) · fill (no bars) · actual size (1:1). When zoomed in, drag with two fingers to move the view.</value>
   </data>
+  <data name="Realm_Fetch" xml:space="preserve">
+    <value>Fetch realms</value>
+  </data>
+  <data name="Realm_Fetching" xml:space="preserve">
+    <value>Fetching realms...</value>
+  </data>
+  <data name="Realm_Fetched" xml:space="preserve">
+    <value>Fetched {0} realms.</value>
+  </data>
+  <data name="Realm_None" xml:space="preserve">
+    <value>The server has no realms.</value>
+  </data>
+  <data name="Realm_Failed" xml:space="preserve">
+    <value>Could not fetch realms: {0}</value>
+  </data>
+  <data name="Realm_Label" xml:space="preserve">
+    <value>Realm</value>
+  </data>
 </root>
