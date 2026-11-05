@@ -173,7 +173,17 @@ public sealed partial class ProxmoxApiClient : IDisposable
             ["password"] = password
         };
 
-        var data = await PostFormJsonAsync("access/ticket", form, false, ct).ConfigureAwait(false);
+        JsonElement data;
+        try
+        {
+            data = await PostFormJsonAsync("access/ticket", form, false, ct).ConfigureAwait(false);
+        }
+        catch (ProxmoxApiException ex) when (ex.StatusCode == (int)HttpStatusCode.Unauthorized)
+        {
+            // PVE 는 이름·비밀번호·영역이 틀리면 본문 없이 401 만 준다 — 'HTTP 401 {"data":null}' 대신 알아볼 문구로
+            throw new ProxmoxApiException(ex.StatusCode, ex.ResponseExcerpt, Res.T("ProxmoxApiClient_LoginRejected"));
+        }
+
         var ticket = data.TryGetProperty("ticket", out var ticketEl) ? ticketEl.GetString() : null;
         var csrfToken = data.TryGetProperty("CSRFPreventionToken", out var csrfEl) ? csrfEl.GetString() : null;
 
