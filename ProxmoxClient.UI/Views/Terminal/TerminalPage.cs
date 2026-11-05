@@ -1,0 +1,266 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Data;
+using Avalonia.Input;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Threading;
+using ProxmoxClient.UI.Localization;
+using ProxmoxClient.UI.Platform;
+using ProxmoxClient.UI.Services;
+using ProxmoxClient.UI.ViewModels;
+using ProxmoxClient.UI.Views.Controls;
+
+namespace ProxmoxClient.UI.Views.Terminal;
+
+/// <summary>
+///     터미널 화면(WPF TerminalWindow) — 위 도구 막대(재연결/연결 끊기 · 복사 · 붙여넣기 · 글자 크기),
+///     가운데 터미널, 아래 상태 줄. 터치 기기는 특수 키 막대(Esc·Tab·Ctrl/Alt 고정·방향키·기호·F1~F12)를 더한다.
+/// </summary>
+public sealed class TerminalPage : ContentPage
+{
+    private readonly TerminalView _terminal;
+    private readonly Button _reconnect;
+    private readonly Button _disconnect;
+    private readonly Button _copy;
+    private readonly Button _paste;
+    private readonly ToggleButton _ctrl;
+    private readonly ToggleButton _alt;
+    private readonly Border _more;
+    private TerminalViewModel? _vm;
+    private (int Columns, int Rows) _pendingSize;
+    private bool _resizeQueued;
+
+    public TerminalPage()
+    {
+        _terminal = new TerminalView(PlatformInfo.IsTouch && !PlatformInfo.IsDesktop ? 12 : 14);
+        _terminal.Input = text => _vm?.Send(text);
+        _terminal.SizeChanged2 += (columns, rows) =>
+        {
+            // 창 크기를 끄는 동안 바뀐 크기는 한 번에 모아 보낸다(같은 크기는 세션이 거른다)
+            _pendingSize = (columns, rows);
+            if (_resizeQueued) return;
+
+            _resizeQueued = true;
+            Dispatcher.UIThread.Post(() =>
+            {
+                _resizeQueued = false;
+                _vm?.Resize(_pendingSize.Columns, _pendingSize.Rows);
+            }, DispatcherPriority.Background);
+        };
+        _terminal.SelectionChanged += has => _copy!.IsEnabled = has;
+        _terminal.TakeStickyModifiers = TakeSticky;
+
+        _reconnect = ToolButton(L.T("ConsoleWindow_02"), "IconRefresh", async () =>
+        {
+            if (_vm is not null) await _vm.ConnectAsync();
+        });
+        _disconnect = ToolButton(L.T("MainWindow_02"), "IconLogOut", async () =>
+        {
+            if (_vm is not null) await _vm.DisconnectAsync();
+        });
+        _copy = ToolButton(L.T("TerminalWindow_02"), "IconCopy", async () =>
+        {
+            if (!await _terminal.CopyAsync()) AppServices.Dialogs.Toast(L.T("TerminalWindow_M02"));
+            else AppServices.Dialogs.Toast(L.T("TerminalWindow_M03"));
+            _terminal.FocusInput();
+        });
+        _copy.IsEnabled = false;
+        _paste = ToolButton(L.T("TerminalWindow_04"), "IconClipboard", async () =>
+        {
+            await _terminal.PasteFromClipboardAsync();
+            _terminal.FocusInput();
+        });
+        var smaller = ToolButton("A−", null, () =>
+        {
+            _terminal.SetFontSize(_terminal.TerminalFontSize - 1);
+            return Task.CompletedTask;
+        }, L.T("Terminal_FontSmaller"));
+        var larger = ToolButton("A+", null, () =>
+        {
+            _terminal.SetFontSize(_terminal.TerminalFontSize + 1);
+            return Task.CompletedTask;
+        }, L.T("Terminal_FontLarger"));
+
+        var toolbar = new Border
+        {
+            Classes = { "Toolbar" }, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(10, 6),
+            Child = new WrapPanel
+            {
+                Children =
+                {
+                    _reconnect, _disconnect, Separator(), _copy, _paste, Separator(), smaller, larger
+                }
+            }
+        };
+        toolbar.Bind(Border.BackgroundProperty, toolbar.GetResourceObservable("BrushPanel"));
+        toolbar.Bind(Border.BorderBrushProperty, toolbar.GetResourceObservable("BrushBorder"));
+        DockPanel.SetDock(toolbar, Dock.Top);
+
+        var stateText = new TextBlock { Classes = { "subtle" }, TextTrimming = TextTrimming.CharacterEllipsis };
+        stateText.Bind(TextBlock.TextProperty, new Binding(nameof(TerminalViewModel.StateText)));
+        var statusBar = new Border
+        {
+            BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(10, 6), Child = stateText,
+            IsVisible = PlatformInfo.IsDesktop
+        };
+        statusBar.Bind(Border.BackgroundProperty, statusBar.GetResourceObservable("BrushPanel"));
+        statusBar.Bind(Border.BorderBrushProperty, statusBar.GetResourceObservable("BrushBorder"));
+        DockPanel.SetDock(statusBar, Dock.Bottom);
+
+        // 연결 중·끊김 안내 — 터미널 위 가운데
+        var overlay = new Border
+        {
+            Background = new SolidColorBrush(Color.Parse("#CC202020")), CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(16, 10), HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false,
+            Child = new TextBlock { Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, MaxWidth = 360 }
+        };
+        overlay.Bind(IsVisibleProperty, new Binding(nameof(TerminalViewModel.HasStatus)));
+        ((TextBlock)overlay.Child).Bind(TextBlock.TextProperty, new Binding(nameof(TerminalViewModel.Status)));
+
+        // 특수 키 막대(터치)
+        _ctrl = Toggle("Ctrl");
+        _alt = Toggle("Alt");
+        var main = new WrapPanel
+        {
+            Children =
+            {
+                KeyButton("⌨", () => _terminal.FocusInput(), L.T("Console_Keyboard")),
+                Key("Esc", Avalonia.Input.Key.Escape), Key("Tab", Avalonia.Input.Key.Tab), _ctrl, _alt,
+                Key("←", Avalonia.Input.Key.Left), Key("↑", Avalonia.Input.Key.Up),
+                Key("↓", Avalonia.Input.Key.Down), Key("→", Avalonia.Input.Key.Right),
+                Text("|"), Text("-"), Text("/"), Text("~"),
+                KeyButton("⋯", () => _more!.IsVisible = !_more.IsVisible, L.T("Console_MoreKeys"))
+            }
+        };
+        var extra = new WrapPanel();
+        foreach (var (label, key) in new[]
+                 {
+                     ("Home", Avalonia.Input.Key.Home), ("End", Avalonia.Input.Key.End),
+                     ("PgUp", Avalonia.Input.Key.PageUp), ("PgDn", Avalonia.Input.Key.PageDown),
+                     ("Ins", Avalonia.Input.Key.Insert), ("Del", Avalonia.Input.Key.Delete)
+                 })
+            extra.Children.Add(Key(label, key));
+        foreach (var symbol in new[] { "`", "\\", "*", "&", "$", ">", "<", "\"", "'", ";", ":" })
+            extra.Children.Add(Text(symbol));
+        for (var i = 0; i < 12; i++) extra.Children.Add(Key($"F{i + 1}", Avalonia.Input.Key.F1 + i));
+        foreach (var (label, letter) in new[] { ("^C", 'c'), ("^D", 'd'), ("^Z", 'z'), ("^L", 'l'), ("^R", 'r') })
+            extra.Children.Add(KeyButton(label, () => _terminal.Send(((char)(letter - 'a' + 1)).ToString(), false)));
+        _more = new Border { IsVisible = false, Child = extra };
+
+        var keysBar = new Border
+        {
+            Background = new SolidColorBrush(Color.Parse("#F0202020")), Padding = new Thickness(4, 4, 4, 6),
+            Child = new StackPanel { Children = { _more, main } }, IsVisible = PlatformInfo.IsTouch
+        };
+        DockPanel.SetDock(keysBar, Dock.Bottom);
+
+        Content = new DockPanel
+        {
+            Children = { toolbar, statusBar, keysBar, new Grid { Children = { _terminal, overlay } } }
+        };
+        Background = Brushes.Black;
+        DataContextChanged += (_, _) => Attach(DataContext as TerminalViewModel);
+        Loaded += (_, _) => _terminal.FocusInput();
+    }
+
+    public TerminalView Terminal => _terminal;
+
+    private void Attach(TerminalViewModel? vm)
+    {
+        if (_vm is not null) _vm.PropertyChanged -= OnVmChanged;
+        _vm = vm;
+        if (vm is null) return;
+
+        Header = vm.Title;
+        vm.Output = _terminal.Write;
+        vm.PropertyChanged += OnVmChanged;
+        vm.Resize(_terminal.Buffer.Columns, _terminal.Buffer.Rows);
+        UpdateButtons();
+    }
+
+    private void OnVmChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(TerminalViewModel.IsConnected) or nameof(TerminalViewModel.IsConnecting))
+            UpdateButtons();
+        if (e.PropertyName == nameof(TerminalViewModel.IsConnected) && _vm?.IsConnected == true) _terminal.FocusInput();
+    }
+
+    /// <summary>연결 중이면 '연결 끊기', 끊겼으면 '재연결' — 같은 자리에서 바뀐다(WPF 와 같다).</summary>
+    private void UpdateButtons()
+    {
+        var connected = _vm?.IsConnected == true;
+        _disconnect.IsVisible = connected;
+        _reconnect.IsVisible = !connected;
+        _reconnect.IsEnabled = _vm?.IsConnecting != true;
+        _paste.IsEnabled = connected;
+    }
+
+    private (bool Ctrl, bool Alt) TakeSticky()
+    {
+        var result = (_ctrl.IsChecked == true, _alt.IsChecked == true);
+        _ctrl.IsChecked = _alt.IsChecked = false;
+        return result;
+    }
+
+    private static Button ToolButton(string label, string? iconKey, Func<Task> run, string? tip = null)
+    {
+        var button = new Button
+        {
+            Content = label, MinWidth = PlatformInfo.IsDesktop && iconKey is not null ? 84 : 0,
+            Margin = new Thickness(0, 0, 6, 0), Focusable = false
+        };
+        if (iconKey is not null)
+        {
+            if (Application.Current?.TryGetResource(iconKey, Application.Current.ActualThemeVariant, out var icon) == true)
+                IconAssist.SetIcon(button, icon as Geometry);
+            CompactButton.Apply(button, label);
+        }
+
+        if (tip is not null) ToolTip.SetTip(button, tip);
+        button.Click += async (_, _) => await run();
+        return button;
+    }
+
+    private static Border Separator()
+    {
+        var border = new Border { Width = 1, Margin = new Thickness(4, 4, 10, 4) };
+        border.Bind(Border.BackgroundProperty, border.GetResourceObservable("BrushBorder"));
+        return border;
+    }
+
+    private Button Key(string label, Key key)
+    {
+        return KeyButton(label, () => _terminal.SendKey(key));
+    }
+
+    private Button Text(string text)
+    {
+        return KeyButton(text, () => _terminal.Send(text));
+    }
+
+    private static Button KeyButton(string label, Action click, string? tip = null)
+    {
+        var button = new Button
+        {
+            Content = label, MinWidth = 40, MinHeight = 38, Margin = new Thickness(2), Padding = new Thickness(8, 4),
+            Foreground = Brushes.White, Background = new SolidColorBrush(Color.Parse("#3A3A3A")),
+            HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, Focusable = false
+        };
+        if (tip is not null) ToolTip.SetTip(button, tip);
+        button.Click += (_, _) => click();
+        return button;
+    }
+
+    private static ToggleButton Toggle(string label)
+    {
+        return new ToggleButton
+        {
+            Content = label, MinWidth = 46, MinHeight = 38, Margin = new Thickness(2), Padding = new Thickness(8, 4),
+            Foreground = Brushes.White, Background = new SolidColorBrush(Color.Parse("#3A3A3A")),
+            HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, Focusable = false
+        };
+    }
+}

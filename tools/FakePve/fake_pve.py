@@ -46,6 +46,9 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         p=urllib.parse.urlparse(self.path); path=urllib.parse.unquote(p.path.replace('/api2/json',''))
         if path.endswith('/vncwebsocket') and self.headers.get('Upgrade','').lower()=='websocket':
+            # termproxy 가 준 포트(5901)면 가짜 셸, 아니면 VNC 화면
+            if urllib.parse.parse_qs(p.query).get('port',[''])[0]=='5901':
+                import term; term.serve(self); self.close_connection=True; return
             import vnc; vnc.serve(self); self.close_connection=True; return
         if self.ext('GET', path): return
         if path=='/version': return self.send(dict(version='9.0.10',release='9.0',repoid='abcdef'))
@@ -82,6 +85,9 @@ class H(BaseHTTPRequestHandler):
         p=urllib.parse.urlparse(self.path); path=p.path.replace('/api2/json','')
         ln=int(self.headers.get('Content-Length',0)); body=urllib.parse.parse_qs(self.rfile.read(ln).decode())
         flat={k:v[0] for k,v in body.items()}
+        if path.endswith('/termproxy'):
+            sys.stderr.write("TERM termproxy %s %s\n"%(path, flat))
+            return self.send(dict(port=5901, ticket='PVEVNC:TERM', user='root@pam', upid=upid('pve1','vncshell','')))
         if path.endswith('/vncproxy'):
             return self.send(dict(port=5900, ticket='PVEVNC:FAKE', user='root@pam', cert='', upid=upid('pve1','vncproxy','100')))
         if path!='/access/ticket' and self.ext('POST', urllib.parse.unquote(path), flat): return

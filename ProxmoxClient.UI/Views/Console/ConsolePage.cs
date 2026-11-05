@@ -208,7 +208,7 @@ public sealed class ConsolePage : ContentPage
         {
             Content = label, MinWidth = 44, MinHeight = 40, Margin = new Thickness(2), Padding = new Thickness(10, 6),
             Foreground = Brushes.White, Background = new SolidColorBrush(Color.Parse("#3A3A3A")),
-            HorizontalContentAlignment = HorizontalAlignment.Center, Focusable = false
+            HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, Focusable = false
         };
         if (tip is not null) ToolTip.SetTip(button, tip);
         button.Click += click;
@@ -221,7 +221,7 @@ public sealed class ConsolePage : ContentPage
         {
             Content = label, MinWidth = 48, MinHeight = 40, Margin = new Thickness(2), Padding = new Thickness(10, 6),
             Foreground = Brushes.White, Background = new SolidColorBrush(Color.Parse("#3A3A3A")),
-            HorizontalContentAlignment = HorizontalAlignment.Center, Focusable = false
+            HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, Focusable = false
         };
     }
 }

@@ -616,4 +616,10 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Write_ConfirmTitle" xml:space="preserve">
     <value>Confirm change</value>
   </data>
+  <data name="Terminal_FontSmaller" xml:space="preserve">
+    <value>Smaller text</value>
+  </data>
+  <data name="Terminal_FontLarger" xml:space="preserve">
+    <value>Larger text</value>
+  </data>
 </root>

@@ -1,0 +1,170 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using ProxmoxClient.Core.Models;
+using ProxmoxClient.Core.Terminal;
+using ProxmoxClient.UI.Localization;
+using ProxmoxClient.UI.Services;
+
+namespace ProxmoxClient.UI.ViewModels;
+
+/// <summary>터미널 출력 받는 쪽(화면) — 수신 스레드에서 불린다.</summary>
+public delegate void TerminalOutput(ReadOnlySpan<char> text);
+
+/// <summary>
+///     터미널 콘솔(WPF TerminalWindow 와 같은 역할) — 노드 셸·CT 콘솔·VM 시리얼을 termproxy 로 연다.
+///     세션은 1회용이라 다시 연결하면 새로 만든다. 늦게 도착한 이전 세션 이벤트는 버린다.
+/// </summary>
+public sealed partial class TerminalViewModel : ViewModelBase
+{
+    private const int MinColumns = 10;
+    private const int MinRows = 2;
+
+    private readonly string _title;
+    private ProxmoxTerminalSession? _session;
+    private bool _started;
+    private int _columns = 80;
+    private int _rows = 24;
+
+    public TerminalViewModel(ServerSession session, ConsoleTarget target, string title, PveResource? guest = null)
+    {
+        SessionInfo = session;
+        Target = target;
+        Guest = guest;
+        _title = title;
+    }
+
+    public ServerSession SessionInfo { get; }
+
+    public ConsoleTarget Target { get; }
+
+    public PveResource? Guest { get; }
+
+    public override string Title => _title;
+
+    /// <summary>터미널 화면 — 화면이 붙으면 출력을 넘긴다.</summary>
+    public TerminalOutput? Output { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStatus))]
+    public partial string? Status { get; private set; } = L.T("ConsoleWindow_06");
+
+    /// <summary>아래 상태 줄 문구(연결됨 포함).</summary>
+    [ObservableProperty] public partial string StateText { get; private set; } = L.T("ConsoleWindow_06");
+
+    public bool HasStatus => Status is not null;
+
+    [ObservableProperty] public partial bool IsConnected { get; private set; }
+
+    [ObservableProperty] public partial bool IsConnecting { get; private set; }
+
+    public override async void OnAppearing()
+    {
+        if (_started) return;
+
+        _started = true;
+        await ConnectAsync();
+    }
+
+    public override void OnDisappearing(bool removed)
+    {
+        if (!removed) return;
+
+        var session = _session;
+        _session = null;
+        if (session is not null) _ = session.DisconnectAsync(); // 화면 닫기를 막지 않게
+    }
+
+    /// <summary>키·붙여넣기 입력.</summary>
+    public void Send(string text)
+    {
+        if (_session is { IsConnected: true } session) session.SendInput(text);
+    }
+
+    /// <summary>화면 칸 수 — 연결 전이면 기억해 두었다가 인증 직후 보낸다.</summary>
+    public void Resize(int columns, int rows)
+    {
+        if (columns < MinColumns || rows < MinRows) return;
+
+        _columns = columns;
+        _rows = rows;
+        _session?.Resize(columns, rows);
+    }
+
+    public async Task ConnectAsync()
+    {
+        if (IsConnecting) return;
+
+        DisposeSession();
+        IsConnecting = true;
+        SetState(L.T("ConsoleWindow_06"), true);
+
+        var session = new ProxmoxTerminalSession(SessionInfo.Api);
+        _session = session;
+        bool IsCurrent() => ReferenceEquals(_session, session);
+
+        session.Output += text =>
+        {
+            if (IsCurrent()) Output?.Invoke(text);
+        };
+        session.StatusChanged += text => Post(() =>
+        {
+            if (IsCurrent() && !IsConnected) SetState(text, true);
+        });
+        session.Connected += () => Post(() =>
+        {
+            if (!IsCurrent()) return;
+
+            IsConnected = true;
+            SetState(L.T("TerminalWindow_M01"), false);
+        });
+        session.Closed += ex => Post(() =>
+        {
+            if (!IsCurrent()) return;
+
+            IsConnected = false;
+            SetState(ex is null ? L.T("ConsoleWindow_M05") : L.T("ConsoleWindow_M06", ErrorText.Describe(ex)), true);
+        });
+        session.Resize(_columns, _rows);
+
+        try
+        {
+            await session.ConnectAsync(Target);
+        }
+        catch (Exception ex)
+        {
+            if (IsCurrent()) SetState(L.T("ConsoleWindow_M07", ErrorText.Describe(ex)), true);
+        }
+        finally
+        {
+            IsConnecting = false;
+        }
+    }
+
+    public async Task DisconnectAsync()
+    {
+        if (_session is not { } session) return;
+
+        _session = null;
+        await session.DisconnectAsync();
+        IsConnected = false;
+        SetState(L.T("MainViewModel_M05"), true);
+    }
+
+    private void DisposeSession()
+    {
+        var session = _session;
+        _session = null;
+        session?.Dispose();
+    }
+
+    /// <param name="overlay">화면 가운데에도 보일지(연결 중·끊김) — 연결됨은 상태 줄에만.</param>
+    private void SetState(string text, bool overlay)
+    {
+        StateText = text;
+        Status = overlay ? text : null;
+    }
+
+    private static void Post(Action action)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(action);
+    }
+}

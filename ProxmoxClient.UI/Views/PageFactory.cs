@@ -27,6 +27,7 @@ public static class PageFactory
             NodeDetailViewModel => new NodeDetailPage(),
             TaskLogViewModel => new TaskLogPage(),
             ConsoleViewModel => new Console.ConsolePage(),
+            TerminalViewModel => new Terminal.TerminalPage(),
             _ => throw new ArgumentOutOfRangeException(nameof(viewModel), viewModel.GetType().Name, null)
         };
         return Host(page, viewModel);

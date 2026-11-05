@@ -616,4 +616,10 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Write_ConfirmTitle" xml:space="preserve">
     <value>변경 확인</value>
   </data>
+  <data name="Terminal_FontSmaller" xml:space="preserve">
+    <value>글자 작게</value>
+  </data>
+  <data name="Terminal_FontLarger" xml:space="preserve">
+    <value>글자 크게</value>
+  </data>
 </root>

@@ -167,6 +167,7 @@ if (target.StartsWith("preview:", StringComparison.Ordinal))
 
 if (target == "console") await ConsoleUsabilityCheck();
 if (target == "compact") await CompactButtonCheck();
+if (target == "terminal") await TerminalCheck();
 
 foreach (var (prefix, vmid) in new[] { ("guest", 100), ("lxc", 200) })
 {
@@ -235,6 +236,205 @@ async Task CompactButtonCheck()
     Console.WriteLine($"| 짧게 누르기 | 실행(입력 폼 열림) | 폼 {(opened ? "열림" : "안 열림")} | {(opened ? "통과" : "실패")} |");
     if (!opened) failures++;
     if (AppServices.Dialogs.Sheet is IDismissible d2) d2.Dismiss();
+    await Wait(AppServices.Navigator.PopAsync());
+}
+
+// 터미널 검사 — 가짜 termproxy 셸에 붙어 출력 해석(한글·색·선 그리기·대체 화면)과 입력(키·IME·고정 Ctrl·붙여넣기),
+// 선택·스크롤백·크기 변경을 확인한다. 서버가 받은 입력은 로그의 'TERM input ...' 줄로 비교한다.
+async Task TerminalCheck()
+{
+    var logPath = options.GetValueOrDefault("serverlog", "");
+    var logOffset = 0L;
+    List<string> Log(string prefix)
+    {
+        Pump(500);
+        if (logPath.Length == 0 || !File.Exists(logPath)) return [];
+        using var fs = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        fs.Seek(logOffset, SeekOrigin.Begin);
+        using var reader = new StreamReader(fs);
+        var text = reader.ReadToEnd();
+        logOffset = fs.Position;
+        return text.Split('\n').Where(l => l.StartsWith("TERM " + prefix)).Select(l => l[5..].Trim()).ToList();
+    }
+
+    var results = new List<(string Name, string Expect, string Got, bool Pass)>();
+    void Check(string name, string expect, string got, bool pass) => results.Add((name, expect, got, pass));
+
+    var vm = new TerminalViewModel(cluster.Session, ProxmoxClient.Core.Models.ConsoleTarget.ForNode("pve1"), "pve1 · 셸");
+    await Wait(AppServices.Navigator.PushAsync(vm));
+    var page = (ProxmoxClient.UI.Views.Terminal.TerminalPage)nav.CurrentPage!;
+    var term = page.Terminal;
+    var buffer = term.Buffer;
+    WaitFor(() => vm.IsConnected, 10000);
+    Pump(1200);
+    string Screen()
+    {
+        lock (buffer.Gate)
+            return string.Join("\n", Enumerable.Range(0, buffer.Rows).Select(r =>
+                new string(buffer.GetVisibleLine(r, 0).Cells.Where(c => c.Width != 0)
+                    .SelectMany(c => char.ConvertFromUtf32(c.Rune == 0 ? ' ' : c.Rune)).ToArray()).TrimEnd()));
+    }
+
+    Check("연결·배너", "OK 뒤 배너·프롬프트", vm.IsConnected ? "연결됨" : vm.StateText,
+        vm.IsConnected && Screen().Contains("가짜 Proxmox 셸") && Screen().Contains("root@pve1"));
+    var resize = Log("resize").LastOrDefault() ?? "(없음)";
+    Check("PTY 크기", $"resize {buffer.Columns} {buffer.Rows}", resize, resize == $"resize {buffer.Columns} {buffer.Rows}");
+    Shot("terminal-connected");
+
+    var input = page.GetVisualDescendants().OfType<TextBox>().First();
+    input.Focus();
+    Pump(200);
+    void Type(string text) { input.Text = text; Pump(150); }
+    void Key(Avalonia.Input.Key key, Avalonia.Input.RawInputModifiers mods = Avalonia.Input.RawInputModifiers.None)
+    {
+        window.KeyPress(key, mods, Avalonia.Input.PhysicalKey.None, null);
+        window.KeyRelease(key, mods, Avalonia.Input.PhysicalKey.None, null);
+        Pump(100);
+    }
+
+    Log("input");
+    Type("ls");
+    Key(Avalonia.Input.Key.Enter);
+    var inputs = Log("input");
+    Check("글자·Enter", "'ls' '\\r'", string.Join(" ", inputs), inputs.SequenceEqual(["input 'ls'", "input '\\r'"]));
+    Pump(300);
+    var lsRow = Enumerable.Range(0, buffer.Rows).FirstOrDefault(r => buffer.GetVisibleLine(r, 0).Cells.Any(c => c.Rune == '공'), -1);
+    var wide = lsRow >= 0 && buffer.GetVisibleLine(lsRow, 0).Cells is var cells &&
+               Array.FindIndex(cells, c => c.Rune == '공') is var i && cells[i].Width == 2 && cells[i + 1].Width == 0;
+    Check("한글 폭(2칸)", "'공' 2칸 + 이어진 칸", wide ? "2칸" : "어긋남", wide);
+
+    Type("한글");
+    inputs = Log("input");
+    Check("IME 한글 입력", "'한글'", string.Join(" ", inputs), inputs.SequenceEqual(["input '한글'"]));
+    Key(Avalonia.Input.Key.Back);
+    Key(Avalonia.Input.Key.Back);
+    inputs = Log("input");
+    Check("지우기", "'\\x7f' ×2", string.Join(" ", inputs), inputs.Count == 2 && inputs.All(x => x == "input '\\x7f'"));
+
+    Key(Avalonia.Input.Key.C, Avalonia.Input.RawInputModifiers.Control);
+    Key(Avalonia.Input.Key.Up);
+    Key(Avalonia.Input.Key.Tab);
+    Key(Avalonia.Input.Key.F5);
+    inputs = Log("input");
+    Check("Ctrl+C · ↑ · Tab · F5", "'\\x03' '\\x1b[A' '\\t' '\\x1b[15~'", string.Join(" ", inputs),
+        inputs.SequenceEqual(["input '\\x03'", "input '\\x1b[A'", "input '\\t'", "input '\\x1b[15~'"]));
+
+    // 특수 키 막대의 고정 Ctrl(터치) → 다음 글자 하나에만
+    if (!desktop)
+    {
+        var ctrl = page.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().First(b => b.Content as string == "Ctrl");
+        ctrl.IsChecked = true;
+        Type("d");
+        Type("d");
+        inputs = Log("input");
+        Check("고정 Ctrl + d, 다음 d", "'\\x04' 'd'", string.Join(" ", inputs), inputs.SequenceEqual(["input '\\x04'", "input 'd'"]));
+        Key(Avalonia.Input.Key.Back);
+        Log("input");
+    }
+
+    Type("colors");
+    Key(Avalonia.Input.Key.Enter);
+    Pump(500);
+    var rgb = false;
+    lock (buffer.Gate)
+        for (var r = 0; r < buffer.Rows && !rgb; r++)
+            rgb = buffer.GetVisibleLine(r, 0).Cells.Any(c => ProxmoxClient.UI.Views.Terminal.TerminalColor.IsRgb(c.Background, out _));
+    Check("색(256·24비트)", "24비트 바탕색 칸", rgb ? "있음" : "없음", rgb);
+    Shot("terminal-colors");
+
+    Type("top");
+    Key(Avalonia.Input.Key.Enter);
+    Pump(500);
+    var alt = buffer.IsAlternateScreen && Screen().Contains("pve1 — CPU");
+    Check("대체 화면(top)", "1049 켜짐·틀 그리기", alt ? "대체 화면" : "아님", alt);
+    Shot("terminal-top");
+    Type("q");
+    Pump(400);
+    Check("대체 화면 복귀", "원래 화면·배너 보존", buffer.IsAlternateScreen ? "대체 화면" : "복귀",
+        !buffer.IsAlternateScreen && Screen().Contains("colors"));
+
+    Type("seq 300");
+    Key(Avalonia.Input.Key.Enter);
+    Pump(600);
+    var before = term.ScrollOffset;
+    var mid = term.TranslatePoint(new Avalonia.Point(term.Bounds.Width / 2, term.Bounds.Height / 2), window)!.Value;
+    if (desktop)
+        window.MouseWheel(mid, new Avalonia.Vector(0, 5), Avalonia.Input.RawInputModifiers.None);
+    else
+    {
+        var t = window.TouchBegin(mid, Avalonia.Input.RawInputModifiers.None);
+        for (var step = 1; step <= 10; step++)
+        {
+            window.TouchMove(t, mid + new Avalonia.Vector(0, step * 30), Avalonia.Input.RawInputModifiers.None);
+            Pump(20);
+        }
+
+        window.TouchEnd(t, mid + new Avalonia.Vector(0, 300), Avalonia.Input.RawInputModifiers.None);
+    }
+
+    Pump(300);
+    Check("스크롤백", "위로 올려 보기", $"{before} → {term.ScrollOffset}줄", before == 0 && term.ScrollOffset > 0 && buffer.ScrollbackCount > 200);
+    Shot("terminal-scrollback");
+    Type("x");
+    Check("입력하면 맨 아래로", "0", term.ScrollOffset.ToString(), term.ScrollOffset == 0);
+    Key(Avalonia.Input.Key.Back);
+    Log("input");
+
+    // 선택 → 복사할 글자
+    var rowY = term.TranslatePoint(new Avalonia.Point(0, 0), window)!.Value;
+    var cw = term.Bounds.Width / buffer.Columns;
+    var promptRow = buffer.CursorY;
+    var ch = (term.Bounds.Height - 8) / buffer.Rows;
+    var p0 = rowY + new Avalonia.Vector(6 + cw * 2, 4 + ch * (promptRow - 1) + ch / 2);
+    var p1 = rowY + new Avalonia.Vector(6 + cw * 4, 4 + ch * (promptRow - 1) + ch / 2);
+    if (desktop)
+    {
+        window.MouseDown(p0, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+        window.MouseMove(p1, Avalonia.Input.RawInputModifiers.LeftMouseButton);
+        window.MouseUp(p1, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+    }
+    else
+    {
+        var t = window.TouchBegin(p0, Avalonia.Input.RawInputModifiers.None);
+        Pump(700); // 길게 누르기 → 단어 선택
+        window.TouchEnd(t, p0, Avalonia.Input.RawInputModifiers.None);
+    }
+
+    Pump(300);
+    var selected = term.GetSelectedText();
+    Check("선택", "글자가 골라짐", $"'{selected}'", selected.Length > 0);
+    Shot("terminal-selection");
+    term.ClearSelection();
+
+    // 창 크기 변경 → PTY 크기
+    var oldColumns = buffer.Columns;
+    window.Width -= 120;
+    Pump(800);
+    resize = Log("resize").LastOrDefault() ?? "(없음)";
+    Check("크기 변경", $"열 줄어듦({oldColumns}→{buffer.Columns})", resize,
+        buffer.Columns < oldColumns && resize == $"resize {buffer.Columns} {buffer.Rows}");
+    window.Width += 120;
+    Pump(500);
+
+    // 연결 끊기 → 다시 연결
+    await Wait(vm.DisconnectAsync());
+    Pump(300);
+    var disconnected = !vm.IsConnected;
+    await Wait(vm.ConnectAsync());
+    WaitFor(() => vm.IsConnected, 8000);
+    Check("연결 끊기·다시 연결", "끊김 → 연결됨", $"{(disconnected ? "끊김" : "?")} → {(vm.IsConnected ? "연결됨" : vm.StateText)}",
+        disconnected && vm.IsConnected);
+    Shot("terminal-reconnected");
+
+    Console.WriteLine();
+    Console.WriteLine("| 터미널 조작 | 기대 | 결과 | 판정 |");
+    Console.WriteLine("|---|---|---|---|");
+    foreach (var r in results)
+    {
+        Console.WriteLine($"| {r.Name} | {r.Expect} | {r.Got} | {(r.Pass ? "통과" : "실패")} |");
+        if (!r.Pass) failures++;
+    }
+
     await Wait(AppServices.Navigator.PopAsync());
 }
 
