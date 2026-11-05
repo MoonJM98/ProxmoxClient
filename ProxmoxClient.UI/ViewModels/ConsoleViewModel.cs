@@ -76,6 +76,12 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         _ = Vnc.SendKeyAsync(0, down, keysym);
     }
 
+    /// <summary>물리 키 — 서버가 QEMU 확장 키를 알면 스캔코드로, 아니면 keysym 으로(Core 가 고른다).</summary>
+    public void SendScanKey(int xtScanCode, int keysym, bool down)
+    {
+        _ = Vnc.SendKeyAsync(xtScanCode, down, keysym);
+    }
+
     public void SendPointer(int buttons, int x, int y)
     {
         _ = Vnc.SendPointerAsync(buttons, x, y);

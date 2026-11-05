@@ -181,7 +181,7 @@ async Task ConsoleUsabilityCheck()
         using var reader = new StreamReader(fs);
         var text = reader.ReadToEnd();
         logOffset = fs.Position;
-        return text.Split('\n').Where(l => l.StartsWith("RFB pointer") || l.StartsWith("RFB key"))
+        return text.Split('\n').Where(l => l.StartsWith("RFB pointer") || l.StartsWith("RFB key") || l.StartsWith("RFB qkey"))
             .Select(l => l[4..].Trim()).ToList();
     }
 
@@ -237,6 +237,7 @@ async Task ConsoleUsabilityCheck()
     ev = Events();
     Check("빠른 두 번 탭", "더블 클릭(0 1 0 1 0)", Masks(ev), Masks(ev) == "0 1 0 1 0");
 
+    now += 1000; // 두 번 탭 직후가 아니게(바로 끌면 '두 번 탭 후 끌기' = 끌어다 놓기)
     Drag(center, new Avalonia.Vector(100, 0));
     ev = Events();
     var moved = LastXY(ev);
@@ -326,6 +327,94 @@ async Task ConsoleUsabilityCheck()
     ev = Events();
     Check("한글 입력 '안'", "유니코드 keysym 0x100c548", string.Join(", ", ev),
         ev.Count == 2 && ev[0].EndsWith("0x100c548"));
+
+    // ---- TeamViewer 방식: 두 번 탭한 뒤 끌기 = 끌어다 놓기 (마우스 모드)
+    vp.Fit();
+    g.Mode = TouchInputMode.Mouse;
+    g.ResetCursor(new Avalonia.Point(400, 300));
+    Events();
+    Tap(center); now -= 100;
+    Drag(center, new Avalonia.Vector(0, 90));
+    ev = Events();
+    Check("두 번 탭 후 끌기(TeamViewer)", "클릭 뒤 왼쪽 버튼 누른 채 끌기(0 1 0 1 0)", Masks(ev),
+        Masks(ev) == "0 1 0 1 0" && LastXY(ev).Y > 300);
+
+    // ---- 태블릿에 연결한 물리 마우스(포인터 종류 = 마우스): 버튼·휠을 그대로
+    surface.Focus();
+    Avalonia.Point Win(Avalonia.Point remote) => surface.TranslatePoint(vp.ToView(remote), window) ?? default;
+    var rp = Win(new Avalonia.Point(300, 200));
+    Events();
+    window.MouseMove(rp, Avalonia.Input.RawInputModifiers.None);
+    window.MouseDown(rp, Avalonia.Input.MouseButton.Right, Avalonia.Input.RawInputModifiers.None);
+    window.MouseUp(rp, Avalonia.Input.MouseButton.Right, Avalonia.Input.RawInputModifiers.None);
+    ev = Events();
+    var mxy = LastXY(ev);
+    Check("물리 마우스 오른쪽 클릭", "오른쪽 버튼(4 0) @ (300,200)", $"{Masks(ev)} @ {mxy}",
+        Masks(ev).EndsWith("4 0") && Math.Abs(mxy.X - 300) <= 2 && Math.Abs(mxy.Y - 200) <= 2);
+
+    window.MouseDown(rp, Avalonia.Input.MouseButton.Middle, Avalonia.Input.RawInputModifiers.None);
+    window.MouseUp(rp, Avalonia.Input.MouseButton.Middle, Avalonia.Input.RawInputModifiers.None);
+    ev = Events();
+    Check("물리 마우스 가운데 클릭", "가운데 버튼(2 0)", Masks(ev), Masks(ev).EndsWith("2 0"));
+
+    window.MouseWheel(rp, new Avalonia.Vector(0, -1), Avalonia.Input.RawInputModifiers.None);
+    ev = Events();
+    Check("물리 마우스 휠 아래", "휠 아래(16 0)", Masks(ev), Masks(ev).Contains("16"));
+
+    window.MouseDown(rp, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+    window.MouseMove(Win(new Avalonia.Point(350, 260)), Avalonia.Input.RawInputModifiers.LeftMouseButton);
+    window.MouseUp(Win(new Avalonia.Point(350, 260)), Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+    ev = Events();
+    Check("물리 마우스 왼쪽 끌기", "왼쪽 누른 채 이동 후 놓기(… 1 0) @ (350,260)", $"{Masks(ev)} @ {LastXY(ev)}",
+        Masks(ev).EndsWith("1 0") && Math.Abs(LastXY(ev).X - 350) <= 2);
+
+    // ---- 물리 키보드: 키 위치(스캔코드) + keysym — 서버가 QEMU 확장 키를 알리므로 qkey 로 와야 한다
+    List<string> Keys() => Events().Where(e => e.StartsWith("key") || e.StartsWith("qkey")).ToList();
+    string Codes(List<string> k) => string.Join(" ", k.Select(e =>
+        (e.Contains("down=1") ? "↓" : "↑") + e.Split("keycode=").Last()));
+    void Press(Avalonia.Input.Key key, Avalonia.Input.PhysicalKey pk, string? sym,
+        Avalonia.Input.RawInputModifiers mods = Avalonia.Input.RawInputModifiers.None) =>
+        window.KeyPress(key, mods, pk, sym);
+    void Release(Avalonia.Input.Key key, Avalonia.Input.PhysicalKey pk, string? sym,
+        Avalonia.Input.RawInputModifiers mods = Avalonia.Input.RawInputModifiers.None) =>
+        window.KeyRelease(key, mods, pk, sym);
+    surface.Focus();
+    Keys();
+    var ctrl = Avalonia.Input.RawInputModifiers.Control;
+    Press(Avalonia.Input.Key.LeftCtrl, Avalonia.Input.PhysicalKey.ControlLeft, null, ctrl);
+    Press(Avalonia.Input.Key.C, Avalonia.Input.PhysicalKey.C, "c", ctrl);
+    Release(Avalonia.Input.Key.C, Avalonia.Input.PhysicalKey.C, "c", ctrl);
+    Release(Avalonia.Input.Key.LeftCtrl, Avalonia.Input.PhysicalKey.ControlLeft, null);
+    var k = Keys();
+    Check("물리 키보드 Ctrl+C", "스캔코드 ↓1d ↓2e ↑2e ↑1d", Codes(k), Codes(k) == "↓0x1d ↓0x2e ↑0x2e ↑0x1d");
+
+    var shift = Avalonia.Input.RawInputModifiers.Shift;
+    Press(Avalonia.Input.Key.LeftShift, Avalonia.Input.PhysicalKey.ShiftLeft, null, shift);
+    Press(Avalonia.Input.Key.A, Avalonia.Input.PhysicalKey.A, "A", shift);
+    window.KeyTextInput("A");
+    Release(Avalonia.Input.Key.A, Avalonia.Input.PhysicalKey.A, "A", shift);
+    Release(Avalonia.Input.Key.LeftShift, Avalonia.Input.PhysicalKey.ShiftLeft, null);
+    k = Keys();
+    Check("물리 키보드 Shift+A (글자 중복 없음)", "↓2a ↓1e ↑1e ↑2a, keysym 'A'", Codes(k) + " / " + string.Join(",", k.Where(e => e.Contains("keycode=0x1e")).Select(e => e.Split(' ')[2])),
+        Codes(k) == "↓0x2a ↓0x1e ↑0x1e ↑0x2a" && k.Any(e => e.Contains("keysym=0x41")));
+
+    Press(Avalonia.Input.Key.Up, Avalonia.Input.PhysicalKey.ArrowUp, null);
+    Release(Avalonia.Input.Key.Up, Avalonia.Input.PhysicalKey.ArrowUp, null);
+    Press(Avalonia.Input.Key.F5, Avalonia.Input.PhysicalKey.F5, null);
+    Release(Avalonia.Input.Key.F5, Avalonia.Input.PhysicalKey.F5, null);
+    k = Keys();
+    Check("물리 키보드 ↑ · F5", "확장 키 ↓c8 ↑c8, ↓3f ↑3f", Codes(k), Codes(k) == "↓0xc8 ↑0xc8 ↓0x3f ↑0x3f");
+
+    Press(Avalonia.Input.Key.HangulMode, Avalonia.Input.PhysicalKey.Lang1, null);
+    Release(Avalonia.Input.Key.HangulMode, Avalonia.Input.PhysicalKey.Lang1, null);
+    k = Keys();
+    Check("한국어 키보드 한/영 키", "스캔코드 ↓f2 ↑f2", Codes(k), Codes(k) == "↓0xf2 ↑0xf2");
+
+    Press(Avalonia.Input.Key.LeftAlt, Avalonia.Input.PhysicalKey.AltLeft, null, Avalonia.Input.RawInputModifiers.Alt);
+    page.GetVisualDescendants().OfType<TextBox>().First().Focus(); // 키보드 버튼을 눌러 입력 칸으로 포커스가 옮겨진 경우
+    Pump(200);
+    k = Keys();
+    Check("포커스를 잃으면 눌린 키 해제", "Alt ↓38 ↑38", Codes(k), Codes(k) == "↓0x38 ↑0x38");
 
     Shot("console-keys");
     Console.WriteLine();

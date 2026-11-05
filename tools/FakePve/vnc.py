@@ -128,7 +128,10 @@ def serve(handler):
                 stream.read(19)
             elif t == 2:  # SetEncodings
                 _, n = struct.unpack('>BH', stream.read(3))
-                stream.read(4 * n)
+                encs = struct.unpack('>%di' % n, stream.read(4 * n))
+                if -258 in encs:  # QEMU 확장 키 이벤트를 안다고 알린다(의사 영역 -258)
+                    ws.send(struct.pack('>BBH', 0, 0, 1) + struct.pack('>HHHHi', 0, 0, 0, 0, -258))
+                    log('qemu-ext-key on')
             elif t == 3:  # FramebufferUpdateRequest
                 inc, x, y, w, h = struct.unpack('>BHHHH', stream.read(9))
                 if not inc or pending_full:
@@ -146,8 +149,9 @@ def serve(handler):
             elif t == 6:  # ClientCutText
                 _, n = struct.unpack('>3sI', stream.read(7))
                 log('cut %r' % stream.read(n))
-            elif t == 255:  # QEMU 확장 메시지(사용 안 함)
-                stream.read(11)
+            elif t == 255:  # QEMU 확장 키 이벤트
+                sub, down, keysym, keycode = struct.unpack('>BHII', stream.read(11))
+                log('qkey down=%d keysym=0x%x keycode=0x%x' % (down, keysym, keycode))
             else:
                 log('unknown message %d' % t)
                 break

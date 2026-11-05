@@ -86,14 +86,27 @@ public sealed class ConsolePage : ContentPage
         DockPanel.SetDock(bar, Dock.Bottom);
 
         _surface.PointerSink = (b, x, y) => _vm?.SendPointer(b, x, y);
-        _surface.KeySink = (keysym, down) => _vm?.SendKey(keysym, down); // 물리 키보드는 그대로
+        _surface.KeySink = (keysym, down) => _vm?.SendKey(keysym, down);
+        _surface.ScanKeySink = (xt, keysym, down) => _vm?.SendScanKey(xt, keysym, down); // 물리 키보드: 키 위치 + keysym
         Content = new DockPanel
         {
             Children = { bar, new Grid { Children = { _surface, status, _input } } }
         };
         Background = Brushes.Black;
         DataContextChanged += (_, _) => AttachViewModel(DataContext as ConsoleViewModel);
-        NavigatedFrom += (_, _) => _surface.Gestures.Cancel();
+        // 앱이 배경으로 가면 눌린 키를 모두 뗀다(게스트에 Alt 등이 눌린 채 남지 않게)
+        Action<bool> onForeground = foreground =>
+        {
+            if (!foreground) _surface.ReleaseAllKeys();
+        };
+        Services.AppLifecycle.ForegroundChanged += onForeground;
+        NavigatedFrom += (_, e) =>
+        {
+            if (e.NavigationType is NavigationType.Pop or NavigationType.PopToRoot or NavigationType.Remove)
+                Services.AppLifecycle.ForegroundChanged -= onForeground;
+            _surface.Gestures.Cancel();
+            _surface.ReleaseAllKeys();
+        };
     }
 
     private Action _moreToggle => () => _more.IsVisible = !_more.IsVisible;

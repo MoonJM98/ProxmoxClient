@@ -25,6 +25,7 @@ public interface IRemotePointer
 ///         <item>길게 누르기 = 오른쪽 클릭, 길게 누른 뒤 끌기 = 왼쪽 버튼 끌기(선택·창 이동)</item>
 ///         <item>한 손가락 끌기 = 커서 이동(마우스 모드) / 왼쪽 버튼 끌기(터치 모드)</item>
 ///         <item>두 손가락 끌기 = 스크롤(세로·가로), 벌리기·오므리기 = 확대·축소(+ 이동)</item>
+///         <item>두 번 탭한 뒤 끌기 = 끌어다 놓기(TeamViewer 와 같음)</item>
 ///     </list>
 /// </summary>
 public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
@@ -47,6 +48,9 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
     private double _lastDistance;
     private Vector _scrollRemainder;
     private bool _longPressFired;
+    private bool _doubleTapDrag;
+    private long _lastTapUp = long.MinValue / 2;
+    private Point _lastTapAt;
 
     private enum Gesture
     {
@@ -81,6 +85,8 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
             _gesture = Gesture.Pending;
             _gestureStart = ms;
             _longPressFired = false;
+            // 방금 탭한 자리 근처를 곧바로 다시 누르면 — 이어서 끌 때 끌어다 놓기(TeamViewer 의 두 번 탭 후 끌기)
+            _doubleTapDrag = ms - _lastTapUp <= MultiTapMs && Length(view - _lastTapAt) < 48;
             return;
         }
 
@@ -109,6 +115,14 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
         var moved = Length(view - finger.Start) > TapSlop;
         switch (_gesture)
         {
+            case Gesture.Pending when moved && _doubleTapDrag:
+                // 두 번 탭 후 끌기 — 첫 탭 자리에서 왼쪽 버튼을 누른 채 끈다(두 모드 공통)
+                if (Mode == TouchInputMode.Touch) Point(finger.Start, 0);
+                Press(Left);
+                _gesture = Gesture.Drag;
+                if (Mode == TouchInputMode.Touch) Point(view, _buttons);
+                else MoveCursor(view - finger.Start, ms - finger.Time);
+                break;
             case Gesture.Pending when moved:
                 if (Mode == TouchInputMode.Touch)
                 {
@@ -170,6 +184,8 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
                 break;
             case Gesture.Pending:
                 Click(TapPoint(finger), Left);
+                _lastTapUp = ms;
+                _lastTapAt = finger.Start;
                 break;
             case Gesture.Drag:
                 Release();

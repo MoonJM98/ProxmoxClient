@@ -170,6 +170,8 @@ public sealed class VncSurface : Control, IRemotePointer
         }
         else
         {
+            // 마우스·펜(데스크톱, 태블릿에 연결한 마우스) — 누른 버튼 그대로, 창 밖으로 끌어도 놓칠 때까지 받는다
+            e.Pointer.Capture(this);
             _mouseButtons = Buttons(e.GetCurrentPoint(this).Properties);
             SendMouse(p);
         }
@@ -206,6 +208,7 @@ public sealed class VncSurface : Control, IRemotePointer
         {
             _mouseButtons = Buttons(e.GetCurrentPoint(this).Properties);
             SendMouse(p);
+            e.Handled = true;
         }
     }
 
@@ -245,34 +248,73 @@ public sealed class VncSurface : Control, IRemotePointer
         return (p.IsLeftButtonPressed ? 1 : 0) | (p.IsMiddleButtonPressed ? 2 : 0) | (p.IsRightButtonPressed ? 4 : 0);
     }
 
+    /// <summary>
+    ///     물리 키보드(데스크톱·태블릿 USB/블루투스 키보드) — WPF 콘솔처럼 키 위치(스캔코드) + keysym 을 함께 보낸다.
+    ///     눌린 키를 기억했다가 포커스를 잃으면 모두 뗀다(게스트에 키가 눌린 채 남지 않게).
+    ///     소프트 키보드(IME)는 물리 키 정보가 없어 글자(TextInput)로 보낸다.
+    /// </summary>
+    public Action<int, int, bool>? ScanKeySink { get; set; }
+
+    private readonly Dictionary<PhysicalKey, (int Xt, int Keysym)> _pressed = [];
+
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        var keysym = KeySyms.FromKey(e.Key);
-        if (keysym == 0 && (e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Alt | KeyModifiers.Meta)) != 0)
-            keysym = KeySyms.LetterOrDigit(e.Key);
-        if (keysym == 0) return;
+        var xt = PhysicalKeys.ToXt(e.PhysicalKey);
+        var keysym = PhysicalKeys.Keysym(e);
+        if (xt == 0 && keysym == 0) return;
 
-        KeySink?.Invoke(keysym, true);
-        e.Handled = true;
+        if (e.PhysicalKey != PhysicalKey.None && xt != 0)
+        {
+            if (!_pressed.ContainsKey(e.PhysicalKey)) _pressed[e.PhysicalKey] = (xt, keysym);
+            else keysym = _pressed[e.PhysicalKey].Keysym; // 자동 반복 — 처음 누를 때와 같은 keysym
+            ScanKeySink?.Invoke(xt, keysym, true);
+            e.Handled = true;
+            return;
+        }
+
+        if (KeySyms.FromKey(e.Key) is var special and not 0)
+        {
+            KeySink?.Invoke(special, true);
+            e.Handled = true;
+        }
     }
 
     protected override void OnKeyUp(KeyEventArgs e)
     {
         base.OnKeyUp(e);
-        var keysym = KeySyms.FromKey(e.Key);
-        if (keysym == 0 && (e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Alt | KeyModifiers.Meta)) != 0)
-            keysym = KeySyms.LetterOrDigit(e.Key);
-        if (keysym == 0) return;
+        if (_pressed.Remove(e.PhysicalKey, out var pressed))
+        {
+            ScanKeySink?.Invoke(pressed.Xt, pressed.Keysym, false);
+            e.Handled = true;
+            return;
+        }
 
-        KeySink?.Invoke(keysym, false);
-        e.Handled = true;
+        if (KeySyms.FromKey(e.Key) is var special and not 0)
+        {
+            KeySink?.Invoke(special, false);
+            e.Handled = true;
+        }
+    }
+
+    protected override void OnLostFocus(FocusChangedEventArgs e)
+    {
+        base.OnLostFocus(e);
+        ReleaseAllKeys();
+    }
+
+    /// <summary>눌려 있는 물리 키를 모두 뗀다(포커스 잃음·화면 떠남).</summary>
+    public void ReleaseAllKeys()
+    {
+        foreach (var (xt, keysym) in _pressed.Values) ScanKeySink?.Invoke(xt, keysym, false);
+        _pressed.Clear();
     }
 
     protected override void OnTextInput(TextInputEventArgs e)
     {
         base.OnTextInput(e);
-        if (string.IsNullOrEmpty(e.Text)) return;
+        // 물리 키로 이미 보낸 글자는 다시 보내지 않는다(키 위치로 보냈으므로 게스트가 글자를 만든다)
+        if (string.IsNullOrEmpty(e.Text) || _pressed.Count > 0) return;
 
         foreach (var rune in e.Text.EnumerateRunes())
         {
