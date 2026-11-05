@@ -7,21 +7,28 @@ using ProxmoxClient.UI.Views.Console;
 
 namespace ProxmoxClient.UI.ViewModels;
 
-/// <summary>VM 화면 콘솔(noVNC 와 같은 vncproxy + 웹소켓 VNC) — 연결 수명과 상태 문구를 맡는다. 입력·그리기는 화면이 맡는다.</summary>
+/// <summary>
+///     VM 화면 콘솔 — VNC(noVNC 와 같은 vncproxy + 웹소켓) 또는 RDP(IronRDP, 게스트에 RDP 가 켜진 Windows VM).
+///     둘 다 Core 의 <see cref="IConsoleSession" /> 이라 그리기·입력은 같은 화면(<see cref="VncSurface" />)이 맡는다.
+///     연결 수명과 상태 문구만 여기서 맡는다.
+/// </summary>
 public sealed partial class ConsoleViewModel : ViewModelBase
 {
     private bool _started;
 
-    public ConsoleViewModel(ServerSession session, PveResource guest)
+    public ConsoleViewModel(ServerSession session, PveResource guest, ConsoleProtocol protocol = ConsoleProtocol.Vnc)
     {
         SessionInfo = session;
         Guest = guest;
-        Vnc = new ProxmoxVncSession(session.Api)
-        {
-            // Tight JPEG 영역은 Skia 로 바로 프레임버퍼에 푼다(데스크톱·모바일 공용)
-            ImageDecoder = SkiaImageDecoder.Decode,
-            Settings = new ConsoleSettings()
-        };
+        Protocol = protocol;
+        Vnc = protocol == ConsoleProtocol.Rdp
+            ? new Core.Rdp.ProxmoxRdpSession(session.Api)
+            : new ProxmoxVncSession(session.Api)
+            {
+                // Tight JPEG 영역은 Skia 로 바로 프레임버퍼에 푼다(데스크톱·모바일 공용)
+                ImageDecoder = SkiaImageDecoder.Decode,
+                Settings = new ConsoleSettings()
+            };
         Vnc.StatusChanged += text => Avalonia.Threading.Dispatcher.UIThread.Post(() => Status = text);
         Vnc.Closed += ex => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
@@ -39,7 +46,10 @@ public sealed partial class ConsoleViewModel : ViewModelBase
 
     public PveResource Guest { get; }
 
-    public ProxmoxVncSession Vnc { get; }
+    public ConsoleProtocol Protocol { get; }
+
+    /// <summary>원격 화면 세션(VNC 또는 RDP).</summary>
+    public IConsoleSession Vnc { get; }
 
     public override string Title => $"{Guest.VmId} · {Guest.Name}";
 
@@ -58,7 +68,7 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         _started = true;
         try
         {
-            await Vnc.ConnectAsync(Guest.Node, Guest.Kind, Guest.VmId);
+            await Vnc.ConnectAsync(Guest.Node, Guest.VmId);
         }
         catch (Exception ex)
         {
