@@ -83,8 +83,24 @@ WPF 앱은 기능이 모두 옮겨질 때까지 그대로 유지한다.
 | 4 | 노드: 셸·시스템 로그·디스크·네트워크·서비스·업데이트(업그레이드 셸)·인증서·Ceph(설치 셸) | 완료 |
 | 5 | 데이터센터: 권한·사용자·영역·2단계 인증·HA·SDN·알림·백업 작업·옵션·풀 | 완료 |
 | 6 | 스토리지 탐색·업로드·가져오기, VM/CT 생성 마법사 | 완료 |
-| 7 | 게스트 파일(에이전트·SFTP·SMB·FTP), SSH 키, 앱·콘솔 설정 | 완료 (OpenID 로그인 포함, VPN 은 남음) |
+| 7 | 게스트 파일(에이전트·SFTP·SMB·FTP), SSH 키, 앱·콘솔 설정, OpenID 로그인, VPN(OpenVPN, 데스크톱) | 완료 |
 | 8 | 실기기 확인(Android 기기·Windows·macOS), 설치 관리자 교체, WPF 앱 제거 | 예정 |
+
+## 검증 현황
+
+| 대상 | 방법 | 결과 |
+|---|---|---|
+| 화면 전체(데스크톱·태블릿·모바일 배치) | UiSnapshot + 가짜 PVE(`tools/FakePve`) | 모든 대상 통과 |
+| VNC 콘솔 조작(제스처·물리 키) | `--target console` | 26/26 |
+| 터미널 해석·입력 | `--target terminal` (가짜 셸) | 16/16 |
+| 터미널 + 실제 프로그램 | `FAKEPVE_REAL_SHELL=1` + `--target realshell` (진짜 bash PTY: stty·vim·top·Ctrl+C·Tab 완성·5만 줄 출력·크기·종료) | 9/9 |
+| CT 파일(노드 셸 스크립트) | 진짜 bash + pct/lxc-info 심, `preview:files` | 목록·링크 정상 |
+| 세션 만료 | `/__fake/expire` + `--target expiry` | 알림 → 로그인 화면 |
+| VPN | 실제 OpenVPN 2.6 서버(자체 CA·tun) + 터널 주소에만 묶은 가짜 PVE, `--vpn` | 터널 → 로그인 → 종료 시 정리, 강제 종료 뒤 남은 openvpn 정리 |
+| Linux 실제 데스크톱 | 릴리스 빌드를 Xvfb(X11) 에서 실행, xdotool 로 조작 | 인증서 확인·로그인·메인·CT 터미널(vim·top)·VNC 콘솔(물리 키 → 스캔코드) 정상 |
+| Android | 헤드 빌드(AOT 설정 포함) | 빌드만 — 실기기·에뮬레이터 확인 필요(이 환경은 KVM 없음) |
+| Windows·macOS | 빌드(WPF·데스크톱 헤드) | 실기기 확인 필요(Direct3D/ANGLE·Metal 경로, Credential Manager·Keychain, remote-viewer·openvpn 실행) |
+| 실제 Proxmox 서버 | — | 실서버 확인 필요(가짜 서버는 PVE 9.0 API 응답 형식을 따른다) |
 
 ## 빌드
 
