@@ -107,8 +107,9 @@ if (!desktop)
     Pump(300);
     Shot("profile-realms");
     var realmNames = string.Join(",", edit.Realms.Select(r => r.Realm));
-    Check0("영역 가져오기(모바일)", $"영역 목록 + 고르면 root@영역", $"[{realmNames}] → {edit.UserName}",
-        edit.Realms.Count > 0 && other is not null && edit.UserName == $"root@{other.Realm}");
+    Check0("사용자·영역 따로(PC 와 같이)", "사용자 칸 root + 영역 목록, 저장값 root@영역",
+        $"사용자 '{edit.UserOnly}', 영역 [{realmNames}] → {edit.ComposedUser}",
+        edit.UserOnly == "root" && edit.Realms.Count > 2 && other is not null && edit.ComposedUser == $"root@{other.Realm}");
     edit.SelectedRealm = edit.Realms.FirstOrDefault(r => r.Realm == "pam");
 }
 if (AppServices.Dialogs.Current is { } editorDialog) editorDialog.CancelCommand.Execute(null);

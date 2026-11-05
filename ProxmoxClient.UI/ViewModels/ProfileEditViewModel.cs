@@ -21,6 +21,7 @@ public sealed partial class ProfileEditViewModel : ViewModelBase
         Port = source.Port.ToString();
         IsTokenAuth = source.AuthMode == AuthMode.ApiToken;
         UserName = source.UserName;
+        SplitUser(source.UserName); // 모바일 화면은 사용자·영역을 따로(PC 와 같이)
         TokenId = source.ApiTokenId ?? string.Empty;
         AcceptSelfSigned = source.AcceptSelfSignedCertificate;
         _hadSecret = profile is not null && AppServices.Profiles.GetSecret(profile) is not null;
@@ -81,10 +82,16 @@ public sealed partial class ProfileEditViewModel : ViewModelBase
             return;
         }
 
-        if (IsTokenAuth ? TokenId.Trim().Length == 0 || !TokenId.Contains('!') : UserName.Trim().Length == 0)
+        if (IsTokenAuth ? TokenId.Trim().Length == 0 || !TokenId.Contains('!') : UserOnly.Trim().Length == 0)
         {
             await AppServices.Dialogs.AlertAsync(L.T("Profile_InvalidTitle"),
                 IsTokenAuth ? L.T("Profile_TokenIdInvalid") : L.T("Profile_UserRequired"));
+            return;
+        }
+
+        if (ValidateProxy() is { } proxyProblem)
+        {
+            await AppServices.Dialogs.AlertAsync(L.T("Profile_InvalidTitle"), proxyProblem);
             return;
         }
 
@@ -98,10 +105,11 @@ public sealed partial class ProfileEditViewModel : ViewModelBase
         profile.Host = host;
         profile.Port = port;
         profile.AuthMode = IsTokenAuth ? AuthMode.ApiToken : AuthMode.Password;
-        profile.UserName = NormalizeUser(UserName);
+        profile.UserName = NormalizeUser(ComposedUser);
         profile.ApiTokenId = IsTokenAuth ? TokenId.Trim() : profile.ApiTokenId;
         profile.AcceptSelfSignedCertificate = AcceptSelfSigned;
         ApplyTrustedThumbprint(profile);
+        ApplyConnectionOptions(profile); // 인증서 지문·프록시(PC 서버 설정과 같은 칸)
 
         var ok = await TryAsync(async () =>
         {

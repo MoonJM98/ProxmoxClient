@@ -288,6 +288,39 @@ public sealed partial class ProfileEditViewModel
         OnPropertyChanged(nameof(CertificateStatus));
     }
 
+    /// <summary>
+    ///     모바일 저장 — PC 서버 설정과 같은 칸(신뢰한 인증서 지문·프록시)을 프로필에 옮긴다. 화면이 이 상태를
+    ///     읽어 들였을 때만(<see cref="LoadDesktopState" />).
+    /// </summary>
+    private void ApplyConnectionOptions(ConnectionProfile profile)
+    {
+        if (!_desktopReady) return;
+
+        if (ThumbprintMatchesAddress && CertificateThumbprint is { Length: > 0 } thumbprint)
+            profile.CertificateThumbprint = thumbprint;
+        var custom = ProxyMode is not (ProxyMode.None or ProxyMode.System);
+        profile.ProxyMode = ProxyMode;
+        profile.ProxyHost = custom ? ProxyHost.Trim() : null;
+        profile.ProxyPort = custom && int.TryParse(ProxyPortText, NumberStyles.Integer, CultureInfo.InvariantCulture,
+            out var proxyPort)
+            ? proxyPort
+            : null;
+        profile.ProxyUserName = custom && !string.IsNullOrWhiteSpace(ProxyUserName) ? ProxyUserName.Trim() : null;
+        profile.ProxyPassword = custom && !string.IsNullOrEmpty(ProxyPassword) ? ProxyPassword : null;
+    }
+
+    /// <summary>모바일 저장 전 — 프록시 칸 검사(PC 와 같은 문구). 문제가 없으면 null.</summary>
+    private string? ValidateProxy()
+    {
+        if (!_desktopReady || ProxyMode is ProxyMode.None or ProxyMode.System) return null;
+        if (string.IsNullOrWhiteSpace(ProxyHost)) return L.T("ProfileEditor_ProxyHostRequired");
+
+        return int.TryParse(ProxyPortText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var port) &&
+               port is >= 1 and <= 65535
+            ? null
+            : L.T("ProfileEditor_ProxyPortRange");
+    }
+
     [RelayCommand]
     private async Task SaveSettings()
     {

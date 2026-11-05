@@ -6,62 +6,68 @@
              x:Class="ProxmoxClient.UI.Views.ProfileEditPage"
              x:DataType="vm:ProfileEditViewModel"
              Header="{Binding Title}">
+    <!--
+        모바일 서버 편집 — PC(서버 설정 + 로그인 화면)와 같은 항목·문구를 휴대폰에 맞게 세로로:
+        기본(이름·주소·포트) · 인증(방식, 사용자 이름 / 인증 영역 따로, 비밀번호·토큰) · 인증서(지문·확인) · 프록시.
+        VPN 은 Android 가 앱에서 터널을 열 수 없어 넣지 않는다(PC 만).
+    -->
     <ScrollViewer>
         <StackPanel Margin="16,12,16,32" Spacing="14" MaxWidth="640">
+            <!-- 기본 -->
+            <TextBlock Classes="section" Text="{l:Tr CreateGuestWindow_02}" />
             <Border Classes="card">
                 <StackPanel Spacing="14">
                     <StackPanel>
-                        <TextBlock Classes="label" Text="{l:Tr Profile_Name}" />
+                        <TextBlock Classes="label" Text="{l:Tr ProfileDialog_02}" />
                         <TextBox Text="{Binding Name}" PlaceholderText="{l:Tr Profile_NameHint}" />
                     </StackPanel>
                     <StackPanel>
-                        <TextBlock Classes="label" Text="{l:Tr Profile_Host}" />
+                        <TextBlock Classes="label" Text="{l:Tr ProfileDialog_03}" />
                         <TextBox Text="{Binding Host}" PlaceholderText="{l:Tr Profile_HostHint}"
                                  TextInputOptions.ContentType="Url"
                                  TextInputOptions.AutoCapitalization="False" />
                     </StackPanel>
-                    <StackPanel>
-                        <TextBlock Classes="label" Text="{l:Tr Profile_Port}" />
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="label" Text="{l:Tr FirewallWindow_11}" />
                         <TextBox Text="{Binding Port}" TextInputOptions.ContentType="Digits" />
+                        <TextBlock Classes="subtle" Text="{l:Tr ProfileDialog_04}" />
                     </StackPanel>
                 </StackPanel>
             </Border>
 
+            <!-- 인증 — PC 로그인 화면처럼 사용자 이름과 인증 영역을 따로 -->
+            <TextBlock Classes="section" Text="{l:Tr Profile_AuthMode}" />
             <Border Classes="card">
                 <StackPanel Spacing="14">
-                    <StackPanel>
-                        <TextBlock Classes="label" Text="{l:Tr Profile_AuthMode}" />
-                        <StackPanel Orientation="Horizontal">
-                            <RadioButton Classes="chip" GroupName="auth" IsChecked="{Binding IsPasswordAuth}"
-                                         Content="{l:Tr Profile_AuthPassword}" />
-                            <RadioButton Classes="chip" GroupName="auth" IsChecked="{Binding IsTokenAuth}"
-                                         Content="{l:Tr Profile_AuthToken}" />
-                        </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Classes="chip" GroupName="auth" IsChecked="{Binding IsPasswordAuth}"
+                                     Content="{l:Tr Profile_AuthPassword}" />
+                        <RadioButton Classes="chip" GroupName="auth" IsChecked="{Binding IsTokenAuth}"
+                                     Content="{l:Tr Profile_AuthToken}" />
                     </StackPanel>
 
                     <StackPanel Spacing="14" IsVisible="{Binding IsPasswordAuth}">
                         <StackPanel>
-                            <TextBlock Classes="label" Text="{l:Tr Profile_User}" />
-                            <TextBox Text="{Binding UserName}" PlaceholderText="root@pam"
+                            <TextBlock Classes="label" Text="{l:Tr LoginWindow_05}" />
+                            <TextBox Text="{Binding UserOnly}" PlaceholderText="root"
                                      TextInputOptions.AutoCapitalization="False" />
                         </StackPanel>
-                        <!-- 인증 영역 — 서버에서 가져와 고르면 사용자 칸의 @영역 이 바뀐다 -->
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="label" Text="{l:Tr Realm_Label}" />
+                            <TextBlock Classes="label" Text="{l:Tr LoginWindow_07}" />
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                 <ComboBox ItemsSource="{Binding Realms}" SelectedItem="{Binding SelectedRealm}"
-                                          HorizontalAlignment="Stretch" IsEnabled="{Binding HasRealms}">
+                                          HorizontalAlignment="Stretch">
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate x:DataType="m:PveAuthDomain">
-                                            <TextBlock>
-                                                <Run Text="{Binding Realm}" FontWeight="SemiBold" />
-                                                <Run Text="{Binding Comment}" Foreground="Gray" />
-                                            </TextBlock>
+                                            <TextBlock Text="{Binding DisplayLabel}" />
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
-                                <Button Grid.Column="1" Content="{l:Tr Realm_Fetch}"
-                                        Command="{Binding FetchRealmsCommand}" IsEnabled="{Binding !IsFetchingRealms}" />
+                                <!-- PC 와 같은 새로 고침 아이콘(서버에서 영역 다시 가져오기) -->
+                                <Button Grid.Column="1" Classes="icon" ToolTip.Tip="{l:Tr LoginWindow_08}"
+                                        Command="{Binding FetchRealmsCommand}" IsEnabled="{Binding !IsFetchingRealms}">
+                                    <Path Classes="icon" Data="{StaticResource IconRefresh}" />
+                                </Button>
                             </Grid>
                             <TextBlock Classes="subtle" Text="{Binding RealmStatus}" TextWrapping="Wrap"
                                        IsVisible="{Binding RealmStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -95,16 +101,61 @@
                 </StackPanel>
             </Border>
 
+            <!-- 인증서 — PC 와 같이 신뢰한 지문과 [인증서 확인·갱신] -->
+            <TextBlock Classes="section" Text="{l:Tr ProfileDialog_05}" />
             <Border Classes="card">
-                <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Spacing="2" VerticalAlignment="Center">
-                        <TextBlock Text="{l:Tr Profile_SelfSigned}" TextWrapping="Wrap" />
-                        <TextBlock Classes="subtle" Text="{l:Tr Profile_SelfSignedHint}" TextWrapping="Wrap"
-                                   TextTrimming="None" />
+                <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{l:Tr ProfileDialog_07}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding AcceptSelfSigned}" OnContent=""
+                                      OffContent="" Margin="12,0,0,0" />
+                    </Grid>
+                    <TextBlock Classes="subtle" Text="{Binding CertificateStatus}" TextWrapping="Wrap"
+                               TextTrimming="None" />
+                    <Button Content="{l:Tr ProfileDialog_08}" Command="{Binding VerifyCertificateCommand}"
+                            IsEnabled="{Binding CanVerifyCertificate}" HorizontalAlignment="Stretch" />
+                    <TextBlock Classes="subtle" Text="{l:Tr ProfileDialog_06}" TextWrapping="Wrap" TextTrimming="None" />
+                </StackPanel>
+            </Border>
+
+            <!-- 프록시 — PC 와 같은 다섯 가지 -->
+            <TextBlock Classes="section" Text="{l:Tr ProfileDialog_09}" />
+            <Border Classes="card">
+                <StackPanel Spacing="12">
+                    <TextBlock Classes="label" Text="{l:Tr ProfileDialog_10}" />
+                    <WrapPanel>
+                        <RadioButton Classes="chip" GroupName="proxy" Content="{l:Tr ProfileDialog_11}"
+                                     IsChecked="{Binding IsProxyNone}" Margin="0,0,6,6" />
+                        <RadioButton Classes="chip" GroupName="proxy" Content="{l:Tr ProfileDialog_12}"
+                                     IsChecked="{Binding IsProxySystem}" Margin="0,0,6,6" />
+                        <RadioButton Classes="chip" GroupName="proxy" Content="HTTP"
+                                     IsChecked="{Binding IsProxyHttp}" Margin="0,0,6,6" />
+                        <RadioButton Classes="chip" GroupName="proxy" Content="HTTPS"
+                                     IsChecked="{Binding IsProxyHttps}" Margin="0,0,6,6" />
+                        <RadioButton Classes="chip" GroupName="proxy" Content="SOCKS5"
+                                     IsChecked="{Binding IsProxySocks5}" Margin="0,0,6,6" />
+                    </WrapPanel>
+                    <StackPanel Spacing="12" IsVisible="{Binding IsProxyDetailVisible}">
+                        <StackPanel>
+                            <TextBlock Classes="label" Text="{l:Tr ProfileDialog_13}" />
+                            <TextBox Text="{Binding ProxyHost}" TextInputOptions.AutoCapitalization="False" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Classes="label" Text="{l:Tr ProfileDialog_14}" />
+                            <TextBox Text="{Binding ProxyPortText}" TextInputOptions.ContentType="Digits" />
+                        </StackPanel>
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="label" Text="{l:Tr ProfileDialog_15}" />
+                            <TextBox Text="{Binding ProxyUserName}" TextInputOptions.AutoCapitalization="False" />
+                            <TextBlock Classes="subtle" Text="{l:Tr ProfileDialog_16}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Classes="label" Text="{l:Tr ProfileDialog_17}" />
+                            <TextBox Text="{Binding ProxyPassword}" PasswordChar="•"
+                                     TextInputOptions.IsSensitive="True" />
+                        </StackPanel>
                     </StackPanel>
-                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding AcceptSelfSigned}" OnContent=""
-                                  OffContent="" Margin="12,0,0,0" />
-                </Grid>
+                </StackPanel>
             </Border>
 
             <Button Classes="wide accent" Command="{Binding SaveCommand}" Content="{l:Tr Common_Save}" />
