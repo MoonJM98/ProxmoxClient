@@ -87,6 +87,9 @@ def serve(handler):
         _, auth = ws.read_frame()
         log('auth %s' % auth.decode(errors='replace').strip())
         send('OK')
+        if os.environ.get('FAKEPVE_REAL_SHELL') == '1':
+            serve_real(ws, send, log)
+            return
         send(banner() + PROMPT)
         pending = b''
         while True:
@@ -173,3 +176,117 @@ def run(cmd, state, send):
     elif cmd:
         send('-bash: %s: 명령을 찾을 수 없습니다\r\n' % cmd)
     send(PROMPT)
+
+
+# ------------------------------------------------------------------ 실제 셸 모드
+# FAKEPVE_REAL_SHELL=1 이면 가짜 셸 대신 진짜 bash 를 PTY 로 붙인다(vim·top 같은 실제 프로그램, CT 파일 스크립트 검사).
+# pct·lxc-info 는 가짜 명령(심)으로 바꿔 CT 200 의 루트를 /var/lib/lxc/200/rootfs 에 둔다.
+import os, pty, fcntl, termios, struct, select, shutil
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SANDBOX = os.environ.get('FAKEPVE_SANDBOX', '/tmp/fakepve-shell')
+
+
+def prepare_sandbox():
+    shims = os.path.join(SANDBOX, 'bin')
+    os.makedirs(shims, exist_ok=True)
+    with open(os.path.join(shims, 'pct'), 'w') as f:
+        f.write('#!/bin/sh\n# 가짜 pct — mount/unmount 는 아무것도 안 한다(루트는 미리 만들어 둔다)\n'
+                'case "$1" in mount|unmount) exit 0;; status) echo "status: stopped";; esac\nexit 0\n')
+    with open(os.path.join(shims, 'lxc-info'), 'w') as f:
+        f.write('#!/bin/sh\n# 꺼진 CT — pid 없음\nexit 0\n')
+    for n in ('pct', 'lxc-info'):
+        os.chmod(os.path.join(shims, n), 0o755)
+    root = '/var/lib/lxc/200/rootfs'
+    if not os.path.isdir(root):
+        for d in ('etc', 'root', 'var/log', 'home/user/문서', 'srv/www'):
+            os.makedirs(os.path.join(root, d), exist_ok=True)
+        with open(os.path.join(root, 'etc/passwd'), 'w') as f:
+            f.write('root:x:0:0:root:/root:/bin/bash\nuser:x:1000:1000::/home/user:/bin/bash\n')
+        with open(os.path.join(root, 'etc/group'), 'w') as f:
+            f.write('root:x:0:\nuser:x:1000:\n')
+        with open(os.path.join(root, 'etc/hostname'), 'w') as f:
+            f.write('ct200\n')
+        with open(os.path.join(root, 'home/user/문서/메모.txt'), 'w') as f:
+            f.write('안녕하세요\n')
+        with open(os.path.join(root, 'var/log/syslog'), 'w') as f:
+            f.write('log line\n' * 100)
+        os.symlink('/srv/www', os.path.join(root, 'www'))
+        os.chown(os.path.join(root, 'home/user'), 1000, 1000)
+    os.makedirs(os.path.join(SANDBOX, 'home'), exist_ok=True)
+    return shims
+
+
+def serve_real(ws, send, log):
+    shims = prepare_sandbox()
+    pid, fd = pty.fork()
+    if pid == 0:
+        env = dict(os.environ, TERM='xterm-256color', HOME=os.path.join(SANDBOX, 'home'), LANG='C.UTF-8',
+                   PATH=shims + ':' + os.environ.get('PATH', '/usr/bin:/bin'), PS1='root@pve1:\\w# ')
+        os.chdir(os.path.join(SANDBOX, 'home'))
+        # 백그라운드로 띄운 서버는 SIGINT·SIGQUIT 무시를 물려받는다 — 실제 노드 셸처럼 기본 동작으로
+        import signal
+        for sig in (signal.SIGINT, signal.SIGQUIT, signal.SIGTSTP, signal.SIGTTIN, signal.SIGTTOU, signal.SIGPIPE):
+            signal.signal(sig, signal.SIG_DFL)
+        os.execvpe('bash', ['bash', '--norc', '--noprofile', '-i'], env)
+
+    def pump():
+        try:
+            while True:
+                r, _, _ = select.select([fd], [], [], 1)
+                if fd in r:
+                    data = os.read(fd, 65536)
+                    if not data:
+                        break
+                    ws.send(data)
+        except OSError:
+            pass
+        log('pty closed')
+        # 실제 termproxy 처럼 셸이 끝나면 웹소켓을 닫는다
+        try:
+            ws.sock.sendall(bytes([0x88, 0x02, 0x03, 0xE8]))
+            ws.sock.shutdown(2)
+        except OSError:
+            pass
+
+    threading.Thread(target=pump, daemon=True).start()
+    pending = b''
+    try:
+        while True:
+            opcode, payload = ws.read_frame()
+            if opcode == 8:
+                break
+            if opcode == 9 or not payload:
+                continue
+            pending += payload
+            while pending:
+                if pending[:1] == b'2':
+                    pending = pending[1:]
+                    continue
+                if pending[:2] == b'1:':
+                    parts = pending.split(b':', 3)
+                    if len(parts) < 4:
+                        break
+                    cols, rows = int(parts[1]), int(parts[2])
+                    fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', rows, cols, 0, 0))
+                    log('resize %d %d' % (cols, rows))
+                    pending = parts[3]
+                    continue
+                if pending[:2] == b'0:':
+                    head, _, rest = pending[2:].partition(b':')
+                    n = int(head)
+                    if len(rest) < n:
+                        break
+                    data, pending = rest[:n], rest[n:]
+                    log('input %r' % data.decode('utf-8', errors='replace')[:4000])
+                    os.write(fd, data)
+                    continue
+                pending = b''
+    except (EOFError, ConnectionError, OSError):
+        pass
+    try:
+        os.kill(pid, 9)
+        os.waitpid(pid, 0)
+    except OSError:
+        pass
+    log('closed')

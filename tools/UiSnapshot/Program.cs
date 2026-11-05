@@ -169,6 +169,7 @@ if (target == "console") await ConsoleUsabilityCheck();
 if (target == "compact") await CompactButtonCheck();
 if (target == "terminal") await TerminalCheck();
 if (target == "expiry") await ExpiryCheck();
+if (target == "realshell") await RealShellCheck();
 
 foreach (var (prefix, vmid) in new[] { ("guest", 100), ("lxc", 200) })
 {
@@ -237,6 +238,129 @@ async Task CompactButtonCheck()
     Console.WriteLine($"| 짧게 누르기 | 실행(입력 폼 열림) | 폼 {(opened ? "열림" : "안 열림")} | {(opened ? "통과" : "실패")} |");
     if (!opened) failures++;
     if (AppServices.Dialogs.Sheet is IDismissible d2) d2.Dismiss();
+    await Wait(AppServices.Navigator.PopAsync());
+}
+
+// 실제 셸 검사 — 가짜 서버를 FAKEPVE_REAL_SHELL=1 로 띄우면 termproxy 뒤에 진짜 bash(PTY)가 붙는다.
+// 실제 프로그램(stty·vim·top·sleep·bash 자동 완성·대량 출력)으로 터미널 해석·입력·크기를 확인한다.
+async Task RealShellCheck()
+{
+    var results = new List<(string Name, string Expect, string Got, bool Pass)>();
+    void Check(string name, string expect, string got, bool pass) => results.Add((name, expect, got, pass));
+    var vm = new TerminalViewModel(cluster.Session.Api, ProxmoxClient.Core.Models.ConsoleTarget.ForNode("pve1"), "pve1 · 셸");
+    await Wait(AppServices.Navigator.PushAsync(vm));
+    var page = (ProxmoxClient.UI.Views.Terminal.TerminalPage)nav.CurrentPage!;
+    var term = page.Terminal;
+    var buffer = term.Buffer;
+    WaitFor(() => vm.IsConnected, 10000);
+    string Screen()
+    {
+        lock (buffer.Gate)
+            return string.Join("\n", Enumerable.Range(0, buffer.Rows).Select(r =>
+                new string(buffer.GetVisibleLine(r, 0).Cells.Where(c => c.Width != 0)
+                    .SelectMany(c => char.ConvertFromUtf32(c.Rune == 0 ? ' ' : c.Rune)).ToArray()).TrimEnd()));
+    }
+    string LastLine() => Screen().Split('\n').Last(l => l.Length > 0);
+    WaitFor(() => Screen().Contains("root@pve1"), 8000);
+    var input = page.GetVisualDescendants().OfType<TextBox>().First();
+    input.Focus();
+    Pump(300);
+    void Type(string text) { input.Text = text; Pump(150); }
+    void Key(Avalonia.Input.Key key, Avalonia.Input.RawInputModifiers mods = Avalonia.Input.RawInputModifiers.None)
+    {
+        window.KeyPress(key, mods, Avalonia.Input.PhysicalKey.None, null);
+        window.KeyRelease(key, mods, Avalonia.Input.PhysicalKey.None, null);
+        Pump(80);
+    }
+    void Run(string command) { Type(command); Key(Avalonia.Input.Key.Enter); }
+    bool Prompt() => LastLine().StartsWith("root@pve1") && LastLine().EndsWith("#");
+
+    Run("clear; stty size");
+    WaitFor(() => Screen().Contains($"{buffer.Rows} {buffer.Columns}"), 4000);
+    Check("PTY 크기(stty size)", $"{buffer.Rows} {buffer.Columns}", Screen().Split('\n').Skip(1).FirstOrDefault() ?? "", Screen().Contains($"{buffer.Rows} {buffer.Columns}"));
+
+    Run("printf '\\e[1;31m한글 빨강\\e[0m 끝\\n'");
+    WaitFor(() => Screen().Contains("한글 빨강 끝"), 4000);
+    var red = false;
+    lock (buffer.Gate)
+        for (var r = 0; r < buffer.Rows; r++)
+            red |= buffer.GetVisibleLine(r, 0).Cells.Any(c => c.Rune == '한' && c.Width == 2 && c.Flags.HasFlag(ProxmoxClient.UI.Views.Terminal.CellFlags.Bold) &&
+                                                             ProxmoxClient.UI.Views.Terminal.TerminalColor.IsIndexed(c.Foreground, out var ix) && ix == 1);
+    Check("SGR·한글 출력(printf)", "'한' 굵게·빨강·2칸", red ? "맞음" : "다름", red);
+
+    Type("ech");
+    Key(Avalonia.Input.Key.Tab);
+    Pump(400);
+    var completed = LastLine().EndsWith("echo");
+    Check("Tab 자동 완성(bash)", "ech → echo", LastLine(), completed);
+    Key(Avalonia.Input.Key.U, Avalonia.Input.RawInputModifiers.Control); // 줄 지우기
+
+    Run("sleep 100");
+    Pump(300);
+    Key(Avalonia.Input.Key.C, Avalonia.Input.RawInputModifiers.Control);
+    WaitFor(Prompt, 3000);
+    Check("Ctrl+C 로 중단(sleep)", "프롬프트로 돌아옴", Prompt() ? "돌아옴" : LastLine(), Prompt());
+
+    var file = "/tmp/fakepve-shell/home/vim-test.txt";
+    File.Delete(file);
+    Run("vim -u NONE -N vim-test.txt");
+    WaitFor(() => buffer.IsAlternateScreen, 5000);
+    Pump(400);
+    Type("i"); // 글자 키는 입력 칸으로 들어온다(합성 KeyPress 에는 글자가 없다)
+    Type("hello 한글");
+    Key(Avalonia.Input.Key.Enter);
+    Type("둘째 줄");
+    Pump(300);
+    Shot("realshell-vim");
+    Key(Avalonia.Input.Key.Escape);
+    Type(":wq");
+    Key(Avalonia.Input.Key.Enter);
+    WaitFor(() => !buffer.IsAlternateScreen, 5000);
+    var saved = File.Exists(file) ? File.ReadAllText(file) : "(없음)";
+    Check("vim 편집·저장(대체 화면)", "hello 한글\\n둘째 줄", saved.Replace("\n", "\\n"), saved == "hello 한글\n둘째 줄\n");
+
+    Run("top -d 1");
+    WaitFor(() => Screen().Contains("load average") && Screen().Contains("PID"), 6000);
+    var firstClock = Screen().Split('\n')[0];
+    Pump(2200); // 1초마다 다시 그린다
+    Shot("realshell-top");
+    var top = Screen().Contains("PID") && Screen().Split('\n')[0] != firstClock;
+    Type("q");
+    WaitFor(Prompt, 4000);
+    Check("top(전체 화면·1초 갱신)", "부하·PID 표 갱신, q 로 종료", top ? (Prompt() ? "정상" : "종료 안 됨") : "표 없음/갱신 없음", top && Prompt());
+
+    // 큰 출력 — 화면 스레드를 막지 않고 끝까지 받는지(해석은 수신 스레드)
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    Run("clear; seq 1 50000; echo END-OF-SEQ");
+    WaitFor(() => Screen().Contains("END-OF-SEQ") && Prompt(), 20000);
+    sw.Stop();
+    var big = Screen().Contains("50000") && Screen().Contains("END-OF-SEQ");
+    Check("대량 출력(seq 50000)", "끝까지·프롬프트 복귀", $"{sw.ElapsedMilliseconds} ms, 스크롤백 {buffer.ScrollbackCount}줄", big);
+
+    var oldColumns = buffer.Columns;
+    window.Width -= 160;
+    Pump(800);
+    Run("clear; stty size");
+    WaitFor(() => Screen().Contains($"{buffer.Rows} {buffer.Columns}"), 4000);
+    Check("창 크기 변경 → PTY", $"열 {oldColumns}→{buffer.Columns}", Screen().Split('\n').Skip(1).FirstOrDefault() ?? "",
+        buffer.Columns < oldColumns && Screen().Contains($"{buffer.Rows} {buffer.Columns}"));
+    window.Width += 160;
+    Pump(500);
+
+    Run("exit");
+    WaitFor(() => !vm.IsConnected, 5000);
+    Check("셸 종료(exit) → 연결 끊김 표시", "끊김·[재연결]", vm.IsConnected ? "연결됨" : vm.StateText, !vm.IsConnected);
+    Shot("realshell-exit");
+
+    Console.WriteLine();
+    Console.WriteLine("| 실제 셸 | 기대 | 결과 | 판정 |");
+    Console.WriteLine("|---|---|---|---|");
+    foreach (var r in results)
+    {
+        Console.WriteLine($"| {r.Name} | {r.Expect} | {r.Got} | {(r.Pass ? "통과" : "실패")} |");
+        if (!r.Pass) failures++;
+    }
+
     await Wait(AppServices.Navigator.PopAsync());
 }
 
