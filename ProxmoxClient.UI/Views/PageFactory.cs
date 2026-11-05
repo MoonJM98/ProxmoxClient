@@ -11,7 +11,10 @@ public static class PageFactory
     {
         // 데스크톱 로그인 후 화면 — WPF 메인 창과 같은 배치(Views/Main). 같은 세션을 뷰모델이 이어받는다
         if (viewModel is ClusterViewModel cluster && PlatformInfo.IsDesktop)
+        {
+            cluster.HandOff();
             return Host(new Main.MainView(), new Main.MainViewModel(cluster.Session));
+        }
 
         Page page = viewModel switch
         {

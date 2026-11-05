@@ -177,6 +177,15 @@ public sealed partial class ClusterViewModel : ViewModelBase, IDisposable
         if (removed) Dispose();
     }
 
+    /// <summary>
+    ///     데스크톱·태블릿은 이 뷰모델을 세션 전달용으로만 쓰고 메인 창(MainViewModel)이 화면을 맡는다 —
+    ///     쓰지 않는 주기 새로 고침을 정리한다(세션은 넘겨받은 쪽이 정리).
+    /// </summary>
+    public void HandOff()
+    {
+        _refresher.Dispose();
+    }
+
     public void Dispose()
     {
         _refresher.Dispose();
