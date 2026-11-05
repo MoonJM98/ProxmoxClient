@@ -649,4 +649,16 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Vpn_PickExe" xml:space="preserve">
     <value>Choose openvpn executable</value>
   </data>
+  <data name="Console_ViewFit" xml:space="preserve">
+    <value>Fit</value>
+  </data>
+  <data name="Console_ViewFill" xml:space="preserve">
+    <value>Fill</value>
+  </data>
+  <data name="Console_ViewActual" xml:space="preserve">
+    <value>1:1</value>
+  </data>
+  <data name="Console_ViewModeTip" xml:space="preserve">
+    <value>View mode — fit (all) · fill (no bars) · actual size (1:1). When zoomed in, drag with two fingers to move the view.</value>
+  </data>
 </root>

@@ -52,8 +52,11 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         status.Bind(IsVisibleProperty, new Avalonia.Data.Binding(nameof(ConsoleViewModel.HasStatus)));
         ((TextBlock)status.Child).Bind(TextBlock.TextProperty, new Avalonia.Data.Binding(nameof(ConsoleViewModel.Status)));
 
-        var main = new WrapPanel
+        _viewMode = KeyButton(L.T("Console_ViewFit"), (_, _) => NextViewMode(), L.T("Console_ViewModeTip"));
+        _surface.Viewport.Changed += UpdateViewModeLabel; // 손가락으로 확대하면 배율 표시
+        var main = new StackPanel
         {
+            Orientation = Orientation.Horizontal,
             Children =
             {
                 KeyboardButton(),
@@ -61,10 +64,10 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
                 Key("←", KeySyms.Left), Key("↑", KeySyms.Up), Key("↓", KeySyms.Down), Key("→", KeySyms.Right),
                 KeyButton("⋯", (_, _) => _moreToggle(), L.T("Console_MoreKeys")),
                 _mode,
-                KeyButton("⤢", (_, _) => _surface.Viewport.Fit(), L.T("Console_Fit"))
+                _viewMode
             }
         };
-        var extra = new WrapPanel();
+        var extra = new StackPanel { Orientation = Orientation.Horizontal };
         foreach (var (label, sym) in new[]
                  {
                      ("Home", KeySyms.Home), ("End", KeySyms.End), ("PgUp", KeySyms.PageUp), ("PgDn", KeySyms.PageDown),
@@ -76,14 +79,15 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         {
             if (_vm is not null && await AppServicesConfirm()) await _vm.Vnc.SendCtrlAltDelAsync();
         }));
-        _more = new Border { IsVisible = false, Child = extra };
+        _more = new Border { IsVisible = false, Child = Row(extra) };
 
+        // 특수키 막대 — 화면 위에 반투명하게 겹쳐 한 줄로, 넘치면 옆으로 밀어 본다(원격 화면을 가리지 않게)
         var bar = new Border
         {
-            Background = new SolidColorBrush(Color.Parse("#F0202020")), Padding = new Thickness(4, 4, 4, 6),
-            Child = new StackPanel { Children = { _more, main } }
+            Background = new SolidColorBrush(Color.Parse("#66000000")), Padding = new Thickness(4, 4, 4, 6),
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Child = new StackPanel { Spacing = 2, Children = { _more, Row(main) } }
         };
-        DockPanel.SetDock(bar, Dock.Bottom);
 
         _surface.PointerSink = (b, x, y) => _vm?.SendPointer(b, x, y);
         _surface.KeySink = (keysym, down) => _vm?.SendKey(keysym, down);
@@ -99,10 +103,7 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         {
             if (_vm is not null) await _vm.ReconnectAsync();
         };
-        Content = new DockPanel
-        {
-            Children = { bar, new Grid { Children = { _surface, status, reconnect, _input } } }
-        };
+        Content = new Grid { Children = { _surface, status, reconnect, _input, bar } };
         Background = Brushes.Black;
         DataContextChanged += (_, _) => AttachViewModel(DataContext as ConsoleViewModel);
         // 앱이 배경으로 가면 눌린 키를 모두 뗀다(게스트에 Alt 등이 눌린 채 남지 않게)
@@ -117,6 +118,44 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
                 Services.AppLifecycle.ForegroundChanged -= onForeground;
             _surface.Gestures.Cancel();
             _surface.ReleaseAllKeys();
+        };
+    }
+
+    private readonly Button _viewMode;
+
+    /// <summary>한 줄 가로 스크롤(스크롤 막대는 숨기고 손가락으로 민다).</summary>
+    private static ScrollViewer Row(Control content)
+    {
+        return new ScrollViewer
+        {
+            Content = content, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
+        };
+    }
+
+    /// <summary>화면 모드 돌리기: 맞춤 → 채우기 → 원본(1:1) → 맞춤. 손으로 확대했으면 맞춤으로 돌아간다.</summary>
+    private void NextViewMode()
+    {
+        var vp = _surface.Viewport;
+        var next = vp.Mode switch
+        {
+            ViewMode.Fit => ViewMode.Fill,
+            ViewMode.Fill => ViewMode.Actual,
+            _ => ViewMode.Fit
+        };
+        vp.SetMode(next);
+        UpdateViewModeLabel();
+        _surface.InvalidateVisual();
+    }
+
+    private void UpdateViewModeLabel()
+    {
+        _viewMode.Content = _surface.Viewport.Mode switch
+        {
+            ViewMode.Fill => L.T("Console_ViewFill"),
+            ViewMode.Actual => L.T("Console_ViewActual"),
+            ViewMode.Custom => $"{_surface.Viewport.Zoom:0.#}×",
+            _ => L.T("Console_ViewFit")
         };
     }
 
@@ -236,7 +275,7 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         var button = new Button
         {
             Content = label, MinWidth = 44, MinHeight = 40, Margin = new Thickness(2), Padding = new Thickness(10, 6),
-            Foreground = Brushes.White, Background = new SolidColorBrush(Color.Parse("#3A3A3A")),
+            Foreground = Brushes.White, Background = new SolidColorBrush(Color.Parse("#B03A3A3A")),
             HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, Focusable = false
         };
         if (tip is not null) ToolTip.SetTip(button, tip);
@@ -249,7 +288,7 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         return new ToggleButton
         {
             Content = label, MinWidth = 48, MinHeight = 40, Margin = new Thickness(2), Padding = new Thickness(10, 6),
-            Foreground = Brushes.White, Background = new SolidColorBrush(Color.Parse("#3A3A3A")),
+            Foreground = Brushes.White, Background = new SolidColorBrush(Color.Parse("#B03A3A3A")),
             HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, Focusable = false
         };
     }

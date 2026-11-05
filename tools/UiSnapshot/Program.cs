@@ -703,14 +703,23 @@ async Task ConsoleUsabilityCheck()
     g.Mode = ProxmoxClient.UI.Views.Console.TouchInputMode.Mouse;
     g.ResetCursor(new Avalonia.Point(400, 300));
 
+    // 탭 규칙(사용자 요청): 한 번 = 클릭 안 함, 두 번 = 클릭, 세 번 = 더블 클릭
+    void Settle() { now += GestureInterpreter.MultiTapMs + 50; g.Tick(now); now += 200; } // 세 번째 탭을 기다린 뒤
     Tap(center);
+    Settle();
     var ev = Events();
-    Check("마우스 모드 · 한 손가락 탭", "왼쪽 클릭(0 1 0) @ 커서(400,300)", $"{Masks(ev)} @ {LastXY(ev)}",
-        Masks(ev) == "0 1 0" && LastXY(ev) == (400, 300));
+    Check("마우스 모드 · 한 번 탭", "클릭 안 함(스치기만 해도 클릭되지 않게)", ev.Count == 0 ? "이벤트 없음" : Masks(ev), ev.Count == 0);
 
     Tap(center); now -= 150; Tap(center);
+    Settle();
     ev = Events();
-    Check("빠른 두 번 탭", "더블 클릭(0 1 0 1 0)", Masks(ev), Masks(ev) == "0 1 0 1 0");
+    Check("마우스 모드 · 두 번 탭", "왼쪽 클릭(0 1 0) @ 커서(400,300)", $"{Masks(ev)} @ {LastXY(ev)}",
+        Masks(ev) == "0 1 0" && LastXY(ev) == (400, 300));
+
+    Tap(center); now -= 150; Tap(center); now -= 150; Tap(center);
+    Settle();
+    ev = Events();
+    Check("세 번 탭", "더블 클릭(0 1 0 1 0)", Masks(ev), Masks(ev) == "0 1 0 1 0");
 
     now += 1000; // 두 번 탭 직후가 아니게(바로 끌면 '두 번 탭 후 끌기' = 끌어다 놓기)
     Drag(center, new Avalonia.Vector(100, 0));
@@ -763,16 +772,52 @@ async Task ConsoleUsabilityCheck()
     ev = Events();
     Check("벌리기(확대)", "확대 배율 > 1, 클릭 없음", $"배율 {vp.Zoom:0.00}, 이벤트 {ev.Count}개",
         vp.Zoom > 1.5 && !ev.Any(e => e.Contains("mask=1") || e.Contains("mask=4")));
+
+    // 확대한 상태에서 두 손가락 끌기 = 화면 이동(원격 스크롤 아님)
+    var offsetBefore = vp.Offset;
+    g.Down(1, center - new Avalonia.Vector(30, 0), now);
+    g.Down(2, center + new Avalonia.Vector(30, 0), now);
+    for (var s = 1; s <= 10; s++)
+    {
+        now += 16;
+        g.Move(1, center - new Avalonia.Vector(30, 0) + new Avalonia.Vector(s * 10, s * 6), now);
+        g.Move(2, center + new Avalonia.Vector(30, 0) + new Avalonia.Vector(s * 10, s * 6), now);
+    }
+    g.Up(1, center, now); g.Up(2, center, now); now += 200;
+    ev = Events();
+    var panned = vp.Offset - offsetBefore;
+    Check("확대 중 두 손가락 끌기", "화면 이동(오프셋 변화), 휠·클릭 없음", $"이동 ({panned.X:F0},{panned.Y:F0}), 이벤트 {ev.Count}개",
+        Math.Abs(panned.X) + Math.Abs(panned.Y) > 20 && ev.Count == 0);
+
+    // 화면 모드 단추: 맞춤 → 가로 채우기 → 1:1 → 맞춤
+    var modeButton = page.GetVisualDescendants().OfType<Button>().First(b => ToolTip.GetTip(b) as string == L.T("Console_ViewModeTip"));
+    vp.Fit();
+    var modes = new List<string>();
+    for (var press = 0; press < 3; press++)
+    {
+        modeButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Pump(50);
+        modes.Add($"{modeButton.Content}:{vp.Scale:0.00}");
+    }
+    Check("화면 모드 단추", "채우기(배율↑) → 1:1 → 맞춤", string.Join(" ", modes), modes.Count == 3 && modes[0].StartsWith(L.T("Console_ViewFill")) && modes[2].StartsWith(L.T("Console_ViewFit")));
+    vp.Fit();
     Shot("console-zoomed");
 
     vp.Fit();
     g.Mode = ProxmoxClient.UI.Views.Console.TouchInputMode.Touch;
     var target = vp.ToView(new Avalonia.Point(100, 50));
     Tap(target);
+    Settle();
     ev = Events();
     var at = LastXY(ev);
-    Check("터치 모드 · 탭", "누른 곳(100,50) 왼쪽 클릭", $"{Masks(ev)} @ {at}",
-        Masks(ev) == "0 1 0" && Math.Abs(at.X - 100) <= 2 && Math.Abs(at.Y - 50) <= 2);
+    Check("터치 모드 · 한 번 탭", "클릭 없이 커서만 누른 곳(100,50)으로", $"{Masks(ev)} @ {at}",
+        Masks(ev) == "0" && Math.Abs(at.X - 100) <= 2 && Math.Abs(at.Y - 50) <= 2);
+    Tap(target); now -= 150; Tap(target);
+    Settle();
+    ev = Events();
+    at = LastXY(ev);
+    Check("터치 모드 · 두 번 탭", "누른 곳(100,50) 왼쪽 클릭", $"{Masks(ev)} @ {at}",
+        Masks(ev).EndsWith("0 1 0") && Math.Abs(at.X - 100) <= 2 && Math.Abs(at.Y - 50) <= 2);
 
     Drag(vp.ToView(new Avalonia.Point(200, 200)), new Avalonia.Vector(60, 0));
     ev = Events();
@@ -811,8 +856,8 @@ async Task ConsoleUsabilityCheck()
     Tap(center); now -= 100;
     Drag(center, new Avalonia.Vector(0, 90));
     ev = Events();
-    Check("두 번 탭 후 끌기(TeamViewer)", "클릭 뒤 왼쪽 버튼 누른 채 끌기(0 1 0 1 0)", Masks(ev),
-        Masks(ev) == "0 1 0 1 0" && LastXY(ev).Y > 300);
+    Check("탭 후 끌기(TeamViewer)", "클릭 없이 왼쪽 버튼 누른 채 끌기(1 0)", Masks(ev),
+        Masks(ev) == "1 0" && LastXY(ev).Y > 300);
 
     // ---- 태블릿에 연결한 물리 마우스(포인터 종류 = 마우스): 버튼·휠을 그대로
     surface.Focus();

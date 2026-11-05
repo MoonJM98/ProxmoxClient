@@ -33,6 +33,7 @@ public sealed class VncSurface : Control, IRemotePointer
         _longPressTimer.Tick += (_, _) =>
         {
             if (Gestures.Tick(Environment.TickCount64)) InvalidateVisual();
+            if (!Gestures.NeedsTicks) _longPressTimer.Stop(); // 손을 떼고 기다리던 클릭도 끝났다
         };
     }
 
@@ -210,7 +211,7 @@ public sealed class VncSurface : Control, IRemotePointer
         {
             _touchSeen = true;
             e.Pointer.Capture(this);
-            Gestures.Down(e.Pointer.Id, p, (long)e.Timestamp);
+            Gestures.Down(e.Pointer.Id, p, Environment.TickCount64); // 타이머(Tick)와 같은 시계로
             _longPressTimer.Start();
         }
         else
@@ -230,7 +231,7 @@ public sealed class VncSurface : Control, IRemotePointer
         var p = e.GetPosition(this);
         if (e.Pointer.Type == PointerType.Touch)
         {
-            Gestures.Move(e.Pointer.Id, p, (long)e.Timestamp);
+            Gestures.Move(e.Pointer.Id, p, Environment.TickCount64);
         }
         else
         {
@@ -245,8 +246,8 @@ public sealed class VncSurface : Control, IRemotePointer
         var p = e.GetPosition(this);
         if (e.Pointer.Type == PointerType.Touch)
         {
-            Gestures.Up(e.Pointer.Id, p, (long)e.Timestamp);
-            _longPressTimer.Stop();
+            Gestures.Up(e.Pointer.Id, p, Environment.TickCount64);
+            if (!Gestures.NeedsTicks) _longPressTimer.Stop(); // 두 번 탭 뒤 세 번째를 기다리는 동안은 계속
             InvalidateVisual();
         }
         else
