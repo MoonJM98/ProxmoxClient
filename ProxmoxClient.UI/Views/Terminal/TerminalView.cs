@@ -87,6 +87,9 @@ public sealed class TerminalView : Grid
     /// <summary>칸 수가 바뀌었다(열, 행) — 서버 PTY 크기를 맞춘다.</summary>
     public event Action<int, int>? SizeChanged2;
 
+    /// <summary>Enter 로 명령 한 줄을 실행했다(프롬프트 뒤 글자).</summary>
+    public event Action<string>? LineSubmitted;
+
     /// <summary>선택이 생기거나 없어졌다.</summary>
     public event Action<bool>? SelectionChanged;
 
@@ -192,6 +195,10 @@ public sealed class TerminalView : Grid
             text = TerminalKeys.WithModifiers(text, sticky.Ctrl, sticky.Alt);
         ScrollOffset = 0;
         if (HasSelection) ClearSelection();
+        // Enter — 지금 화면의 입력 줄을 명령으로 알린다(최근 명령 기록). 편집기 등 대체 화면·여러 줄 붙여넣기는 제외
+        if (text.EndsWith('\r') && text.IndexOf('\r') == text.Length - 1 && !Buffer.IsAlternateScreen &&
+            TerminalAssist.CommandFrom(TerminalAssist.CursorLine(Buffer).Text + text[..^1]) is { Length: > 0 } command)
+            LineSubmitted?.Invoke(command);
         Input?.Invoke(text);
         _surface.InvalidateVisual();
     }

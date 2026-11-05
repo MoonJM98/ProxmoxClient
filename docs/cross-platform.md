@@ -96,7 +96,7 @@ WPF 앱은 기능이 모두 옮겨질 때까지 그대로 유지한다.
 | 화면 전체(데스크톱·태블릿·모바일 배치) | UiSnapshot + 가짜 PVE(`tools/FakePve`) | 모든 대상 통과 |
 | VNC 콘솔 조작(제스처·물리 키) | `--target console` | 26/26 |
 | 터미널 해석·입력 | `--target terminal` (가짜 셸) | 16/16 |
-| 터미널 + 실제 프로그램 | `FAKEPVE_REAL_SHELL=1` + `--target realshell` (진짜 bash PTY: stty·vim·top·Ctrl+C·Tab 완성·5만 줄 출력·크기·종료) | 9/9 |
+| 터미널 + 실제 프로그램 | `FAKEPVE_REAL_SHELL=1` + `--target realshell` (진짜 bash PTY: stty·vim·top·Ctrl+C·Tab 완성·Tab 후보 목록·최근 명령 기록·5만 줄 출력·크기·종료) | 14/14 |
 | CT 파일(노드 셸 스크립트) | 진짜 bash + pct/lxc-info 심, `preview:files` | 목록·링크 정상 |
 | 세션 만료 | `/__fake/expire` + `--target expiry` | 알림 → 로그인 화면 |
 | VPN | 실제 OpenVPN 2.6 서버(자체 CA·tun) + 터널 주소에만 묶은 가짜 PVE, `--vpn` | 터널 → 로그인 → 종료 시 정리, 강제 종료 뒤 남은 openvpn 정리 |

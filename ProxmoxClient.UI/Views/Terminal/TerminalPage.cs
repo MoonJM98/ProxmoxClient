@@ -18,7 +18,7 @@ namespace ProxmoxClient.UI.Views.Terminal;
 ///     터미널 화면(WPF TerminalWindow) — 위 도구 막대(재연결/연결 끊기 · 복사 · 붙여넣기 · 글자 크기),
 ///     가운데 터미널, 아래 상태 줄. 터치 기기는 특수 키 막대(Esc·Tab·Ctrl/Alt 고정·방향키·기호·F1~F12)를 더한다.
 /// </summary>
-public sealed class TerminalPage : ContentPage, IOwnsTouchDrag
+public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
 {
     private readonly TerminalView _terminal;
     private readonly Button _reconnect;
@@ -51,6 +51,11 @@ public sealed class TerminalPage : ContentPage, IOwnsTouchDrag
         };
         _terminal.SelectionChanged += has => _copy!.IsEnabled = has;
         _terminal.TakeStickyModifiers = TakeSticky;
+        _terminal.LineSubmitted += command =>
+        {
+            _history?.Add(command);
+            HideAssist();
+        };
 
         _reconnect = ToolButton(L.T("ConsoleWindow_02"), "IconRefresh", async () =>
         {
@@ -129,7 +134,10 @@ public sealed class TerminalPage : ContentPage, IOwnsTouchDrag
             Children =
             {
                 WithContent(KeyButton(L.T("Console_Keyboard"), () => _terminal.FocusInput(), L.T("Console_Keyboard")), KeyboardIcon()),
-                Key("Esc", Avalonia.Input.Key.Escape), Key("Tab", Avalonia.Input.Key.Tab), _ctrl, _alt,
+                Key("Esc", Avalonia.Input.Key.Escape),
+                KeyButton("Tab", () => _ = CompleteAsync(), L.T("Terminal_Completions", "…")), // 후보가 여럿이면 목록으로
+                KeyButton(L.T("Terminal_HistoryButton"), ShowHistory, L.T("Terminal_History")),
+                _ctrl, _alt,
                 Key("←", Avalonia.Input.Key.Left), Key("↑", Avalonia.Input.Key.Up),
                 Key("↓", Avalonia.Input.Key.Down), Key("→", Avalonia.Input.Key.Right),
                 Text("|"), Text("-"), Text("/"), Text("~"),
@@ -159,9 +167,10 @@ public sealed class TerminalPage : ContentPage, IOwnsTouchDrag
         };
         DockPanel.SetDock(keysBar, Dock.Bottom);
 
+        _terminalHost = new Grid { Children = { _terminal, overlay } };
         Content = new DockPanel
         {
-            Children = { toolbar, statusBar, keysBar, new Grid { Children = { _terminal, overlay } } }
+            Children = { toolbar, statusBar, keysBar, _terminalHost }
         };
         Background = Brushes.Black;
         DataContextChanged += (_, _) => Attach(DataContext as TerminalViewModel);
@@ -169,6 +178,9 @@ public sealed class TerminalPage : ContentPage, IOwnsTouchDrag
     }
 
     public TerminalView Terminal => _terminal;
+
+    /// <summary>터미널과 그 위 겹침(상태 안내·도우미 목록).</summary>
+    private readonly Grid _terminalHost;
 
     private void Attach(TerminalViewModel? vm)
     {
@@ -178,6 +190,8 @@ public sealed class TerminalPage : ContentPage, IOwnsTouchDrag
 
         Header = vm.Title;
         vm.Output = _terminal.Write;
+        // 최근 명령 기록 — 서버·대상마다 따로(이 기기에만)
+        AttachHistory(new TerminalViewModelKey($"{vm.Api.Profile.Host}:{vm.Api.Profile.Port}|{vm.Target.BasePath}"));
         vm.PropertyChanged += OnVmChanged;
         vm.Resize(_terminal.Buffer.Columns, _terminal.Buffer.Rows);
         UpdateButtons();

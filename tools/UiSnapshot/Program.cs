@@ -364,6 +364,50 @@ async Task RealShellCheck()
     Check("Tab 자동 완성(bash)", "ech → echo", LastLine(), completed);
     Key(Avalonia.Input.Key.U, Avalonia.Input.RawInputModifiers.Control); // 줄 지우기
 
+    // 최근 명령 기록 — Enter 로 실행한 명령이 최신순으로 쌓이고, 고르면 입력 줄만 바뀐다(실행 안 함)
+    Run("echo hist-one");
+    WaitFor(Prompt, 3000);
+    Run("echo hist-two");
+    WaitFor(Prompt, 3000);
+    page.ShowHistory();
+    Pump(200);
+    var hist = page.AssistItems.Take(2).ToList();
+    Shot("realshell-history");
+    Check("최근 명령 목록", "echo hist-two, echo hist-one", string.Join(", ", hist), hist.SequenceEqual(["echo hist-two", "echo hist-one"]));
+    page.PickAssist("echo hist-one");
+    Pump(400);
+    Check("기록 고르기 → 입력 줄", "root@pve1:...# echo hist-one (실행 안 함)", LastLine(),
+        LastLine().EndsWith("# echo hist-one") && page.AssistItems.Count == 0);
+    Key(Avalonia.Input.Key.U, Avalonia.Input.RawInputModifiers.Control);
+
+    // Tab 후보 목록 — 후보가 여럿이면 bash 가 찍은 목록을 오버레이로, 고르면 그 후보로 완성
+    var dir = "/tmp/fakepve-shell/home/cmpl";
+    Directory.CreateDirectory(dir + "/alpine-dir");
+    File.WriteAllText(dir + "/alpha.txt", "");
+    File.WriteAllText(dir + "/beta.txt", "");
+    Run("clear");
+    WaitFor(Prompt, 3000);
+    Type("ls cmpl/al");
+    var complete = page.CompleteAsync();
+    WaitFor(() => complete.IsCompleted, 5000);
+    Pump(200);
+    var cands = page.AssistItems.ToList();
+    Shot("realshell-completions");
+    Check("Tab 후보 목록", "alpha.txt, alpine-dir/", string.Join(", ", cands),
+        cands.Contains("alpha.txt") && cands.Contains("alpine-dir/") && !cands.Contains("beta.txt"));
+    page.PickAssist("alpine-dir/");
+    Pump(400);
+    Check("후보 고르기 → 완성", "ls cmpl/alpine-dir/", LastLine(), LastLine().EndsWith("# ls cmpl/alpine-dir/"));
+    Key(Avalonia.Input.Key.U, Avalonia.Input.RawInputModifiers.Control);
+    Pump(200);
+    Type("ls cmpl/be");
+    complete = page.CompleteAsync();
+    WaitFor(() => complete.IsCompleted, 5000);
+    Pump(200);
+    Check("후보 하나 → 바로 완성(목록 없음)", "ls cmpl/beta.txt", LastLine(),
+        LastLine().EndsWith("# ls cmpl/beta.txt") && page.AssistItems.Count == 0);
+    Key(Avalonia.Input.Key.U, Avalonia.Input.RawInputModifiers.Control);
+
     Run("sleep 100");
     Pump(300);
     Key(Avalonia.Input.Key.C, Avalonia.Input.RawInputModifiers.Control);

@@ -679,4 +679,19 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Realm_Label" xml:space="preserve">
     <value>Realm</value>
   </data>
+  <data name="Terminal_History" xml:space="preserve">
+    <value>Recent commands</value>
+  </data>
+  <data name="Terminal_HistoryButton" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="Terminal_HistoryEmpty" xml:space="preserve">
+    <value>No commands recorded yet.</value>
+  </data>
+  <data name="Terminal_Completions" xml:space="preserve">
+    <value>{0} candidates</value>
+  </data>
+  <data name="Terminal_TooManyCompletions" xml:space="preserve">
+    <value>Too many candidates — type a few more letters.</value>
+  </data>
 </root>
