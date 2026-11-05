@@ -39,6 +39,12 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
     public const double ScrollStep = 28;
     public const double PinchThreshold = 24;
 
+    /// <summary>확대한 채 끌 때 손가락이 이 거리(보기 px)만큼 가장자리에 가까우면 그쪽으로 조금씩 화면을 옮긴다.</summary>
+    public const double EdgeZone = 48;
+
+    /// <summary>가장자리 자동 이동 최고 속도(보기 px/ms) — 손가락이 가장자리에 닿았을 때. 안쪽일수록 느리다.</summary>
+    public const double EdgeSpeed = 0.25;
+
     private const int Left = 1, Middle = 2, Right = 4, WheelUp = 8, WheelDown = 16, WheelLeft = 32, WheelRight = 64;
 
     private readonly Dictionary<long, Finger> _fingers = [];
@@ -60,6 +66,7 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
     private int _tapCount;
 
     private Point _pendingClickAt;
+    private long _lastEdgeTick;
 
     private enum Gesture
     {
@@ -96,6 +103,7 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
             _gesture = Gesture.Pending;
             _gestureStart = ms;
             _longPressFired = false;
+            _lastEdgeTick = ms;
             // 방금 탭한 자리 근처를 곧바로 다시 누르면 이어진 터치 — 바로 떼면 탭이 하나 늘고, 끌거나 길게 누르면
             // 그 순간 버튼을 누른다(PressAfterTaps). 다른 곳을 누르면 기다리던 클릭을 먼저 보낸다
             var near = _tapCount > 0 && ms - _lastTapUp <= MultiTapMs && Length(view - _lastTapAt) < 48;
@@ -233,6 +241,9 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
             case Gesture.Drag:
                 Release();
                 break;
+            case Gesture.Pinch or Gesture.Pan:
+                KeepCursorInView(); // 확대·이동으로 커서가 가장자리 밖에 남지 않게
+                break;
         }
 
         _gesture = Gesture.None;
@@ -252,6 +263,8 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
             ResolvePendingClick();
             return true;
         }
+
+        if (EdgeScroll(ms)) return true;
 
         if (_gesture != Gesture.Pending || _fingers.Count != 1 || _longPressFired || _maxFingers != 1) return false;
 
@@ -398,8 +411,74 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
         var next = Cursor + remoteDelta;
         Cursor = new Point(Math.Clamp(next.X, 0, Math.Max(0, viewport.Remote.Width - 1)),
             Math.Clamp(next.Y, 0, Math.Max(0, viewport.Remote.Height - 1)));
-        viewport.EnsureVisible(Cursor);
+        viewport.EnsureVisible(Cursor, CursorMargin());
         Send(_buttons, Cursor);
+    }
+
+    /// <summary>
+    ///     확대 중 커서가 보기 가장자리에 붙지 않게 두는 여유(보기 px) — 짧은 변의 20%(40~160). 커서가 이 안쪽에 있어야
+    ///     주변이 보이고, 더 밀면 화면이 먼저 따라 움직인다(사용자 요청).
+    /// </summary>
+    private double CursorMargin()
+    {
+        if (!viewport.IsZoomed) return 40;
+
+        return Math.Clamp(Math.Min(viewport.View.Width, viewport.View.Height) * 0.2, 40, 160);
+    }
+
+    /// <summary>
+    ///     마우스 모드: 확대·이동·화면 모드 변경 뒤 커서가 여유 밖(가장자리·화면 밖)에 있으면 안쪽으로 옮긴다.
+    ///     화면은 그대로 두고 커서만 옮긴다(보던 곳이 튀지 않게).
+    /// </summary>
+    public void KeepCursorInView()
+    {
+        if (Mode != TouchInputMode.Mouse || !viewport.IsZoomed || _buttons != 0) return;
+
+        var margin = CursorMargin();
+        var p = viewport.ToView(Cursor);
+        var x = Math.Clamp(p.X, Math.Min(margin, viewport.View.Width / 2), Math.Max(viewport.View.Width - margin, viewport.View.Width / 2));
+        var y = Math.Clamp(p.Y, Math.Min(margin, viewport.View.Height / 2), Math.Max(viewport.View.Height - margin, viewport.View.Height / 2));
+        if (Math.Abs(x - p.X) < 0.5 && Math.Abs(y - p.Y) < 0.5) return;
+
+        Cursor = viewport.ToRemote(new Point(x, y));
+        Send(0, Cursor);
+    }
+
+    /// <summary>
+    ///     확대한 채 끄는 중(버튼 누름) 손가락이 가장자리 <see cref="EdgeZone" /> 안에 머물면 그쪽으로 조금씩 옮긴다 —
+    ///     손가락이 화면 끝에 막혀도 계속 끌 수 있게(사용자 요청). 터치 모드: 화면을 옮기고 손가락 아래 자리로 끌기를 잇는다.
+    ///     마우스 모드: 커서를 그쪽으로 옮기고 화면은 커서를 따라간다.
+    /// </summary>
+    private bool EdgeScroll(long ms)
+    {
+        var elapsed = Math.Clamp(ms - _lastEdgeTick, 0, 100);
+        _lastEdgeTick = ms;
+        if (_gesture != Gesture.Drag || _buttons == 0 || _fingers.Count != 1 || !viewport.IsZoomed) return false;
+
+        var at = _fingers.Values.First().Last;
+        var zone = Math.Min(EdgeZone, Math.Min(viewport.View.Width, viewport.View.Height) / 4);
+        if (zone <= 0) return false;
+
+        double Push(double pos, double size) =>
+            pos < zone ? -Math.Min(1, (zone - pos) / zone) : pos > size - zone ? Math.Min(1, (pos - (size - zone)) / zone) : 0;
+
+        var direction = new Vector(Push(at.X, viewport.View.Width), Push(at.Y, viewport.View.Height));
+        if (direction == default || elapsed == 0) return false;
+
+        var step = direction * EdgeSpeed * elapsed;
+        if (Mode == TouchInputMode.Touch)
+        {
+            var before = viewport.Offset;
+            viewport.PanBy(-step); // 오른쪽 가장자리 = 오른쪽 내용이 보이도록 화면을 왼쪽으로
+            if (viewport.Offset == before) return false; // 원격 화면 끝 — 더 갈 곳이 없다
+
+            Point(at, _buttons);
+            return true;
+        }
+
+        var cursor = Cursor;
+        MoveCursor(step, elapsed, accelerate: false);
+        return Cursor != cursor;
     }
 
     private void Point(Point view, int buttons)

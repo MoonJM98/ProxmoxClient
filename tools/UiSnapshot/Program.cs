@@ -969,8 +969,92 @@ async Task ConsoleUsabilityCheck()
     g.Up(1, center, now); g.Up(2, center, now); now += 200;
     ev = Events();
     var panned = vp.Offset - offsetBefore;
-    Check("확대 중 두 손가락 끌기", "화면 이동(오프셋 변화), 휠·클릭 없음", $"이동 ({panned.X:F0},{panned.Y:F0}), 이벤트 {ev.Count}개",
-        Math.Abs(panned.X) + Math.Abs(panned.Y) > 20 && ev.Count == 0);
+    // 화면 밖으로 밀려난 커서는 안쪽으로 옮긴다(커서 이동만 — 버튼·휠 없음)
+    var panCursor = vp.ToView(g.Cursor);
+    Check("확대 중 두 손가락 끌기", "화면 이동(오프셋 변화), 휠·클릭 없음, 커서는 화면 안", $"이동 ({panned.X:F0},{panned.Y:F0}), 이벤트 {Masks(ev)}, 커서 ({panCursor.X:F0},{panCursor.Y:F0})",
+        Math.Abs(panned.X) + Math.Abs(panned.Y) > 20 && ev.All(e => e.StartsWith("pointer mask=0 ")) &&
+        panCursor.X >= 0 && panCursor.X <= vp.View.Width && panCursor.Y >= 0 && panCursor.Y <= vp.View.Height);
+
+    // ---- 확대 중 가장자리(사용자 요청): 커서는 가장자리에 붙지 않고, 끄는 중 손가락이 가장자리에 머물면 그쪽으로 조금씩 이동
+    {
+        var W = vp.View.Width;
+        var H = vp.View.Height;
+        var margin = Math.Clamp(Math.Min(W, H) * 0.2, 40, 160);
+        bool RightEdgeShown() => vp.Offset.X + vp.Remote.Width * vp.Scale <= W + 1;
+
+        // 마우스 모드: 커서를 오른쪽으로 크게 밀어도 가장자리 여유 안쪽(화면이 먼저 따라감)
+        g.Mode = TouchInputMode.Mouse;
+        vp.PanBy(new Avalonia.Vector(100000, 100000)); // 왼쪽 위 끝을 보게
+        g.ResetCursor(vp.ToRemote(center));
+        now += 1000;
+        Events();
+        Drag(center, new Avalonia.Vector(W * 0.45, 0), steps: 20);
+        var cursorView = vp.ToView(g.Cursor);
+        Check("확대 중 커서 여유(마우스 모드)", $"커서가 오른쪽 가장자리에서 {margin:F0}px 안쪽(화면이 따라 이동)",
+            $"커서 보기 x {cursorView.X:F0} / 폭 {W:F0}, 화면 이동 {vp.Offset.X:F0}",
+            cursorView.X <= W - margin + 2 && vp.Offset.X < -1 || RightEdgeShown());
+
+        // 터치 모드: 끌다가 오른쪽 가장자리에 손가락을 멈추면 화면이 조금씩 오른쪽으로, 버튼은 누른 채
+        g.Mode = TouchInputMode.Touch;
+        vp.PanBy(new Avalonia.Vector(100000, 0));
+        now += 1000;
+        Events();
+        var edge = new Avalonia.Point(W - 8, H / 2);
+        var from = new Avalonia.Point(W / 2, H / 2);
+        g.Down(1, from, now);
+        for (var i = 1; i <= 10; i++) { now += 16; g.Move(1, from + (edge - from) * i / 10, now); }
+        var offsetAtEdge = vp.Offset.X;
+        g.Tick(now);
+        for (var i = 0; i < 15; i++) { now += 60; g.Tick(now); } // 0.9초 머묾
+        var offsetAfter = vp.Offset.X;
+        g.Up(1, edge, now);
+        now += 200;
+        ev = Events();
+        var dragXs = ev.Where(e => e.StartsWith("pointer mask=1")).Select(e => int.Parse(e.Split(' ')[2][2..])).ToList();
+        var shifted = offsetAtEdge - offsetAfter;
+        Check("확대 중 끌기 · 가장자리에 머묾(터치 모드)", "화면이 오른쪽으로 조금씩(0.9초에 50~250px), 끌기 이어짐(1 0)",
+            $"화면 {shifted:F0}px, 마스크 {Masks(ev)}, 원격 x {dragXs.FirstOrDefault()}→{dragXs.LastOrDefault()}",
+            shifted is > 50 and < 250 && Masks(ev).EndsWith("1 0") && dragXs.Count > 0 && dragXs.Last() > dragXs.First());
+
+        // 마우스 모드: 길게 눌러 끌다가 오른쪽 가장자리에 머물면 커서가 계속 오른쪽으로
+        g.Mode = TouchInputMode.Mouse;
+        vp.PanBy(new Avalonia.Vector(100000, 0));
+        g.ResetCursor(vp.ToRemote(center));
+        now += 1000;
+        Events();
+        g.Down(1, from, now);
+        now += GestureInterpreter.LongPressMs + 100;
+        g.Tick(now);
+        for (var i = 1; i <= 10; i++) { now += 16; g.Move(1, from + (edge - from) * i / 10, now); }
+        g.Tick(now);
+        var cursorAtEdge = g.Cursor.X;
+        for (var i = 0; i < 15; i++) { now += 60; g.Tick(now); }
+        var cursorAfter = g.Cursor.X;
+        g.Up(1, edge, now);
+        now += 200;
+        ev = Events();
+        Check("확대 중 끌기 · 가장자리에 머묾(마우스 모드)", "커서가 오른쪽으로 계속 이동, 왼쪽 버튼 끌기(1 0)",
+            $"커서 x {cursorAtEdge:F0}→{cursorAfter:F0}, 마스크 {Masks(ev)}",
+            cursorAfter > cursorAtEdge + 10 && Masks(ev).EndsWith("1 0"));
+
+        // 확대하지 않았으면 가장자리에 머물러도 움직이지 않는다
+        var zoomBefore = vp.Zoom;
+        vp.Fit();
+        g.Mode = TouchInputMode.Touch;
+        now += 1000;
+        Events();
+        g.Down(1, from, now);
+        for (var i = 1; i <= 10; i++) { now += 16; g.Move(1, from + (edge - from) * i / 10, now); }
+        var fitOffset = vp.Offset;
+        for (var i = 0; i < 10; i++) { now += 60; g.Tick(now); }
+        var still = vp.Offset == fitOffset;
+        g.Up(1, edge, now);
+        now += 200;
+        Events();
+        Check("확대 안 함 · 가장자리에 머묾", "화면 그대로", still ? "그대로" : "움직임", still);
+        vp.ZoomAt(zoomBefore, center); // 이어지는 검사를 위해 확대 상태로
+        g.Mode = TouchInputMode.Mouse;
+    }
 
     // 화면 모드 단추: 맞춤 → 가로 채우기 → 1:1 → 맞춤
     var modeButton = page.GetVisualDescendants().OfType<Button>().First(b => ToolTip.GetTip(b) as string == L.T("Console_ViewModeTip"));

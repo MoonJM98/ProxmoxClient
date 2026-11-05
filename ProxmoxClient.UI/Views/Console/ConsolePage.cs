@@ -176,6 +176,7 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
             _ => ViewMode.Fit
         };
         vp.SetMode(next);
+        _surface.Gestures.KeepCursorInView(); // 확대한 화면에서 커서가 가장자리·화면 밖에 남지 않게
         UpdateViewModeLabel();
         _surface.InvalidateVisual();
     }

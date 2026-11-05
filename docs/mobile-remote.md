@@ -18,6 +18,7 @@ Proxmox VM 화면(VNC)을 휴대폰·태블릿에서 다루는 방법. TeamViewe
 | 세 손가락 탭 | — | 가운데 클릭 | 가운데 클릭 |
 | 두 손가락 끌기 | 스크롤 | 스크롤(가로 포함) | 스크롤(가로 포함) |
 | 벌리기·오므리기 | 확대·축소 | 확대·축소 | 확대·축소(+ 이동), 마우스 모드는 커서를 따라 화면 이동 |
+| 확대 중 가장자리 | — | — | 끄는 중(버튼 누름) 손가락이 가장자리 48px 안에 머물면 그쪽으로 조금씩 이동(최대 초당 250px). 마우스 모드 커서는 가장자리에서 짧은 변의 20%(40~160px) 안쪽에 두고, 더 밀면 화면이 먼저 따라감 |
 | 키보드 | 하단 막대 키보드 버튼 | 툴바 + 특수키 줄 | 하단 막대: ⌨ · Esc · Tab · Ctrl/Alt/Win 고정(1회) · 방향키 · ⋯(F1~F12, Home/End, PgUp/PgDn, Ins/Del, Ctrl+Alt+Del) |
 
 출처: TeamViewer 지식 베이스 *Touch Interactions vs Mouse Interactions on Android*, *Interaction Methods on iOS*,
