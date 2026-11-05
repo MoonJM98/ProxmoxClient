@@ -152,12 +152,24 @@ public sealed class TerminalView : Grid
         _surface.InvalidateVisual();
     }
 
+    private string? _fontFamily;
+
+    /// <summary>설정의 터미널 글꼴(없거나 기본값이면 JetBrains Mono).</summary>
+    public void SetFontFamily(string? family)
+    {
+        _fontFamily = family;
+        _renderer = new TerminalRenderer(_renderer.FontSize, family);
+        FitToSize(Bounds.Size);
+        PlaceInput();
+        _surface.InvalidateVisual();
+    }
+
     public void SetFontSize(double size)
     {
         size = Math.Clamp(Math.Round(size * 2) / 2, MinFont, MaxFont);
         if (Math.Abs(size - _renderer.FontSize) < 0.01) return;
 
-        _renderer = new TerminalRenderer(size);
+        _renderer = new TerminalRenderer(size, _fontFamily);
         FitToSize(Bounds.Size);
         PlaceInput();
         _surface.InvalidateVisual();

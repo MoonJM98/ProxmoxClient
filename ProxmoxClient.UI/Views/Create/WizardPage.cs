@@ -68,7 +68,7 @@ internal sealed class WizardPage(StackPanel panel, bool showAdvanced, WizardView
         var box = new TextBox
         {
             Text = get(), AcceptsReturn = true, MinHeight = 90, TextWrapping = TextWrapping.Wrap,
-            FontFamily = new FontFamily("monospace")
+            FontFamily = ProxmoxClient.UI.AppFonts.MonoText
         };
         box.TextChanged += (_, _) => set(box.Text ?? string.Empty);
         Row(labelKey, box, hint);

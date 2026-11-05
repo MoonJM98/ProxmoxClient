@@ -44,7 +44,7 @@ public sealed class ConsoleSettingsPage : UserControl
     ];
 
     private static readonly string[] FontChoices =
-        ["Cascadia Mono", "Consolas", "D2Coding", "NanumGothicCoding", "Lucida Console", "Courier New"];
+        ["JetBrains Mono", "Cascadia Mono", "Consolas", "D2Coding", "NanumGothicCoding", "Lucida Console", "Courier New"];
 
     private readonly ConsoleSettingsStore _store = new();
     private readonly Action<ConsoleSettings>? _saved;

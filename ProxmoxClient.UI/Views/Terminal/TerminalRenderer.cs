@@ -41,10 +41,14 @@ internal sealed class TerminalRenderer
     private GlyphTypeface _bold = null!;
     private string _family = "monospace";
 
-    public TerminalRenderer(double fontSize)
+    /// <param name="preferredFamily">설정에서 고른 글꼴 — 없거나 기본값이면 앱에 넣은 JetBrains Mono.</param>
+    public TerminalRenderer(double fontSize, string? preferredFamily = null)
     {
+        _preferred = preferredFamily;
         SetFontSize(fontSize);
     }
+
+    private readonly string? _preferred;
 
     public double FontSize { get; private set; }
     public double CellWidth { get; private set; }
@@ -70,9 +74,28 @@ internal sealed class TerminalRenderer
         _fallbacks.Clear();
     }
 
+    /// <summary>
+    ///     기본으로 보는 글꼴 이름 — JetBrains Mono, 그리고 WPF 와 같이 쓰는 설정 파일의 기본값(Cascadia Mono:
+    ///     Windows 전용이라 다른 OS 에서는 없으므로 앱 글꼴로 통일).
+    /// </summary>
+    private static bool IsDefaultChoice(string name)
+    {
+        return name.Equals("JetBrains Mono", StringComparison.OrdinalIgnoreCase) ||
+               name.Equals(Core.Vnc.ConsoleSettings.DefaultFontFamily, StringComparison.OrdinalIgnoreCase);
+    }
+
     private GlyphTypeface FindMono(FontWeight weight, out string family)
     {
-        // 앱에 넣은 JetBrains Mono 를 먼저 — 모든 기기에서 같은 칸 폭·모양
+        // 설정에서 다른 글꼴을 골랐고 그 글꼴이 깔려 있으면 그것을
+        if (_preferred is { Length: > 0 } preferred && !IsDefaultChoice(preferred) &&
+            FontManager.Current.TryGetGlyphTypeface(new Typeface(preferred, FontStyle.Normal, weight), out var chosen) &&
+            chosen.FamilyName.StartsWith(preferred, StringComparison.OrdinalIgnoreCase))
+        {
+            family = preferred;
+            return chosen;
+        }
+
+        // 기본은 앱에 넣은 JetBrains Mono — 모든 기기에서 같은 칸 폭·모양
         if (FontManager.Current.TryGetGlyphTypeface(new Typeface(AppFonts.MonoFamilyName, FontStyle.Normal, weight),
                 out var embedded) && embedded.FamilyName.Contains("JetBrains", StringComparison.OrdinalIgnoreCase))
         {

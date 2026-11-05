@@ -176,7 +176,7 @@
                             <DataTemplate x:DataType="x:String">
                                 <Grid ColumnDefinitions="*,Auto" Margin="8,0,0,0">
                                     <SelectableTextBlock Text="{Binding}" VerticalAlignment="Center"
-                                                         FontFamily="monospace" />
+                                                         FontFamily="fonts:App#JetBrains Mono, fonts:App#Pretendard" />
                                     <Button Grid.Column="1" Classes="icon"
                                             Command="{Binding $parent[ItemsControl].((vm:GuestDetailViewModel)DataContext).CopyTextCommand}"
                                             CommandParameter="{Binding}">

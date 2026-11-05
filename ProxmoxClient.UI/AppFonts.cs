@@ -16,7 +16,12 @@ public static class AppFonts
     /// <summary>터미널 고정폭 글꼴(JetBrains Mono) — 기기마다 모노 글꼴이 달라 칸 폭이 흔들리지 않게 넣어 둔다.</summary>
     public const string MonoFamilyName = "fonts:App#JetBrains Mono";
 
+    /// <summary>화면의 고정폭 글자(로그·명령·키) — JetBrains Mono, 한글은 Pretendard 로.</summary>
+    public const string MonoTextFamilyName = MonoFamilyName + ", " + FamilyName;
+
     public static FontFamily Family { get; } = new(FamilyName);
+
+    public static FontFamily MonoText { get; } = new(MonoTextFamilyName);
 
     public static AppBuilder UseAppFonts(this AppBuilder builder)
     {

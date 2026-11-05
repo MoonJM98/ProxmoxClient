@@ -28,7 +28,7 @@ public sealed class TextEditTab : UserControl
         {
             AcceptsReturn = true, IsReadOnly = save is null, TextWrapping = TextWrapping.NoWrap,
             VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Top, // WPF 처럼 글은 위에서부터
-            FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, monospace"), FontSize = 13
+            FontFamily = ProxmoxClient.UI.AppFonts.MonoText, FontSize = 13
         };
         var reload = ActionBar.IconButton(L.T("Common_Refresh"), "IconRefresh", this);
         reload.Click += async (_, _) => await ReloadAsync();
@@ -133,7 +133,7 @@ public static class TextViewWindow
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
             Content = new SelectableTextBlock
             {
-                Text = text, Margin = new Thickness(16), FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, monospace"),
+                Text = text, Margin = new Thickness(16), FontFamily = ProxmoxClient.UI.AppFonts.MonoText,
                 FontSize = 13
             }
         };

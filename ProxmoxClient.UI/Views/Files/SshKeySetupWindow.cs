@@ -61,7 +61,7 @@ internal sealed class SshKeySetupWindow : UserControl
     private string? _generatedPath;
     private string? _generatedPassphrase;
 
-    private static readonly FontFamily Mono = new("Cascadia Mono, Consolas, Menlo, monospace");
+    private static readonly FontFamily Mono = ProxmoxClient.UI.AppFonts.MonoText;
 
     private SshKeySetupWindow(string privateKeyPath, string? passphrase, string userName, bool certificateMode,
         bool defaultKeysMode)

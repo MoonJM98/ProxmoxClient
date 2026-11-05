@@ -22,7 +22,7 @@ public sealed class SyslogTab : UserControl
     private readonly TextBox _log = new()
     {
         IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap,
-        FontFamily = new FontFamily("Cascadia Mono, Consolas"), FontSize = 12,
+        FontFamily = ProxmoxClient.UI.AppFonts.MonoText, FontSize = 12,
         VerticalAlignment = VerticalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Top,
         HorizontalContentAlignment = HorizontalAlignment.Left
     };

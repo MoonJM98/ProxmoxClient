@@ -38,7 +38,7 @@ internal sealed class TotpQrWindow : UserControl, IDismissible
                     new TextBox
                     {
                         Text = secret, IsReadOnly = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-                        FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, monospace")
+                        FontFamily = ProxmoxClient.UI.AppFonts.MonoText
                     },
                     close
                 }

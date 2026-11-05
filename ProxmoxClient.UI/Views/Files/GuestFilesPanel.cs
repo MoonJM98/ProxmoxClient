@@ -70,7 +70,7 @@ public partial class GuestFilesPanel : UserControl
     private readonly Border _guidance = new();
     private readonly TextBlock _guidanceTitle = new() { FontSize = 14, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
     private readonly TextBlock _guidanceText = new() { TextWrapping = TextWrapping.Wrap, Classes = { "subtle" }, Margin = new Thickness(0, 0, 0, 10) };
-    private readonly TextBox _guidanceCommands = new() { IsReadOnly = true, TextWrapping = TextWrapping.NoWrap, Padding = new Thickness(8), FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, monospace") };
+    private readonly TextBox _guidanceCommands = new() { IsReadOnly = true, TextWrapping = TextWrapping.NoWrap, Padding = new Thickness(8), FontFamily = ProxmoxClient.UI.AppFonts.MonoText };
     private readonly TextBlock _guidanceNote = new() { TextWrapping = TextWrapping.Wrap, Classes = { "subtle" }, Margin = new Thickness(0, 8, 0, 0) };
     private readonly MenuFlyout _menu = new();
     private readonly MenuItem _menuOpen = new();

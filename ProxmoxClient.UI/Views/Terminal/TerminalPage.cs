@@ -179,6 +179,15 @@ public sealed class TerminalPage : ContentPage
         vm.PropertyChanged += OnVmChanged;
         vm.Resize(_terminal.Buffer.Columns, _terminal.Buffer.Rows);
         UpdateButtons();
+        _ = ApplySettingsAsync();
+    }
+
+    /// <summary>콘솔 설정의 터미널 글꼴·크기(데스크톱) — 모바일은 화면에 맞춘 크기를 그대로 쓰고 손가락으로 바꾼다.</summary>
+    private async Task ApplySettingsAsync()
+    {
+        var settings = await new Core.Vnc.ConsoleSettingsStore().LoadAsync();
+        _terminal.SetFontFamily(settings.TerminalFontFamily);
+        if (PlatformInfo.IsDesktop) _terminal.SetFontSize(settings.TerminalFontSize + 1); // 설정은 pt, 화면은 px
     }
 
     private void OnVmChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

@@ -231,7 +231,7 @@ public sealed class FormDialog : UserControl, IDismissible
         var box = new TextBox
         {
             Text = field.Initial, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, Height = 120,
-            FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, monospace")
+            FontFamily = ProxmoxClient.UI.AppFonts.MonoText
         };
         AddLabeled(group, label, box);
         if (field.CanLoadFile)

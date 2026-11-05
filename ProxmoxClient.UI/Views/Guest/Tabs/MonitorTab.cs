@@ -36,12 +36,12 @@ public sealed class MonitorTab : UserControl
         _output = new TextBox
         {
             IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap,
-            FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, monospace"), FontSize = 12,
+            FontFamily = ProxmoxClient.UI.AppFonts.MonoText, FontSize = 12,
             MinHeight = 220, VerticalContentAlignment = VerticalAlignment.Top
         };
         _command = new TextBox
         {
-            FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, monospace"),
+            FontFamily = ProxmoxClient.UI.AppFonts.MonoText,
             PlaceholderText = "info status", MinWidth = 120
         };
         _command.KeyDown += (_, e) => OnCommandKeyDown(e);

@@ -22,7 +22,7 @@
         </Border>
         <Border Grid.Row="1" Classes="card" Margin="16,0,16,16" Padding="10">
             <ScrollViewer HorizontalScrollBarVisibility="Auto">
-                <SelectableTextBlock Text="{Binding LogText}" FontFamily="monospace" FontSize="12" />
+                <SelectableTextBlock Text="{Binding LogText}" FontFamily="fonts:App#JetBrains Mono, fonts:App#Pretendard" FontSize="12" />
             </ScrollViewer>
         </Border>
     </Grid>
