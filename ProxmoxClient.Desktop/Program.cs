@@ -9,6 +9,8 @@ internal static class Program
     public static void Main(string[] args)
     {
         ProxmoxClient.UI.Platform.PlatformInfo.FormFactor = ProxmoxClient.UI.Platform.FormFactor.Desktop;
+        if (Environment.GetEnvironmentVariable("PROXMOXCLIENT_LOG") == "1")
+            System.Diagnostics.Trace.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(Console.Error));
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
@@ -41,6 +43,9 @@ internal static class Program
                     AvaloniaNativeRenderingMode.Software]
             })
             .UseAppFonts()
-            .LogToTrace();
+            // PROXMOXCLIENT_LOG=1 — 플랫폼·렌더링 초기화 기록을 표준 오류로(어느 GPU 경로가 왜 안 됐는지 확인)
+            .LogToTrace(Environment.GetEnvironmentVariable("PROXMOXCLIENT_LOG") == "1"
+                ? Avalonia.Logging.LogEventLevel.Debug
+                : Avalonia.Logging.LogEventLevel.Warning);
     }
 }

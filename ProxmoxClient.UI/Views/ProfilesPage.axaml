@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ProxmoxClient.UI.ViewModels"
              xmlns:l="using:ProxmoxClient.UI.Localization"
+             xmlns:p="using:ProxmoxClient.UI.Platform"
              x:Class="ProxmoxClient.UI.Views.ProfilesPage"
              x:DataType="vm:ProfilesViewModel"
              Header="Proxmox Client">
@@ -57,6 +58,9 @@
                     <TextBlock Classes="subtle" Text="{l:Tr Profiles_EmptyText}" TextWrapping="Wrap"
                                TextAlignment="Center" TextTrimming="None" />
                 </StackPanel>
+
+                <!-- 렌더링 방식(Vulkan·EGL·소프트웨어 등)과 버전 — 기기에서 바로 확인 -->
+                <p:RenderInfoText Margin="0,24,0,0" />
             </StackPanel>
         </ScrollViewer>
 

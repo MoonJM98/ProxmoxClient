@@ -3,6 +3,7 @@
              xmlns:vm="using:ProxmoxClient.UI.ViewModels"
              xmlns:l="using:ProxmoxClient.UI.Localization"
              xmlns:c="using:ProxmoxClient.UI.Views.Controls"
+             xmlns:p="using:ProxmoxClient.UI.Platform"
              xmlns:core="using:ProxmoxClient.Core.Models"
              x:Class="ProxmoxClient.UI.Views.Login.LoginPage"
              x:DataType="vm:ProfilesViewModel"
@@ -127,6 +128,9 @@
                         <TextBlock Classes="link" Text="{l:Tr Login_ServerManager}" />
                     </HyperlinkButton>
                 </DockPanel>
+
+                <!-- 렌더링 방식(Direct3D·Metal·Vulkan·OpenGL·소프트웨어)과 버전 -->
+                <p:RenderInfoText Margin="0,18,0,0" />
             </StackPanel>
         </StackPanel>
     </Grid>
