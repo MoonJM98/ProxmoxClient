@@ -17,7 +17,7 @@ public sealed class VncSurface : Control, IRemotePointer
 {
     private readonly object _dirtyLock = new();
     private readonly DispatcherTimer _longPressTimer;
-    private WriteableBitmap? _bitmap;
+    private TiledFramebuffer? _bitmap;
     private PixelRect _dirty;
     private bool _copyQueued;
     private Func<byte[]?>? _framebuffer;
@@ -57,8 +57,7 @@ public sealed class VncSurface : Control, IRemotePointer
     {
         _framebuffer = framebuffer;
         _bitmap?.Dispose();
-        _bitmap = new WriteableBitmap(new PixelSize(width, height), new Vector(96, 96), PixelFormat.Bgra8888,
-            AlphaFormat.Opaque);
+        _bitmap = new TiledFramebuffer(width, height);
         Viewport.SetSizes(Bounds.Size, new Size(width, height));
         Gestures.ResetCursor(new Point(width / 2.0, height / 2.0));
         MarkDirty(0, 0, width, height);
@@ -91,23 +90,7 @@ public sealed class VncSurface : Control, IRemotePointer
 
         if (_bitmap is not { } bitmap || _framebuffer?.Invoke() is not { } source || dirty.Width == 0) return;
 
-        var size = bitmap.PixelSize;
-        dirty = dirty.Intersect(new PixelRect(size));
-        if (dirty.Width <= 0 || dirty.Height <= 0) return;
-
-        using (var locked = bitmap.Lock())
-        {
-            var rowBytes = dirty.Width * 4;
-            for (var row = dirty.Y; row < dirty.Bottom; row++)
-            {
-                var offset = (row * size.Width + dirty.X) * 4;
-                if (offset + rowBytes > source.Length) break;
-
-                System.Runtime.InteropServices.Marshal.Copy(source, offset,
-                    locked.Address + row * locked.RowBytes + dirty.X * 4, rowBytes);
-            }
-        }
-
+        bitmap.Update(source, dirty); // 바뀐 타일만 다시 올라간다
         InvalidateVisual();
     }
 
@@ -123,12 +106,12 @@ public sealed class VncSurface : Control, IRemotePointer
         if (_bitmap is not { } bitmap) return;
 
         var vp = Viewport;
-        var dest = new Rect(vp.Offset, new Size(vp.Remote.Width * vp.Scale, vp.Remote.Height * vp.Scale));
+        // 확대가 크면 픽셀을 또렷하게(최근접), 줄이거나 조금 늘리면 부드럽게
         using (context.PushRenderOptions(new RenderOptions
                {
-                   BitmapInterpolationMode = vp.Scale >= 1.5 ? BitmapInterpolationMode.None : BitmapInterpolationMode.HighQuality
+                   BitmapInterpolationMode = vp.Scale >= 1.5 ? BitmapInterpolationMode.None : BitmapInterpolationMode.MediumQuality
                }))
-            context.DrawImage(bitmap, new Rect(bitmap.Size), dest);
+            bitmap.Render(context, vp.Offset, vp.Scale, new Rect(Bounds.Size));
 
         if (Gestures.Mode == TouchInputMode.Mouse) DrawCursor(context, vp.ToView(Gestures.Cursor));
         if (Gestures.LongPressArmed)
