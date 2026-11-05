@@ -16,6 +16,12 @@ public partial class App : Application
     {
         L.InitializeCulture();
         AvaloniaXamlLoader.Load(this);
+        // 모바일은 같은 모양에 손가락 크기만 키운다(데스크톱은 WPF 와 같은 크기)
+        if (!PlatformInfo.IsDesktop)
+            Styles.Add(new Avalonia.Markup.Xaml.Styling.StyleInclude(new Uri("avares://ProxmoxClient.UI/"))
+            {
+                Source = new Uri("avares://ProxmoxClient.UI/Themes/Mobile.axaml")
+            });
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -25,11 +31,6 @@ public partial class App : Application
             activatable.Activated += (_, _) => AppLifecycle.SetForeground(true);
             activatable.Deactivated += (_, _) => AppLifecycle.SetForeground(false);
         }
-
-        // 같은 뷰모델·화면 코드를 쓰고, 배치만 수명 주기(창이 있는 데스크톱 / 단일 화면 모바일)로 나눈다
-        PlatformInfo.FormFactor = ApplicationLifetime is IClassicDesktopStyleApplicationLifetime
-            ? FormFactor.Desktop
-            : FormFactor.Mobile;
 
         switch (ApplicationLifetime)
         {

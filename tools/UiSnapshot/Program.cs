@@ -28,12 +28,12 @@ CultureInfo.CurrentUICulture = CultureInfo.CurrentCulture =
 var profileDir = Path.Combine(Path.GetTempPath(), "uisnap-" + Guid.NewGuid().ToString("N"));
 AppServices.ProfilesDirectory = profileDir;
 AppServices.SecretStore = new MemorySecretStore();
+// 테마가 앱 초기화 때 화면 형태를 읽으므로 먼저 정한다
+PlatformInfo.FormFactor = desktop ? FormFactor.Desktop : FormFactor.Mobile;
 AppBuilder.Configure<App>().UseSkia()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .WithInterFont().SetupWithoutStarting();
-// 앱 초기화가 수명 주기로 화면 형태를 정하므로 그 뒤에 덮어쓴다
-typeof(PlatformInfo).GetProperty(nameof(PlatformInfo.FormFactor))!
-    .SetValue(null, desktop ? FormFactor.Desktop : FormFactor.Mobile);
+
 
 var failures = 0;
 Dispatcher.UIThread.UnhandledException += (_, e) =>

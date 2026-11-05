@@ -9,8 +9,11 @@ public enum FormFactor
 
 public static class PlatformInfo
 {
-    /// <summary>앱 시작 시 수명 주기 형식으로 정한다(창이 있는 데스크톱 = Desktop).</summary>
-    public static FormFactor FormFactor { get; internal set; } = FormFactor.Mobile;
+    /// <summary>
+    ///     화면 형태 — 각 헤드가 앱을 만들기 전에 정한다(데스크톱 헤드 = Desktop, Android = Mobile).
+    ///     테마가 이 값으로 데스크톱(WPF 와 같은 크기)·모바일(손가락 크기) 스타일을 고른다.
+    /// </summary>
+    public static FormFactor FormFactor { get; set; } = FormFactor.Mobile;
 
     public static bool IsDesktop => FormFactor == FormFactor.Desktop;
 }

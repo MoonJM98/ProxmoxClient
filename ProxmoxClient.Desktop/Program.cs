@@ -8,6 +8,7 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        ProxmoxClient.UI.Platform.PlatformInfo.FormFactor = ProxmoxClient.UI.Platform.FormFactor.Desktop;
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 

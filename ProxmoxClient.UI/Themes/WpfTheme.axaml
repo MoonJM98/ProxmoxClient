@@ -1,0 +1,394 @@
+<!--
+    WPF 앱(ProxmoxClient.App/Themes/DarkTheme.xaml)과 같은 모양 — 같은 색 값·같은 이름.
+    WPF 의 Style x:Key 는 같은 이름의 클래스로 옮겼다: Style="{StaticResource AccentButton}" → Classes="AccentButton".
+    데스크톱·모바일 공용(크기만 Mobile.axaml 이 손가락에 맞게 키운다).
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="using:ProxmoxClient.UI.Views.Controls">
+
+    <Styles.Resources>
+        <ResourceDictionary>
+            <Color x:Key="ColBg">#1E1E1E</Color>
+            <Color x:Key="ColPanel">#252526</Color>
+            <Color x:Key="ColControl">#333337</Color>
+            <Color x:Key="ColBorder">#3F3F46</Color>
+            <Color x:Key="ColAccent">#007ACC</Color>
+            <Color x:Key="ColAccentHover">#1C86D9</Color>
+            <Color x:Key="ColAccentPress">#005A9E</Color>
+            <Color x:Key="ColText">#F1F1F1</Color>
+            <Color x:Key="ColDim">#9E9E9E</Color>
+            <Color x:Key="ColOk">#4EC9B0</Color>
+            <Color x:Key="ColWarn">#DCDCAA</Color>
+            <Color x:Key="ColErr">#F48771</Color>
+            <SolidColorBrush x:Key="BrushBg" Color="#1E1E1E" />
+            <SolidColorBrush x:Key="BrushPanel" Color="#252526" />
+            <SolidColorBrush x:Key="BrushControl" Color="#333337" />
+            <SolidColorBrush x:Key="BrushBorder" Color="#3F3F46" />
+            <SolidColorBrush x:Key="BrushAccent" Color="#007ACC" />
+            <SolidColorBrush x:Key="BrushAccentHover" Color="#1C86D9" />
+            <SolidColorBrush x:Key="BrushAccentPress" Color="#005A9E" />
+            <SolidColorBrush x:Key="BrushText" Color="#F1F1F1" />
+            <SolidColorBrush x:Key="BrushDim" Color="#9E9E9E" />
+            <SolidColorBrush x:Key="BrushOk" Color="#4EC9B0" />
+            <SolidColorBrush x:Key="BrushWarn" Color="#DCDCAA" />
+            <SolidColorBrush x:Key="BrushErr" Color="#F48771" />
+            <SolidColorBrush x:Key="BrushSelection" Color="#094771" />
+            <SolidColorBrush x:Key="BrushHover" Color="#2A2D2E" />
+        </ResourceDictionary>
+    </Styles.Resources>
+
+    <Style Selector=":is(TopLevel)">
+        <Setter Property="Background" Value="{StaticResource BrushBg}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="ContentPage">
+        <Setter Property="Background" Value="{StaticResource BrushBg}" />
+    </Style>
+
+    <!-- ===================================================================== 버튼 -->
+    <Style Selector="Button:not(#PART_BackButton)">
+        <Setter Property="Background" Value="{StaticResource BrushControl}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="bd" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}" />
+                    <Border Name="hover" IsVisible="False" Background="{StaticResource BrushHover}"
+                            BorderBrush="{StaticResource BrushAccent}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}" />
+                    <DockPanel Margin="{TemplateBinding Padding}"
+                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                        <Path Name="icon" DockPanel.Dock="Left" Classes="icon" Width="15" Height="15"
+                              Margin="0,0,6,0" VerticalAlignment="Center"
+                              Data="{TemplateBinding c:IconAssist.Icon}"
+                              IsVisible="{TemplateBinding c:IconAssist.Icon, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        <Path Name="chevron" DockPanel.Dock="Right" Classes="icon" Width="12" Height="12"
+                              Margin="6,1,0,0" Data="{StaticResource IconChevronDown}"
+                              IsVisible="{TemplateBinding c:IconAssist.Dropdown}" />
+                        <ContentPresenter Name="content" Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="Center" />
+                    </DockPanel>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button:pointerover /template/ Border#hover">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="Button:pressed /template/ Border#hover">
+        <Setter Property="IsVisible" Value="True" />
+        <Setter Property="Background" Value="{StaticResource BrushAccentPress}" />
+    </Style>
+    <Style Selector="Button:not(#PART_BackButton):disabled">
+        <Setter Property="Foreground" Value="{StaticResource BrushDim}" />
+    </Style>
+    <Style Selector="Button:disabled /template/ Border#bd">
+        <Setter Property="Background" Value="#2D2D30" />
+        <Setter Property="BorderBrush" Value="#333337" />
+    </Style>
+    <Style Selector="Button:disabled /template/ Path#icon">
+        <Setter Property="Opacity" Value="0.45" />
+    </Style>
+    <!-- 투명 버튼(목록 줄·아이콘 버튼)은 올렸을 때 테두리 없이 옅은 배경만 -->
+    <Style Selector="Button.row:pointerover /template/ Border#hover, Button.icon:pointerover /template/ Border#hover">
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <!-- 강조 버튼(파랑) — WPF AccentButton. 예전 이름 accent 도 같다 -->
+    <Style Selector="Button.AccentButton, Button.accent, Button.DialogPrimaryButton">
+        <Setter Property="Background" Value="{StaticResource BrushAccent}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushAccent}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.AccentButton /template/ Border#hover, Button.accent /template/ Border#hover, Button.DialogPrimaryButton /template/ Border#hover">
+        <Setter Property="Background" Value="{StaticResource BrushAccentHover}" />
+        <Setter Property="BorderBrush" Value="#5AA9E6" />
+    </Style>
+    <Style Selector="Button.DangerButton, Button.danger">
+        <Setter Property="BorderBrush" Value="#8B3A2E" />
+    </Style>
+    <Style Selector="Button.DialogButton, Button.DialogPrimaryButton">
+        <Setter Property="MinWidth" Value="96" />
+        <Setter Property="Margin" Value="8,0,0,0" />
+    </Style>
+
+    <!-- 누른 채 유지하는 키(콘솔 Ctrl·Alt) — WPF KeyToggle -->
+    <Style Selector="ToggleButton.KeyToggle">
+        <Setter Property="Background" Value="{StaticResource BrushControl}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="10,5" />
+        <Setter Property="MinWidth" Value="48" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="ToggleButton.KeyToggle:checked /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource BrushAccent}" />
+        <Setter Property="BorderBrush" Value="#5AA9E6" />
+    </Style>
+
+    <!-- ===================================================================== 글자·패널 -->
+    <Style Selector="TextBlock.SummaryLabel">
+        <Setter Property="Foreground" Value="{StaticResource BrushDim}" />
+        <Setter Property="Margin" Value="0,0,14,5" />
+        <Setter Property="MinWidth" Value="88" />
+    </Style>
+    <Style Selector="TextBlock.FormSection">
+        <Setter Property="Foreground" Value="{StaticResource BrushAccentHover}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,6,0,10" />
+    </Style>
+    <Style Selector="TextBlock.SectionHeader">
+        <Setter Property="Foreground" Value="{StaticResource BrushDim}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,10,0,4" />
+    </Style>
+    <Style Selector="TextBlock.FieldLabel">
+        <Setter Property="Foreground" Value="{StaticResource BrushDim}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,0,8,6" />
+    </Style>
+    <Style Selector="TextBlock.DialogStatus">
+        <Setter Property="Foreground" Value="{StaticResource BrushWarn}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,0,16,0" />
+    </Style>
+    <Style Selector="Border.FormPanel">
+        <Setter Property="Background" Value="{StaticResource BrushPanel}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="14,10" />
+    </Style>
+    <Style Selector="Border.DialogFooter">
+        <Setter Property="Background" Value="{StaticResource BrushPanel}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+        <Setter Property="Padding" Value="20,12" />
+    </Style>
+
+    <!-- ===================================================================== 입력 -->
+    <Style Selector="TextBox, AutoCompleteBox /template/ TextBox">
+        <Setter Property="Background" Value="{StaticResource BrushControl}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+        <Setter Property="CaretBrush" Value="{StaticResource BrushText}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource BrushAccent}" />
+        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{StaticResource BrushAccent}" />
+        <Setter Property="Background" Value="{StaticResource BrushControl}" />
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{StaticResource BrushAccent}" />
+        <Setter Property="Background" Value="{StaticResource BrushControl}" />
+    </Style>
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="{StaticResource BrushControl}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+
+    <!-- ===================================================================== 목록 -->
+    <Style Selector="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="ListBoxItem">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="CornerRadius" Value="3" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource BrushHover}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource BrushSelection}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+    </Style>
+    <!-- 위쪽 가로 탭(WPF NavListBox · NavListBoxItem) -->
+    <Style Selector="ListBox.NavListBox">
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="ListBox.NavListBox > ListBoxItem, ListBoxItem.NavListBoxItem">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="16,8" />
+    </Style>
+    <!-- 밑줄 탭(WPF SubTabItem) -->
+    <Style Selector="ListBox.SubTabs">
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="ListBox.SubTabs > ListBoxItem, ListBoxItem.SubTabItem">
+        <Setter Property="Foreground" Value="{StaticResource BrushDim}" />
+        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="BorderThickness" Value="0,0,0,2" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Margin" Value="0,0,2,-1" />
+    </Style>
+    <Style Selector="ListBox.SubTabs > ListBoxItem /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem.SubTabItem /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox.SubTabs > ListBoxItem:pointerover, ListBoxItem.SubTabItem:pointerover">
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+    </Style>
+    <Style Selector="ListBox.SubTabs > ListBoxItem:selected, ListBoxItem.SubTabItem:selected">
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushAccent}" />
+    </Style>
+    <Style Selector="ListBox.SubTabs > ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem.SubTabItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+    </Style>
+
+    <!-- ===================================================================== 표(DataGrid) -->
+    <Style Selector="DataGrid">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Background" Value="{StaticResource BrushBg}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="RowBackground" Value="{StaticResource BrushPanel}" />
+        <Setter Property="GridLinesVisibility" Value="None" />
+        <Setter Property="HeadersVisibility" Value="Column" />
+        <Setter Property="AutoGenerateColumns" Value="False" />
+        <Setter Property="IsReadOnly" Value="True" />
+        <Setter Property="SelectionMode" Value="Single" />
+        <Setter Property="RowHeight" Value="30" />
+        <Setter Property="CanUserReorderColumns" Value="False" />
+    </Style>
+    <Style Selector="DataGridRow:nth-child(2n)">
+        <Setter Property="Background" Value="#2A2A2C" />
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Background" Value="#2D2D30" />
+        <Setter Property="Foreground" Value="#E7E7E7" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+        <Setter Property="BorderThickness" Value="0,0,1,1" />
+    </Style>
+    <Style Selector="DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
+        <Setter Property="Fill" Value="{StaticResource BrushHover}" />
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle, DataGridRow:selected:pointerover /template/ Rectangle#BackgroundRectangle, DataGridRow:selected:focus /template/ Rectangle#BackgroundRectangle">
+        <Setter Property="Fill" Value="{StaticResource BrushSelection}" />
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="DataGridCell">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="DataGridCell:focus /template/ Grid#FocusVisual">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- ===================================================================== 기타 -->
+    <Style Selector="GridSplitter.PaneSplitterH">
+        <Setter Property="Height" Value="10" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="ResizeDirection" Value="Rows" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="Transparent">
+                    <Border Name="line" Height="2" Width="40" CornerRadius="1" Background="{StaticResource BrushBorder}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="GridSplitter.PaneSplitterV">
+        <Setter Property="Width" Value="10" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="ResizeDirection" Value="Columns" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="Transparent">
+                    <Border Name="line" Width="2" Height="40" CornerRadius="1" Background="{StaticResource BrushBorder}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="GridSplitter.PaneSplitterH:pointerover /template/ Border#line">
+        <Setter Property="Background" Value="{StaticResource BrushAccent}" />
+        <Setter Property="Width" Value="80" />
+    </Style>
+    <Style Selector="GridSplitter.PaneSplitterV:pointerover /template/ Border#line">
+        <Setter Property="Background" Value="{StaticResource BrushAccent}" />
+        <Setter Property="Height" Value="80" />
+    </Style>
+    <Style Selector="ProgressBar">
+        <Setter Property="Foreground" Value="{StaticResource BrushAccent}" />
+        <Setter Property="Background" Value="{StaticResource BrushControl}" />
+    </Style>
+    <Style Selector="ToolTip">
+        <Setter Property="Background" Value="{StaticResource BrushPanel}" />
+        <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+    </Style>
+
+    <!-- 이름 + 입력 한 줄(WPF FormRow) -->
+    <Style Selector="c|FormRow">
+        <Setter Property="Margin" Value="0,0,0,8" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="Auto,*">
+                    <TextBlock Classes="FieldLabel" Width="{TemplateBinding LabelWidth}"
+                               Text="{TemplateBinding Label}" TextWrapping="Wrap" />
+                    <StackPanel Grid.Column="1">
+                        <ContentPresenter Content="{TemplateBinding Content}" />
+                        <TextBlock Text="{TemplateBinding Hint}" Foreground="{StaticResource BrushDim}" FontSize="11"
+                                   TextWrapping="Wrap" Margin="0,3,0,0"
+                                   IsVisible="{TemplateBinding Hint, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    </StackPanel>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

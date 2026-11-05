@@ -1,8 +1,8 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ProxmoxClient.UI.App"
-             RequestedThemeVariant="Default">
-    <!-- Default: 기기 테마(밝게·어둡게)를 따른다 -->
+             RequestedThemeVariant="Dark">
+    <!-- WPF 앱과 같은 어두운 테마(항상) -->
 
     <Application.Resources>
         <ResourceDictionary>
@@ -19,10 +19,11 @@
                     <SolidColorBrush x:Key="TrackBrush" Color="#E5E7EB" />
                     <SolidColorBrush x:Key="BannerBackgroundBrush" Color="#FDECEA" />
                 </ResourceDictionary>
+                <!-- WPF DarkTheme 과 같은 값(BrushBg · BrushPanel · BrushBorder · BrushDim · BrushControl) -->
                 <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="PageBackgroundBrush" Color="#121212" />
-                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#1E1E1E" />
-                    <SolidColorBrush x:Key="CardBorderBrush" Color="#2C2C2C" />
+                    <SolidColorBrush x:Key="PageBackgroundBrush" Color="#1E1E1E" />
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#252526" />
+                    <SolidColorBrush x:Key="CardBorderBrush" Color="#3F3F46" />
                     <SolidColorBrush x:Key="SubtleTextBrush" Color="#9E9E9E" />
                     <SolidColorBrush x:Key="TrackBrush" Color="#333337" />
                     <SolidColorBrush x:Key="BannerBackgroundBrush" Color="#3A1F1C" />
@@ -42,6 +43,8 @@
                 <ColorPaletteResources x:Key="Dark" Accent="#007ACC" />
             </FluentTheme.Palettes>
         </FluentTheme>
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
         <StyleInclude Source="avares://ProxmoxClient.UI/Themes/Styles.axaml" />
+        <StyleInclude Source="avares://ProxmoxClient.UI/Themes/WpfTheme.axaml" />
     </Application.Styles>
 </Application>

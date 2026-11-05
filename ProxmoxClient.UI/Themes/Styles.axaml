@@ -170,8 +170,5 @@
         <Setter Property="Margin" Value="0,1" />
     </Style>
 
-    <Style Selector="TextBox">
-        <Setter Property="MinHeight" Value="44" />
-        <Setter Property="VerticalContentAlignment" Value="Center" />
-    </Style>
+
 </Styles>

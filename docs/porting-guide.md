@@ -64,3 +64,16 @@ dotnet run --project tools/UiSnapshot -- --port <포트> --out <폴더> --mode m
 - 출력의 `FAIL` · `EXCEPTION` 줄이 없어야 한다. 캡처 몇 장은 직접 열어 보고(표가 비었거나 잘리지 않았는지) 확인한다.
 - 서버 로그의 `UNHANDLED GET ...` 은 그 화면이 부르는 API 의 예시 응답이 없다는 뜻 — `tools/FakePve/routes/<영역>.py` 에
   예시 데이터를 추가해 표에 내용이 보이게 한다(README 참고).
+
+## 화면 모양은 WPF 와 같게(필수)
+
+- 테마: `Themes/WpfTheme.axaml` — WPF DarkTheme 과 같은 색·이름(`BrushBg` `BrushPanel` `BrushControl` `BrushBorder`
+  `BrushAccent` `BrushText` `BrushDim` `BrushOk` `BrushWarn` `BrushErr` `BrushSelection` `BrushHover`).
+- WPF `Style="{StaticResource X}"` → `Classes="X"` (같은 이름): `AccentButton` `DangerButton` `DialogButton`
+  `DialogPrimaryButton` `KeyToggle` `FormPanel` `DialogFooter` `SummaryLabel` `FormSection` `SectionHeader`
+  `FieldLabel` `DialogStatus` `NavListBox` `NavListBoxItem` `SubTabs`(ListBox) / `SubTabItem` `PaneSplitterH` `PaneSplitterV`.
+- `ic:IconAssist.Icon` · `ic:IconAssist.Dropdown` · `ic:IconLabel` · `ic:FormRow` → `xmlns:c="using:ProxmoxClient.UI.Views.Controls"` 의 같은 이름.
+- WPF 의 `DataGrid` 는 Avalonia `DataGrid`(같은 열·같은 폭·같은 머리글)로 옮긴다 — 카드 목록으로 바꾸지 않는다.
+  모바일에서만 카드가 필요하면 `PlatformInfo.IsDesktop` 으로 나눈다(데스크톱은 반드시 WPF 와 같은 표).
+- 배치(Grid 행·열, 여백, 버튼 순서·이름·아이콘)는 WPF XAML 그대로. `DataTrigger` 는 `IsVisible="{Binding ...}"` 등 바인딩으로.
+- WPF 에서 하던 규칙(버튼 사용 조건, 확인 문구, 상태별 표시)은 그대로 옮긴다 — 임의로 바꾸지 않는다.

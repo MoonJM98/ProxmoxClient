@@ -21,6 +21,8 @@
         <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
         <PackageReference Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
         <PackageReference Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />
+        <!-- WPF 앱과 같은 표(DataGrid) -->
+        <PackageReference Include="Avalonia.Controls.DataGrid" Version="12.1.2" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
         <!-- 콘솔 Tight JPEG 디코딩 — Avalonia.Skia 와 같은 버전 -->
         <PackageReference Include="SkiaSharp" Version="3.119.4" />

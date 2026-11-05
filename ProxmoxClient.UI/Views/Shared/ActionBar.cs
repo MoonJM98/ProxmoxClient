@@ -23,16 +23,18 @@ public static class ActionBar
             panel.Children.Add(CreateMenuButton(menu.Key, menu.ToList(), host, status));
     }
 
+    /// <summary>WPF 와 같은 아이콘 버튼(IconAssist — 아이콘 + 글자, 아이콘만이면 글자 없이 툴팁).</summary>
     internal static Button IconButton(string label, string iconKey, Control host, bool iconOnly = false)
     {
-        var content = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 6 };
-        // 아직 화면에 붙지 않은 컨트롤은 앱 리소스까지 찾아 올라가지 못하므로 앱 리소스에서도 찾는다
+        var button = new Button
+        {
+            Content = iconOnly ? null : label, Margin = new Thickness(0, 0, 8, 4),
+            Padding = iconOnly ? new Thickness(8, 6) : new Thickness(12, 6)
+        };
         if ((host.TryFindResource(iconKey, out var icon) ||
              Application.Current?.TryGetResource(iconKey, Application.Current.ActualThemeVariant, out icon) == true) &&
             icon is Geometry geometry)
-            content.Children.Add(new Avalonia.Controls.Shapes.Path { Data = geometry, Classes = { "icon" }, Width = 16, Height = 16 });
-        if (!iconOnly) content.Children.Add(new TextBlock { Text = label, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
-        var button = new Button { Content = content, Margin = new Thickness(0, 0, 8, 6), MinHeight = 36 };
+            Controls.IconAssist.SetIcon(button, geometry);
         ToolTip.SetTip(button, label);
         return button;
     }
@@ -59,6 +61,7 @@ public static class ActionBar
         TextBlock status)
     {
         var button = IconButton(Loc.T(menuKey), "IconMore", host);
+        Controls.IconAssist.SetDropdown(button, true);
         var menu = new MenuFlyout();
         foreach (var action in actions)
         {
