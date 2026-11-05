@@ -1,0 +1,133 @@
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+             xmlns:l="using:ProxmoxClient.UI.Localization"
+             xmlns:c="using:ProxmoxClient.UI.Views.Controls"
+             xmlns:core="using:ProxmoxClient.Core.Models"
+             x:Class="ProxmoxClient.UI.Views.Login.LoginPage"
+             x:DataType="vm:ProfilesViewModel"
+             Header="{l:Tr LoginWindow_01}">
+    <ContentPage.Styles>
+        <!-- WPF Hyperlink: 흐린 밑줄, 올리면 강조색 -->
+        <Style Selector="HyperlinkButton.ServerLink">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="HyperlinkButton.ServerLink TextBlock.link">
+            <Setter Property="Foreground" Value="{StaticResource BrushDim}" />
+            <Setter Property="TextDecorations" Value="Underline" />
+        </Style>
+        <Style Selector="HyperlinkButton.ServerLink:pointerover TextBlock.link">
+            <Setter Property="Foreground" Value="{StaticResource BrushAccent}" />
+        </Style>
+    </ContentPage.Styles>
+
+    <!-- WPF LoginWindow 과 같은 배치: 470 폭 한 칸을 가운데에 둔다(창 머리글 대신 브랜드 머리글) -->
+    <Grid ColumnDefinitions="*,470,*" RowDefinitions="*,Auto,*">
+        <StackPanel Grid.Column="1" Grid.Row="1">
+            <!-- 브랜드 머리글 -->
+            <Border Padding="0,26,0,22">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Color="#2B2B2E" Offset="0" />
+                        <GradientStop Color="#1E1E1E" Offset="1" />
+                    </LinearGradientBrush>
+                </Border.Background>
+                <StackPanel HorizontalAlignment="Center">
+                    <Grid Width="46" Height="46" Margin="0,0,0,10" HorizontalAlignment="Center">
+                        <Border Background="#E57000" CornerRadius="7" Width="25" Height="25"
+                                HorizontalAlignment="Left" RenderTransformOrigin="50%,50%">
+                            <Border.RenderTransform>
+                                <RotateTransform Angle="45" />
+                            </Border.RenderTransform>
+                        </Border>
+                        <Border Background="#F1F1F1" CornerRadius="7" Width="25" Height="25"
+                                HorizontalAlignment="Right" Opacity="0.92" RenderTransformOrigin="50%,50%">
+                            <Border.RenderTransform>
+                                <RotateTransform Angle="45" />
+                            </Border.RenderTransform>
+                        </Border>
+                    </Grid>
+                    <TextBlock Text="{l:Tr LoginWindow_02}" FontSize="19" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{l:Tr LoginWindow_03}" FontSize="11" Foreground="{StaticResource BrushDim}"
+                               HorizontalAlignment="Center" Margin="0,3,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- 본문 -->
+            <StackPanel Margin="20,14,20,16">
+                <TextBlock Classes="FieldLabel" Text="{l:Tr LoginWindow_04}" />
+                <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedServer}"
+                          HorizontalAlignment="Stretch" Margin="0,0,0,10">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ProfileItem">
+                            <StackPanel Margin="2,2">
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11">
+                                    <Run Text="{Binding Profile.Host}" /><Run Text=":" /><Run
+                                        Text="{Binding Profile.Port, StringFormat='{}{0}'}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <!-- 자격 증명(서버를 고른 뒤에만) -->
+                <Border Classes="FormPanel" Padding="12" Margin="0,0,0,10" IsVisible="{Binding ShowCredentials}">
+                    <StackPanel>
+                        <TextBlock Classes="FieldLabel" Text="{l:Tr LoginWindow_05}" />
+                        <TextBox Text="{Binding UserText}" Margin="0,0,0,6" />
+                        <TextBlock Classes="FieldLabel" Text="{l:Tr LoginWindow_06}"
+                                   IsVisible="{Binding IsPasswordEntryVisible}" />
+                        <TextBox Text="{Binding LoginPassword}" PasswordChar="•" Margin="0,0,0,6"
+                                 IsVisible="{Binding IsPasswordEntryVisible}"
+                                 TextInputOptions.IsSensitive="True">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding SignInCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <TextBlock Text="{Binding OpenIdHint}" IsVisible="{Binding IsOpenIdRealm}" TextWrapping="Wrap"
+                                   FontSize="11" Foreground="{StaticResource BrushDim}" Margin="0,0,0,6" />
+                        <TextBlock Classes="FieldLabel" Text="{l:Tr LoginWindow_07}" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" c:IconAssist.Icon="{StaticResource IconRefresh}"
+                                    ToolTip.Tip="{l:Tr LoginWindow_08}" Margin="6,0,0,0" Padding="9,6"
+                                    Command="{Binding ReloadRealmsCommand}" IsEnabled="{Binding !IsFetchingRealms}" />
+                            <ComboBox ItemsSource="{Binding Realms}" SelectedItem="{Binding SelectedRealm}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="core:PveAuthDomain">
+                                        <TextBlock Text="{Binding DisplayLabel}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </DockPanel>
+                        <!-- 로그인 때마다 보여 안심시키는 안내라 아이콘 툴팁 대신 글로 둔다 -->
+                        <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11" Margin="0,6,0,0"
+                                   TextWrapping="Wrap" Text="{l:Tr LoginWindow_09}" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Foreground="{StaticResource BrushWarn}" TextWrapping="Wrap" Margin="0,0,0,10"
+                           MinHeight="18" Text="{Binding Status}" />
+
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button c:IconAssist.Icon="{StaticResource IconLogIn}" Content="{l:Tr LoginWindow_10}"
+                                Classes="DialogPrimaryButton" Command="{Binding SignInCommand}"
+                                IsEnabled="{Binding !IsSigningIn}" />
+                        <Button c:IconAssist.Icon="{StaticResource IconX}" Content="{l:Tr LoginWindow_Close}"
+                                Classes="DialogButton" Click="OnCloseClick" />
+                    </StackPanel>
+                    <HyperlinkButton Classes="ServerLink" DockPanel.Dock="Left" VerticalAlignment="Center"
+                                     FontSize="12" Command="{Binding OpenServerManagerCommand}"
+                                     ToolTip.Tip="{l:Tr LoginWindow_11}">
+                        <TextBlock Classes="link" Text="{l:Tr Login_ServerManager}" />
+                    </HyperlinkButton>
+                </DockPanel>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</ContentPage>

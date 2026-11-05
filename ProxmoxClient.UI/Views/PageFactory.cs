@@ -18,9 +18,10 @@ public static class PageFactory
 
         Page page = viewModel switch
         {
-            ProfilesViewModel => new ProfilesPage(),
-            ProfileEditViewModel => new ProfileEditPage(),
-            // 모바일 탭 화면 — 같은 뷰모델을 모바일 배치로
+            // 데스크톱·태블릿은 WPF 와 같은 로그인·서버 설정 화면, 휴대폰은 모바일 화면
+            ProfilesViewModel => PlatformInfo.IsDesktop ? new Login.LoginPage() : new ProfilesPage(),
+            ProfileEditViewModel => PlatformInfo.IsDesktop ? new Login.ProfileDialogPage() : new ProfileEditPage(),
+            // 휴대폰 탭 화면(데스크톱·태블릿은 위에서 메인 창으로)
             ClusterViewModel => new ClusterPage(),
             GuestDetailViewModel => new GuestDetailPage(),
             NodeDetailViewModel => new NodeDetailPage(),

@@ -35,9 +35,22 @@ public sealed partial class ProfilesViewModel : ViewModelBase
 
         IsEmpty = Profiles.Count == 0;
         _loaded = true;
+        await OnLoadedAsync();
     }
 
     public bool IsLoaded => _loaded;
+
+    /// <summary>데스크톱 로그인 화면(Views/Login)이 목록을 읽은 뒤 마지막 로그인 서버를 고르는 자리. 모바일은 아무것도 하지 않는다.</summary>
+    private partial Task OnLoadedAsync();
+
+    /// <summary>화면을 떠날 때(데스크톱 로그인 화면의 진행 중 브라우저 로그인 취소 등).</summary>
+    public override void OnDisappearing(bool removed)
+    {
+        base.OnDisappearing(removed);
+        OnLeaving(removed);
+    }
+
+    private partial void OnLeaving(bool removed);
 
     [RelayCommand]
     private Task Add()
