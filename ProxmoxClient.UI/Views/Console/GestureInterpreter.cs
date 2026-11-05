@@ -20,13 +20,15 @@ public interface IRemotePointer
 ///     터치 제스처 → 원격 마우스 이벤트. 화면 그리기와 떨어진 순수 로직이라 조작성 검사가 그대로 시험한다.
 ///     규칙은 널리 쓰이는 모바일 원격 앱(RealVNC Viewer 마우스 모드, AVNC 등)과 같게 했다:
 ///     <list type="bullet">
-///         <item>한 번 탭 = 클릭 안 함(터치 모드는 커서만 그 자리로) · 두 번 탭 = 왼쪽 클릭 · 세 번 탭 = 더블 클릭
-///             (마우스 모드: 커서 위치 · 터치 모드: 누른 곳) — 화면을 스치기만 해도 클릭되지 않게(사용자 요청)</item>
+///         <item>탭 N번 = 왼쪽 클릭 N번(1 = 클릭, 2 = 더블 클릭) — 다음 터치를 가려내려고 마지막 탭 뒤
+///             <see cref="MultiTapMs" /> 기다렸다 보낸다 (마우스 모드: 커서 위치 · 터치 모드: 첫 탭 자리)</item>
+///         <item>탭 뒤 이어진 터치를 끌면 = 왼쪽 버튼 끌기, 그 자리에서 가만히 길게 누르면 = 오른쪽 버튼 누름(끌기·클릭).
+///             첫 탭은 '이어서 누르겠다'는 신호라 빼고 그 사이 탭만큼 먼저 클릭한다: 탭 → 끌기 = 끌기,
+///             탭 2번 → 끌기 = 클릭 후 끌기, 탭 3번 → 끌기 = 더블 클릭 후 끌기(사용자 요청)</item>
 ///         <item>두 손가락 탭 = 오른쪽 클릭, 세 손가락 탭 = 가운데 클릭</item>
 ///         <item>길게 누르기 = 오른쪽 클릭, 길게 누른 뒤 끌기 = 왼쪽 버튼 끌기(선택·창 이동)</item>
 ///         <item>한 손가락 끌기 = 커서 이동(마우스 모드) / 왼쪽 버튼 끌기(터치 모드)</item>
 ///         <item>두 손가락 끌기 = 스크롤(세로·가로), 확대한 상태에서는 화면 이동 · 벌리기·오므리기 = 확대·축소(+ 이동)</item>
-///         <item>탭한 뒤 바로 끌기 = 왼쪽 버튼 끌기(끌어다 놓기·선택) · 탭한 뒤 길게 누르고 끌기 = 오른쪽 버튼 끌기</item>
 ///     </list>
 /// </summary>
 public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
@@ -49,11 +51,14 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
     private double _lastDistance;
     private Vector _scrollRemainder;
     private bool _longPressFired;
+    /// <summary>지금 손가락이 탭에 이어진 터치 — 바로 떼면 탭 하나 더, 끌거나 길게 누르면 버튼 누름.</summary>
     private bool _doubleTapDrag;
     private long _lastTapUp = long.MinValue / 2;
     private Point _lastTapAt;
+
+    /// <summary>아직 클릭으로 보내지 않은 이어진 탭 수(0 = 기다리는 클릭 없음).</summary>
     private int _tapCount;
-    private bool _pendingClick;
+
     private Point _pendingClickAt;
 
     private enum Gesture
@@ -91,15 +96,22 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
             _gesture = Gesture.Pending;
             _gestureStart = ms;
             _longPressFired = false;
-            // 방금 탭한 자리 근처를 곧바로 다시 누르면 — 이어서 끌 때 끌어다 놓기(TeamViewer 의 탭 후 끌기)
-            var near = ms - _lastTapUp <= MultiTapMs && Length(view - _lastTapAt) < 48;
+            // 방금 탭한 자리 근처를 곧바로 다시 누르면 이어진 터치 — 바로 떼면 탭이 하나 늘고, 끌거나 길게 누르면
+            // 그 순간 버튼을 누른다(PressAfterTaps). 다른 곳을 누르면 기다리던 클릭을 먼저 보낸다
+            var near = _tapCount > 0 && ms - _lastTapUp <= MultiTapMs && Length(view - _lastTapAt) < 48;
             _doubleTapDrag = near;
-            if (_pendingClick && !near) ResolvePendingClick(); // 다른 곳을 누름 — 기다리던 클릭을 먼저 보낸다
+            if (!near) ResolvePendingClick();
             return;
         }
 
-        // 두 번째 손가락: 한 손가락 동작을 거두고 두 손가락 제스처로
-        if (_gesture == Gesture.Drag) Release();
+        // 두 번째 손가락: 한 손가락 동작(기다리던 클릭·눌린 버튼 포함)을 거두고 두 손가락 제스처로
+        if (_doubleTapDrag)
+        {
+            _doubleTapDrag = false;
+            ResolvePendingClick();
+        }
+
+        if (_buttons != 0) Release();
         if (_gesture is Gesture.Pending or Gesture.CursorMove or Gesture.Drag or Gesture.None)
             _gesture = Gesture.Pending;
         _lastCentroid = Centroid();
@@ -124,20 +136,14 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
         switch (_gesture)
         {
             case Gesture.Pending when moved && _doubleTapDrag:
-            {
-                _pendingClick = false; // 탭 뒤 끌기 — 기다리던 클릭 대신 끌기
-                _tapCount = 0;
-                // 탭 → 바로 끌기 = 왼쪽 버튼 끌기, 탭 → 길게 누른 뒤 끌기 = 오른쪽 버튼 끌기(사용자 요청, 두 모드 공통)
-                var held = _longPressFired || ms - _gestureStart >= LongPressMs;
-                if (Mode == TouchInputMode.Touch) Point(finger.Start, 0);
-                Press(held ? Right : Left);
-                _gesture = Gesture.Drag;
-                // 버튼은 처음 누른 자리에서 내려가야 끌어다 놓기가 정확하다 — 그래서 탭 뒤 끌기는 문턱 전에 커서를
-                // 움직이지 않고, 문턱을 넘을 때 모인 만큼을 가속 없이(손가락 거리 그대로) 따라잡는다
+                // 이어진 터치를 누른 채 끌기 = 왼쪽 버튼 끌기(앞선 탭이 더 있으면 그만큼 클릭한 뒤).
+                // 가만히 길게 누른 뒤라면 오른쪽 버튼 — 보통은 Tick 이 먼저 잡는다
+                PressAfterTaps(_longPressFired || ms - _gestureStart >= LongPressMs ? Right : Left);
+                // 버튼은 첫 탭 자리에서 내려갔다 — 문턱 전에는 커서를 움직이지 않고, 문턱을 넘을 때 모인 만큼을
+                // 가속 없이(손가락 거리 그대로) 따라잡는다
                 if (Mode == TouchInputMode.Touch) Point(view, _buttons);
                 else MoveCursor(view - finger.Start, ms - _gestureStart, accelerate: false);
                 break;
-            }
             case Gesture.Pending when moved:
                 if (Mode == TouchInputMode.Touch)
                 {
@@ -195,6 +201,23 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
         var duration = ms - _gestureStart;
         switch (_gesture)
         {
+            case Gesture.Pending when _doubleTapDrag:
+                _doubleTapDrag = false;
+                if (duration < LongPressMs)
+                {
+                    // 이어진 터치를 바로 뗐다 — 탭이 하나 늘었다(2번 = 더블 클릭, 3번 = 세 번 클릭). 다음 터치를 기다린다
+                    _tapCount++;
+                    _lastTapUp = ms;
+                    _lastTapAt = finger.Start;
+                }
+                else
+                {
+                    // 가만히 길게 눌렀다 뗐는데 Tick 이 못 잡았다 — 오른쪽 버튼 누름·놓음
+                    PressAfterTaps(Right);
+                    Release();
+                }
+
+                break;
             case Gesture.Pending when _maxFingers >= 3:
                 Click(TapPoint(finger), Middle);
                 break;
@@ -219,11 +242,12 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
     /// <summary>
     ///     주기적으로 불러 길게 누르기를 손을 떼기 전에 알아챈다 — <see cref="LongPressArmed" /> 가 켜지면 화면이
     ///     "떼면 오른쪽 클릭 · 끌면 선택" 표시를 보여 준다. 클릭은 손을 뗄 때 보낸다(끌기와 구분하려고).
+    ///     기다리던 탭 클릭도 다음 터치가 오지 않으면 여기서 보낸다.
     /// </summary>
     public bool Tick(long ms)
     {
-        // 두 번 탭 뒤 세 번째 탭을 기다리다 시간이 지났다 — 클릭 한 번
-        if (_pendingClick && _fingers.Count == 0 && ms - _lastTapUp > MultiTapMs)
+        // 탭 뒤 다음 터치를 기다리다 시간이 지났다 — 모인 탭 수만큼 클릭(1 = 클릭, 2 = 더블 클릭)
+        if (_tapCount > 0 && _fingers.Count == 0 && ms - _lastTapUp > MultiTapMs)
         {
             ResolvePendingClick();
             return true;
@@ -234,6 +258,13 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
         var finger = _fingers.Values.First();
         if (ms - _gestureStart < LongPressMs || Length(finger.Last - finger.Start) > TapSlop) return false;
 
+        if (_doubleTapDrag)
+        {
+            // 이어진 터치를 그 자리에서 가만히 길게 눌렀다 — 오른쪽 버튼을 누른 상태(끌면 오른쪽 끌기, 떼면 오른쪽 클릭)
+            PressAfterTaps(Right);
+            return true;
+        }
+
         _longPressFired = true;
         return true;
     }
@@ -242,54 +273,49 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
     public bool HasFingers => _fingers.Count > 0;
 
     /// <summary>손가락이 닿아 있거나 클릭을 기다리는 중 — 화면이 <see cref="Tick" /> 을 계속 불러야 한다.</summary>
-    public bool NeedsTicks => _fingers.Count > 0 || _pendingClick;
+    public bool NeedsTicks => _fingers.Count > 0 || _tapCount > 0;
 
     /// <summary>
-    ///     한 손가락 탭 — 1번: 클릭 없이 커서만(터치 모드는 그 자리로), 2번: 세 번째를 잠깐 기다렸다 클릭,
-    ///     3번: 더블 클릭. 같은 자리 근처를 <see cref="MultiTapMs" /> 안에 이어 누를 때만 이어진 탭으로 센다.
+    ///     한 손가락 첫 탭 — 클릭을 바로 보내지 않고 <see cref="MultiTapMs" /> 동안 다음 터치를 기다린다.
+    ///     오지 않으면 <see cref="Tick" /> 이 클릭, 같은 자리 근처에 오면 이어진 터치로 받는다(<see cref="Down" />).
     /// </summary>
     private void Tap(Finger finger, long ms)
     {
-        // 이번 탭을 누른 때가 지난 탭을 뗀 뒤 MultiTapMs 안이면 이어진 탭
-        var chained = _gestureStart - _lastTapUp <= MultiTapMs && Length(finger.Start - _lastTapAt) < 48;
-        _tapCount = chained ? _tapCount + 1 : 1;
         _lastTapUp = ms;
         _lastTapAt = finger.Start;
         var at = TapPoint(finger);
-        switch (_tapCount)
+        _tapCount = 1;
+        _pendingClickAt = at;
+        if (Mode == TouchInputMode.Touch)
         {
-            case 1:
-                if (Mode == TouchInputMode.Touch)
-                {
-                    Cursor = at;
-                    Send(_buttons, at); // 누른 곳으로 커서만(마우스를 올린 것과 같다)
-                }
-
-                break;
-            case 2:
-                _pendingClick = true;
-                _pendingClickAt = at;
-                break;
-            default:
-                _pendingClick = false;
-                _tapCount = 0;
-                Cursor = at;
-                Send(0, at);
-                Send(Left, at);
-                Send(0, at);
-                Send(Left, at);
-                Send(0, at);
-                break;
+            Cursor = at;
+            Send(_buttons, at); // 클릭을 기다리는 동안 커서는 먼저 누른 곳으로
         }
     }
 
+    /// <summary>기다리던 탭을 탭 수만큼 클릭으로 보낸다(첫 탭 자리에서 — 원격이 더블 클릭으로 알아보게).</summary>
     private void ResolvePendingClick()
     {
-        if (!_pendingClick) return;
+        if (_tapCount == 0) return;
 
-        _pendingClick = false;
+        var count = _tapCount;
         _tapCount = 0;
-        Click(_pendingClickAt, Left);
+        Clicks(_pendingClickAt, count);
+    }
+
+    /// <summary>
+    ///     이어진 터치가 끌기·길게 누르기가 됐다 — 첫 탭은 '이어서 누르겠다'는 신호라 빼고, 그 사이 탭만큼 클릭한 뒤
+    ///     버튼을 누른 상태로. 탭 → 누름 = 누름, 탭 2번 → 누름 = 클릭 후 누름, 탭 3번 → 누름 = 더블 클릭 후 누름.
+    /// </summary>
+    private void PressAfterTaps(int button)
+    {
+        var clicks = _tapCount - 1;
+        _tapCount = 0;
+        _doubleTapDrag = false;
+        if (clicks > 0) Clicks(_pendingClickAt, clicks);
+        Cursor = _pendingClickAt;
+        Press(button);
+        _gesture = Gesture.Drag;
     }
 
     /// <summary>길게 누른 상태(아직 손을 떼지 않음).</summary>
@@ -299,8 +325,8 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
     public void Cancel()
     {
         if (_buttons != 0) Release();
-        _pendingClick = false;
         _tapCount = 0;
+        _doubleTapDrag = false;
         _fingers.Clear();
         _gesture = Gesture.None;
         _maxFingers = 0;
@@ -380,6 +406,17 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
     {
         Cursor = viewport.ToRemote(view);
         Send(buttons, Cursor);
+    }
+
+    private void Clicks(Point remotePoint, int count)
+    {
+        Cursor = remotePoint;
+        Send(0, remotePoint);
+        for (var i = 0; i < count; i++)
+        {
+            Send(Left, remotePoint);
+            Send(0, remotePoint);
+        }
     }
 
     private void Click(Point remotePoint, int button)

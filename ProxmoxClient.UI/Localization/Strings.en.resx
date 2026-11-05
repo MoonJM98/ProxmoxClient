@@ -670,6 +670,12 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Console_ViewActual" xml:space="preserve">
     <value>1:1</value>
   </data>
+  <data name="Console_Menu" xml:space="preserve">
+    <value>Console menu — tap to show or hide keys and settings. Drag to move it.</value>
+  </data>
+  <data name="Console_Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
   <data name="Console_ViewModeTip" xml:space="preserve">
     <value>View mode — fit (all) · fill (no bars) · actual size (1:1). When zoomed in, drag with two fingers to move the view.</value>
   </data>

@@ -11,8 +11,10 @@ using ProxmoxClient.UI.ViewModels;
 namespace ProxmoxClient.UI.Views.Console;
 
 /// <summary>
-///     VM 콘솔 화면 — 원격 화면 + 아래쪽 특수키 막대(키보드 · Esc · Tab · Ctrl/Alt 고정 · Win · 방향키 · 더 보기(F1~F12 등)
-///     · Ctrl+Alt+Del · 마우스/터치 모드 · 화면 맞춤). 데스크톱은 물리 키보드·마우스를 그대로 쓴다.
+///     VM 콘솔 화면 — 원격 화면을 가득 채우고, 페이지 위쪽 막대·특수키 막대는 숨긴 채 떠 있는 버블만 보인다(사용자 요청).
+///     버블을 누르면 위쪽 막대(뒤로 · 제목 · 콘솔 설정)와 아래쪽 특수키 막대(키보드 · Esc · Tab · Ctrl/Alt 고정 · Win ·
+///     방향키 · 더 보기(F1~F12 등) · Ctrl+Alt+Del · 마우스/터치 모드 · 화면 맞춤)가 열리고, 다시 누르면 닫힌다.
+///     버블은 끌어서 옮길 수 있다. 데스크톱은 물리 키보드·마우스를 그대로 쓴다.
 /// </summary>
 public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
 {
@@ -23,10 +25,17 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
     private readonly ToggleButton _super;
     private readonly Button _mode;
     private readonly Border _more;
+    private readonly Border _bar;
+    private readonly Border _top;
+    private readonly TextBlock _title;
+    private readonly Controls.FloatingBubble _bubble;
     private ConsoleViewModel? _vm;
 
     public ConsolePage()
     {
+        // 원격 화면을 가리지 않게 페이지 위쪽 막대는 숨긴다 — 뒤로 가기는 버블 메뉴의 [뒤로]와 기기의 뒤로 가기 키로
+        NavigationPage.SetHasNavigationBar(this, false);
+
         // 소프트 키보드 입력 받기 — 보이지 않는 입력 칸(포커스를 주면 모바일 키보드가 올라온다)
         _input = new TextBox
         {
@@ -84,12 +93,33 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         _more = new Border { IsVisible = false, Child = Row(extra) };
 
         // 특수키 막대 — 화면 위에 반투명하게 겹쳐 한 줄로, 넘치면 옆으로 밀어 본다(원격 화면을 가리지 않게)
-        var bar = new Border
+        _bar = new Border
         {
             Background = new SolidColorBrush(Color.Parse("#66000000")), Padding = new Thickness(4, 4, 4, 6),
-            VerticalAlignment = VerticalAlignment.Bottom,
+            VerticalAlignment = VerticalAlignment.Bottom, IsVisible = false,
             Child = new StackPanel { Spacing = 2, Children = { _more, Row(main) } }
         };
+
+        // 위쪽 막대(버블 메뉴) — 뒤로 · 제목 · 콘솔 설정
+        _title = new TextBlock
+        {
+            Foreground = Brushes.White, FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(8, 0)
+        };
+        var back = KeyButton(L.T("Console_Back"), async (_, _) => await Services.AppServices.Navigator.PopAsync());
+        var settings = KeyButton(L.T("ConsoleSettingsWindow_01"), async (_, _) => await OpenSettingsAsync());
+        Grid.SetColumn(_title, 1);
+        Grid.SetColumn(settings, 2);
+        _top = new Border
+        {
+            Background = new SolidColorBrush(Color.Parse("#99000000")), Padding = new Thickness(4),
+            VerticalAlignment = VerticalAlignment.Top, IsVisible = false,
+            Child = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), Children = { back, _title, settings } }
+        };
+
+        _bubble = new Controls.FloatingBubble(L.T("Console_Menu"));
+        _bubble.SetIcon("IconMore");
+        _bubble.Clicked += () => SetMenuOpen(!_top.IsVisible);
 
         _surface.PointerSink = (b, x, y) => _vm?.SendPointer(b, x, y);
         _surface.KeySink = (keysym, down) => _vm?.SendKey(keysym, down);
@@ -105,7 +135,7 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         {
             if (_vm is not null) await _vm.ReconnectAsync();
         };
-        Content = new Grid { Children = { _surface, status, reconnect, _input, bar } };
+        Content = new Grid { Children = { _surface, status, reconnect, _input, _top, _bar, _bubble } };
         Background = Brushes.Black;
         DataContextChanged += (_, _) => AttachViewModel(DataContext as ConsoleViewModel);
         // 앱이 배경으로 가면 눌린 키를 모두 뗀다(게스트에 Alt 등이 눌린 채 남지 않게)
@@ -163,6 +193,17 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
 
     private Action _moreToggle => () => _more.IsVisible = !_more.IsVisible;
 
+    /// <summary>버블 메뉴(위쪽 막대 + 특수키 막대)를 열거나 닫는다.</summary>
+    public void SetMenuOpen(bool open)
+    {
+        _top.IsVisible = open;
+        _bar.IsVisible = open;
+        _bubble.SetIcon(open ? "IconX" : "IconMore");
+    }
+
+    /// <summary>버블 메뉴가 열려 있다.</summary>
+    public bool IsMenuOpen => _top.IsVisible;
+
     private async Task OpenSettingsAsync()
     {
         if (_vm is not { } vm) return;
@@ -187,6 +228,7 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         if (vm is null) return;
 
         Header = vm.Title;
+        _title.Text = vm.Title;
         vm.Vnc.Connected += (w, h) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             _surface.Attach(w, h, () => vm.Vnc.Framebuffer));
         vm.Vnc.FrameReceived += (x, y, w, h) =>

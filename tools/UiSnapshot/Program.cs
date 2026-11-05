@@ -758,6 +758,7 @@ async Task ConsoleUsabilityCheck()
     var g = surface.Gestures;
     var vp = surface.Viewport;
     long now = 1_000_000;
+
     var results = new List<(string Name, string Expect, string Got, bool Pass)>();
     var logOffset = 0L;
 
@@ -814,26 +815,67 @@ async Task ConsoleUsabilityCheck()
     }
 
     Events(); // 연결 시 이벤트 버림
+
+    // 버블(사용자 요청): 처음엔 페이지 위쪽 막대·특수키 막대를 숨기고 버블만. 누르면 메뉴가 열리고, 끌면 옮겨진다
+    {
+        var bubble = page.GetVisualDescendants().OfType<ProxmoxClient.UI.Views.Controls.FloatingBubble>().First();
+        var navBarHidden = !NavigationPage.GetHasNavigationBar(page);
+        var keyBarHidden = !page.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == "Esc" && b.IsEffectivelyVisible);
+        Check0("콘솔 처음 화면", "위쪽 막대·특수키 숨김, 버블 보임",
+            $"위쪽 막대 {(navBarHidden ? "숨김" : "보임")}, 특수키 {(keyBarHidden ? "숨김" : "보임")}, 버블 {(bubble.IsEffectivelyVisible ? "보임" : "없음")}",
+            navBarHidden && keyBarHidden && bubble.IsEffectivelyVisible && !page.IsMenuOpen);
+
+        Events();
+        var bubbleAt = bubble.TranslatePoint(new Avalonia.Point(ProxmoxClient.UI.Views.Controls.FloatingBubble.Size / 2, ProxmoxClient.UI.Views.Controls.FloatingBubble.Size / 2), window)!.Value;
+        var bt = window.TouchBegin(bubbleAt, Avalonia.Input.RawInputModifiers.None);
+        for (var i = 1; i <= 10; i++)
+        {
+            window.TouchMove(bt, bubbleAt + new Avalonia.Vector(-i * 15, i * 20), Avalonia.Input.RawInputModifiers.None);
+            Pump(16);
+        }
+        window.TouchEnd(bt, bubbleAt + new Avalonia.Vector(-150, 200), Avalonia.Input.RawInputModifiers.None);
+        Pump(200);
+        var movedAt = bubble.TranslatePoint(new Avalonia.Point(ProxmoxClient.UI.Views.Controls.FloatingBubble.Size / 2, ProxmoxClient.UI.Views.Controls.FloatingBubble.Size / 2), window)!.Value;
+        var bubbleDragEvents = Events().Count(e => e.StartsWith("pointer"));
+        Check0("버블 끌기", "버블이 손가락을 따라 옮겨짐, 메뉴 안 열림, 원격에 포인터 안 보냄",
+            $"이동 ({movedAt.X - bubbleAt.X:F0},{movedAt.Y - bubbleAt.Y:F0}), 메뉴 {(page.IsMenuOpen ? "열림" : "닫힘")}, 포인터 {bubbleDragEvents}개",
+            Math.Abs(movedAt.X - bubbleAt.X + 150) <= 2 && Math.Abs(movedAt.Y - bubbleAt.Y - 200) <= 2 && !page.IsMenuOpen && bubbleDragEvents == 0);
+
+        bt = window.TouchBegin(movedAt, Avalonia.Input.RawInputModifiers.None);
+        Pump(30);
+        window.TouchEnd(bt, movedAt, Avalonia.Input.RawInputModifiers.None);
+        Pump(300);
+        var bubbleTapEvents = Events().Count(e => e.StartsWith("pointer"));
+        var keysShown = page.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == "Esc" && b.IsEffectivelyVisible);
+        var settingsShown = page.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == L.T("ConsoleSettingsWindow_01") && b.IsEffectivelyVisible);
+        Shot("console-menu");
+        Check0("버블 누르기", "메뉴 열림(특수키·콘솔 설정 보임), 원격에 클릭 안 보냄",
+            $"메뉴 {(page.IsMenuOpen ? "열림" : "닫힘")}, 특수키 {(keysShown ? "보임" : "없음")}, 설정 {(settingsShown ? "보임" : "없음")}, 포인터 {bubbleTapEvents}개",
+            page.IsMenuOpen && keysShown && settingsShown && bubbleTapEvents == 0);
+    }
     g.Mode = ProxmoxClient.UI.Views.Console.TouchInputMode.Mouse;
     g.ResetCursor(new Avalonia.Point(400, 300));
 
-    // 탭 규칙(사용자 요청): 한 번 = 클릭 안 함, 두 번 = 클릭, 세 번 = 더블 클릭
-    void Settle() { now += GestureInterpreter.MultiTapMs + 50; g.Tick(now); now += 200; } // 세 번째 탭을 기다린 뒤
+    // 탭 규칙(사용자 요청): 탭 N번 = 클릭 N번(1 = 클릭, 2 = 더블 클릭) — 마지막 탭 뒤 다음 터치를 기다렸다 보낸다
+    void Settle() { now += GestureInterpreter.MultiTapMs + 50; g.Tick(now); now += 200; } // 다음 터치를 기다린 뒤
     Tap(center);
-    Settle();
     var ev = Events();
-    Check("마우스 모드 · 한 번 탭", "클릭 안 함(스치기만 해도 클릭되지 않게)", ev.Count == 0 ? "이벤트 없음" : Masks(ev), ev.Count == 0);
-
-    Tap(center); now -= 150; Tap(center);
+    Check("마우스 모드 · 한 번 탭 직후", "다음 터치를 기다리는 동안 클릭 안 보냄", ev.Count == 0 ? "이벤트 없음" : Masks(ev), ev.Count == 0);
     Settle();
     ev = Events();
-    Check("마우스 모드 · 두 번 탭", "왼쪽 클릭(0 1 0) @ 커서(400,300)", $"{Masks(ev)} @ {LastXY(ev)}",
+    Check("마우스 모드 · 한 번 탭", "왼쪽 클릭(0 1 0) @ 커서(400,300)", $"{Masks(ev)} @ {LastXY(ev)}",
         Masks(ev) == "0 1 0" && LastXY(ev) == (400, 300));
+
+    Tap(center); now -= 150; Tap(center + new Avalonia.Vector(6, 4)); // 두 번째 탭이 조금 비껴도
+    Settle();
+    ev = Events();
+    Check("마우스 모드 · 두 번 탭", "더블 클릭(0 1 0 1 0) @ 첫 탭 자리(400,300)", $"{Masks(ev)} @ {LastXY(ev)}",
+        Masks(ev) == "0 1 0 1 0" && ev.Where(e => e.StartsWith("pointer")).All(e => e.Contains("x=400 y=300")));
 
     Tap(center); now -= 150; Tap(center); now -= 150; Tap(center);
     Settle();
     ev = Events();
-    Check("세 번 탭", "더블 클릭(0 1 0 1 0)", Masks(ev), Masks(ev) == "0 1 0 1 0");
+    Check("세 번 탭", "세 번 클릭(0 1 0 1 0 1 0)", Masks(ev), Masks(ev) == "0 1 0 1 0 1 0");
 
     now += 1000; // 두 번 탭 직후가 아니게(바로 끌면 '두 번 탭 후 끌기' = 끌어다 놓기)
     Drag(center, new Avalonia.Vector(100, 0));
@@ -924,14 +966,14 @@ async Task ConsoleUsabilityCheck()
     Settle();
     ev = Events();
     var at = LastXY(ev);
-    Check("터치 모드 · 한 번 탭", "클릭 없이 커서만 누른 곳(100,50)으로", $"{Masks(ev)} @ {at}",
-        Masks(ev) == "0" && Math.Abs(at.X - 100) <= 2 && Math.Abs(at.Y - 50) <= 2);
+    Check("터치 모드 · 한 번 탭", "누른 곳(100,50) 왼쪽 클릭(0 1 0)", $"{Masks(ev)} @ {at}",
+        Masks(ev) == "0 1 0" && Math.Abs(at.X - 100) <= 2 && Math.Abs(at.Y - 50) <= 2);
     Tap(target); now -= 150; Tap(target);
     Settle();
     ev = Events();
     at = LastXY(ev);
-    Check("터치 모드 · 두 번 탭", "누른 곳(100,50) 왼쪽 클릭", $"{Masks(ev)} @ {at}",
-        Masks(ev).EndsWith("0 1 0") && Math.Abs(at.X - 100) <= 2 && Math.Abs(at.Y - 50) <= 2);
+    Check("터치 모드 · 두 번 탭", "누른 곳(100,50) 더블 클릭(0 1 0 1 0)", $"{Masks(ev)} @ {at}",
+        Masks(ev) == "0 1 0 1 0" && Math.Abs(at.X - 100) <= 2 && Math.Abs(at.Y - 50) <= 2);
 
     Drag(vp.ToView(new Avalonia.Point(200, 200)), new Avalonia.Vector(60, 0));
     ev = Events();
@@ -962,7 +1004,7 @@ async Task ConsoleUsabilityCheck()
     Check("한글 입력 '안'", "유니코드 keysym 0x100c548", string.Join(", ", ev),
         ev.Count == 2 && ev[0].EndsWith("0x100c548"));
 
-    // ---- TeamViewer 방식: 두 번 탭한 뒤 끌기 = 끌어다 놓기 (마우스 모드)
+    // ---- 탭 뒤 이어진 터치(마우스 모드): 끌기 = 왼쪽 끌기, 가만히 길게 = 오른쪽 버튼. 첫 탭은 빼고 그 사이 탭만큼 먼저 클릭
     vp.Fit();
     g.Mode = TouchInputMode.Mouse;
     g.ResetCursor(new Avalonia.Point(400, 300));
@@ -973,14 +1015,28 @@ async Task ConsoleUsabilityCheck()
     Check("탭 후 끌기(TeamViewer)", "클릭 없이 왼쪽 버튼 누른 채 끌기(1 0)", Masks(ev),
         Masks(ev) == "1 0" && LastXY(ev).Y > 300);
 
-    // 두 번 탭한 뒤 끌기도 왼쪽 끌기(기다리던 클릭은 버림)
+    // 탭 2번 → 끌기 = 클릭 한 번 후 왼쪽 끌기
     now += 1000;
     Tap(center); now -= 150; Tap(center); now -= 100;
     Drag(center, new Avalonia.Vector(0, 60));
     ev = Events();
-    Check("두 번 탭 후 끌기", "클릭 없이 왼쪽 버튼 끌기(1 0)", Masks(ev), Masks(ev) == "1 0");
+    Check("두 번 탭 후 끌기", "클릭 후 왼쪽 버튼 끌기(0 1 0 1 0)", Masks(ev), Masks(ev) == "0 1 0 1 0");
 
-    // 짧게 탭 → 길게 눌러 그대로 끌기 = 오른쪽 버튼 끌기
+    // 탭 3번 → 끌기 = 더블 클릭 후 왼쪽 버튼 누른 채 끌기
+    now += 1000;
+    Tap(center); now -= 150; Tap(center); now -= 150; Tap(center); now -= 100;
+    Drag(center, new Avalonia.Vector(0, 60));
+    ev = Events();
+    Check("세 번 탭 후 끌기", "더블 클릭 후 왼쪽 버튼 끌기(0 1 0 1 0 1 0)", Masks(ev), Masks(ev) == "0 1 0 1 0 1 0");
+
+    // 탭 → 그 자리에서 가만히 길게 눌렀다 떼기 = 오른쪽 클릭
+    now += 1000;
+    Tap(center); now -= 100;
+    Tap(center, holdMs: GestureInterpreter.LongPressMs + 100);
+    ev = Events();
+    Check("탭 후 가만히 길게 눌렀다 떼기", "오른쪽 버튼 누름·놓음(4 0)", Masks(ev), Masks(ev) == "4 0");
+
+    // 탭 → 가만히 길게 누른 뒤 끌기 = 오른쪽 버튼 끌기
     now += 1000;
     g.ResetCursor(new Avalonia.Point(400, 300));
     Tap(center); now -= 100;
@@ -1189,7 +1245,7 @@ async Task ConsoleUsabilityCheck()
             $"커서 +{midX - startX:F0}px, 이동 {moves}개, 화면 {(nav.CurrentPage == page ? "그대로" : "바뀜")}",
             midX - startX >= 150 && moves >= 20 && nav.CurrentPage == page);
 
-        // 실제 터치로 두 번 탭 = 클릭 — 손을 뗄 때 오는 캡처 해제가 기다리던 클릭을 지우면 안 된다(실기기 보고)
+        // 실제 터치로 두 번 탭 = 더블 클릭 — 손을 뗄 때 오는 캡처 해제가 기다리던 클릭을 지우면 안 된다(실기기 보고)
         Pump(500);
         Events();
         var tapAt = surface.TranslatePoint(new Avalonia.Point(surface.Bounds.Width / 2, surface.Bounds.Height / 2), window)!.Value;
@@ -1201,16 +1257,16 @@ async Task ConsoleUsabilityCheck()
             Pump(60);
         }
 
-        Pump(450); // 세 번째 탭을 기다리는 시간이 지나도록
+        Pump(450); // 다음 터치를 기다리는 시간이 지나도록
         g.Tick(Environment.TickCount64); // 헤드리스는 DispatcherTimer 가 돌지 않아 직접 부른다
         Pump(200);
         var tapMasks = Masks(Events());
-        Check("실제 터치로 두 번 탭", "왼쪽 클릭(0 1 0)", tapMasks, tapMasks.EndsWith("0 1 0"));
+        Check("실제 터치로 두 번 탭", "더블 클릭(0 1 0 1 0)", tapMasks, tapMasks.EndsWith("0 1 0 1 0") && !tapMasks.EndsWith("0 1 0 1 0 1 0"));
 
-        // 실제 터치로 세 번 탭 = 더블 클릭(클릭 두 번이 한 묶음으로)
+        // 실제 터치로 한 번 탭 = 클릭
         Pump(500);
         Events();
-        for (var i = 0; i < 3; i++)
+        for (var i = 0; i < 1; i++)
         {
             var tap = window.TouchBegin(tapAt, Avalonia.Input.RawInputModifiers.None);
             Pump(30);
@@ -1221,8 +1277,8 @@ async Task ConsoleUsabilityCheck()
         Pump(450);
         g.Tick(Environment.TickCount64);
         Pump(200);
-        var tripleMasks = Masks(Events());
-        Check("실제 터치로 세 번 탭", "더블 클릭(0 1 0 1 0)", tripleMasks, tripleMasks.EndsWith("0 1 0 1 0") && !tripleMasks.EndsWith("0 1 0 1 0 1 0"));
+        var singleMasks = Masks(Events());
+        Check("실제 터치로 한 번 탭", "왼쪽 클릭(0 1 0)", singleMasks, singleMasks.EndsWith("0 1 0") && !singleMasks.EndsWith("0 1 0 1 0"));
     }
 
     // 실시간 마우스 끌기 — 8ms 마다 움직인 이동이 서버에 고르게 도착하는가(보내는 쪽 간격 두기·타이머 오차 없음)

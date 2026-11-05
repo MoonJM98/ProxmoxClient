@@ -247,7 +247,7 @@ public sealed class VncSurface : Control, IRemotePointer
         if (e.Pointer.Type == PointerType.Touch)
         {
             Gestures.Up(e.Pointer.Id, p, Environment.TickCount64);
-            if (!Gestures.NeedsTicks) _longPressTimer.Stop(); // 두 번 탭 뒤 세 번째를 기다리는 동안은 계속
+            if (!Gestures.NeedsTicks) _longPressTimer.Stop(); // 한 번 탭 뒤 두 번째 터치를 기다리는 동안은 계속
             InvalidateVisual();
         }
         else

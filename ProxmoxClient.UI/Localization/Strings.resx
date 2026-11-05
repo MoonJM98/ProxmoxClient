@@ -670,6 +670,12 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Console_ViewActual" xml:space="preserve">
     <value>1:1</value>
   </data>
+  <data name="Console_Menu" xml:space="preserve">
+    <value>콘솔 메뉴 — 누르면 특수키·설정을 열고 닫습니다. 끌어서 옮길 수 있습니다.</value>
+  </data>
+  <data name="Console_Back" xml:space="preserve">
+    <value>뒤로</value>
+  </data>
   <data name="Console_ViewModeTip" xml:space="preserve">
     <value>화면 모드 — 맞춤(전체) · 채우기(빈 곳 없이) · 원본(1:1). 확대한 뒤에는 두 손가락으로 끌어 화면을 옮깁니다.</value>
   </data>
