@@ -82,6 +82,8 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         _started = true;
         try
         {
+            // 설정 화면에서 저장한 콘솔 설정(화질·압축·키보드 등)을 연결 전에 읽는다 — 읽기 실패는 기본값
+            if (Vnc is ProxmoxVncSession vnc) vnc.Settings = await new ConsoleSettingsStore().LoadAsync();
             await Vnc.ConnectAsync(Guest.Node, Guest.VmId);
         }
         catch (Exception ex)
