@@ -215,6 +215,17 @@ if (target.StartsWith("preview:", StringComparison.Ordinal))
 if (target == "console") await ConsoleUsabilityCheck();
 if (target is "console" or "seams") TileSeamCheck();
 if (target == "createspeed") await CreateSpeedCheck();
+if (target == "guestdetail")
+{
+    foreach (var id in new[] { 100, 200 })
+    {
+        await Wait(AppServices.Navigator.PushAsync(new GuestDetailViewModel(cluster.Session, cluster.Guests.First(g => g.VmId == id))));
+        Pump(2000);
+        Shot($"guestdetail-{id}");
+        if (Environment.GetEnvironmentVariable("AUDIT") == "1") AuditButtons($"guestdetail-{id}");
+        await Wait(AppServices.Navigator.PopAsync());
+    }
+}
 if (target == "compact") await CompactButtonCheck();
 if (target == "terminal") await TerminalCheck();
 if (target == "expiry") await ExpiryCheck();
