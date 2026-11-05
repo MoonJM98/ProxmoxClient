@@ -14,6 +14,7 @@ using ProxmoxClient.UI.ViewModels;
 using ProxmoxClient.UI.Views;
 using ProxmoxClient.UI.Views.Shared;
 using ProxmoxClient.UI.Views.Console;
+using ProxmoxClient.UI.Views.Main;
 
 // 사용법: --port 8006 --out shots --mode desktop|mobile --target cluster|datacenter|node|storage|guest:100|lxc:200|all
 var options = ParseArgs(args);
@@ -60,9 +61,17 @@ AppServices.SecretStore.Set(SecretKey(), "secret");
 var profiles = (ProfilesViewModel)nav.CurrentPage!.DataContext!;
 await Wait(profiles.LoadAsync());
 profiles.ConnectCommand.Execute(profiles.Profiles[0]);
-WaitFor(() => AppServices.Dialogs.Current is not null || nav.CurrentPage?.DataContext is ClusterViewModel);
+WaitFor(() => AppServices.Dialogs.Current is not null || nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel);
 AppServices.Dialogs.Current?.ConfirmCommand.Execute(null); // 인증서 신뢰
-WaitFor(() => nav.CurrentPage?.DataContext is ClusterViewModel, 15000);
+WaitFor(() => nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel, 15000);
+// 데스크톱 로그인 후 화면은 WPF 와 같은 메인 화면(Views/Main) — 탭·선택 게스트를 캡처하고 끝낸다
+if (desktop && nav.CurrentPage?.DataContext is MainViewModel mainVm)
+{
+    MainViewCheck(mainVm);
+    Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
+    Directory.Delete(profileDir, true);
+    return failures == 0 ? 0 : 2;
+}
 if (nav.CurrentPage?.DataContext is not ClusterViewModel cluster)
 {
     Console.WriteLine("FAIL login: " + AppServices.Dialogs.Current?.Message);
@@ -504,6 +513,43 @@ void SelfTestWrites()
     Pump(1000);
     Console.WriteLine("after delete confirm, extra dialog: " + (AppServices.Dialogs.Current?.Title ?? "none"));
     AppServices.Dialogs.Current?.CancelCommand.Execute(null);
+}
+
+// 데스크톱 메인 화면 — 첫 화면, 탭 네 개(게스트·노드·스토리지·작업), 선택한 게스트 상세를 캡처한다
+void MainViewCheck(MainViewModel main)
+{
+    WaitFor(() => main.VisibleGuestCount > 0, 15000);
+    Pump(800);
+    Shot("main-guests");
+    if (main.Guests.FirstOrDefault(g => g.VmId == 100) is { } vm100) main.SelectedGuest = vm100;
+    Pump(1500);
+    Shot("main-guest-selected");
+    // 정지된 VM(시작 버튼만) · 컨테이너(콘솔 버튼만, ▾ 없음)
+    if (main.Guests.FirstOrDefault(g => g.VmId == 102) is { } vm102) main.SelectedGuest = vm102;
+    Pump(1000);
+    Shot("main-guest-stopped");
+    if (main.Guests.FirstOrDefault(g => g.VmId == 200) is { } ct200) main.SelectedGuest = ct200;
+    Pump(1000);
+    Shot("main-guest-ct");
+    if (main.Guests.FirstOrDefault(g => g.VmId == 100) is { } back) main.SelectedGuest = back;
+    Pump(500);
+    main.NavIndex = 1;
+    Pump(1500);
+    Shot("main-nodes");
+    main.NavIndex = 2;
+    Pump(800);
+    Shot("main-storage");
+    main.NavIndex = 3;
+    Pump(800);
+    Shot("main-tasks");
+    main.NavIndex = 0;
+    Pump(500);
+    CheckStatus("main");
+    // 서버 전환(프로필 목록으로 돌아가기) — 화면이 제거되며 세션이 정리되고 뷰모델이 제거 상태가 돼야 한다
+    Wait(AppServices.Navigator.PopToRootAsync()).GetAwaiter().GetResult();
+    Pump(300);
+    Console.WriteLine(main.IsRemoved ? "POP ok removed" : "FAIL pop: view model still active");
+    if (!main.IsRemoved) failures++;
 }
 
 string SecretKey()

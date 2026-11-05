@@ -9,18 +9,28 @@ public static class PageFactory
 {
     public static Page Create(ViewModelBase viewModel)
     {
+        // 데스크톱 로그인 후 화면 — WPF 메인 창과 같은 배치(Views/Main). 같은 세션을 뷰모델이 이어받는다
+        if (viewModel is ClusterViewModel cluster && PlatformInfo.IsDesktop)
+            return Host(new Main.MainView(), new Main.MainViewModel(cluster.Session));
+
         Page page = viewModel switch
         {
             ProfilesViewModel => new ProfilesPage(),
             ProfileEditViewModel => new ProfileEditPage(),
-            // 같은 뷰모델을 화면 형태에 따라 다른 배치로 — 데스크톱은 목록+상세 분할, 모바일은 탭
-            ClusterViewModel => PlatformInfo.IsDesktop ? new ClusterDesktopPage() : new ClusterPage(),
+            // 모바일 탭 화면 — 같은 뷰모델을 모바일 배치로
+            ClusterViewModel => new ClusterPage(),
             GuestDetailViewModel => new GuestDetailPage(),
             NodeDetailViewModel => new NodeDetailPage(),
             TaskLogViewModel => new TaskLogPage(),
             ConsoleViewModel => new Console.ConsolePage(),
             _ => throw new ArgumentOutOfRangeException(nameof(viewModel), viewModel.GetType().Name, null)
         };
+        return Host(page, viewModel);
+    }
+
+    /// <summary>화면에 뷰모델을 붙이고, 화면 진입·이탈을 뷰모델에 알린다.</summary>
+    private static Page Host(Page page, ViewModelBase viewModel)
+    {
         page.DataContext = viewModel;
         page.NavigatedTo += (_, _) => viewModel.NotifyAppearing();
         page.NavigatedFrom += (_, e) => viewModel.NotifyDisappearing(IsRemoval(e.NavigationType));
