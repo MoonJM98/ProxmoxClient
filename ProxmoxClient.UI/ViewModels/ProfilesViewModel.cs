@@ -110,8 +110,13 @@ public sealed partial class ProfilesViewModel : ViewModelBase
             try
             {
                 await api.LoginAsync();
+                // 버전 확인과 첫 화면 데이터를 동시에 요청한다(화면 전환을 기다리지 않고 미리 받기 시작)
+                var overview = api.GetClusterOverviewAsync();
+                _ = overview.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
                 var version = await api.GetVersionAsync();
-                return new ServerSession(api, profile, version.Version);
+                var session = new ServerSession(api, profile, version.Version);
+                session.Prefetch(overview);
+                return session;
             }
             catch (CertificateTrustException ex) when (prompt < MaxCertificatePrompts)
             {

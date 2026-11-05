@@ -146,7 +146,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IDisposable
         IsBusy = true;
         try
         {
-            var overviewTask = Session.Api.GetClusterOverviewAsync();
+            var overviewTask = Session.TakePrefetchedOverview() ?? Session.Api.GetClusterOverviewAsync();
             var tasksTask = Session.Api.GetClusterTasksAsync();
             var overview = await overviewTask;
             IReadOnlyList<PveTask> tasks;

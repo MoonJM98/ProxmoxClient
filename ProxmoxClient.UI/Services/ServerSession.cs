@@ -1,4 +1,5 @@
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Core.Models;
 using ProxmoxClient.Core.Profiles;
 
 namespace ProxmoxClient.UI.Services;
@@ -6,6 +7,19 @@ namespace ProxmoxClient.UI.Services;
 /// <summary>로그인한 서버 하나와의 연결 — 클러스터 화면이 닫히면 함께 정리된다.</summary>
 public sealed class ServerSession(ProxmoxApiClient api, ConnectionProfile profile, string version) : IDisposable
 {
+    private Task<ClusterOverview>? _prefetchedOverview;
+
+    /// <summary>로그인 직후 미리 요청해 둔 클러스터 현황 — 첫 화면이 왕복을 한 번 덜 기다린다(한 번만 쓴다).</summary>
+    internal Task<ClusterOverview>? TakePrefetchedOverview()
+    {
+        return Interlocked.Exchange(ref _prefetchedOverview, null);
+    }
+
+    internal void Prefetch(Task<ClusterOverview> overview)
+    {
+        _prefetchedOverview = overview;
+    }
+
     public ProxmoxApiClient Api { get; } = api;
 
     public ConnectionProfile Profile { get; } = profile;

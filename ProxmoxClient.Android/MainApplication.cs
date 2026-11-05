@@ -19,6 +19,13 @@ public class MainApplication : AvaloniaAndroidApplication<App>
         // 비밀번호·토큰은 Android 키스토어 키로 암호화해 앱 전용 저장소에 둔다
         AppServices.SecretStore = new KeystoreSecretStore(this);
         AppServices.ProfilesDirectory = Path.Combine(FilesDir!.AbsolutePath, "profiles");
-        return base.CustomizeAppBuilder(builder).WithInterFont();
+        return base.CustomizeAppBuilder(builder)
+            .WithInterFont()
+            .With(new AndroidPlatformOptions
+            {
+                // GPU 렌더링: Vulkan 우선(드라이버 부담·프레임 지연이 가장 적다).
+                // Vulkan 을 못 쓰는 기기(구형·에뮬레이터 일부)는 OpenGL ES(EGL), 그래도 안 되면 소프트웨어로 넘어간다.
+                RenderingMode = [AndroidRenderingMode.Vulkan, AndroidRenderingMode.Egl, AndroidRenderingMode.Software]
+            });
     }
 }

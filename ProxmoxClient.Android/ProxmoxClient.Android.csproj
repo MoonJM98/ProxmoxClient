@@ -12,7 +12,14 @@
         <ApplicationVersion>1</ApplicationVersion>
         <ApplicationDisplayVersion>1.0.3</ApplicationDisplayVersion>
         <AndroidPackageFormat>apk</AndroidPackageFormat>
+        <!--
+            지연 최소화:
+            - 전체 AOT(프로파일 AOT 끔) — 모든 코드를 미리 기계어로 컴파일해 실행 중 JIT 로 멈칫하는 일이 없다(APK 는 커진다).
+            - HTTP 는 .NET 관리형 처리기(SocketsHttpHandler) — 데스크톱과 같은 코드 경로라 연결 재사용·인증서 고정(TOFU)·
+              SOCKS5 프록시가 똑같이 동작한다(Android 기본 처리기는 Java HttpURLConnection 을 거친다).
+        -->
         <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+        <UseNativeHttpHandler>false</UseNativeHttpHandler>
         <!-- 실제 기기 대부분(arm64)과 에뮬레이터(x64)만 — 32비트 ABI 는 APK 크기만 키운다 -->
         <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
     </PropertyGroup>

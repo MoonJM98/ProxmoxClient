@@ -31,6 +31,19 @@ WPF 앱은 기능이 모두 옮겨질 때까지 그대로 유지한다.
   상세 화면(게스트·노드·작업 로그)은 UserControl 하나를 모바일 페이지와 데스크톱 상세 창이 함께 쓴다.
 - 새 OS 전용 기능은 `Platform/` 에 인터페이스 + OS 별 구현으로 넣고, 화면 코드에서 `OperatingSystem.IsXxx()` 를 직접 쓰지 않는다.
 
+## 지연 최소화
+
+| 항목 | Windows | macOS | Linux | Android |
+|---|---|---|---|---|
+| 화면 렌더링(우선순위) | Direct3D(ANGLE) + 저지연 DXGI 스왑 체인 → Vulkan → 소프트웨어 | Metal → OpenGL → 소프트웨어 | Vulkan → EGL → GLX → 소프트웨어 | **Vulkan** → OpenGL ES(EGL) → 소프트웨어 |
+| 코드 실행 | JIT(.NET) | 같음 | 같음 | 전체 AOT(실행 중 JIT 없음) |
+| HTTP | .NET SocketsHttpHandler | 같음 | 같음 | 같음(Android 기본 Java 처리기 대신 — 연결 재사용·인증서 고정·SOCKS5 가 데스크톱과 동일) |
+
+- 렌더링 설정: 데스크톱 `ProxmoxClient.Desktop/Program.cs`, Android `ProxmoxClient.Android/MainApplication.cs`
+  (플랫폼 옵션 형식이 헤드 프로젝트에만 있어 각 헤드에 둔다). 앞의 방식을 못 쓰는 기기는 자동으로 다음 방식으로 넘어간다.
+- 네트워크: 로그인 직후 첫 화면 데이터를 버전 확인과 동시에 미리 요청하고, 상세 화면의 사용량·실시간 상태도 동시에 요청한다.
+  작업 완료 확인은 0.5초 간격.
+
 ## 안전 규칙
 
 서버 상태를 바꾸는 작업(전원, 스냅숏 만들기·되돌리기·삭제 등)은 **모두 확인을 받는다.**

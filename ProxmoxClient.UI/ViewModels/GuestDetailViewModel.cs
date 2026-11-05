@@ -106,13 +106,13 @@ public sealed partial class GuestDetailViewModel : ViewModelBase, IReloadable
     {
         try
         {
-            var resources = await Session.Api.GetClusterResourcesAsync(Lifetime);
+            // 사용량(클러스터 목록)과 실시간 상태(status/current)를 동시에 요청 — 왕복 한 번 시간에 끝난다
+            var resourcesTask = Session.Api.GetClusterResourcesAsync(Lifetime);
+            var currentTask = Session.Api.GetGuestCurrentStatusAsync(Guest.Node, Guest.Kind, Guest.VmId, Lifetime);
+            var resources = await resourcesTask;
             if (resources.FirstOrDefault(r => r.VmId == Guest.VmId) is { } latest) Guest.CopyFrom(latest);
 
-            Status = await Session.Api.GetGuestCurrentStatusAsync(Guest.Node, Guest.Kind, Guest.VmId, Lifetime)
-                is { Length: > 0 } current
-                ? current
-                : Guest.Status;
+            Status = await currentTask is { Length: > 0 } current ? current : Guest.Status;
         }
         catch (Exception) when (Lifetime.IsCancellationRequested)
         {
@@ -348,7 +348,8 @@ public sealed partial class GuestDetailViewModel : ViewModelBase, IReloadable
             var upid = await start();
             if (upid.StartsWith("UPID:", StringComparison.Ordinal))
             {
-                var result = await Session.Api.WaitTaskAsync(upid, TimeSpan.FromSeconds(1), Lifetime);
+                // 0.5초 간격 — 짧은 전원 작업은 끝나자마자 화면에 반영된다
+                var result = await Session.Api.WaitTaskAsync(upid, TimeSpan.FromMilliseconds(500), Lifetime);
                 if (result.IsOk)
                     AppServices.Dialogs.Toast(L.T("Task_Done", doneText ?? progressText));
                 else
