@@ -56,7 +56,7 @@ public sealed class ConsolePage : ContentPage
         {
             Children =
             {
-                KeyButton("⌨", (_, _) => ShowKeyboard(), L.T("Console_Keyboard")),
+                KeyboardButton(),
                 Key("Esc", KeySyms.Escape), Key("Tab", KeySyms.Tab), _ctrl, _alt, _super,
                 Key("←", KeySyms.Left), Key("↑", KeySyms.Up), Key("↓", KeySyms.Down), Key("→", KeySyms.Right),
                 KeyButton("⋯", (_, _) => _moreToggle(), L.T("Console_MoreKeys")),
@@ -210,6 +210,22 @@ public sealed class ConsolePage : ContentPage
     private Button Key(string label, int keysym)
     {
         return KeyButton(label, (_, _) => Tap(keysym));
+    }
+
+    /// <summary>키보드 단추 내용 — 글꼴에 없을 수 있는 ⌨ 기호 대신 앱 아이콘.</summary>
+    private static Avalonia.Controls.Shapes.Path KeyboardIcon()
+    {
+        var icon = new Avalonia.Controls.Shapes.Path { Classes = { "icon" }, Stroke = Brushes.White };
+        if (Application.Current?.TryGetResource("IconKeyboard", Application.Current.ActualThemeVariant, out var data) == true)
+            icon.Data = data as Geometry;
+        return icon;
+    }
+
+    private Button KeyboardButton()
+    {
+        var button = KeyButton(L.T("Console_Keyboard"), (_, _) => ShowKeyboard(), L.T("Console_Keyboard"));
+        button.Content = KeyboardIcon();
+        return button;
     }
 
     private static Button KeyButton(string label, EventHandler<Avalonia.Interactivity.RoutedEventArgs> click,

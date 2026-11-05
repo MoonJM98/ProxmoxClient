@@ -35,7 +35,7 @@ AppServices.SecretStore = new MemorySecretStore();
 PlatformInfo.FormFactor = tablet ? FormFactor.Tablet : desktop ? FormFactor.Desktop : FormFactor.Mobile;
 AppBuilder.Configure<App>().UseSkia()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-    .WithInterFont().SetupWithoutStarting();
+    .UseAppFonts().SetupWithoutStarting();
 
 
 var failures = 0;

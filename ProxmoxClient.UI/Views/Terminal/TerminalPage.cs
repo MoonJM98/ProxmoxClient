@@ -127,7 +127,7 @@ public sealed class TerminalPage : ContentPage
         {
             Children =
             {
-                KeyButton("⌨", () => _terminal.FocusInput(), L.T("Console_Keyboard")),
+                WithContent(KeyButton(L.T("Console_Keyboard"), () => _terminal.FocusInput(), L.T("Console_Keyboard")), KeyboardIcon()),
                 Key("Esc", Avalonia.Input.Key.Escape), Key("Tab", Avalonia.Input.Key.Tab), _ctrl, _alt,
                 Key("←", Avalonia.Input.Key.Left), Key("↑", Avalonia.Input.Key.Up),
                 Key("↓", Avalonia.Input.Key.Down), Key("→", Avalonia.Input.Key.Right),
@@ -239,6 +239,21 @@ public sealed class TerminalPage : ContentPage
     private Button Text(string text)
     {
         return KeyButton(text, () => _terminal.Send(text));
+    }
+
+    /// <summary>키보드 단추 내용 — 글꼴에 없을 수 있는 ⌨ 기호 대신 앱 아이콘.</summary>
+    private static Avalonia.Controls.Shapes.Path KeyboardIcon()
+    {
+        var icon = new Avalonia.Controls.Shapes.Path { Classes = { "icon" }, Stroke = Brushes.White };
+        if (Application.Current?.TryGetResource("IconKeyboard", Application.Current.ActualThemeVariant, out var data) == true)
+            icon.Data = data as Geometry;
+        return icon;
+    }
+
+    private static Button WithContent(Button button, Control content)
+    {
+        button.Content = content;
+        return button;
     }
 
     private static Button KeyButton(string label, Action click, string? tip = null)

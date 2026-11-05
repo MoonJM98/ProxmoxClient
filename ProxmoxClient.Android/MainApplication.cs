@@ -27,7 +27,7 @@ public class MainApplication : AvaloniaAndroidApplication<App>
         ProxmoxClient.UI.Platform.SpiceLaunchers.Current = new AndroidSpiceLauncher(this);
         AppServices.ProfilesDirectory = Path.Combine(FilesDir!.AbsolutePath, "profiles");
         return base.CustomizeAppBuilder(builder)
-            .WithInterFont()
+            .UseAppFonts()
             .With(new AndroidPlatformOptions
             {
                 // GPU 렌더링: Vulkan 우선(드라이버 부담·프레임 지연이 가장 적다).

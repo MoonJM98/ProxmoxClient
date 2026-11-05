@@ -40,7 +40,7 @@ internal static class Program
                 RenderingMode = [AvaloniaNativeRenderingMode.Metal, AvaloniaNativeRenderingMode.OpenGl,
                     AvaloniaNativeRenderingMode.Software]
             })
-            .WithInterFont()
+            .UseAppFonts()
             .LogToTrace();
     }
 }

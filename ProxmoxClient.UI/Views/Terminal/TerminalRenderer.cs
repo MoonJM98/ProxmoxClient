@@ -72,6 +72,14 @@ internal sealed class TerminalRenderer
 
     private GlyphTypeface FindMono(FontWeight weight, out string family)
     {
+        // 앱에 넣은 JetBrains Mono 를 먼저 — 모든 기기에서 같은 칸 폭·모양
+        if (FontManager.Current.TryGetGlyphTypeface(new Typeface(AppFonts.MonoFamilyName, FontStyle.Normal, weight),
+                out var embedded) && embedded.FamilyName.Contains("JetBrains", StringComparison.OrdinalIgnoreCase))
+        {
+            family = AppFonts.MonoFamilyName;
+            return embedded;
+        }
+
         foreach (var name in MonoFamilies)
             if (FontManager.Current.TryGetGlyphTypeface(new Typeface(name, FontStyle.Normal, weight), out var face) &&
                 (name == "monospace" || face.FamilyName.StartsWith(name, StringComparison.OrdinalIgnoreCase)))
@@ -249,6 +257,13 @@ internal sealed class TerminalRenderer
         if (face.CharacterToGlyphMap.TryGetGlyph(rune, out var own))
         {
             result = Make(face, own);
+        }
+        else if (FontManager.Current.TryGetGlyphTypeface(new Typeface(AppFonts.Family, FontStyle.Normal,
+                     bold ? FontWeight.Bold : FontWeight.Normal), out var app) &&
+                 app.CharacterToGlyphMap.TryGetGlyph(rune, out var appGlyph))
+        {
+            // 한글 등은 앱에 넣은 Pretendard 로 — 기기마다 대체 글꼴이 달라도(또는 없어도) 같은 모양
+            result = Make(app, appGlyph);
         }
         else if (FontManager.Current.TryMatchCharacter(rune, FontStyle.Normal, bold ? FontWeight.Bold : FontWeight.Normal,
                      FontStretch.Normal, new FontFamily(_family), CultureInfo.CurrentUICulture, out var typeface) &&
