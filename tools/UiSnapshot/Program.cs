@@ -57,6 +57,20 @@ await AppServices.Profiles.SaveAsync(new ConnectionProfile { Name = "fake", Host
 AppServices.SecretStore.Set(SecretKey(), "secret");
 var profiles = (ProfilesViewModel)nav.CurrentPage!.DataContext!;
 await Wait(profiles.LoadAsync());
+// 연결 전 화면 캡처: 데스크톱은 로그인 화면(인증 영역을 가져오며 처음 보는 인증서를 묻는다), 두 형태 모두 서버 설정 화면
+if (desktop)
+{
+    WaitFor(() => profiles.Realms.Count > 0 || AppServices.Dialogs.Current is not null, 6000);
+    if (AppServices.Dialogs.Current is { } firstTrust) firstTrust.ConfirmCommand.Execute(null); // 처음 보는 인증서 — 신뢰
+    WaitFor(() => profiles.Realms.Count > 0, 6000);
+    Shot("login");
+}
+await Wait(AppServices.Navigator.PushAsync(new ProfileEditViewModel(profiles.Profiles[0].Profile)));
+Pump(800);
+Shot("profile-edit");
+if (AppServices.Dialogs.Current is { } editorDialog) editorDialog.CancelCommand.Execute(null);
+await Wait(AppServices.Navigator.PopAsync());
+Pump(300);
 profiles.ConnectCommand.Execute(profiles.Profiles[0]);
 WaitFor(() => AppServices.Dialogs.Current is not null || nav.CurrentPage?.DataContext is ClusterViewModel);
 AppServices.Dialogs.Current?.ConfirmCommand.Execute(null); // 인증서 신뢰

@@ -11,8 +11,8 @@ public static class PageFactory
     {
         Page page = viewModel switch
         {
-            ProfilesViewModel => new ProfilesPage(),
-            ProfileEditViewModel => new ProfileEditPage(),
+            ProfilesViewModel => PlatformInfo.IsDesktop ? new Login.LoginPage() : new ProfilesPage(),
+            ProfileEditViewModel => PlatformInfo.IsDesktop ? new Login.ProfileDialogPage() : new ProfileEditPage(),
             // 같은 뷰모델을 화면 형태에 따라 다른 배치로 — 데스크톱은 목록+상세 분할, 모바일은 탭
             ClusterViewModel => PlatformInfo.IsDesktop ? new ClusterDesktopPage() : new ClusterPage(),
             GuestDetailViewModel => new GuestDetailPage(),
