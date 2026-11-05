@@ -24,6 +24,8 @@
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
         <!-- 콘솔 Tight JPEG 디코딩 — Avalonia.Skia 와 같은 버전 -->
         <PackageReference Include="SkiaSharp" Version="3.119.4" />
+        <!-- 2단계 인증(TOTP) QR 코드 — WPF 앱과 같은 MIT 라이브러리 -->
+        <PackageReference Include="Net.Codecrete.QrCodeGenerator" Version="3.2.1" />
     </ItemGroup>
 
     <ItemGroup>
