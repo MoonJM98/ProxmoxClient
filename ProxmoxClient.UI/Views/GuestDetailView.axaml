@@ -39,7 +39,9 @@
 
             <!-- 전원 -->
             <TextBlock Classes="section" Text="{l:Tr Guest_Power}" />
-            <WrapPanel>
+            <!-- 한 줄로 두고 넘치면 옆으로 민다(두 줄로 꺾여 아래 목록을 밀어내지 않게) -->
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <StackPanel Orientation="Horizontal">
                 <Button Classes="action accent" Command="{Binding OpenConsoleCommand}" IsVisible="{Binding CanOpenConsole}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Path Classes="icon" Data="{StaticResource IconMonitor}" />
@@ -88,7 +90,8 @@
                         <TextBlock Text="{l:Tr Power_Reset}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-            </WrapPanel>
+            </StackPanel>
+            </ScrollViewer>
 
             <!-- 관리(등록된 기능: 하드웨어·옵션·백업·방화벽 등) -->
             <TextBlock Classes="section" Text="{l:Tr Guest_Manage}" IsVisible="{Binding HasManagementEntries}" />
