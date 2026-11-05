@@ -168,6 +168,7 @@ if (target.StartsWith("preview:", StringComparison.Ordinal))
 if (target == "console") await ConsoleUsabilityCheck();
 if (target == "compact") await CompactButtonCheck();
 if (target == "terminal") await TerminalCheck();
+if (target == "expiry") await ExpiryCheck();
 
 foreach (var (prefix, vmid) in new[] { ("guest", 100), ("lxc", 200) })
 {
@@ -237,6 +238,29 @@ async Task CompactButtonCheck()
     if (!opened) failures++;
     if (AppServices.Dialogs.Sheet is IDismissible d2) d2.Dismiss();
     await Wait(AppServices.Navigator.PopAsync());
+}
+
+// 세션 만료 — 서버가 티켓 갱신까지 거부하면 한 번 알리고 로그인 화면으로 돌아가는지
+async Task ExpiryCheck()
+{
+    using var http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true });
+    var expire = Task.Run(() => http.GetAsync($"https://127.0.0.1:{port}/api2/json/__fake/expire"));
+    WaitFor(() => expire.IsCompleted, 5000);
+    // 화면 스레드를 멈추지 않게 돌리며 기다린다(헤드리스는 직접 펌프해야 이어진다)
+    var request = Task.Run(() => cluster.Session.Api.GetVersionAsync());
+    WaitFor(() => request.IsCompleted, 8000);
+    Console.WriteLine("request after expiry: " + (request.Exception?.InnerException?.Message ?? request.Status.ToString()));
+
+    WaitFor(() => AppServices.Dialogs.Current is not null, 5000);
+    var title = AppServices.Dialogs.Current?.Title;
+    Shot("expiry-dialog");
+    AppServices.Dialogs.Current?.ConfirmCommand.Execute(null);
+    WaitFor(() => nav.CurrentPage?.DataContext is ProfilesViewModel, 5000);
+    var back = nav.CurrentPage?.DataContext is ProfilesViewModel;
+    Shot("expiry-login");
+    var pass = title == L.T("Session_ExpiredTitle") && back;
+    Console.WriteLine($"| 세션 만료 | 알림 '{L.T("Session_ExpiredTitle")}' → 로그인 화면 | 알림 '{title}', {(back ? "로그인 화면" : "그대로")} | {(pass ? "통과" : "실패")} |");
+    if (!pass) failures++;
 }
 
 // 터미널 검사 — 가짜 termproxy 셸에 붙어 출력 해석(한글·색·선 그리기·대체 화면)과 입력(키·IME·고정 Ctrl·붙여넣기),

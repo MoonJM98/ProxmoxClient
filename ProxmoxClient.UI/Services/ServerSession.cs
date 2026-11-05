@@ -35,8 +35,26 @@ public sealed class ServerSession(ProxmoxApiClient api, ConnectionProfile profil
     /// <summary>로그인 사용자(user@realm) — API 토큰이면 토큰 ID.</summary>
     public string UserDisplay => Api.AuthenticatedUser ?? Profile.ApiTokenId ?? Profile.UserName;
 
+    /// <summary>
+    ///     세션 만료(갱신 거부)를 지켜보다가 한 번 알리고 로그인 화면으로 돌아간다 — 그대로 두면 화면마다 같은 오류가 쌓인다.
+    /// </summary>
+    internal void WatchExpiry()
+    {
+        Api.SessionExpiredDetected += () => Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+        {
+            if (_disposed) return;
+
+            await AppServices.Dialogs.AlertAsync(Localization.L.T("Session_ExpiredTitle"),
+                Localization.L.T("Session_ExpiredText", DisplayName));
+            if (!_disposed) await AppServices.Navigator.PopToRootAsync();
+        });
+    }
+
+    private bool _disposed;
+
     public void Dispose()
     {
+        _disposed = true;
         Api.Dispose();
     }
 }

@@ -39,6 +39,11 @@ public sealed partial class ProxmoxApiClient : IDisposable
     ///     다시 로그인하면 풀린다.
     /// </summary>
     private volatile bool _authRejected;
+
+    /// <summary>
+    ///     세션이 만료되어 갱신도 거부됐다(한 번만 발생) — 화면은 다시 로그인하도록 안내한다. 아무 스레드에서나 발생한다.
+    /// </summary>
+    public event Action? SessionExpiredDetected;
     private bool _disposed;
     /// <summary>Builds a client for the given profile (proxy + TLS validation are applied here).</summary>
     public ProxmoxApiClient(ConnectionProfile profile)
@@ -145,7 +150,9 @@ public sealed partial class ProxmoxApiClient : IDisposable
             catch (ProxmoxApiException ex) when (ex.StatusCode == (int)HttpStatusCode.Unauthorized)
             {
                 // 연결 실패(상태 0)는 다음 요청 때 다시 해 본다 — 거부만 세션 만료로 본다
+                var first = !_authRejected;
                 _authRejected = true;
+                if (first) SessionExpiredDetected?.Invoke();
                 throw SessionExpired();
             }
         }
@@ -382,9 +389,18 @@ public sealed partial class ProxmoxApiClient : IDisposable
             return [];
         }
     }
+    /// <summary>
+    ///     URI 에 넣을 호스트 — IPv6 주소(fe80::1, fe80::1%eth0)는 대괄호로 감싸고 영역 구분자 %는 %25 로(URI 규칙).
+    /// </summary>
+    public static string UriHost(string host)
+    {
+        host = host.Trim().Trim('[', ']');
+        return host.Contains(':') ? "[" + host.Replace("%25", "%").Replace("%", "%25") + "]" : host;
+    }
+
     private static Uri BuildBaseAddress(ConnectionProfile profile)
     {
-        var builder = new UriBuilder(Uri.UriSchemeHttps, profile.Host, profile.Port)
+        var builder = new UriBuilder(Uri.UriSchemeHttps, UriHost(profile.Host), profile.Port)
         {
             Path = "/api2/json/"
         };

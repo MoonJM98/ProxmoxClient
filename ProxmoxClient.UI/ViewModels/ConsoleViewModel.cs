@@ -33,6 +33,7 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         Vnc.Closed += ex => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             IsConnected = false;
+            CanReconnect = true;
             Status = ex is null ? L.T("Console_Closed") : L.T("Console_ClosedError", ex.Message);
         });
         Vnc.Connected += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -61,6 +62,19 @@ public sealed partial class ConsoleViewModel : ViewModelBase
 
     [ObservableProperty] public partial bool IsConnected { get; private set; }
 
+    /// <summary>연결이 끊겼거나 실패했다 — [다시 연결] 을 보인다.</summary>
+    [ObservableProperty] public partial bool CanReconnect { get; private set; }
+
+    /// <summary>
+    ///     다시 연결 — 원격 화면 세션은 1회용이라 같은 게스트의 새 콘솔 화면으로 바꾼다(티켓도 새로 받는다).
+    /// </summary>
+    public async Task ReconnectAsync()
+    {
+        CanReconnect = false;
+        await AppServices.Navigator.PopAsync();
+        await AppServices.Navigator.PushAsync(new ConsoleViewModel(SessionInfo, Guest, Protocol));
+    }
+
     public override async void OnAppearing()
     {
         if (_started) return;
@@ -73,6 +87,7 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         catch (Exception ex)
         {
             Status = L.T("Console_ConnectFailed", ErrorText.Describe(ex));
+            CanReconnect = true;
         }
     }
 

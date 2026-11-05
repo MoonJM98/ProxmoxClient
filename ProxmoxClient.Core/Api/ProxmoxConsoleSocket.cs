@@ -26,7 +26,7 @@ internal static class ProxmoxConsoleSocket
     public static Task<ClientWebSocket> ConnectAsync(
         ProxmoxApiClient api, ConsoleTarget target, int port, string ticket, CancellationToken ct)
     {
-        var uri = new UriBuilder("wss", api.Profile.Host, api.Profile.Port) // ClientWebSocket 은 ws/wss 스키마만 허용
+        var uri = new UriBuilder("wss", ProxmoxApiClient.UriHost(api.Profile.Host), api.Profile.Port) // ClientWebSocket 은 ws/wss 스키마만 허용
         {
             Path = $"/api2/json/{target.BasePath}/vncwebsocket",
             Query = $"port={port}&vncticket={Uri.EscapeDataString(ticket)}"
@@ -43,7 +43,7 @@ internal static class ProxmoxConsoleSocket
     public static Task<ClientWebSocket> ConnectRdpAsync(
         ProxmoxApiClient api, string node, int vmid, string token, CancellationToken ct)
     {
-        var uri = new UriBuilder("wss", api.Profile.Host, api.Profile.Port)
+        var uri = new UriBuilder("wss", ProxmoxApiClient.UriHost(api.Profile.Host), api.Profile.Port)
         {
             Path = $"/api2/json/nodes/{Uri.EscapeDataString(node)}/qemu/{vmid}/rdp/{Uri.EscapeDataString(token)}"
         }.Uri;
@@ -59,9 +59,17 @@ internal static class ProxmoxConsoleSocket
         if (subProtocol is not null) websocket.Options.AddSubProtocol(subProtocol);
         if (api.AuthTicket is { } authTicket)
         {
-            var cookies = new CookieContainer();
-            cookies.Add(new Cookie("PVEAuthCookie", authTicket, "/", uri.Host));
-            websocket.Options.Cookies = cookies;
+            if (uri.HostNameType == UriHostNameType.IPv6)
+            {
+                // 쿠키 도메인은 IPv6 주소를 받지 않는다 — 머리글로 직접 보낸다
+                websocket.Options.SetRequestHeader("Cookie", "PVEAuthCookie=" + authTicket);
+            }
+            else
+            {
+                var cookies = new CookieContainer();
+                cookies.Add(new Cookie("PVEAuthCookie", authTicket, "/", uri.Host));
+                websocket.Options.Cookies = cookies;
+            }
         }
         else if (profile.AuthMode == AuthMode.ApiToken)
         {

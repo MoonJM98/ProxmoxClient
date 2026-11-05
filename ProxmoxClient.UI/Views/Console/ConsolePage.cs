@@ -88,9 +88,20 @@ public sealed class ConsolePage : ContentPage
         _surface.PointerSink = (b, x, y) => _vm?.SendPointer(b, x, y);
         _surface.KeySink = (keysym, down) => _vm?.SendKey(keysym, down);
         _surface.ScanKeySink = (xt, keysym, down) => _vm?.SendScanKey(xt, keysym, down); // 물리 키보드: 키 위치 + keysym
+        // 끊기거나 실패하면 상태 아래에 [다시 연결]
+        var reconnect = new Button
+        {
+            Content = L.T("Console_Reconnect"), Classes = { "AccentButton" }, HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 110, 0, 0), MinWidth = 140
+        };
+        reconnect.Bind(IsVisibleProperty, new Avalonia.Data.Binding(nameof(ConsoleViewModel.CanReconnect)));
+        reconnect.Click += async (_, _) =>
+        {
+            if (_vm is not null) await _vm.ReconnectAsync();
+        };
         Content = new DockPanel
         {
-            Children = { bar, new Grid { Children = { _surface, status, _input } } }
+            Children = { bar, new Grid { Children = { _surface, status, reconnect, _input } } }
         };
         Background = Brushes.Black;
         DataContextChanged += (_, _) => AttachViewModel(DataContext as ConsoleViewModel);

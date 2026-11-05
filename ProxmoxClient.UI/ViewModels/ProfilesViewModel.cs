@@ -130,6 +130,7 @@ public sealed partial class ProfilesViewModel : ViewModelBase
                 var permissionsTask = api.GetPermissionsSummaryAsync();
                 var version = await api.GetVersionAsync();
                 var session = new ServerSession(api, profile, version.Version);
+                session.WatchExpiry();
                 try
                 {
                     session.Permissions = await permissionsTask;

@@ -31,6 +31,7 @@ def load_routes():
     for path in sorted(glob.glob(os.path.join(here,'routes','*.py'))):
         spec=importlib.util.spec_from_file_location('route_'+os.path.basename(path)[:-3], path)
         mod=importlib.util.module_from_spec(spec); mod.route=route; mod.STATE=sys.modules[__name__]; spec.loader.exec_module(mod)
+STATE_FLAGS={}
 class H(BaseHTTPRequestHandler):
     def ext(self, method, path, body=None):
         for m, rx, fn in ROUTES:
@@ -43,8 +44,16 @@ class H(BaseHTTPRequestHandler):
     def log_message(self, fmt, *a): sys.stderr.write("REQ %.3f %s\n"%(time.time()%1000, fmt%a))
     def send(self, data, code=200):
         b=json.dumps({'data':data}).encode(); self.send_response(code); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
+    def expired(self, path):
+        # /__fake/expire 뒤로는 티켓 갱신까지 모두 거부 — 세션 만료 처리 검사용
+        if path=='/__fake/expire':
+            STATE_FLAGS['expired']=True; self.send(True); return True
+        if STATE_FLAGS.get('expired'):
+            sys.stderr.write("EXPIRED %s\n"%path); self.send(None,401); return True
+        return False
     def do_GET(self):
         p=urllib.parse.urlparse(self.path); path=urllib.parse.unquote(p.path.replace('/api2/json',''))
+        if self.expired(path): return
         if path.endswith('/vncwebsocket') and self.headers.get('Upgrade','').lower()=='websocket':
             # termproxy 가 준 포트(5901)면 가짜 셸, 아니면 VNC 화면
             if urllib.parse.parse_qs(p.query).get('port',[''])[0]=='5901':
@@ -85,6 +94,7 @@ class H(BaseHTTPRequestHandler):
         p=urllib.parse.urlparse(self.path); path=p.path.replace('/api2/json','')
         ln=int(self.headers.get('Content-Length',0)); body=urllib.parse.parse_qs(self.rfile.read(ln).decode())
         flat={k:v[0] for k,v in body.items()}
+        if self.expired(path): return
         if path.endswith('/termproxy'):
             sys.stderr.write("TERM termproxy %s %s\n"%(path, flat))
             return self.send(dict(port=5901, ticket='PVEVNC:TERM', user='root@pam', upid=upid('pve1','vncshell','')))
