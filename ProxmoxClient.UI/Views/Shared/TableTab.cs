@@ -23,7 +23,8 @@ public sealed class TableTab : UserControl
     private const string AutoMoreMenu = "GuestLife_MoreMenu";
     private const double MaxAutoColumnWidth = 400;
     private const double MinFillColumnWidth = 140;
-    private const double CellPadding = 44; // 칸 여백 + 머리글 정렬 표시
+    private const double CellPadding = 44; // 칸 여백
+    private const double HeaderPadding = 64; // 머리글 여백(8+8) + 정렬 화살표 + 나눔 손잡이
 
     private readonly List<(Button Button, TableAction? Action)> _actions = [];
     private readonly IReadOnlyList<TableColumn> _columns;
@@ -238,17 +239,20 @@ public sealed class TableTab : UserControl
     {
         if (_grid is null) return;
 
-        var face = new Typeface(FontFamily.Default);
-        var headerFace = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
+        // 표가 실제로 쓰는 글꼴(앱 글꼴 Pretendard)로 잰다 — 기본 글꼴로 재면 한글 머리글이 몇 px 모자라 잘렸다
+        var family = _grid.FontFamily;
+        var face = new Typeface(family);
+        var headerFace = new Typeface(family, FontStyle.Normal, FontWeight.SemiBold);
         for (var i = 0; i < _columns.Count && i < _grid.Columns.Count; i++)
         {
             var column = _columns[i];
             if (column.Width <= 0) continue;
 
-            var widest = TextWidth(L.T(column.HeaderKey), headerFace);
-            foreach (var row in rows) widest = Math.Max(widest, TextWidth(row[column.Key], face));
+            // 머리글은 여백 + 정렬 화살표 자리 + 열 나눔 손잡이까지 — 칸보다 더 넉넉해야 한글 머리글이 잘리지 않는다
+            var widest = TextWidth(L.T(column.HeaderKey), headerFace) + HeaderPadding;
+            foreach (var row in rows) widest = Math.Max(widest, TextWidth(row[column.Key], face) + CellPadding);
             _grid.Columns[i].Width = new DataGridLength(
-                Math.Clamp(widest + CellPadding, column.Width, Math.Max(column.Width, MaxAutoColumnWidth)));
+                Math.Clamp(widest, column.Width, Math.Max(column.Width, MaxAutoColumnWidth)));
         }
     }
 

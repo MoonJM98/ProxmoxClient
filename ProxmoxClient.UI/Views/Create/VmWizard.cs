@@ -20,7 +20,8 @@ internal sealed class VmWizard
 
     private readonly ProxmoxApiClient _api;
     private readonly VmDraft _d = new();
-    private readonly IReadOnlyList<(string Value, string Label)> _nodes;
+    private IReadOnlyList<(string Value, string Label)> _nodes;
+    private WizardView? _view;
     private WizardData _data = new();
 
     private VmWizard(ProxmoxApiClient api, IReadOnlyList<string> nodes)
@@ -34,15 +35,38 @@ internal sealed class VmWizard
     /// </summary>
     public static Control Create(ProxmoxApiClient api, IReadOnlyList<string> nodes)
     {
-        var wizard = new VmWizard(api, nodes);
-        return new WizardView(Loc.T("Wz_CreateVm"), wizard.Steps(), wizard.CreateAsync,
-            () => wizard.LoadNodeAsync(nodes[0]));
+        return Create(api, () => Task.FromResult(nodes));
+    }
+
+    /// <summary>
+    ///     노드 목록도 화면을 연 뒤에 읽는다 — 누르자마자 화면이 뜨고 진행 표시가 보인다(먼저 읽고 열면 그동안 아무 반응이 없다).
+    /// </summary>
+    public static Control Create(ProxmoxApiClient api, Func<Task<IReadOnlyList<string>>> loadNodes)
+    {
+        var wizard = new VmWizard(api, []);
+        var view = new WizardView(Loc.T("Wz_CreateVm"), wizard.Steps(), wizard.CreateAsync, async () =>
+        {
+            var nodes = await loadNodes();
+            if (nodes.Count == 0) throw new InvalidOperationException(Loc.T("Wz_NoOnlineNode"));
+
+            wizard._nodes = nodes.Select(n => (n, n)).ToList();
+            await wizard.LoadNodeAsync(nodes[0]);
+        });
+        wizard._view = view;
+        return view;
     }
 
     /// <summary>노드 목록을 읽고, 노드에 따라 달라지는 기본값(다음 ID·첫 저장소·첫 브리지)을 채운다.</summary>
     private async Task LoadNodeAsync(string node)
     {
-        _data = await WizardData.LoadAsync(_api, node);
+        var data = await WizardData.LoadAsync(_api, node);
+        _data = data;
+        // ISO·템플릿 목록이 뒤에서 다 읽히면 지금 단계를 다시 그린다(그 사이 노드를 바꿨으면 버린다)
+        _ = data.ContentLoaded.ContinueWith(_ => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            // 목록을 쓰는 단계를 보고 있을 때만(다른 단계에서 다시 그리면 입력 중인 칸의 포커스·키보드가 닫힌다)
+            if (ReferenceEquals(data, _data) && _view?.CurrentStepKey == "Wz_Os") _view.Rebuild();
+        }), TaskScheduler.Default);
         _d.Node = node;
         if (_d.VmId.Length == 0) _d.VmId = _data.NextId;
         _d.Bridge = _data.Bridges.FirstOrDefault().Value ?? string.Empty;
@@ -131,7 +155,7 @@ internal sealed class VmWizard
             () => _d.CdMode, v => _d.CdMode = v, rebuild: true);
         if (_d.CdMode == "iso")
             page.Choice("DeviceTable_Iso", _data.Isos, () => _d.Iso, v => _d.Iso = v,
-                _data.Isos.Count == 0 ? Loc.T("Wz_NoIso") : null);
+                _data.ContentPending ? Loc.T("Hw_Loading") : _data.Isos.Count == 0 ? Loc.T("Wz_NoIso") : null);
 
         page.Section("Wz_GuestOs");
         var family = WizardOsTypes.FamilyOf(_d.OsType);

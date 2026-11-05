@@ -102,6 +102,12 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Console_PausedBackground" xml:space="preserve">
     <value>앱이 백그라운드로 가서 연결을 끊었습니다. 돌아오면 다시 연결합니다.</value>
   </data>
+  <data name="Common_More" xml:space="preserve">
+    <value>더 보기</value>
+  </data>
+  <data name="Common_MoreOf" xml:space="preserve">
+    <value>{0} 더 보기</value>
+  </data>
   <data name="Common_Copied" xml:space="preserve">
     <value>복사했습니다</value>
   </data>

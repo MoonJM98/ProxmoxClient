@@ -29,6 +29,17 @@ public static class AccessibleNames
         });
         // 글자 없는 스위치·체크 칸(옆의 글자가 이름 노릇) — 같은 줄(부모·조부모)의 첫 글자를 이름으로
         Control.LoadedEvent.AddClassHandler<ToggleButton>((toggle, _) => NameFromLabel(toggle), RoutingStrategies.Direct);
+        // 분할 단추의 화살표 쪽(메뉴 열기) — 글자 없는 템플릿 부품
+        Control.LoadedEvent.AddClassHandler<Button>((button, _) =>
+        {
+            if (button.TemplatedParent is not SplitButton split || !string.IsNullOrEmpty(AutomationProperties.GetName(button)) ||
+                button.Content is string { Length: > 0 }) return;
+
+            var owner = AutomationProperties.GetName(split) is { Length: > 0 } name ? name : split.Content as string;
+            AutomationProperties.SetName(button, owner is { Length: > 0 }
+                ? Localization.L.T("Common_MoreOf", owner)
+                : Localization.L.T("Common_More"));
+        }, RoutingStrategies.Direct);
     }
 
     private static void NameFromLabel(ToggleButton toggle)

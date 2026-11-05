@@ -121,7 +121,11 @@ internal static class HardwareInput
         {
             Spacing = 4;
             HorizontalAlignment = HorizontalAlignment.Stretch;
-            Children.Add(new TextBlock { Text = label, Classes = { "label" } });
+            // 체크 칸은 이름을 칸 옆에 둔다 — 이름 한 줄, 칸 한 줄로 나뉘면 빈 줄처럼 보이고 자리만 차지한다(실기기 보고)
+            if (input is CheckBox { Content: null } box)
+                box.Content = new TextBlock { Text = label, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+            else
+                Children.Add(new TextBlock { Text = label, Classes = { "label" } });
             Children.Add(input);
             Children.Add(_hint);
             Hint = hint;

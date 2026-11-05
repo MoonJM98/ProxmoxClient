@@ -54,6 +54,10 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         p=urllib.parse.urlparse(self.path); path=urllib.parse.unquote(p.path.replace('/api2/json',''))
         if self.expired(path): return
+        # 느린 서버 흉내 — 모든 GET 에 지연(왕복), 저장소 파일 목록은 따로 더 느리게(디스크를 훑는 실서버처럼)
+        delay=int(os.environ.get('FAKEPVE_DELAY_MS','0'))
+        if '/content' in path: delay+=int(os.environ.get('FAKEPVE_SLOW_CONTENT_MS','0'))
+        if delay: time.sleep(delay/1000)
         if path.endswith('/vncwebsocket') and self.headers.get('Upgrade','').lower()=='websocket':
             # termproxy 가 준 포트(5901)면 가짜 셸, 아니면 VNC 화면
             if urllib.parse.parse_qs(p.query).get('port',[''])[0]=='5901':

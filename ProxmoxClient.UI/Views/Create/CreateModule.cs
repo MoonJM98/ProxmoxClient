@@ -29,21 +29,19 @@ internal static class CreateModule
     }
 
     /// <summary>
-    ///     온라인 노드 목록을 모은 뒤 마법사 화면을 연다(WPF 와 같이 온라인 노드만 고를 수 있다).
+    ///     마법사 화면을 곧바로 열고, 온라인 노드 목록은 화면이 진행 표시와 함께 읽는다(WPF 와 같이 온라인 노드만 고를 수 있다).
     ///     실제 만들기는 화면 안의 "만들기"가 보내며, 그 POST 는 평소 확인 절차(WriteConfirmation)를 거친다.
     /// </summary>
-    private static async Task OpenAsync(ServerSession session, string titleKey,
-        Func<ProxmoxApiClient, IReadOnlyList<string>, Control> create)
+    private static Task OpenAsync(ServerSession session, string titleKey,
+        Func<ProxmoxApiClient, Func<Task<IReadOnlyList<string>>>, Control> create)
     {
-        var overview = await session.Api.GetClusterOverviewAsync();
-        var nodes = overview.Nodes.Where(n => n.IsOnline).Select(n => n.Node)
-            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
-        if (nodes.Count == 0)
+        async Task<IReadOnlyList<string>> OnlineNodes()
         {
-            await AppServices.Dialogs.AlertAsync(L.T(titleKey), L.T("Wz_NoOnlineNode"));
-            return;
+            var nodes = await session.Api.GetNodesAsync();
+            return nodes.Where(n => n.IsOnline).Select(n => n.Node)
+                .OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
         }
 
-        await AppServices.Navigator.PushViewAsync(L.T(titleKey), create(session.Api, nodes));
+        return AppServices.Navigator.PushViewAsync(L.T(titleKey), create(session.Api, OnlineNodes));
     }
 }

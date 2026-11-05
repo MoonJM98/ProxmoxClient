@@ -16,8 +16,14 @@ internal sealed class WizardData
     public string NextId { get; private init; } = string.Empty;
     public IReadOnlyList<StorageInfo> ImageStorages { get; private init; } = [];
     public IReadOnlyList<StorageInfo> RootStorages { get; private init; } = [];
-    public IReadOnlyList<(string Value, string Label)> Isos { get; private init; } = [];
-    public IReadOnlyList<(string Value, string Label)> Templates { get; private init; } = [];
+    public IReadOnlyList<(string Value, string Label)> Isos { get; private set; } = [];
+    public IReadOnlyList<(string Value, string Label)> Templates { get; private set; } = [];
+
+    /// <summary>ISO·CT 템플릿 파일 목록을 아직 읽는 중 — 저장소마다 디스크를 훑어 가장 느려서 첫 단계를 막지 않고 뒤에서 읽는다.</summary>
+    public bool ContentPending { get; private set; }
+
+    /// <summary>ISO·템플릿 목록을 다 읽으면 끝나는 작업(실패해도 빈 목록으로 끝난다).</summary>
+    public Task ContentLoaded { get; private set; } = Task.CompletedTask;
     public IReadOnlyList<(string Value, string Label)> Bridges { get; private init; } = [];
     public IReadOnlyList<(string Value, string Label)> Pools { get; private init; } = [];
     public IReadOnlyList<(string Value, string Label)> CpuModels { get; private init; } = [];
@@ -27,7 +33,10 @@ internal sealed class WizardData
     /// <summary>목록 하나를 기다리는 한도 — 응답 없는 저장소(끊긴 NFS 등) 하나가 마법사 전체를 붙잡지 않게.</summary>
     private static readonly TimeSpan ListTimeout = TimeSpan.FromSeconds(15);
 
-    /// <summary>목록을 한꺼번에(동시에) 읽는다 — 하나씩 읽으면 요청 수 × 왕복 시간만큼 빈 화면으로 기다린다.</summary>
+    /// <summary>
+    ///     목록을 한꺼번에(동시에) 읽는다 — 하나씩 읽으면 요청 수 × 왕복 시간만큼 빈 화면으로 기다린다.
+    ///     ISO·템플릿 파일 목록은 기다리지 않고 뒤에서 채운다(<see cref="ContentLoaded" />).
+    /// </summary>
     public static async Task<WizardData> LoadAsync(ProxmoxApiClient api, string node)
     {
         using var cts = new CancellationTokenSource(ListTimeout);
@@ -36,28 +45,41 @@ internal sealed class WizardData
         var nextId = TryAsync<int?>(() => api.GetNextVmIdAsync(ct), null);
         var images = StoragesAsync(api, node, "images", ct);
         var roots = StoragesAsync(api, node, "rootdir", ct);
-        var isos = ContentAsync(api, node, "iso", ct);
-        var templates = ContentAsync(api, node, "vztmpl", ct);
         var bridges = TryAsync(() => api.GetNodeBridgesAsync(node, ct), []);
         var pools = TryAsync(() => api.Pools.ListAsync(ct), []);
         var cpus = TryAsync(() => api.Guests.CpuModelsAsync(node, null, ct), []);
-        await Task.WhenAll(host, nextId, images, roots, isos, templates, bridges, pools, cpus);
+        await Task.WhenAll(host, nextId, images, roots, bridges, pools, cpus);
 
-        return new WizardData
+        var data = new WizardData
         {
             NextId = nextId.Result?.ToString() ?? string.Empty,
             ImageStorages = images.Result,
             RootStorages = roots.Result,
-            Isos = isos.Result,
-            Templates = templates.Result,
             Bridges = bridges.Result.Select(b => (b, b)).ToList(),
             Pools = pools.Result.Select(r => ActionHelpers.Value(r, "poolid")).Where(p => p.Length > 0).Select(p => (p, p)).ToList(),
             CpuModels = cpus.Result.Select(r => ActionHelpers.Value(r, "name")).Where(n => n.Length > 0)
                 .OrderBy(n => n, StringComparer.OrdinalIgnoreCase).Select(n => (n, n)).ToList(),
             HostCpus = host.Result?.CpuCores ?? 0,
-            HostMemoryMiB = (host.Result?.MemTotalBytes ?? 0) / (1024 * 1024)
+            HostMemoryMiB = (host.Result?.MemTotalBytes ?? 0) / (1024 * 1024),
+            ContentPending = true
         };
+        data.ContentLoaded = data.LoadContentAsync(api, node);
+        return data;
     }
+
+    private async Task LoadContentAsync(ProxmoxApiClient api, string node)
+    {
+        using var cts = new CancellationTokenSource(ContentTimeout);
+        var isos = ContentAsync(api, node, "iso", cts.Token);
+        var templates = ContentAsync(api, node, "vztmpl", cts.Token);
+        await Task.WhenAll(isos, templates);
+        Isos = isos.Result;
+        Templates = templates.Result;
+        ContentPending = false;
+    }
+
+    /// <summary>파일 목록 한도 — 뒤에서 읽으므로 화면을 막지 않는다. 응답 없는 저장소는 이만큼 뒤 빈 목록.</summary>
+    private static readonly TimeSpan ContentTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>저장소에 맞는 새 디스크 형식 — qcow2 를 지원하면 qcow2(웹 UI 기본), 아니면 저장소 기본(빈 값).</summary>
     public string FormatOf(string storage)

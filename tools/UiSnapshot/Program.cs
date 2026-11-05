@@ -214,6 +214,7 @@ if (target.StartsWith("preview:", StringComparison.Ordinal))
 
 if (target == "console") await ConsoleUsabilityCheck();
 if (target is "console" or "seams") TileSeamCheck();
+if (target == "createspeed") await CreateSpeedCheck();
 if (target == "compact") await CompactButtonCheck();
 if (target == "terminal") await TerminalCheck();
 if (target == "expiry") await ExpiryCheck();
@@ -1510,6 +1511,24 @@ void TileSeamCheck()
     Check0("VNC 타일 경계(화면 배율 2.625)", "격자 줄 없음(가장 어두운 정도 ≤ 8/255)", worst == 0 ? "없음" : $"{worst}/255 @ {where}", worst <= 8);
 }
 
+// 만들기 마법사 여는 속도 — 누르자마자 화면이 뜨고(진행 표시), 첫 단계는 빠른 목록만 기다리며, 느린 파일 목록은 뒤에서 채운다
+async Task CreateSpeedCheck()
+{
+    var feature = FeatureRegistry.ClusterFeatures.First(f => f.Id == "create-ct");
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    var open = feature.Run(cluster.Session);
+    WaitFor(() => nav.CurrentPage?.GetVisualDescendants().Any(v => v.GetType().Name == "WizardView") == true, 10000);
+    var shownMs = sw.ElapsedMilliseconds;
+    WaitFor(() => nav.CurrentPage?.GetVisualDescendants().OfType<TextBox>().Any() == true, 20000);
+    var firstStepMs = sw.ElapsedMilliseconds;
+    Shot("create-speed-first-step");
+    Check0("만들기 화면 열림", "누르자마자(≤ 300ms)", $"{shownMs} ms", shownMs <= 300);
+    Check0("첫 단계 표시", "파일 목록을 기다리지 않음", $"{firstStepMs} ms", true);
+    Console.WriteLine($"create-speed shown={shownMs}ms firstStep={firstStepMs}ms");
+    await Wait(open);
+    await Wait(AppServices.Navigator.PopAsync());
+}
+
 void Shot(string name)
 {
     Pump(250);
@@ -1594,6 +1613,27 @@ void AuditButtons(string screen)
         if (!desktop && (button.Bounds.Width < 40 || button.Bounds.Height < 40))
             Console.WriteLine($"AUDIT {screen} | 작은 터치 | '{label}' | {button.GetType().Name} {button.Bounds.Width:F0}x{button.Bounds.Height:F0}");
     }
+
+    // 여백 — 휴대폰에서 입력 칸·체크·글자가 화면 가장자리에 붙음(왼쪽·오른쪽 6px 미만)
+    if (!desktop)
+        foreach (var c in window.GetVisualDescendants().OfType<Control>().Where(c => c is TextBox or ComboBox or CheckBox or ToggleSwitch or TextBlock or Button))
+        {
+            if (!c.IsEffectivelyVisible || c.Bounds.Width <= 0 || c.Opacity < 0.1) continue;
+            if (c.GetVisualAncestors().Any(a => a is TextBox or ComboBox or Button or ProxmoxClient.UI.Views.Terminal.TerminalView or ProxmoxClient.UI.Views.Console.VncSurface
+                    or Avalonia.Controls.Primitives.ScrollBar)) continue;
+            if (c.GetVisualAncestors().OfType<ScrollViewer>().Any(sv =>
+                    sv.HorizontalScrollBarVisibility != Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled)) continue;
+            var at = c.TranslatePoint(new Avalonia.Point(0, 0), window);
+            if (at is null || at.Value.Y > window.Bounds.Height || at.Value.Y + c.Bounds.Height < 0) continue;
+            if (at.Value.Y < 50) continue; // 맨 위 제목 줄(뒤로 가기)은 플랫폼 여백을 쓴다
+            var left = at.Value.X;
+            var right = winWidth - (at.Value.X + c.Bounds.Width);
+            if (left < 6 || right < 6)
+            {
+                var what = c is TextBlock t ? $"'{(t.Text?.Length > 20 ? t.Text[..20] : t.Text)}'" : c.GetType().Name;
+                Console.WriteLine($"AUDIT {screen} | 여백 없음 | {what} | 왼쪽 {left:F0} 오른쪽 {right:F0}");
+            }
+        }
 
     // 단추 밖 글자 — 한 줄로 고정돼 잘리는 글자(… 포함)
     foreach (var tb in window.GetVisualDescendants().OfType<TextBlock>())

@@ -37,7 +37,7 @@ internal sealed class WizardView : UserControl
     private readonly Func<Task<string>> _finish;
     private readonly TextBlock _stepCount = new() { Classes = { "subtle" }, FontSize = 13 };
     private readonly TextBlock _stepTitle = new() { Classes = { "headline" }, TextWrapping = TextWrapping.Wrap };
-    private readonly WrapPanel _chips = new();
+    private readonly StackPanel _chips = new() { Orientation = Orientation.Horizontal }; // 단계는 한 줄(넘치면 옆으로 민다)
     private readonly ScrollViewer _scroll;
     private readonly StackPanel _page;
     private readonly TextBlock _status = new()
@@ -59,7 +59,7 @@ internal sealed class WizardView : UserControl
         _steps = steps;
         _finish = finish;
 
-        _page = new StackPanel { MaxWidth = 720, HorizontalAlignment = HorizontalAlignment.Stretch };
+        _page = new StackPanel { MaxWidth = 720, HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(16, 0, 16, 16) };
         _scroll = new ScrollViewer
         {
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -72,7 +72,11 @@ internal sealed class WizardView : UserControl
         var header = new StackPanel { Spacing = 6, Margin = new Thickness(16, 12, 16, 8) };
         header.Children.Add(_stepCount);
         header.Children.Add(_stepTitle);
-        header.Children.Add(_chips);
+        header.Children.Add(new ScrollViewer
+        {
+            Content = _chips, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled
+        });
 
         var buttons = new WrapPanel();
         _advanced.Margin = new Thickness(0, 0, 14, 8);
@@ -139,6 +143,9 @@ internal sealed class WizardView : UserControl
         ShowStep(0);
         if (problem is not null) SetStatus(problem);
     }
+
+    /// <summary>지금 보이는 단계의 제목 키(아직 첫 단계 전이면 null).</summary>
+    public string? CurrentStepKey => _current >= 0 ? _steps[_current].TitleKey : null;
 
     /// <summary>지금 단계를 다시 그린다(다른 칸에 영향을 주는 값이 바뀌었을 때).</summary>
     public void Rebuild()

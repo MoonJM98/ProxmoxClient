@@ -30,7 +30,7 @@ public sealed class SnapshotsTab : UserControl
     private readonly TextBox _newDescription = new() { PlaceholderText = Loc.T("FirewallWindow_13") };
     private readonly CheckBox _includeRam = new() { Content = Loc.T("SnapshotDialog_09") };
     private readonly Button _create;
-    private readonly TextBlock _status = new() { Classes = { "subtle" }, TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock _status = new() { Classes = { "subtle" }, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(16, 8, 16, 10) };
 
     public SnapshotsTab(ProxmoxApiClient api, PveResource guest)
     {

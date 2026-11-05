@@ -102,6 +102,12 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Console_PausedBackground" xml:space="preserve">
     <value>Disconnected while the app was in the background. It reconnects when you come back.</value>
   </data>
+  <data name="Common_More" xml:space="preserve">
+    <value>More</value>
+  </data>
+  <data name="Common_MoreOf" xml:space="preserve">
+    <value>More {0}</value>
+  </data>
   <data name="Common_Copied" xml:space="preserve">
     <value>Copied</value>
   </data>

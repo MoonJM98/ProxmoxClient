@@ -57,24 +57,29 @@ public static class CompactButton
         AutomationLabel(button, label);
         button.SetValue(LabelProperty, label);
         Panel? row = null;
+        var lastKey = (Width: -1.0, Count: -1);
 
-        void Schedule() => Dispatcher.UIThread.Post(() => UpdateRow(row), DispatcherPriority.Loaded);
-
-        void OnRowChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+        // 줄의 폭이나 버튼 수가 바뀐 레이아웃마다 다시 판단한다(처음 그려질 때 포함 — 그 전에는 폭이 0)
+        void OnLayoutUpdated(object? sender, EventArgs e)
         {
-            if (e.Property == Visual.BoundsProperty &&
-                Math.Abs(((Rect)e.OldValue!).Width - ((Rect)e.NewValue!).Width) > 0.5) Schedule();
+            if (row is null || row.Bounds.Width <= 0) return;
+
+            var key = (row.Bounds.Width, row.Children.Count);
+            if (key == lastKey) return;
+
+            lastKey = key;
+            UpdateRow(row);
         }
 
         button.AttachedToVisualTree += (_, _) =>
         {
             row = RowOf(button);
-            if (row is not null) row.PropertyChanged += OnRowChanged;
-            Schedule();
+            lastKey = (-1, -1);
+            if (row is not null) row.LayoutUpdated += OnLayoutUpdated;
         };
         button.DetachedFromVisualTree += (_, _) =>
         {
-            if (row is not null) row.PropertyChanged -= OnRowChanged;
+            if (row is not null) row.LayoutUpdated -= OnLayoutUpdated;
             row = null;
         };
 
@@ -153,9 +158,15 @@ public static class CompactButton
         if (managed.Count == 0) return;
 
         var need = row.Children.Where(c => c.IsVisible).Sum(c => c.DesiredSize.Width);
+        var wasNarrow = managed.Any(b => b.GetValue(NarrowProperty));
         foreach (var b in managed.Where(b => b.GetValue(NarrowProperty)))
             need += LabelExtra(b);
-        var narrow = need > available + 0.5;
+        // 경계에서 글자·아이콘을 오가지 않게 여유를 둔다 — 글자 폭 어림은 실제보다 조금 크다(아이콘만 → 글자는 넉넉할 때만)
+        var narrow = wasNarrow ? need > available - 24 : need > available - 4;
+        // 어림이 맞아도 실제로 줄이 꺾였으면(버튼들의 세로 위치가 다르면) 아이콘만으로
+        if (!wasNarrow && !narrow)
+            narrow = row.Children.Where(c => c.IsVisible && c.Bounds.Width > 0)
+                .Select(c => Math.Round(c.Bounds.Y / 4)).Distinct().Count() > 1;
         foreach (var b in managed) SetNarrow(b, narrow);
     }
 
