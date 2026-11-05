@@ -1,0 +1,47 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ProxmoxClient.Mobile.App"
+             RequestedThemeVariant="Default">
+    <!-- Default: 기기 테마(밝게·어둡게)를 따른다 -->
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://ProxmoxClient.Mobile/Themes/Icons.axaml" />
+                <ResourceInclude Source="avares://ProxmoxClient.Mobile/Themes/Templates.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="PageBackgroundBrush" Color="#F3F4F6" />
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="CardBorderBrush" Color="#E3E5E8" />
+                    <SolidColorBrush x:Key="SubtleTextBrush" Color="#6B7280" />
+                    <SolidColorBrush x:Key="TrackBrush" Color="#E5E7EB" />
+                    <SolidColorBrush x:Key="BannerBackgroundBrush" Color="#FDECEA" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="PageBackgroundBrush" Color="#121212" />
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#1E1E1E" />
+                    <SolidColorBrush x:Key="CardBorderBrush" Color="#2C2C2C" />
+                    <SolidColorBrush x:Key="SubtleTextBrush" Color="#9E9E9E" />
+                    <SolidColorBrush x:Key="TrackBrush" Color="#333337" />
+                    <SolidColorBrush x:Key="BannerBackgroundBrush" Color="#3A1F1C" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+            <SolidColorBrush x:Key="AccentBrush" Color="#007ACC" />
+            <SolidColorBrush x:Key="DangerBrush" Color="#E5534B" />
+            <SolidColorBrush x:Key="ScrimBrush" Color="#99000000" />
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <!-- 강조색은 데스크톱 앱과 같은 파랑 -->
+        <FluentTheme>
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Light" Accent="#007ACC" />
+                <ColorPaletteResources x:Key="Dark" Accent="#007ACC" />
+            </FluentTheme.Palettes>
+        </FluentTheme>
+        <StyleInclude Source="avares://ProxmoxClient.Mobile/Themes/Styles.axaml" />
+    </Application.Styles>
+</Application>

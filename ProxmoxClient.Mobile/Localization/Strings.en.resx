@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Cert_Details" xml:space="preserve">
+    <value>Server: {0}
+SHA-256 fingerprint:
+{1}
+
+Subject: {2}
+Issuer: {3}
+Expires: {4}</value>
+  </data>
+  <data name="Cert_MismatchText" xml:space="preserve">
+    <value>The server certificate differs from the one you trusted earlier.
+A man-in-the-middle attack could steal your password. Trust it only if you replaced the server certificate yourself.
+
+Previous fingerprint:
+{0}
+
+New certificate
+{1}
+
+Trust the new certificate and continue?</value>
+  </data>
+  <data name="Cert_MismatchTitle" xml:space="preserve">
+    <value>Server certificate changed</value>
+  </data>
+  <data name="Cert_NewText" xml:space="preserve">
+    <value>This server's certificate was not issued by a public certificate authority (for example the default self-signed Proxmox certificate).
+Compare it with the fingerprint shown under [Node → System → Certificates] in the Proxmox web UI before trusting it.
+
+{0}
+
+Trust this certificate and continue? You will be warned again if the fingerprint changes.</value>
+  </data>
+  <data name="Cert_NewTitle" xml:space="preserve">
+    <value>Confirm server certificate</value>
+  </data>
+  <data name="Cert_Trust" xml:space="preserve">
+    <value>Trust and connect</value>
+  </data>
+  <data name="Cluster_FilterAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Cluster_FilterRunning" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="Cluster_FilterStopped" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="Cluster_GuestSummary" xml:space="preserve">
+    <value>{0} of {1} running</value>
+  </data>
+  <data name="Cluster_Logout" xml:space="preserve">
+    <value>Log out</value>
+  </data>
+  <data name="Cluster_LogoutText" xml:space="preserve">
+    <value>Log out of {0}?</value>
+  </data>
+  <data name="Cluster_LogoutTitle" xml:space="preserve">
+    <value>Log out</value>
+  </data>
+  <data name="Cluster_NoGuests" xml:space="preserve">
+    <value>No guests to show</value>
+  </data>
+  <data name="Cluster_NodeSummary" xml:space="preserve">
+    <value>{0} of {1} nodes online</value>
+  </data>
+  <data name="Cluster_SearchHint" xml:space="preserve">
+    <value>Search name, VMID, node, tag</value>
+  </data>
+  <data name="Cluster_Subtitle" xml:space="preserve">
+    <value>{0} · PVE {1}</value>
+  </data>
+  <data name="Cluster_TabGuests" xml:space="preserve">
+    <value>Guests</value>
+  </data>
+  <data name="Cluster_TabNodes" xml:space="preserve">
+    <value>Nodes</value>
+  </data>
+  <data name="Cluster_TabStorage" xml:space="preserve">
+    <value>Storage</value>
+  </data>
+  <data name="Cluster_TabTasks" xml:space="preserve">
+    <value>Tasks</value>
+  </data>
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Common_Copied" xml:space="preserve">
+    <value>Copied</value>
+  </data>
+  <data name="Common_Cores" xml:space="preserve">
+    <value>cores</value>
+  </data>
+  <data name="Common_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Common_Disk" xml:space="preserve">
+    <value>Disk</value>
+  </data>
+  <data name="Common_Memory" xml:space="preserve">
+    <value>Memory</value>
+  </data>
+  <data name="Common_Network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="Common_Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Common_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Connect_Busy" xml:space="preserve">
+    <value>Connecting to {0}…</value>
+  </data>
+  <data name="Connect_PasswordPrompt" xml:space="preserve">
+    <value>Enter the password for {0}.</value>
+  </data>
+  <data name="Connect_TokenPrompt" xml:space="preserve">
+    <value>Enter the secret for token {0}.</value>
+  </data>
+  <data name="Error_Timeout" xml:space="preserve">
+    <value>The server did not respond in time.</value>
+  </data>
+  <data name="Error_Title" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Error_Unreachable" xml:space="preserve">
+    <value>Cannot reach the server.
+{0}</value>
+  </data>
+  <data name="Format_UptimeDays" xml:space="preserve">
+    <value>{0}d {1}h</value>
+  </data>
+  <data name="Format_UptimeHours" xml:space="preserve">
+    <value>{0}h {1}m</value>
+  </data>
+  <data name="Format_UptimeMinutes" xml:space="preserve">
+    <value>{0}m</value>
+  </data>
+  <data name="Guest_Addresses" xml:space="preserve">
+    <value>IP addresses</value>
+  </data>
+  <data name="Guest_AddressesNoAgent" xml:space="preserve">
+    <value>Address unknown. The VM needs the QEMU guest agent installed and enabled.</value>
+  </data>
+  <data name="Guest_AddressesNone" xml:space="preserve">
+    <value>No addresses.</value>
+  </data>
+  <data name="Guest_AddressesStopped" xml:space="preserve">
+    <value>Shown while the guest is running.</value>
+  </data>
+  <data name="Guest_Config" xml:space="preserve">
+    <value>Configuration</value>
+  </data>
+  <data name="Guest_KindCt" xml:space="preserve">
+    <value>CT</value>
+  </data>
+  <data name="Guest_KindVm" xml:space="preserve">
+    <value>VM</value>
+  </data>
+  <data name="Guest_Power" xml:space="preserve">
+    <value>Power</value>
+  </data>
+  <data name="Guest_Snapshots" xml:space="preserve">
+    <value>Snapshots</value>
+  </data>
+  <data name="Guest_Template" xml:space="preserve">
+    <value>Template</value>
+  </data>
+  <data name="Guest_Usage" xml:space="preserve">
+    <value>Usage</value>
+  </data>
+  <data name="Node_CpuText" xml:space="preserve">
+    <value>{0} · {1} cores · {2} sockets</value>
+  </data>
+  <data name="Node_Guests" xml:space="preserve">
+    <value>Guests</value>
+  </data>
+  <data name="Node_Load" xml:space="preserve">
+    <value>Load average</value>
+  </data>
+  <data name="Node_RootFs" xml:space="preserve">
+    <value>Root disk</value>
+  </data>
+  <data name="Node_Swap" xml:space="preserve">
+    <value>Swap</value>
+  </data>
+  <data name="Node_Uptime" xml:space="preserve">
+    <value>Uptime</value>
+  </data>
+  <data name="Power_Reboot" xml:space="preserve">
+    <value>Reboot</value>
+  </data>
+  <data name="Power_RebootConfirm" xml:space="preserve">
+    <value>Reboot {0}?</value>
+  </data>
+  <data name="Power_Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="Power_ResetConfirm" xml:space="preserve">
+    <value>Reset {0}? It restarts immediately without shutting down the OS.</value>
+  </data>
+  <data name="Power_Resume" xml:space="preserve">
+    <value>Resume</value>
+  </data>
+  <data name="Power_Shutdown" xml:space="preserve">
+    <value>Shut down</value>
+  </data>
+  <data name="Power_ShutdownConfirm" xml:space="preserve">
+    <value>Shut down {0}?</value>
+  </data>
+  <data name="Power_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Power_Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="Power_StopConfirm" xml:space="preserve">
+    <value>Force stop {0}? This is like pulling the plug; unsaved data may be lost.</value>
+  </data>
+  <data name="Power_Suspend" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Power_SuspendConfirm" xml:space="preserve">
+    <value>Pause {0}?</value>
+  </data>
+  <data name="Profile_AddTitle" xml:space="preserve">
+    <value>Add server</value>
+  </data>
+  <data name="Profile_AuthMode" xml:space="preserve">
+    <value>Authentication</value>
+  </data>
+  <data name="Profile_AuthPassword" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Profile_AuthToken" xml:space="preserve">
+    <value>API token</value>
+  </data>
+  <data name="Profile_Delete" xml:space="preserve">
+    <value>Delete server</value>
+  </data>
+  <data name="Profile_DeleteText" xml:space="preserve">
+    <value>Remove "{0}" from the list? Its saved password is removed too.</value>
+  </data>
+  <data name="Profile_DeleteTitle" xml:space="preserve">
+    <value>Delete server</value>
+  </data>
+  <data name="Profile_EditTitle" xml:space="preserve">
+    <value>Edit server</value>
+  </data>
+  <data name="Profile_Host" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Profile_HostHint" xml:space="preserve">
+    <value>pve.example.com or 192.168.0.10</value>
+  </data>
+  <data name="Profile_HostRequired" xml:space="preserve">
+    <value>Enter the server address.</value>
+  </data>
+  <data name="Profile_InvalidTitle" xml:space="preserve">
+    <value>Check your input</value>
+  </data>
+  <data name="Profile_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Profile_NameHint" xml:space="preserve">
+    <value>Leave empty to use the address</value>
+  </data>
+  <data name="Profile_Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Profile_Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Profile_PortInvalid" xml:space="preserve">
+    <value>Port must be a number between 1 and 65535.</value>
+  </data>
+  <data name="Profile_RememberSecret" xml:space="preserve">
+    <value>Save securely on this device</value>
+  </data>
+  <data name="Profile_SecretUnchanged" xml:space="preserve">
+    <value>Leave empty to keep the saved value</value>
+  </data>
+  <data name="Profile_SelfSigned" xml:space="preserve">
+    <value>Allow self-signed certificate</value>
+  </data>
+  <data name="Profile_SelfSignedHint" xml:space="preserve">
+    <value>The certificate fingerprint is confirmed on first connect and then pinned.</value>
+  </data>
+  <data name="Profile_TokenId" xml:space="preserve">
+    <value>Token ID (user@realm!token)</value>
+  </data>
+  <data name="Profile_TokenIdInvalid" xml:space="preserve">
+    <value>The token ID must look like user@realm!token (for example root@pam!mobile).</value>
+  </data>
+  <data name="Profile_TokenSecret" xml:space="preserve">
+    <value>Token secret</value>
+  </data>
+  <data name="Profile_User" xml:space="preserve">
+    <value>User (user@realm)</value>
+  </data>
+  <data name="Profile_UserRequired" xml:space="preserve">
+    <value>Enter the user (for example root@pam).</value>
+  </data>
+  <data name="Profiles_EmptyText" xml:space="preserve">
+    <value>Tap + below to add a Proxmox VE server.</value>
+  </data>
+  <data name="Profiles_EmptyTitle" xml:space="preserve">
+    <value>No servers yet</value>
+  </data>
+  <data name="Profiles_Section" xml:space="preserve">
+    <value>Servers</value>
+  </data>
+  <data name="Snapshot_Create" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="Snapshot_CreateText" xml:space="preserve">
+    <value>Snapshot name (starts with a letter; letters, digits, _ and -)</value>
+  </data>
+  <data name="Snapshot_CreateTitle" xml:space="preserve">
+    <value>Create snapshot</value>
+  </data>
+  <data name="Snapshot_Creating" xml:space="preserve">
+    <value>Create snapshot: {0}</value>
+  </data>
+  <data name="Snapshot_DeleteText" xml:space="preserve">
+    <value>Delete snapshot "{0}"?</value>
+  </data>
+  <data name="Snapshot_DeleteTitle" xml:space="preserve">
+    <value>Delete snapshot</value>
+  </data>
+  <data name="Snapshot_Deleting" xml:space="preserve">
+    <value>Delete snapshot: {0}</value>
+  </data>
+  <data name="Snapshot_IncludeRam" xml:space="preserve">
+    <value>Include RAM state</value>
+  </data>
+  <data name="Snapshot_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Snapshot_NameInvalid" xml:space="preserve">
+    <value>A snapshot name starts with a letter and uses only letters, digits, underscores and hyphens (2-40 characters).</value>
+  </data>
+  <data name="Snapshot_None" xml:space="preserve">
+    <value>No snapshots</value>
+  </data>
+  <data name="Snapshot_Rollback" xml:space="preserve">
+    <value>Roll back</value>
+  </data>
+  <data name="Snapshot_RollbackText" xml:space="preserve">
+    <value>Roll {1} back to snapshot "{0}"? Changes made since then are lost.</value>
+  </data>
+  <data name="Snapshot_RollbackTitle" xml:space="preserve">
+    <value>Roll back to snapshot</value>
+  </data>
+  <data name="Snapshot_RollingBack" xml:space="preserve">
+    <value>Roll back to snapshot: {0}</value>
+  </data>
+  <data name="Status_Paused" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="Status_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="Status_Stopped" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="Status_Suspended" xml:space="preserve">
+    <value>Hibernated</value>
+  </data>
+  <data name="TaskType_aptupdate" xml:space="preserve">
+    <value>Update package database</value>
+  </data>
+  <data name="TaskType_download" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="TaskType_imgcopy" xml:space="preserve">
+    <value>Copy disk</value>
+  </data>
+  <data name="TaskType_move_volume" xml:space="preserve">
+    <value>Move volume</value>
+  </data>
+  <data name="TaskType_qmclone" xml:space="preserve">
+    <value>VM clone</value>
+  </data>
+  <data name="TaskType_qmconfig" xml:space="preserve">
+    <value>VM config</value>
+  </data>
+  <data name="TaskType_qmcreate" xml:space="preserve">
+    <value>VM create</value>
+  </data>
+  <data name="TaskType_qmdelsnapshot" xml:space="preserve">
+    <value>VM delete snapshot</value>
+  </data>
+  <data name="TaskType_qmdestroy" xml:space="preserve">
+    <value>VM destroy</value>
+  </data>
+  <data name="TaskType_qmigrate" xml:space="preserve">
+    <value>VM migrate</value>
+  </data>
+  <data name="TaskType_qmmove" xml:space="preserve">
+    <value>Move disk</value>
+  </data>
+  <data name="TaskType_qmreboot" xml:space="preserve">
+    <value>VM reboot</value>
+  </data>
+  <data name="TaskType_qmreset" xml:space="preserve">
+    <value>VM reset</value>
+  </data>
+  <data name="TaskType_qmrestore" xml:space="preserve">
+    <value>VM restore</value>
+  </data>
+  <data name="TaskType_qmresume" xml:space="preserve">
+    <value>VM resume</value>
+  </data>
+  <data name="TaskType_qmrollback" xml:space="preserve">
+    <value>VM rollback</value>
+  </data>
+  <data name="TaskType_qmshutdown" xml:space="preserve">
+    <value>VM shutdown</value>
+  </data>
+  <data name="TaskType_qmsnapshot" xml:space="preserve">
+    <value>VM snapshot</value>
+  </data>
+  <data name="TaskType_qmstart" xml:space="preserve">
+    <value>VM start</value>
+  </data>
+  <data name="TaskType_qmstop" xml:space="preserve">
+    <value>VM stop</value>
+  </data>
+  <data name="TaskType_qmsuspend" xml:space="preserve">
+    <value>VM pause</value>
+  </data>
+  <data name="TaskType_resize" xml:space="preserve">
+    <value>Resize disk</value>
+  </data>
+  <data name="TaskType_spiceproxy" xml:space="preserve">
+    <value>SPICE console</value>
+  </data>
+  <data name="TaskType_srvreload" xml:space="preserve">
+    <value>Reload service</value>
+  </data>
+  <data name="TaskType_srvrestart" xml:space="preserve">
+    <value>Restart service</value>
+  </data>
+  <data name="TaskType_srvstart" xml:space="preserve">
+    <value>Start service</value>
+  </data>
+  <data name="TaskType_srvstop" xml:space="preserve">
+    <value>Stop service</value>
+  </data>
+  <data name="TaskType_startall" xml:space="preserve">
+    <value>Start all</value>
+  </data>
+  <data name="TaskType_stopall" xml:space="preserve">
+    <value>Stop all</value>
+  </data>
+  <data name="TaskType_termproxy" xml:space="preserve">
+    <value>Terminal</value>
+  </data>
+  <data name="TaskType_vncproxy" xml:space="preserve">
+    <value>VNC console</value>
+  </data>
+  <data name="TaskType_vncshell" xml:space="preserve">
+    <value>Shell</value>
+  </data>
+  <data name="TaskType_vzcreate" xml:space="preserve">
+    <value>CT create</value>
+  </data>
+  <data name="TaskType_vzdelsnapshot" xml:space="preserve">
+    <value>CT delete snapshot</value>
+  </data>
+  <data name="TaskType_vzdestroy" xml:space="preserve">
+    <value>CT destroy</value>
+  </data>
+  <data name="TaskType_vzdump" xml:space="preserve">
+    <value>Backup</value>
+  </data>
+  <data name="TaskType_vzmigrate" xml:space="preserve">
+    <value>CT migrate</value>
+  </data>
+  <data name="TaskType_vzreboot" xml:space="preserve">
+    <value>CT reboot</value>
+  </data>
+  <data name="TaskType_vzrestore" xml:space="preserve">
+    <value>CT restore</value>
+  </data>
+  <data name="TaskType_vzresume" xml:space="preserve">
+    <value>CT resume</value>
+  </data>
+  <data name="TaskType_vzrollback" xml:space="preserve">
+    <value>CT rollback</value>
+  </data>
+  <data name="TaskType_vzshutdown" xml:space="preserve">
+    <value>CT shutdown</value>
+  </data>
+  <data name="TaskType_vzsnapshot" xml:space="preserve">
+    <value>CT snapshot</value>
+  </data>
+  <data name="TaskType_vzstart" xml:space="preserve">
+    <value>CT start</value>
+  </data>
+  <data name="TaskType_vzstop" xml:space="preserve">
+    <value>CT stop</value>
+  </data>
+  <data name="TaskType_vzsuspend" xml:space="preserve">
+    <value>CT suspend</value>
+  </data>
+  <data name="Task_Done" xml:space="preserve">
+    <value>{0}: done</value>
+  </data>
+  <data name="Task_FailedTitle" xml:space="preserve">
+    <value>Task failed</value>
+  </data>
+  <data name="Task_InProgress" xml:space="preserve">
+    <value>{0} in progress…</value>
+  </data>
+  <data name="Task_LogEmpty" xml:space="preserve">
+    <value>(no log)</value>
+  </data>
+</root>

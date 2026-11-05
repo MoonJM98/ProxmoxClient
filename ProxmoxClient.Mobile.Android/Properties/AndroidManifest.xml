@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 비밀값은 키스토어 키로 암호화해 두지만, 기기 백업·이전으로 앱 데이터가 밖으로 나가지 않게 막는다 -->
+    <application android:label="Proxmox Client" android:icon="@mipmap/appicon"
+                 android:allowBackup="false" android:fullBackupContent="false" />
+</manifest>

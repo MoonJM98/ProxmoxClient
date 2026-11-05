@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Cert_Details" xml:space="preserve">
+    <value>서버: {0}
+SHA-256 지문:
+{1}
+
+주체: {2}
+발급자: {3}
+만료: {4}</value>
+  </data>
+  <data name="Cert_MismatchText" xml:space="preserve">
+    <value>서버 인증서가 이전에 신뢰한 인증서와 다릅니다.
+중간자 공격으로 비밀번호가 탈취될 수 있습니다. 서버 인증서를 직접 교체한 경우에만 신뢰하세요.
+
+이전 지문:
+{0}
+
+새 인증서
+{1}
+
+새 인증서를 신뢰하고 계속할까요?</value>
+  </data>
+  <data name="Cert_MismatchTitle" xml:space="preserve">
+    <value>서버 인증서 변경 경고</value>
+  </data>
+  <data name="Cert_NewText" xml:space="preserve">
+    <value>이 서버의 인증서는 공인 인증 기관이 발급하지 않았습니다(Proxmox 기본 자체 서명 인증서 등).
+Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 같은지 확인한 뒤 신뢰하세요.
+
+{0}
+
+이 인증서를 신뢰하고 계속할까요? 이후 지문이 바뀌면 다시 경고합니다.</value>
+  </data>
+  <data name="Cert_NewTitle" xml:space="preserve">
+    <value>서버 인증서 확인</value>
+  </data>
+  <data name="Cert_Trust" xml:space="preserve">
+    <value>신뢰하고 연결</value>
+  </data>
+  <data name="Cluster_FilterAll" xml:space="preserve">
+    <value>전체</value>
+  </data>
+  <data name="Cluster_FilterRunning" xml:space="preserve">
+    <value>실행 중</value>
+  </data>
+  <data name="Cluster_FilterStopped" xml:space="preserve">
+    <value>중지됨</value>
+  </data>
+  <data name="Cluster_GuestSummary" xml:space="preserve">
+    <value>실행 중 {0} / {1}</value>
+  </data>
+  <data name="Cluster_Logout" xml:space="preserve">
+    <value>로그아웃</value>
+  </data>
+  <data name="Cluster_LogoutText" xml:space="preserve">
+    <value>{0}에서 로그아웃할까요?</value>
+  </data>
+  <data name="Cluster_LogoutTitle" xml:space="preserve">
+    <value>로그아웃</value>
+  </data>
+  <data name="Cluster_NoGuests" xml:space="preserve">
+    <value>표시할 게스트가 없습니다</value>
+  </data>
+  <data name="Cluster_NodeSummary" xml:space="preserve">
+    <value>온라인 노드 {0} / {1}</value>
+  </data>
+  <data name="Cluster_SearchHint" xml:space="preserve">
+    <value>이름·VMID·노드·태그 검색</value>
+  </data>
+  <data name="Cluster_Subtitle" xml:space="preserve">
+    <value>{0} · PVE {1}</value>
+  </data>
+  <data name="Cluster_TabGuests" xml:space="preserve">
+    <value>게스트</value>
+  </data>
+  <data name="Cluster_TabNodes" xml:space="preserve">
+    <value>노드</value>
+  </data>
+  <data name="Cluster_TabStorage" xml:space="preserve">
+    <value>스토리지</value>
+  </data>
+  <data name="Cluster_TabTasks" xml:space="preserve">
+    <value>작업</value>
+  </data>
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>취소</value>
+  </data>
+  <data name="Common_Copied" xml:space="preserve">
+    <value>복사했습니다</value>
+  </data>
+  <data name="Common_Cores" xml:space="preserve">
+    <value>코어</value>
+  </data>
+  <data name="Common_Delete" xml:space="preserve">
+    <value>삭제</value>
+  </data>
+  <data name="Common_Disk" xml:space="preserve">
+    <value>디스크</value>
+  </data>
+  <data name="Common_Memory" xml:space="preserve">
+    <value>메모리</value>
+  </data>
+  <data name="Common_Network" xml:space="preserve">
+    <value>네트워크</value>
+  </data>
+  <data name="Common_Ok" xml:space="preserve">
+    <value>확인</value>
+  </data>
+  <data name="Common_Save" xml:space="preserve">
+    <value>저장</value>
+  </data>
+  <data name="Connect_Busy" xml:space="preserve">
+    <value>{0}에 연결하는 중…</value>
+  </data>
+  <data name="Connect_PasswordPrompt" xml:space="preserve">
+    <value>{0} 비밀번호를 입력하세요.</value>
+  </data>
+  <data name="Connect_TokenPrompt" xml:space="preserve">
+    <value>{0} 토큰 비밀값을 입력하세요.</value>
+  </data>
+  <data name="Error_Timeout" xml:space="preserve">
+    <value>서버 응답 시간이 초과되었습니다.</value>
+  </data>
+  <data name="Error_Title" xml:space="preserve">
+    <value>오류</value>
+  </data>
+  <data name="Error_Unreachable" xml:space="preserve">
+    <value>서버에 연결할 수 없습니다.
+{0}</value>
+  </data>
+  <data name="Format_UptimeDays" xml:space="preserve">
+    <value>{0}일 {1}시간</value>
+  </data>
+  <data name="Format_UptimeHours" xml:space="preserve">
+    <value>{0}시간 {1}분</value>
+  </data>
+  <data name="Format_UptimeMinutes" xml:space="preserve">
+    <value>{0}분</value>
+  </data>
+  <data name="Guest_Addresses" xml:space="preserve">
+    <value>IP 주소</value>
+  </data>
+  <data name="Guest_AddressesNoAgent" xml:space="preserve">
+    <value>주소를 알 수 없습니다. VM에 QEMU 게스트 에이전트가 설치·활성화되어 있어야 합니다.</value>
+  </data>
+  <data name="Guest_AddressesNone" xml:space="preserve">
+    <value>주소가 없습니다.</value>
+  </data>
+  <data name="Guest_AddressesStopped" xml:space="preserve">
+    <value>실행 중일 때 표시됩니다.</value>
+  </data>
+  <data name="Guest_Config" xml:space="preserve">
+    <value>설정</value>
+  </data>
+  <data name="Guest_KindCt" xml:space="preserve">
+    <value>CT</value>
+  </data>
+  <data name="Guest_KindVm" xml:space="preserve">
+    <value>VM</value>
+  </data>
+  <data name="Guest_Power" xml:space="preserve">
+    <value>전원</value>
+  </data>
+  <data name="Guest_Snapshots" xml:space="preserve">
+    <value>스냅숏</value>
+  </data>
+  <data name="Guest_Template" xml:space="preserve">
+    <value>템플릿</value>
+  </data>
+  <data name="Guest_Usage" xml:space="preserve">
+    <value>사용량</value>
+  </data>
+  <data name="Node_CpuText" xml:space="preserve">
+    <value>{0} · {1}코어 · {2}소켓</value>
+  </data>
+  <data name="Node_Guests" xml:space="preserve">
+    <value>게스트</value>
+  </data>
+  <data name="Node_Load" xml:space="preserve">
+    <value>부하 평균</value>
+  </data>
+  <data name="Node_RootFs" xml:space="preserve">
+    <value>루트 디스크</value>
+  </data>
+  <data name="Node_Swap" xml:space="preserve">
+    <value>스왑</value>
+  </data>
+  <data name="Node_Uptime" xml:space="preserve">
+    <value>가동 시간</value>
+  </data>
+  <data name="Power_Reboot" xml:space="preserve">
+    <value>재부팅</value>
+  </data>
+  <data name="Power_RebootConfirm" xml:space="preserve">
+    <value>{0}을(를) 재부팅할까요?</value>
+  </data>
+  <data name="Power_Reset" xml:space="preserve">
+    <value>리셋</value>
+  </data>
+  <data name="Power_ResetConfirm" xml:space="preserve">
+    <value>{0}을(를) 리셋할까요? 운영체제 종료 없이 바로 다시 시작합니다.</value>
+  </data>
+  <data name="Power_Resume" xml:space="preserve">
+    <value>재개</value>
+  </data>
+  <data name="Power_Shutdown" xml:space="preserve">
+    <value>종료</value>
+  </data>
+  <data name="Power_ShutdownConfirm" xml:space="preserve">
+    <value>{0}을(를) 정상 종료할까요?</value>
+  </data>
+  <data name="Power_Start" xml:space="preserve">
+    <value>시작</value>
+  </data>
+  <data name="Power_Stop" xml:space="preserve">
+    <value>강제 정지</value>
+  </data>
+  <data name="Power_StopConfirm" xml:space="preserve">
+    <value>{0}을(를) 강제로 정지할까요? 전원을 뽑는 것과 같아 저장하지 않은 데이터가 사라질 수 있습니다.</value>
+  </data>
+  <data name="Power_Suspend" xml:space="preserve">
+    <value>일시정지</value>
+  </data>
+  <data name="Power_SuspendConfirm" xml:space="preserve">
+    <value>{0}을(를) 일시정지할까요?</value>
+  </data>
+  <data name="Profile_AddTitle" xml:space="preserve">
+    <value>서버 추가</value>
+  </data>
+  <data name="Profile_AuthMode" xml:space="preserve">
+    <value>인증 방식</value>
+  </data>
+  <data name="Profile_AuthPassword" xml:space="preserve">
+    <value>비밀번호</value>
+  </data>
+  <data name="Profile_AuthToken" xml:space="preserve">
+    <value>API 토큰</value>
+  </data>
+  <data name="Profile_Delete" xml:space="preserve">
+    <value>서버 삭제</value>
+  </data>
+  <data name="Profile_DeleteText" xml:space="preserve">
+    <value>"{0}" 서버를 목록에서 지울까요? 저장된 비밀번호도 함께 지워집니다.</value>
+  </data>
+  <data name="Profile_DeleteTitle" xml:space="preserve">
+    <value>서버 삭제</value>
+  </data>
+  <data name="Profile_EditTitle" xml:space="preserve">
+    <value>서버 편집</value>
+  </data>
+  <data name="Profile_Host" xml:space="preserve">
+    <value>주소</value>
+  </data>
+  <data name="Profile_HostHint" xml:space="preserve">
+    <value>pve.example.com 또는 192.168.0.10</value>
+  </data>
+  <data name="Profile_HostRequired" xml:space="preserve">
+    <value>서버 주소를 입력하세요.</value>
+  </data>
+  <data name="Profile_InvalidTitle" xml:space="preserve">
+    <value>입력 확인</value>
+  </data>
+  <data name="Profile_Name" xml:space="preserve">
+    <value>이름</value>
+  </data>
+  <data name="Profile_NameHint" xml:space="preserve">
+    <value>비워 두면 주소를 이름으로 씁니다</value>
+  </data>
+  <data name="Profile_Password" xml:space="preserve">
+    <value>비밀번호</value>
+  </data>
+  <data name="Profile_Port" xml:space="preserve">
+    <value>포트</value>
+  </data>
+  <data name="Profile_PortInvalid" xml:space="preserve">
+    <value>포트는 1~65535 사이의 숫자여야 합니다.</value>
+  </data>
+  <data name="Profile_RememberSecret" xml:space="preserve">
+    <value>이 기기에 안전하게 저장</value>
+  </data>
+  <data name="Profile_SecretUnchanged" xml:space="preserve">
+    <value>비워 두면 저장된 값을 그대로 씁니다</value>
+  </data>
+  <data name="Profile_SelfSigned" xml:space="preserve">
+    <value>자체 서명 인증서 허용</value>
+  </data>
+  <data name="Profile_SelfSignedHint" xml:space="preserve">
+    <value>처음 연결할 때 인증서 지문을 확인한 뒤 고정합니다.</value>
+  </data>
+  <data name="Profile_TokenId" xml:space="preserve">
+    <value>토큰 ID (사용자@영역!토큰)</value>
+  </data>
+  <data name="Profile_TokenIdInvalid" xml:space="preserve">
+    <value>토큰 ID는 사용자@영역!토큰 형식이어야 합니다(예: root@pam!mobile).</value>
+  </data>
+  <data name="Profile_TokenSecret" xml:space="preserve">
+    <value>토큰 비밀값</value>
+  </data>
+  <data name="Profile_User" xml:space="preserve">
+    <value>사용자 (사용자@영역)</value>
+  </data>
+  <data name="Profile_UserRequired" xml:space="preserve">
+    <value>사용자를 입력하세요(예: root@pam).</value>
+  </data>
+  <data name="Profiles_EmptyText" xml:space="preserve">
+    <value>아래 + 버튼으로 Proxmox VE 서버를 추가하세요.</value>
+  </data>
+  <data name="Profiles_EmptyTitle" xml:space="preserve">
+    <value>등록된 서버가 없습니다</value>
+  </data>
+  <data name="Profiles_Section" xml:space="preserve">
+    <value>서버</value>
+  </data>
+  <data name="Snapshot_Create" xml:space="preserve">
+    <value>만들기</value>
+  </data>
+  <data name="Snapshot_CreateText" xml:space="preserve">
+    <value>스냅숏 이름(영문자로 시작, 영숫자·_·-)</value>
+  </data>
+  <data name="Snapshot_CreateTitle" xml:space="preserve">
+    <value>스냅숏 만들기</value>
+  </data>
+  <data name="Snapshot_Creating" xml:space="preserve">
+    <value>스냅숏 만들기: {0}</value>
+  </data>
+  <data name="Snapshot_DeleteText" xml:space="preserve">
+    <value>스냅숏 "{0}"을(를) 삭제할까요?</value>
+  </data>
+  <data name="Snapshot_DeleteTitle" xml:space="preserve">
+    <value>스냅숏 삭제</value>
+  </data>
+  <data name="Snapshot_Deleting" xml:space="preserve">
+    <value>스냅숏 삭제: {0}</value>
+  </data>
+  <data name="Snapshot_IncludeRam" xml:space="preserve">
+    <value>메모리(RAM) 상태 포함</value>
+  </data>
+  <data name="Snapshot_Name" xml:space="preserve">
+    <value>이름</value>
+  </data>
+  <data name="Snapshot_NameInvalid" xml:space="preserve">
+    <value>스냅숏 이름은 영문자로 시작하고 영숫자·밑줄·하이픈만 쓸 수 있습니다(2~40자).</value>
+  </data>
+  <data name="Snapshot_None" xml:space="preserve">
+    <value>스냅숏이 없습니다</value>
+  </data>
+  <data name="Snapshot_Rollback" xml:space="preserve">
+    <value>되돌리기</value>
+  </data>
+  <data name="Snapshot_RollbackText" xml:space="preserve">
+    <value>{1}을(를) 스냅숏 "{0}" 시점으로 되돌릴까요? 이후 변경 내용은 사라집니다.</value>
+  </data>
+  <data name="Snapshot_RollbackTitle" xml:space="preserve">
+    <value>스냅숏으로 되돌리기</value>
+  </data>
+  <data name="Snapshot_RollingBack" xml:space="preserve">
+    <value>스냅숏 되돌리기: {0}</value>
+  </data>
+  <data name="Status_Paused" xml:space="preserve">
+    <value>일시정지</value>
+  </data>
+  <data name="Status_Running" xml:space="preserve">
+    <value>실행 중</value>
+  </data>
+  <data name="Status_Stopped" xml:space="preserve">
+    <value>중지됨</value>
+  </data>
+  <data name="Status_Suspended" xml:space="preserve">
+    <value>최대 절전</value>
+  </data>
+  <data name="TaskType_aptupdate" xml:space="preserve">
+    <value>패키지 목록 갱신</value>
+  </data>
+  <data name="TaskType_download" xml:space="preserve">
+    <value>다운로드</value>
+  </data>
+  <data name="TaskType_imgcopy" xml:space="preserve">
+    <value>디스크 복사</value>
+  </data>
+  <data name="TaskType_move_volume" xml:space="preserve">
+    <value>볼륨 이동</value>
+  </data>
+  <data name="TaskType_qmclone" xml:space="preserve">
+    <value>VM 복제</value>
+  </data>
+  <data name="TaskType_qmconfig" xml:space="preserve">
+    <value>VM 설정</value>
+  </data>
+  <data name="TaskType_qmcreate" xml:space="preserve">
+    <value>VM 생성</value>
+  </data>
+  <data name="TaskType_qmdelsnapshot" xml:space="preserve">
+    <value>VM 스냅숏 삭제</value>
+  </data>
+  <data name="TaskType_qmdestroy" xml:space="preserve">
+    <value>VM 삭제</value>
+  </data>
+  <data name="TaskType_qmigrate" xml:space="preserve">
+    <value>VM 마이그레이션</value>
+  </data>
+  <data name="TaskType_qmmove" xml:space="preserve">
+    <value>디스크 이동</value>
+  </data>
+  <data name="TaskType_qmreboot" xml:space="preserve">
+    <value>VM 재부팅</value>
+  </data>
+  <data name="TaskType_qmreset" xml:space="preserve">
+    <value>VM 리셋</value>
+  </data>
+  <data name="TaskType_qmrestore" xml:space="preserve">
+    <value>VM 복원</value>
+  </data>
+  <data name="TaskType_qmresume" xml:space="preserve">
+    <value>VM 재개</value>
+  </data>
+  <data name="TaskType_qmrollback" xml:space="preserve">
+    <value>VM 롤백</value>
+  </data>
+  <data name="TaskType_qmshutdown" xml:space="preserve">
+    <value>VM 종료</value>
+  </data>
+  <data name="TaskType_qmsnapshot" xml:space="preserve">
+    <value>VM 스냅숏</value>
+  </data>
+  <data name="TaskType_qmstart" xml:space="preserve">
+    <value>VM 시작</value>
+  </data>
+  <data name="TaskType_qmstop" xml:space="preserve">
+    <value>VM 정지</value>
+  </data>
+  <data name="TaskType_qmsuspend" xml:space="preserve">
+    <value>VM 일시정지</value>
+  </data>
+  <data name="TaskType_resize" xml:space="preserve">
+    <value>디스크 크기 변경</value>
+  </data>
+  <data name="TaskType_spiceproxy" xml:space="preserve">
+    <value>SPICE 콘솔</value>
+  </data>
+  <data name="TaskType_srvreload" xml:space="preserve">
+    <value>서비스 다시 읽기</value>
+  </data>
+  <data name="TaskType_srvrestart" xml:space="preserve">
+    <value>서비스 재시작</value>
+  </data>
+  <data name="TaskType_srvstart" xml:space="preserve">
+    <value>서비스 시작</value>
+  </data>
+  <data name="TaskType_srvstop" xml:space="preserve">
+    <value>서비스 정지</value>
+  </data>
+  <data name="TaskType_startall" xml:space="preserve">
+    <value>전체 시작</value>
+  </data>
+  <data name="TaskType_stopall" xml:space="preserve">
+    <value>전체 정지</value>
+  </data>
+  <data name="TaskType_termproxy" xml:space="preserve">
+    <value>터미널</value>
+  </data>
+  <data name="TaskType_vncproxy" xml:space="preserve">
+    <value>VNC 콘솔</value>
+  </data>
+  <data name="TaskType_vncshell" xml:space="preserve">
+    <value>셸</value>
+  </data>
+  <data name="TaskType_vzcreate" xml:space="preserve">
+    <value>CT 생성</value>
+  </data>
+  <data name="TaskType_vzdelsnapshot" xml:space="preserve">
+    <value>CT 스냅숏 삭제</value>
+  </data>
+  <data name="TaskType_vzdestroy" xml:space="preserve">
+    <value>CT 삭제</value>
+  </data>
+  <data name="TaskType_vzdump" xml:space="preserve">
+    <value>백업</value>
+  </data>
+  <data name="TaskType_vzmigrate" xml:space="preserve">
+    <value>CT 마이그레이션</value>
+  </data>
+  <data name="TaskType_vzreboot" xml:space="preserve">
+    <value>CT 재부팅</value>
+  </data>
+  <data name="TaskType_vzrestore" xml:space="preserve">
+    <value>CT 복원</value>
+  </data>
+  <data name="TaskType_vzresume" xml:space="preserve">
+    <value>CT 재개</value>
+  </data>
+  <data name="TaskType_vzrollback" xml:space="preserve">
+    <value>CT 롤백</value>
+  </data>
+  <data name="TaskType_vzshutdown" xml:space="preserve">
+    <value>CT 종료</value>
+  </data>
+  <data name="TaskType_vzsnapshot" xml:space="preserve">
+    <value>CT 스냅숏</value>
+  </data>
+  <data name="TaskType_vzstart" xml:space="preserve">
+    <value>CT 시작</value>
+  </data>
+  <data name="TaskType_vzstop" xml:space="preserve">
+    <value>CT 정지</value>
+  </data>
+  <data name="TaskType_vzsuspend" xml:space="preserve">
+    <value>CT 일시정지</value>
+  </data>
+  <data name="Task_Done" xml:space="preserve">
+    <value>{0} 완료</value>
+  </data>
+  <data name="Task_FailedTitle" xml:space="preserve">
+    <value>작업 실패</value>
+  </data>
+  <data name="Task_InProgress" xml:space="preserve">
+    <value>{0} 진행 중…</value>
+  </data>
+  <data name="Task_LogEmpty" xml:space="preserve">
+    <value>(로그 없음)</value>
+  </data>
+</root>

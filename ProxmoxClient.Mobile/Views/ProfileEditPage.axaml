@@ -1,0 +1,92 @@
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ProxmoxClient.Mobile.ViewModels"
+             xmlns:l="using:ProxmoxClient.Mobile.Localization"
+             x:Class="ProxmoxClient.Mobile.Views.ProfileEditPage"
+             x:DataType="vm:ProfileEditViewModel"
+             Header="{Binding Title}">
+    <ScrollViewer>
+        <StackPanel Margin="16,12,16,32" Spacing="14">
+            <Border Classes="card">
+                <StackPanel Spacing="14">
+                    <StackPanel>
+                        <TextBlock Classes="label" Text="{l:Tr Profile_Name}" />
+                        <TextBox Text="{Binding Name}" PlaceholderText="{l:Tr Profile_NameHint}" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Classes="label" Text="{l:Tr Profile_Host}" />
+                        <TextBox Text="{Binding Host}" PlaceholderText="{l:Tr Profile_HostHint}"
+                                 TextInputOptions.ContentType="Url"
+                                 TextInputOptions.AutoCapitalization="False" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Classes="label" Text="{l:Tr Profile_Port}" />
+                        <TextBox Text="{Binding Port}" TextInputOptions.ContentType="Digits" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel Spacing="14">
+                    <StackPanel>
+                        <TextBlock Classes="label" Text="{l:Tr Profile_AuthMode}" />
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Classes="chip" GroupName="auth" IsChecked="{Binding IsPasswordAuth}"
+                                         Content="{l:Tr Profile_AuthPassword}" />
+                            <RadioButton Classes="chip" GroupName="auth" IsChecked="{Binding IsTokenAuth}"
+                                         Content="{l:Tr Profile_AuthToken}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="14" IsVisible="{Binding IsPasswordAuth}">
+                        <StackPanel>
+                            <TextBlock Classes="label" Text="{l:Tr Profile_User}" />
+                            <TextBox Text="{Binding UserName}" PlaceholderText="root@pam"
+                                     TextInputOptions.AutoCapitalization="False" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Classes="label" Text="{l:Tr Profile_Password}" />
+                            <TextBox Text="{Binding Password}" PasswordChar="•"
+                                     PlaceholderText="{Binding SecretWatermark}"
+                                     TextInputOptions.ContentType="Password"
+                                     TextInputOptions.IsSensitive="True" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="14" IsVisible="{Binding IsTokenAuth}">
+                        <StackPanel>
+                            <TextBlock Classes="label" Text="{l:Tr Profile_TokenId}" />
+                            <TextBox Text="{Binding TokenId}" PlaceholderText="root@pam!mobile"
+                                     TextInputOptions.AutoCapitalization="False" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Classes="label" Text="{l:Tr Profile_TokenSecret}" />
+                            <TextBox Text="{Binding TokenSecret}" PasswordChar="•"
+                                     PlaceholderText="{Binding SecretWatermark}"
+                                     TextInputOptions.ContentType="Password"
+                                     TextInputOptions.IsSensitive="True" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <CheckBox IsChecked="{Binding RememberSecret}" Content="{l:Tr Profile_RememberSecret}" />
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="{l:Tr Profile_SelfSigned}" TextWrapping="Wrap" />
+                        <TextBlock Classes="subtle" Text="{l:Tr Profile_SelfSignedHint}" TextWrapping="Wrap"
+                                   TextTrimming="None" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding AcceptSelfSigned}" OnContent=""
+                                  OffContent="" Margin="12,0,0,0" />
+                </Grid>
+            </Border>
+
+            <Button Classes="wide accent" Command="{Binding SaveCommand}" Content="{l:Tr Common_Save}" />
+            <Button Classes="wide danger" Command="{Binding DeleteCommand}" Content="{l:Tr Profile_Delete}"
+                    IsVisible="{Binding !IsNew}" />
+        </StackPanel>
+    </ScrollViewer>
+</ContentPage>

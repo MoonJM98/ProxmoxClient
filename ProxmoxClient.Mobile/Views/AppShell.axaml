@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:s="using:ProxmoxClient.Mobile.Services"
+             x:Class="ProxmoxClient.Mobile.Views.AppShell"
+             x:DataType="s:DialogService">
+    <!--
+        최상위 셸 — 페이지 스택 위에 대화상자·진행 표시·알림을 겹쳐 그린다.
+    -->
+    <Grid>
+        <PageNavigationHost x:Name="Host" />
+
+        <!-- 진행 표시(화면 전체 차단) -->
+        <Border Background="{StaticResource ScrimBrush}" IsVisible="{Binding IsBusyVisible}">
+            <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="32"
+                    Padding="24,20" MaxWidth="360">
+                <StackPanel Spacing="14">
+                    <ProgressBar IsIndeterminate="True" MinWidth="220" />
+                    <TextBlock Text="{Binding BusyText}" TextWrapping="Wrap" HorizontalAlignment="Center"
+                               TextAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- 대화상자 -->
+        <Border Background="{StaticResource ScrimBrush}" IsVisible="{Binding IsDialogOpen}">
+            <Border Classes="card" VerticalAlignment="Center" Margin="24" Padding="20" MaxWidth="480"
+                    DataContext="{Binding Current}" x:DataType="s:DialogRequest">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="headline" Text="{Binding Title}" />
+                    <ScrollViewer MaxHeight="360" IsVisible="{Binding HasMessage}" HorizontalScrollBarVisibility="Disabled">
+                        <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" LineHeight="21"
+                                             Margin="0,0,10,0" />
+                    </ScrollViewer>
+                    <TextBox x:Name="DialogInput" IsVisible="{Binding HasInput}"
+                             Text="{Binding InputText}" PasswordChar="{Binding PasswordChar}"
+                             PlaceholderText="{Binding InputWatermark}" RevealPassword="False" />
+                    <CheckBox IsVisible="{Binding HasCheck}" IsChecked="{Binding IsChecked}"
+                              Content="{Binding CheckLabel}" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                        <Button IsVisible="{Binding HasCancel}" Command="{Binding CancelCommand}"
+                                Content="{Binding CancelText}" MinWidth="88" MinHeight="44"
+                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                        <Button x:Name="ConfirmButton" Classes="accent" Command="{Binding ConfirmCommand}"
+                                Content="{Binding ConfirmText}" MinWidth="88" MinHeight="44"
+                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                Classes.destructive="{Binding IsDestructive}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- 알림(잠깐 보였다 사라짐) -->
+        <Border IsVisible="{Binding IsToastVisible}" IsHitTestVisible="False"
+                VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="24,0,24,48"
+                CornerRadius="20" Padding="18,10" Background="#E6303030">
+            <TextBlock Text="{Binding ToastText}" Foreground="White" TextWrapping="Wrap" TextAlignment="Center" />
+        </Border>
+    </Grid>
+
+    <UserControl.Styles>
+        <Style Selector="Button.destructive">
+            <Setter Property="Background" Value="{StaticResource DangerBrush}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+    </UserControl.Styles>
+</UserControl>
