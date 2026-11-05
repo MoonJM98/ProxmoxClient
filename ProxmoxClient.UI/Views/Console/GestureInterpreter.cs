@@ -26,7 +26,7 @@ public interface IRemotePointer
 ///         <item>길게 누르기 = 오른쪽 클릭, 길게 누른 뒤 끌기 = 왼쪽 버튼 끌기(선택·창 이동)</item>
 ///         <item>한 손가락 끌기 = 커서 이동(마우스 모드) / 왼쪽 버튼 끌기(터치 모드)</item>
 ///         <item>두 손가락 끌기 = 스크롤(세로·가로), 확대한 상태에서는 화면 이동 · 벌리기·오므리기 = 확대·축소(+ 이동)</item>
-///         <item>탭한 뒤 바로 끌기 = 끌어다 놓기(TeamViewer 와 같음)</item>
+///         <item>탭한 뒤 바로 끌기 = 왼쪽 버튼 끌기(끌어다 놓기·선택) · 탭한 뒤 길게 누르고 끌기 = 오른쪽 버튼 끌기</item>
 ///     </list>
 /// </summary>
 public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
@@ -124,15 +124,20 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
         switch (_gesture)
         {
             case Gesture.Pending when moved && _doubleTapDrag:
-                _pendingClick = false; // 탭·탭 뒤 끌기 — 클릭 대신 끌기
+            {
+                _pendingClick = false; // 탭 뒤 끌기 — 기다리던 클릭 대신 끌기
                 _tapCount = 0;
-                // 두 번 탭 후 끌기 — 첫 탭 자리에서 왼쪽 버튼을 누른 채 끈다(두 모드 공통)
+                // 탭 → 바로 끌기 = 왼쪽 버튼 끌기, 탭 → 길게 누른 뒤 끌기 = 오른쪽 버튼 끌기(사용자 요청, 두 모드 공통)
+                var held = _longPressFired || ms - _gestureStart >= LongPressMs;
                 if (Mode == TouchInputMode.Touch) Point(finger.Start, 0);
-                Press(Left);
+                Press(held ? Right : Left);
                 _gesture = Gesture.Drag;
+                // 버튼은 처음 누른 자리에서 내려가야 끌어다 놓기가 정확하다 — 그래서 탭 뒤 끌기는 문턱 전에 커서를
+                // 움직이지 않고, 문턱을 넘을 때 모인 만큼을 가속 없이(손가락 거리 그대로) 따라잡는다
                 if (Mode == TouchInputMode.Touch) Point(view, _buttons);
-                else MoveCursor(view - finger.Start, ms - finger.Time);
+                else MoveCursor(view - finger.Start, ms - _gestureStart, accelerate: false);
                 break;
+            }
             case Gesture.Pending when moved:
                 if (Mode == TouchInputMode.Touch)
                 {
@@ -158,7 +163,7 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
                 }
 
                 break;
-            case Gesture.Pending when Mode == TouchInputMode.Mouse && !_doubleTapDrag && !_longPressFired:
+            case Gesture.Pending when Mode == TouchInputMode.Mouse && !_longPressFired && !_doubleTapDrag:
                 // 문턱 전에도 커서가 손가락을 바로 따라간다(가속 없이) — 멈춰 있다가 문턱에서 한꺼번에 움직이지 않게.
                 // 탭은 문턱 안이라 커서가 거의 움직이지 않는다
                 MoveCursor(delta, ms - finger.Time, accelerate: false);

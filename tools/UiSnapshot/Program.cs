@@ -493,6 +493,21 @@ async Task TerminalCheck()
                Array.FindIndex(cells, c => c.Rune == '공') is var i && cells[i].Width == 2 && cells[i + 1].Width == 0;
     Check("한글 폭(2칸)", "'공' 2칸 + 이어진 칸", wide ? "2칸" : "어긋남", wide);
 
+    // 화면 키보드: Enter 가 '완료'로 키보드를 닫지 않게 여러 줄 칸(Return 키) — 그래도 셸에는 Enter 한 번만 간다.
+    // 키보드가 닫힌 뒤 다시 누르면 포커스를 옮겼다 돌려 키보드를 다시 연다(이미 포커스가 있으면 열리지 않던 문제)
+    var multiline = Avalonia.Input.TextInput.TextInputOptions.GetMultiline(input) && input.AcceptsReturn &&
+                    Avalonia.Input.TextInput.TextInputOptions.GetReturnKeyType(input) == Avalonia.Input.TextInput.TextInputReturnKeyType.Return;
+    Type("echo kb\n"); // 키보드가 Enter 를 글자로 넣는 경우
+    inputs = Log("input");
+    var enterAsText = string.Join(" ", inputs);
+    var focusEvents = 0;
+    input.GotFocus += (_, _) => focusEvents++;
+    term.FocusInput(); // 이미 포커스가 있는 상태에서 다시 누름
+    Pump(200);
+    Check("화면 키보드(Enter·다시 열기)", "여러 줄 칸·Return 키, 글자 Enter 는 \r 로, 다시 누르면 포커스 다시 받음",
+        $"{(multiline ? "여러 줄" : "한 줄")}, {enterAsText}, 다시 포커스 {focusEvents}회",
+        multiline && enterAsText == "input 'echo kb\\r'" && focusEvents >= 1 && input.IsFocused);
+
     Type("한글");
     inputs = Log("input");
     Check("IME 한글 입력", "'한글'", string.Join(" ", inputs), inputs.SequenceEqual(["input '한글'"]));
@@ -858,6 +873,28 @@ async Task ConsoleUsabilityCheck()
     ev = Events();
     Check("탭 후 끌기(TeamViewer)", "클릭 없이 왼쪽 버튼 누른 채 끌기(1 0)", Masks(ev),
         Masks(ev) == "1 0" && LastXY(ev).Y > 300);
+
+    // 두 번 탭한 뒤 끌기도 왼쪽 끌기(기다리던 클릭은 버림)
+    now += 1000;
+    Tap(center); now -= 150; Tap(center); now -= 100;
+    Drag(center, new Avalonia.Vector(0, 60));
+    ev = Events();
+    Check("두 번 탭 후 끌기", "클릭 없이 왼쪽 버튼 끌기(1 0)", Masks(ev), Masks(ev) == "1 0");
+
+    // 짧게 탭 → 길게 눌러 그대로 끌기 = 오른쪽 버튼 끌기
+    now += 1000;
+    g.ResetCursor(new Avalonia.Point(400, 300));
+    Tap(center); now -= 100;
+    Drag(center, new Avalonia.Vector(0, 80), holdFirstMs: GestureInterpreter.LongPressMs + 100);
+    ev = Events();
+    Check("탭 후 길게 누르고 끌기", "오른쪽 버튼 누른 채 끌기(4 0)", $"{Masks(ev)} y→{LastXY(ev).Y}",
+        Masks(ev) == "4 0" && LastXY(ev).Y > 300);
+
+    // 길게 누르기만(앞에 탭 없이) 하고 끌면 그대로 왼쪽 끌기 — 기존 동작 유지
+    now += 1000;
+    Drag(center, new Avalonia.Vector(0, 40), holdFirstMs: GestureInterpreter.LongPressMs + 100);
+    ev = Events();
+    Check("길게 누르고 끌기(탭 없이)", "왼쪽 버튼 끌기(1 0)", Masks(ev), Masks(ev) == "1 0");
 
     // ---- 태블릿에 연결한 물리 마우스(포인터 종류 = 마우스): 버튼·휠을 그대로
     surface.Focus();

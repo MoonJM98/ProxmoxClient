@@ -33,7 +33,7 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
             Width = 1, Height = 1, Opacity = 0.01, AcceptsReturn = false, HorizontalAlignment = HorizontalAlignment.Left,
             VerticalAlignment = VerticalAlignment.Bottom, Text = string.Empty
         };
-        Avalonia.Input.TextInput.TextInputOptions.SetAutoCapitalization(_input, false);
+        Controls.SoftKeyboard.Configure(_input); // Enter 로 키보드가 닫히지 않게
         _input.TextChanged += OnInputText;
         _input.AddHandler(KeyDownEvent, OnInputKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
 
@@ -207,7 +207,7 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
 
     private void ShowKeyboard()
     {
-        _input.Focus(); // 입력 칸에 포커스를 주면 모바일 키보드가 올라온다
+        Controls.SoftKeyboard.Show(_input, _surface); // 닫힌 키보드도 다시 연다
     }
 
     /// <summary>
@@ -234,7 +234,9 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         var text = _input.Text;
         if (string.IsNullOrEmpty(text)) return;
 
-        foreach (var rune in text.EnumerateRunes()) Tap(KeySyms.FromChar(rune.Value));
+        // 화면 키보드의 Enter 가 글자('\n')로 들어올 수도 있다(여러 줄 칸) — Return 키로
+        foreach (var rune in text.EnumerateRunes())
+            Tap(rune.Value is '\n' or '\r' ? KeySyms.Return : KeySyms.FromChar(rune.Value));
         _input.Text = string.Empty;
     }
 

@@ -66,9 +66,7 @@ public sealed class TerminalView : Grid
             HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
             Text = string.Empty
         };
-        TextInputOptions.SetAutoCapitalization(_input, false);
-        TextInputOptions.SetShowSuggestions(_input, false);
-        TextInputOptions.SetMultiline(_input, false);
+        Controls.SoftKeyboard.Configure(_input); // Enter 로 키보드가 닫히지 않게
         _input.TextChanged += OnInputText;
         _input.AddHandler(KeyDownEvent, OnInputKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _input.GotFocus += (_, _) => _surface.InvalidateVisual();
@@ -180,7 +178,7 @@ public sealed class TerminalView : Grid
     /// <summary>입력 칸에 포커스(모바일은 키보드가 올라온다).</summary>
     public void FocusInput()
     {
-        _input.Focus();
+        Controls.SoftKeyboard.Show(_input, this); // 키보드가 닫혀 있어도 다시 연다
     }
 
     public bool IsInputFocused => _input.IsFocused;
