@@ -1222,6 +1222,34 @@ async Task ConsoleUsabilityCheck()
     ev = Events();
     Check("물리 마우스 왼쪽 끌기", "왼쪽 누른 채 이동 후 놓기(… 1 0) @ (350,260)", $"{Masks(ev)} @ {LastXY(ev)}",
         Masks(ev).EndsWith("1 0") && Math.Abs(LastXY(ev).X - 350) <= 2);
+    Check("물리 마우스 · 커서 하나만", "운영체제 커서만(앱이 커서를 따로 그리지 않음)",
+        surface.DrawsSoftwareCursor ? "따로 그림" : "운영체제 커서만", !surface.DrawsSoftwareCursor);
+
+    // 확대 중 실제 마우스가 오른쪽 가장자리에 머물면 화면이 그쪽으로 이동(버튼 없이도)
+    {
+        vp.ZoomAt(2.5, center);
+        vp.PanBy(new Avalonia.Vector(100000, 100000));
+        Events();
+        var edgeAt = surface.TranslatePoint(new Avalonia.Point(surface.Bounds.Width - 4, surface.Bounds.Height / 2), window)!.Value;
+        window.MouseMove(edgeAt, Avalonia.Input.RawInputModifiers.None);
+        Pump(50);
+        var mouseOffset = vp.Offset.X;
+        long ms = Environment.TickCount64;
+        surface.TickMouseEdge(ms);
+        for (var i = 0; i < 15; i++) { ms += 60; surface.TickMouseEdge(ms); }
+        var mouseShift = mouseOffset - vp.Offset.X;
+        ev = Events();
+        var xs = ev.Where(e => e.StartsWith("pointer mask=0")).Select(e => int.Parse(e.Split(' ')[2][2..])).ToList();
+        var midAt = surface.TranslatePoint(new Avalonia.Point(surface.Bounds.Width / 2, surface.Bounds.Height / 2), window)!.Value;
+        window.MouseMove(midAt, Avalonia.Input.RawInputModifiers.None);
+        Pump(50);
+        var stops = !surface.TickMouseEdge(ms + 60);
+        Check("물리 마우스 · 확대 중 가장자리", "화면이 오른쪽으로 이동(0.9초에 100~500px), 원격 커서도 따라감, 가운데로 오면 멈춤",
+            $"화면 {mouseShift:F0}px, 원격 x {xs.FirstOrDefault()}→{xs.LastOrDefault()}, {(stops ? "멈춤" : "계속")}",
+            mouseShift is > 100 and < 500 && xs.Count > 1 && xs.Last() > xs.First() && stops);
+        vp.Fit();
+        Events();
+    }
 
     // ---- 물리 키보드: 키 위치(스캔코드) + keysym — 서버가 QEMU 확장 키를 알리므로 qkey 로 와야 한다
     List<string> Keys() => Events().Where(e => e.StartsWith("key") || e.StartsWith("qkey")).ToList();
@@ -1429,6 +1457,10 @@ async Task ConsoleUsabilityCheck()
     {
         Events();
         var liveFrom = surface.TranslatePoint(new Avalonia.Point(200, 200), window)!.Value;
+        // 터치 → 마우스 전환(앱이 그리던 커서를 지우는 한 번의 다시 그리기)은 끌기 전에 끝낸다 — 끌기 도중 간격만 잰다
+        window.MouseMove(liveFrom, Avalonia.Input.RawInputModifiers.None);
+        Pump(200);
+        Events();
         window.MouseDown(liveFrom, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
         for (var i = 1; i <= 60; i++)
         {
