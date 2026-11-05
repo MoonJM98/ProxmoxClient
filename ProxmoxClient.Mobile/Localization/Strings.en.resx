@@ -208,6 +208,9 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Power_Resume" xml:space="preserve">
     <value>Resume</value>
   </data>
+  <data name="Power_ResumeConfirm" xml:space="preserve">
+    <value>Resume {0}?</value>
+  </data>
   <data name="Power_Shutdown" xml:space="preserve">
     <value>Shut down</value>
   </data>
@@ -216,6 +219,9 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   </data>
   <data name="Power_Start" xml:space="preserve">
     <value>Start</value>
+  </data>
+  <data name="Power_StartConfirm" xml:space="preserve">
+    <value>Start {0}?</value>
   </data>
   <data name="Power_Stop" xml:space="preserve">
     <value>Stop</value>
@@ -318,6 +324,12 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   </data>
   <data name="Snapshot_Create" xml:space="preserve">
     <value>Create</value>
+  </data>
+  <data name="Snapshot_CreateConfirm" xml:space="preserve">
+    <value>Create snapshot "{0}" of {1} now?</value>
+  </data>
+  <data name="Snapshot_CreateConfirmRam" xml:space="preserve">
+    <value>Create snapshot "{0}" of {1} now? The VM may pause briefly while its memory is saved.</value>
   </data>
   <data name="Snapshot_CreateText" xml:space="preserve">
     <value>Snapshot name (starts with a letter; letters, digits, _ and -)</value>

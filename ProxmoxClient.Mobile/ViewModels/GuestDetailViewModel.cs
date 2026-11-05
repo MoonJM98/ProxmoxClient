@@ -216,10 +216,13 @@ public sealed partial class GuestDetailViewModel : ViewModelBase
         };
     }
 
+    // 서버 상태를 바꾸는 작업은 모두 ConfirmAndRunAsync 를 거친다 — 확인 없이 실행되는 경로가 없도록
+    // 확인 문구(Confirmation)를 필수 인자로 받는다.
+
     [RelayCommand]
     private Task Start()
     {
-        return RunPowerAsync(L.T("Power_Start"), null,
+        return RunPowerAsync(L.T("Power_Start"), L.T("Power_StartConfirm", Title),
             () => Session.Api.StartGuestAsync(Guest.Node, Guest.Kind, Guest.VmId, Lifetime));
     }
 
@@ -254,7 +257,7 @@ public sealed partial class GuestDetailViewModel : ViewModelBase
     [RelayCommand]
     private Task Resume()
     {
-        return RunPowerAsync(L.T("Power_Resume"), null,
+        return RunPowerAsync(L.T("Power_Resume"), L.T("Power_ResumeConfirm", Title),
             () => Session.Api.ResumeGuestAsync(Guest.Node, Guest.Kind, Guest.VmId, Lifetime));
     }
 
@@ -268,9 +271,10 @@ public sealed partial class GuestDetailViewModel : ViewModelBase
     [RelayCommand]
     private async Task CreateSnapshot()
     {
+        var includeRamOption = IsQemu && IsRunning;
         var answer = await AppServices.Dialogs.PromptAsync(L.T("Snapshot_CreateTitle"), L.T("Snapshot_CreateText"),
             $"snap-{DateTime.Now:yyyyMMdd-HHmm}", watermark: L.T("Snapshot_Name"),
-            checkLabel: IsQemu && IsRunning ? L.T("Snapshot_IncludeRam") : null);
+            checkLabel: includeRamOption ? L.T("Snapshot_IncludeRam") : null);
         if (answer is null) return;
 
         var name = answer.Text.Trim();
@@ -280,54 +284,65 @@ public sealed partial class GuestDetailViewModel : ViewModelBase
             return;
         }
 
-        await RunTaskAsync(L.T("Snapshot_Creating", name),
-            () => Session.Api.CreateSnapshotAsync(Guest.Node, Guest.Kind, Guest.VmId, name, null,
-                answer.IsChecked, Lifetime));
-        await LoadSnapshotsAsync();
+        var includeRam = includeRamOption && answer.IsChecked;
+        var ran = await ConfirmAndRunAsync(
+            new Confirmation(L.T("Snapshot_CreateTitle"),
+                L.T(includeRam ? "Snapshot_CreateConfirmRam" : "Snapshot_CreateConfirm", name, Title),
+                L.T("Snapshot_Create")),
+            L.T("Snapshot_Creating", name),
+            () => Session.Api.CreateSnapshotAsync(Guest.Node, Guest.Kind, Guest.VmId, name, null, includeRam,
+                Lifetime));
+        if (ran) await LoadSnapshotsAsync();
     }
 
     [RelayCommand]
     private async Task RollbackSnapshot(PveSnapshot snapshot)
     {
-        if (!await AppServices.Dialogs.ConfirmAsync(L.T("Snapshot_RollbackTitle"),
-                L.T("Snapshot_RollbackText", snapshot.Name, Title), L.T("Snapshot_Rollback"), true))
-            return;
-
-        await RunTaskAsync(L.T("Snapshot_RollingBack", snapshot.Name),
+        var ran = await ConfirmAndRunAsync(
+            new Confirmation(L.T("Snapshot_RollbackTitle"), L.T("Snapshot_RollbackText", snapshot.Name, Title),
+                L.T("Snapshot_Rollback"), true),
+            L.T("Snapshot_RollingBack", snapshot.Name),
             () => Session.Api.RollbackSnapshotAsync(Guest.Node, Guest.Kind, Guest.VmId, snapshot.Name, Lifetime));
-        await RefreshStatusAsync();
+        if (ran) await RefreshStatusAsync();
     }
 
     [RelayCommand]
     private async Task DeleteSnapshot(PveSnapshot snapshot)
     {
-        if (!await AppServices.Dialogs.ConfirmAsync(L.T("Snapshot_DeleteTitle"),
-                L.T("Snapshot_DeleteText", snapshot.Name), L.T("Common_Delete"), true))
-            return;
-
-        await RunTaskAsync(L.T("Snapshot_Deleting", snapshot.Name),
+        var ran = await ConfirmAndRunAsync(
+            new Confirmation(L.T("Snapshot_DeleteTitle"), L.T("Snapshot_DeleteText", snapshot.Name),
+                L.T("Common_Delete"), true),
+            L.T("Snapshot_Deleting", snapshot.Name),
             () => Session.Api.DeleteSnapshotAsync(Guest.Node, Guest.Kind, Guest.VmId, snapshot.Name, Lifetime));
-        await LoadSnapshotsAsync();
+        if (ran) await LoadSnapshotsAsync();
     }
 
-    private async Task RunPowerAsync(string action, string? confirm, Func<Task<string>> start,
+    private async Task RunPowerAsync(string action, string confirmText, Func<Task<string>> start,
         bool destructive = false)
     {
-        if (confirm is not null && !await AppServices.Dialogs.ConfirmAsync(action, confirm, action, destructive))
-            return;
+        var ran = await ConfirmAndRunAsync(new Confirmation(action, confirmText, action, destructive),
+            L.T("Task_InProgress", action), start, action);
+        if (!ran) return;
 
-        await RunTaskAsync(L.T("Task_InProgress", action), start, action);
         await RefreshStatusAsync();
         if (IsRunning && Addresses.Count == 0) _ = LoadAddressesAsync();
     }
 
-    /// <summary>서버 작업을 시작하고 끝날 때까지 진행 표시줄을 보여 준다. 실패하면 서버가 남긴 상태를 알린다.</summary>
-    private async Task RunTaskAsync(string text, Func<Task<string>> start, string? doneText = null)
+    /// <summary>
+    ///     서버 상태를 바꾸는 작업의 유일한 실행 경로 — 먼저 확인을 받고, 승인하면 작업을 시작해 끝날 때까지
+    ///     진행 표시줄을 보여 준다. 실패하면 서버가 남긴 상태를 알린다. 취소했거나 다른 작업이 진행 중이면 false.
+    /// </summary>
+    private async Task<bool> ConfirmAndRunAsync(Confirmation confirmation, string progressText,
+        Func<Task<string>> start, string? doneText = null)
     {
-        if (IsTaskRunning) return;
+        if (IsTaskRunning) return false;
+        if (!await AppServices.Dialogs.ConfirmAsync(confirmation.Title, confirmation.Message,
+                confirmation.ConfirmText, confirmation.Destructive))
+            return false;
+        if (IsTaskRunning) return false; // 확인을 기다리는 사이 다른 작업이 시작됨
 
         IsTaskRunning = true;
-        TaskText = text;
+        TaskText = progressText;
         try
         {
             var upid = await start();
@@ -335,7 +350,7 @@ public sealed partial class GuestDetailViewModel : ViewModelBase
             {
                 var result = await Session.Api.WaitTaskAsync(upid, TimeSpan.FromSeconds(1), Lifetime);
                 if (result.IsOk)
-                    AppServices.Dialogs.Toast(L.T("Task_Done", doneText ?? text));
+                    AppServices.Dialogs.Toast(L.T("Task_Done", doneText ?? progressText));
                 else
                     await AppServices.Dialogs.AlertAsync(L.T("Task_FailedTitle"), result.Status);
             }
@@ -352,6 +367,8 @@ public sealed partial class GuestDetailViewModel : ViewModelBase
             IsTaskRunning = false;
             TaskText = null;
         }
+
+        return true;
     }
 
     public static string StatusLabel(string status)
@@ -375,3 +392,6 @@ public sealed partial class GuestDetailViewModel : ViewModelBase
 }
 
 public sealed record ConfigEntry(string Key, string Value);
+
+/// <summary>서버 작업 전 묻는 확인 대화상자 내용.</summary>
+public sealed record Confirmation(string Title, string Message, string ConfirmText, bool Destructive = false);
