@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <!--
+        iOS · iPadOS 앱(iPhone = 휴대폰 배치, iPad = PC 와 같은 배치). 빌드에는 macOS + Xcode + iOS 워크로드가 필요하다:
+          dotnet workload install ios
+          시뮬레이터: dotnet build ProxmoxClient.iOS -t:Run -p:RuntimeIdentifier=iossimulator-arm64
+          기기용:     dotnet publish ProxmoxClient.iOS -c Release -p:RuntimeIdentifier=ios-arm64  (서명 설정 필요 — README)
+        Linux·Windows 에서 여는 CrossPlatform 솔루션에는 넣지 않는다(iOS 워크로드가 없으면 솔루션 빌드가 깨진다).
+    -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0-ios</TargetFramework>
+        <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>ProxmoxClient.iOS</RootNamespace>
+        <ApplicationId>io.github.moonjm98.proxmoxclient</ApplicationId>
+        <ApplicationTitle>Proxmox Client</ApplicationTitle>
+        <ApplicationDisplayVersion>1.0.3</ApplicationDisplayVersion>
+        <ApplicationVersion>1</ApplicationVersion>
+        <!--
+            HTTP 는 .NET 관리형 처리기(SocketsHttpHandler) — Android 와 같은 이유: 데스크톱과 같은 코드로 인증서 지문 고정(TOFU)·
+            SOCKS5 프록시가 그대로 동작한다(기본 NSUrlSession 처리기는 자체 서명 인증서 확인 방식이 다르다).
+        -->
+        <UseNativeHttpHandler>false</UseNativeHttpHandler>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia.iOS" Version="$(AvaloniaVersion)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\ProxmoxClient.UI\ProxmoxClient.UI.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -74,7 +74,9 @@ public static class RenderInfo
     public static async Task<string> SummaryAsync(Visual visual)
     {
         var version = typeof(RenderInfo).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "";
-        var os = OperatingSystem.IsAndroid() ? "Android" : OperatingSystem.IsWindows() ? "Windows"
+        var os = OperatingSystem.IsAndroid() ? "Android"
+            : OperatingSystem.IsIOS() ? (PlatformInfo.FormFactor == FormFactor.Tablet ? "iPadOS" : "iOS")
+            : OperatingSystem.IsWindows() ? "Windows"
             : OperatingSystem.IsMacOS() ? "macOS" : OperatingSystem.IsLinux() ? "Linux" : "?";
         return $"{await DescribeAsync(visual)} · {os} · {PlatformInfo.FormFactor}" + (version.Length > 0 ? $" · {version}" : "");
     }

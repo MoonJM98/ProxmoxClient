@@ -113,7 +113,15 @@ WPF 앱은 기능이 모두 옮겨질 때까지 그대로 유지한다.
 | Android | `dotnet publish ProxmoxClient.Android -c Release` | arm64 + x64 한 APK, 전체 AOT |
 | macOS | `tools/packaging/make-macos-app.sh arm64` (또는 `x64`) — Linux·Windows 에서도 됨 | `Proxmox Client.app` zip. 실행 파일은 임시(ad-hoc) 서명, 개발자 ID 서명·공증은 macOS 에서. 서명 없이 받은 앱은 처음 한 번 `xattr -cr "/Applications/Proxmox Client.app"` |
 | Windows · Linux | `dotnet publish ProxmoxClient.Desktop -c Release -r win-x64` / `linux-x64` | |
-| iOS · iPadOS | 아직 헤드 프로젝트 없음 — 빌드에 macOS + Xcode, 기기 설치에 Apple 개발자 계정 필요 | |
+| iOS · iPadOS | `ProxmoxClient.iOS` (Mac 에서 `ProxmoxClient.Apple.slnx`) — 아래 "iOS 빌드" | iPhone = 휴대폰 배치, iPad = PC 배치, Metal 렌더링, 키체인. 서명·배포 설정은 아직 없음 |
+
+### iOS 빌드(Mac 에서)
+
+1. Xcode 설치 후 `dotnet workload install ios`
+2. 시뮬레이터: `dotnet build ProxmoxClient.iOS -t:Run -p:RuntimeIdentifier=iossimulator-arm64`
+3. 기기(iPhone·iPad): Xcode 에 Apple 계정을 넣고 `dotnet build ProxmoxClient.iOS -t:Run -p:RuntimeIdentifier=ios-arm64 -p:CodesignKey="Apple Development: ..."`
+   — 무료 계정은 7일마다 다시 설치, 개발자 계정이면 TestFlight·App Store 배포 가능
+4. iOS 전용 코드(시작·키체인)는 Linux 에서도 iOS 참조 어셈블리로 형식 검사를 통과했다(실제 연결·서명은 Mac 에서).
 
 ## 빌드
 
