@@ -106,6 +106,15 @@ WPF 앱은 기능이 모두 옮겨질 때까지 그대로 유지한다.
 | Windows·macOS | 빌드(WPF·데스크톱 헤드) | 실기기 확인 필요(Direct3D/ANGLE·Metal 경로, Credential Manager·Keychain, remote-viewer·openvpn 실행) |
 | 실제 Proxmox 서버 | — | 실서버 확인 필요(가짜 서버는 PVE 9.0 API 응답 형식을 따른다) |
 
+## 배포 파일
+
+| OS | 만드는 법 | 비고 |
+|---|---|---|
+| Android | `dotnet publish ProxmoxClient.Android -c Release` | arm64 + x64 한 APK, 전체 AOT |
+| macOS | `tools/packaging/make-macos-app.sh arm64` (또는 `x64`) — Linux·Windows 에서도 됨 | `Proxmox Client.app` zip. 실행 파일은 임시(ad-hoc) 서명, 개발자 ID 서명·공증은 macOS 에서. 서명 없이 받은 앱은 처음 한 번 `xattr -cr "/Applications/Proxmox Client.app"` |
+| Windows · Linux | `dotnet publish ProxmoxClient.Desktop -c Release -r win-x64` / `linux-x64` | |
+| iOS · iPadOS | 아직 헤드 프로젝트 없음 — 빌드에 macOS + Xcode, 기기 설치에 Apple 개발자 계정 필요 | |
+
 ## 빌드
 
 필요: .NET 10 SDK. Android 는 추가로 `android` 워크로드, Android SDK(플랫폼 36), JDK 17+.
