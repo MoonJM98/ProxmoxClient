@@ -79,21 +79,39 @@ WaitFor(() => AppServices.Dialogs.Current is not null || nav.CurrentPage?.DataCo
 AppServices.Dialogs.Current?.ConfirmCommand.Execute(null); // 인증서 신뢰
 WaitFor(() => nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel, 15000);
 // 데스크톱 로그인 후 화면은 WPF 와 같은 메인 화면(Views/Main) — 탭·선택 게스트를 캡처하고 끝낸다
+ClusterViewModel cluster;
 if (desktop && nav.CurrentPage?.DataContext is MainViewModel mainVm)
 {
-    MainViewCheck(mainVm);
-    Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
-    Directory.Delete(profileDir, true);
-    return failures == 0 ? 0 : 2;
+    if (target is "cluster" or "all")
+    {
+        MainViewCheck(mainVm); // 끝에 메인 화면을 닫는다(세션 정리 확인)
+        if (target == "cluster")
+        {
+            Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
+            Directory.Delete(profileDir, true);
+            return failures == 0 ? 0 : 2;
+        }
+
+        Console.WriteLine("FAIL all: main view closed the session; run targets separately on desktop");
+        return 2;
+    }
+
+    // 다른 대상은 메인 화면 위에서 연다 — 목록 데이터는 같은 세션으로 읽어 온다(화면에는 붙이지 않음)
+    Shot("main");
+    cluster = new ClusterViewModel(mainVm.Session);
+    await Wait(cluster.RefreshAsync(false));
 }
-if (nav.CurrentPage?.DataContext is not ClusterViewModel cluster)
+else if (nav.CurrentPage?.DataContext is ClusterViewModel mobileCluster)
+{
+    cluster = mobileCluster;
+    WaitFor(() => cluster.IsLoaded);
+    Shot("cluster");
+}
+else
 {
     Console.WriteLine("FAIL login: " + AppServices.Dialogs.Current?.Message);
     return 1;
 }
-
-WaitFor(() => cluster.IsLoaded);
-Shot("cluster");
 
 if (target is "datacenter" or "all")
 {

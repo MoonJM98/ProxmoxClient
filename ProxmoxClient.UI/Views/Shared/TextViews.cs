@@ -27,6 +27,7 @@ public sealed class TextEditTab : UserControl
         _editor = new TextBox
         {
             AcceptsReturn = true, IsReadOnly = save is null, TextWrapping = TextWrapping.NoWrap,
+            VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Top, // WPF 처럼 글은 위에서부터
             FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, monospace"), FontSize = 13
         };
         var reload = ActionBar.IconButton(L.T("Common_Refresh"), "IconRefresh", this);
