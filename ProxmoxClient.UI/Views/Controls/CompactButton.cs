@@ -20,6 +20,30 @@ namespace ProxmoxClient.UI.Views.Controls;
 public static class CompactButton
 {
     public const double NarrowWidth = 600;
+
+    private static readonly AttachedProperty<string?> LabelProperty =
+        AvaloniaProperty.RegisterAttached<Button, string?>("CompactLabel", typeof(CompactButton));
+
+    private static readonly AttachedProperty<bool> NarrowProperty =
+        AvaloniaProperty.RegisterAttached<Button, bool>("CompactNarrow", typeof(CompactButton));
+
+    /// <summary>
+    ///     버튼 이름을 바꾼다(상황에 따라 "제거"/"분리" 등) — 좁은 화면이면 아이콘만 둔 채 이름(툴팁·길게 누르기 알림)만 바꾼다.
+    ///     규칙을 걸지 않은 버튼이면 글자를 그대로 바꾼다.
+    /// </summary>
+    public static void SetLabel(Button button, string label)
+    {
+        ToolTip.SetTip(button, label);
+        AutomationLabel(button, label);
+        if (button.GetValue(LabelProperty) is null)
+        {
+            button.Content = label;
+            return;
+        }
+
+        button.SetValue(LabelProperty, label);
+        if (!button.GetValue(NarrowProperty)) button.Content = label;
+    }
     private const int LongPressMs = 500;
     private const double MoveSlop = 12;
 
@@ -30,13 +54,15 @@ public static class CompactButton
 
         ToolTip.SetTip(button, label);
         AutomationLabel(button, label);
+        button.SetValue(LabelProperty, label);
         TopLevel? topLevel = null;
 
         void Update()
         {
             var narrow = topLevel is not null && topLevel.Bounds.Width > 0 && topLevel.Bounds.Width < NarrowWidth &&
                          IconAssist.GetIcon(button) is not null;
-            button.Content = narrow ? null : label;
+            button.SetValue(NarrowProperty, narrow);
+            button.Content = narrow ? null : button.GetValue(LabelProperty);
             button.MinWidth = narrow ? 44 : 0;
             button.Padding = narrow ? new Thickness(10, 6) : new Thickness(12, 6);
         }
@@ -68,7 +94,7 @@ public static class CompactButton
         {
             timer.Stop();
             suppress = true;
-            AppServices.Dialogs.Toast(label);
+            AppServices.Dialogs.Toast(button.GetValue(LabelProperty) ?? label);
         };
         button.AddHandler(InputElement.PointerPressedEvent, (_, e) =>
         {
@@ -95,7 +121,7 @@ public static class CompactButton
             if (suppress || moved || Environment.TickCount64 - pressedTick < LongPressMs) return;
 
             suppress = true;
-            AppServices.Dialogs.Toast(label);
+            AppServices.Dialogs.Toast(button.GetValue(LabelProperty) ?? label);
         }, RoutingStrategies.Tunnel, true);
         button.AddHandler(InputElement.PointerCaptureLostEvent, (_, _) => timer.Stop(), RoutingStrategies.Direct, true);
         // 실행 처리기보다 먼저 등록되므로 여기서 막으면 Click 처리기와 Command 가 실행되지 않는다

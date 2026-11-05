@@ -17,6 +17,11 @@ public class MainApplication : AvaloniaAndroidApplication<App>
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
         // 비밀번호·토큰은 Android 키스토어 키로 암호화해 앱 전용 저장소에 둔다
+        // 짧은 변이 600dp 이상(7인치 이상 태블릿)이면 PC 와 같은 배치, 아니면 휴대폰 배치
+        ProxmoxClient.UI.Platform.PlatformInfo.FormFactor =
+            Resources?.Configuration?.SmallestScreenWidthDp >= 600
+                ? ProxmoxClient.UI.Platform.FormFactor.Tablet
+                : ProxmoxClient.UI.Platform.FormFactor.Mobile;
         AppServices.SecretStore = new KeystoreSecretStore(this);
         AppServices.ProfilesDirectory = Path.Combine(FilesDir!.AbsolutePath, "profiles");
         return base.CustomizeAppBuilder(builder)

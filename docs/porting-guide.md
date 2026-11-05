@@ -77,3 +77,12 @@ dotnet run --project tools/UiSnapshot -- --port <포트> --out <폴더> --mode m
   모바일에서만 카드가 필요하면 `PlatformInfo.IsDesktop` 으로 나눈다(데스크톱은 반드시 WPF 와 같은 표).
 - 배치(Grid 행·열, 여백, 버튼 순서·이름·아이콘)는 WPF XAML 그대로. `DataTrigger` 는 `IsVisible="{Binding ...}"` 등 바인딩으로.
 - WPF 에서 하던 규칙(버튼 사용 조건, 확인 문구, 상태별 표시)은 그대로 옮긴다 — 임의로 바꾸지 않는다.
+
+## 화면 형태(데스크톱 · 태블릿 · 휴대폰)
+
+- `PlatformInfo.IsDesktop` = PC 형 배치(DataGrid 표, 왼쪽 탭 + 내용, 메인 창) — **데스크톱과 태블릿**(짧은 변 600dp 이상).
+- `PlatformInfo.IsTouch` = 손가락 크기(버튼·행·입력칸을 크게) — 휴대폰과 태블릿.
+- 휴대폰(`!IsDesktop`): 표는 테두리 있는 카드(`ListBox Classes="cards"`), 입력칸은 화면 폭을 꽉 채우고(칸 안 돋보기·지우기),
+  새로고침은 목록을 당겨서, 도구 모음은 폭 600dp 미만이면 아이콘만(`CompactButton`, 길게 누르면 이름 알림).
+  버튼 이름을 나중에 바꿀 때는 `button.Content = ...` 대신 `CompactButton.SetLabel(button, ...)`.
+- 데스크톱 표는 WPF TableTab 과 같이 행 사이 가로선.

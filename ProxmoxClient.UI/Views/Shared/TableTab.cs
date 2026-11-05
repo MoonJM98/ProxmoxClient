@@ -54,34 +54,37 @@ public sealed class TableTab : UserControl
         // 위 줄: 작업 버튼 → 새로고침(아이콘만) → 필터 — WPF 와 같은 순서
         AddActions((actions ?? []).Where(a => a.Requires is not { IsAvailable: false }).ToList());
         var refresh = IconButton(null, "IconRefresh");
+        if (!PlatformInfo.IsDesktop) refresh.IsVisible = false; // 휴대폰은 당겨서 새로고침
         ToolTip.SetTip(refresh, L.T("MainWindow_03"));
         refresh.Padding = new Thickness(8, 6);
         refresh.Click += async (_, _) => await ReloadAsync();
         ToolTip.SetTip(_filter, L.T("TableTab_Filter"));
         _filter.TextChanged += (_, _) => ApplyFilter();
-        var filterPanel = new StackPanel
-        {
-            Orientation = Orientation.Horizontal, Margin = new Thickness(8, 0, 0, 4), IsVisible = filterable,
-            Children =
-            {
-                new Avalonia.Controls.Shapes.Path
-                {
-                    Classes = { "icon" }, Width = 14, Height = 14, Margin = new Thickness(0, 0, 6, 0),
-                    VerticalAlignment = VerticalAlignment.Center, Data = Icon("IconSearch"), Opacity = 0.7
-                },
-                _filter
-            }
-        };
         var hint = new TextBlock
         {
             Text = L.T(hintKey), Foreground = Brush("BrushDim"), TextWrapping = TextWrapping.Wrap,
             VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 4), IsVisible = L.Has(hintKey)
         };
-        var left = new WrapPanel { Children = { _actionPanel, refresh, filterPanel } };
         Control top;
         if (PlatformInfo.IsDesktop)
         {
-            // 데스크톱: 버튼 뒤 남은 자리에 설명(WPF 와 같음)
+            // 데스크톱·태블릿: WPF 와 같이 [작업 버튼 · 새로고침 · 돋보기 + 필터(220)] 뒤 남은 자리에 설명
+            // (태블릿은 툴팁을 볼 수 없으므로 칸 안에 "필터" 안내 글자)
+            if (PlatformInfo.IsTouch) _filter.PlaceholderText = L.T("TableTab_Filter");
+            var filterPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal, Margin = new Thickness(8, 0, 0, 4), IsVisible = filterable,
+                Children =
+                {
+                    new Avalonia.Controls.Shapes.Path
+                    {
+                        Classes = { "icon" }, Width = 14, Height = 14, Margin = new Thickness(0, 0, 6, 0),
+                        VerticalAlignment = VerticalAlignment.Center, Data = Icon("IconSearch"), Opacity = 0.7
+                    },
+                    _filter
+                }
+            };
+            var left = new WrapPanel { Children = { _actionPanel, refresh, filterPanel } };
             var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
             DockPanel.SetDock(left, Dock.Left);
             dock.Children.Add(left);
@@ -90,14 +93,39 @@ public sealed class TableTab : UserControl
         }
         else
         {
-            // 모바일: 폭이 좁아 설명은 버튼 아래 줄로
-            top = new StackPanel { Margin = new Thickness(0, 0, 0, 6), Children = { left, hint } };
+            // 휴대폰: 작업 버튼 한 줄(새로고침은 목록을 당겨서) → 필터는 화면 폭을 꽉 채운 한 줄
+            //        (칸 안에 돋보기와 지우기 ×) → 설명
+            _filter.Width = double.NaN;
+            _filter.HorizontalAlignment = HorizontalAlignment.Stretch;
+            _filter.PlaceholderText = L.T("TableTab_Filter");
+            _filter.InnerLeftContent = new Avalonia.Controls.Shapes.Path
+            {
+                Classes = { "icon" }, Width = 16, Height = 16, Margin = new Thickness(10, 0, 4, 0), Opacity = 0.7,
+                Data = Icon("IconSearch")
+            };
+            var clear = new Button
+            {
+                Classes = { "icon" }, Background = Brushes.Transparent, BorderThickness = new Thickness(0),
+                Padding = new Thickness(10, 4), MinHeight = 0, IsVisible = false
+            };
+            IconAssist.SetIcon(clear, Icon("IconX"));
+            clear.Click += (_, _) => _filter.Text = string.Empty;
+            _filter.InnerRightContent = clear;
+            _filter.TextChanged += (_, _) => clear.IsVisible = !string.IsNullOrEmpty(_filter.Text);
+            _filter.IsVisible = filterable;
+            _filter.Margin = new Thickness(0, 2, 0, 6);
+            top = new StackPanel { Margin = new Thickness(0, 0, 0, 4), Children = { _actionPanel, _filter, hint } };
         }
 
         Control body;
         if (PlatformInfo.IsDesktop)
         {
-            _grid = new DataGrid { CanUserSortColumns = true };
+            // WPF TableTab 과 같이 행 사이 가로선으로 경계를 보인다
+            _grid = new DataGrid
+            {
+                CanUserSortColumns = true, GridLinesVisibility = DataGridGridLinesVisibility.Horizontal,
+                HorizontalGridLinesBrush = Brush("BrushBorder")
+            };
             foreach (var column in columns) _grid.Columns.Add(CreateColumn(column));
             _grid.SelectionChanged += (_, _) => UpdateActionState();
             _grid.DoubleTapped += (_, _) => OpenSelected();
@@ -106,10 +134,24 @@ public sealed class TableTab : UserControl
         }
         else
         {
-            _cards = new ListBox { ItemTemplate = MobileRowTemplate() };
+            _cards = new ListBox { ItemTemplate = MobileRowTemplate(), Classes = { "cards" } };
             _cards.SelectionChanged += (_, _) => UpdateActionState();
             _cards.DoubleTapped += (_, _) => OpenSelected();
-            body = _cards;
+            // 당겨서 새로고침(휴대폰 관례) — 새로고침 버튼 대신 공간을 아낀다
+            var pull = new RefreshContainer { Content = _cards };
+            pull.RefreshRequested += async (_, e) =>
+            {
+                var deferral = e.GetDeferral();
+                try
+                {
+                    await ReloadAsync();
+                }
+                finally
+                {
+                    deferral.Complete();
+                }
+            };
+            body = pull;
         }
 
         _root = new Grid

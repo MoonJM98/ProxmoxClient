@@ -20,6 +20,13 @@ public sealed class IconAssist : AvaloniaObject
     public static readonly AttachedProperty<IBrush?> BrushProperty =
         AvaloniaProperty.RegisterAttached<IconAssist, Control, IBrush?>("Brush");
 
+    /// <summary>
+    ///     아이콘과 글자 사이 간격 — 글자가 없으면(아이콘만 있는 버튼) 0 이어서 아이콘이 버튼 한가운데 온다.
+    /// </summary>
+    public static readonly Avalonia.Data.Converters.IValueConverter IconMarginConverter =
+        new Avalonia.Data.Converters.FuncValueConverter<object?, Thickness>(content =>
+            content is null || content is string { Length: 0 } ? new Thickness(0) : new Thickness(0, 0, 6, 0));
+
     public static Geometry? GetIcon(Control control) => control.GetValue(IconProperty);
 
     public static void SetIcon(Control control, Geometry? value) => control.SetValue(IconProperty, value);

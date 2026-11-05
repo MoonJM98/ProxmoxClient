@@ -16,8 +16,8 @@ public partial class App : Application
     {
         L.InitializeCulture();
         AvaloniaXamlLoader.Load(this);
-        // 모바일은 같은 모양에 손가락 크기만 키운다(데스크톱은 WPF 와 같은 크기)
-        if (!PlatformInfo.IsDesktop)
+        // 휴대폰·태블릿은 같은 모양에 손가락 크기만 키운다(데스크톱은 WPF 와 같은 크기)
+        if (PlatformInfo.IsTouch)
             Styles.Add(new Avalonia.Markup.Xaml.Styling.StyleInclude(new Uri("avares://ProxmoxClient.UI/"))
             {
                 Source = new Uri("avares://ProxmoxClient.UI/Themes/Mobile.axaml")

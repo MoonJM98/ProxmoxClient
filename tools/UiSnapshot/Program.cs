@@ -19,7 +19,9 @@ using ProxmoxClient.UI.Views.Console;
 var options = ParseArgs(args);
 var port = int.Parse(options.GetValueOrDefault("port", "8006"));
 var outDir = options.GetValueOrDefault("out", "shots");
-var desktop = options.GetValueOrDefault("mode", "desktop") == "desktop";
+var mode = options.GetValueOrDefault("mode", "desktop");
+var tablet = mode == "tablet";
+var desktop = mode is "desktop" or "tablet"; // 태블릿은 PC 와 같은 배치
 var target = options.GetValueOrDefault("target", "all");
 Directory.CreateDirectory(outDir);
 
@@ -29,7 +31,7 @@ var profileDir = Path.Combine(Path.GetTempPath(), "uisnap-" + Guid.NewGuid().ToS
 AppServices.ProfilesDirectory = profileDir;
 AppServices.SecretStore = new MemorySecretStore();
 // 테마가 앱 초기화 때 화면 형태를 읽으므로 먼저 정한다
-PlatformInfo.FormFactor = desktop ? FormFactor.Desktop : FormFactor.Mobile;
+PlatformInfo.FormFactor = tablet ? FormFactor.Tablet : desktop ? FormFactor.Desktop : FormFactor.Mobile;
 AppBuilder.Configure<App>().UseSkia()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .WithInterFont().SetupWithoutStarting();

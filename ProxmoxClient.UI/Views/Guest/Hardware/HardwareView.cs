@@ -142,7 +142,7 @@ public partial class HardwareView : UserControl
         }
         else
         {
-            _cards = new ListBox { Background = Brushes.Transparent, ItemTemplate = CardTemplate() };
+            _cards = new ListBox { Background = Brushes.Transparent, ItemTemplate = CardTemplate(), Classes = { "cards" } }; // 항목마다 테두리(경계)
             _cards.SelectionChanged += (_, _) => UpdateButtons();
             _cards.DoubleTapped += async (_, _) => await OnEditAsync();
             body = _cards;
@@ -304,7 +304,7 @@ public partial class HardwareView : UserControl
         var row = Selected;
         _edit.IsEnabled = !_busy && row is { HasEditor: true };
         _remove.IsEnabled = !_busy && row is { CanRemove: true };
-        _remove.Content = Loc.T(row is { IsUsedDisk: true } ? "Hw_Detach" : "Hw_Remove");
+        CompactButton.SetLabel(_remove, Loc.T(row is { IsUsedDisk: true } ? "Hw_Detach" : "Hw_Remove"));
         _revert.IsEnabled = !_busy && row is { HasPending: true };
 
         var diskLike = row is { IsDisk: true } || row?.Item == HardwareItem.Efi
