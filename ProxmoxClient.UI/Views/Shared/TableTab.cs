@@ -159,7 +159,12 @@ public sealed class TableTab : UserControl
     {
         var button = new Button { Content = label, Margin = new Thickness(0, 0, 8, 4), VerticalAlignment = VerticalAlignment.Top };
         IconAssist.SetIcon(button, Icon(iconKey));
-        if (label is not null) ToolTip.SetTip(button, label);
+        if (label is not null)
+        {
+            ToolTip.SetTip(button, label);
+            CompactButton.Apply(button, label); // 좁은 화면: 아이콘만, 길게 누르면 이름
+        }
+
         return button;
     }
 
@@ -362,13 +367,14 @@ public sealed class TableTab : UserControl
         }
     }
 
-    private void OpenSelected()
+    private async void OpenSelected()
     {
         if (_open is null || _busy || Selected is not TableRow row) return;
 
         try
         {
             _open(row.Source, this);
+            await ReloadAsync(); // 열었던 화면에서 바뀐 상태를 반영(WPF 와 같음)
         }
         catch (Exception ex)
         {

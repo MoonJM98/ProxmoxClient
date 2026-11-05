@@ -67,8 +67,9 @@ internal static class HardwareInput
     /// <summary>WPF 와 같은 단추: 아이콘 + 글자, 최소 폭 96(툴바). 여백은 호출하는 쪽이 정한다.</summary>
     public static Button Button(string label, string iconKey)
     {
-        var button = new Button { Content = label, MinWidth = 96 };
+        var button = new Button { Content = label, MinWidth = PlatformInfo.IsDesktop ? 96 : 0 };
         IconAssist.SetIcon(button, Resource(iconKey) as Geometry);
+        CompactButton.Apply(button, label); // 좁은 화면: 아이콘만, 길게 누르면 이름
         return button;
     }
 

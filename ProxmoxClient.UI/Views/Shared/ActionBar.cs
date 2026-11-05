@@ -36,6 +36,7 @@ public static class ActionBar
             icon is Geometry geometry)
             Controls.IconAssist.SetIcon(button, geometry);
         ToolTip.SetTip(button, label);
+        Controls.CompactButton.Apply(button, label); // 좁은 화면: 아이콘만, 길게 누르면 이름
         return button;
     }
 

@@ -123,6 +123,7 @@ if (target.StartsWith("preview:", StringComparison.Ordinal))
 }
 
 if (target == "console") await ConsoleUsabilityCheck();
+if (target == "compact") await CompactButtonCheck();
 
 foreach (var (prefix, vmid) in new[] { ("guest", 100), ("lxc", 200) })
 {
@@ -152,6 +153,47 @@ Directory.Delete(profileDir, true);
 return failures == 0 ? 0 : 2;
 
 // ------------------------------------------------------------------ helpers
+
+// 좁은 화면 버튼 규칙 — 아이콘만 보이는지, 길게 누르면 이름 알림만(실행 안 함), 짧게 누르면 실행되는지
+async Task CompactButtonCheck()
+{
+    var tab = PreviewRegistry.Get("selftest")[0];
+    var ctx = new PreviewContext(cluster.Session, cluster.Guests.First(g => g.VmId == 100),
+        cluster.Guests.First(g => g.VmId == 200), cluster.Nodes.First(), cluster.Storages.First());
+    await Wait(AppServices.Navigator.PushViewAsync("compact", tab.Create(ctx)));
+    Pump(1200);
+    Shot("compact-buttons");
+    var add = nav.CurrentPage!.GetVisualDescendants().OfType<Button>()
+        .First(b => ToolTip.GetTip(b) as string == L.T("Action_Add"));
+    var compact = add.Content is null;
+    Console.WriteLine($"| 좁은 화면 버튼 | 아이콘만(글자 숨김) | {(compact ? "아이콘만" : "글자 보임: " + add.Content)} | {(desktop ? (compact ? "실패" : "통과(데스크톱은 글자)") : (compact ? "통과" : "실패"))} |");
+    if (desktop == compact) failures++;
+    if (desktop) return;
+
+    var center = add.TranslatePoint(new Avalonia.Point(add.Bounds.Width / 2, add.Bounds.Height / 2), window)!.Value;
+    var touch = window.TouchBegin(center, Avalonia.Input.RawInputModifiers.None);
+    Pump(800); // 길게 누르기
+    window.TouchEnd(touch, center, Avalonia.Input.RawInputModifiers.None);
+    Pump(400);
+    var toast = AppServices.Dialogs.ToastText;
+    var opened = AppServices.Dialogs.Sheet is not null;
+    Shot("compact-longpress-toast");
+    var pass = toast == L.T("Action_Add") && !opened;
+    Console.WriteLine($"| 길게 누르기 | 이름 알림 '{L.T("Action_Add")}', 실행 안 함 | 알림 '{toast}', 폼 {(opened ? "열림" : "안 열림")} | {(pass ? "통과" : "실패")} |");
+    if (!pass) failures++;
+    AppServices.Dialogs.Sheet?.GetType(); // (열렸으면 아래에서 닫는다)
+    if (AppServices.Dialogs.Sheet is IDismissible d1) d1.Dismiss();
+
+    touch = window.TouchBegin(center, Avalonia.Input.RawInputModifiers.None);
+    Pump(100);
+    window.TouchEnd(touch, center, Avalonia.Input.RawInputModifiers.None);
+    WaitFor(() => AppServices.Dialogs.Sheet is not null, 3000);
+    opened = AppServices.Dialogs.Sheet is not null;
+    Console.WriteLine($"| 짧게 누르기 | 실행(입력 폼 열림) | 폼 {(opened ? "열림" : "안 열림")} | {(opened ? "통과" : "실패")} |");
+    if (!opened) failures++;
+    if (AppServices.Dialogs.Sheet is IDismissible d2) d2.Dismiss();
+    await Wait(AppServices.Navigator.PopAsync());
+}
 
 // 모바일 콘솔 조작성 검사 — 제스처·특수키를 흉내 내고, 가짜 VNC 서버가 받은 이벤트(로그 'RFB ...')를 기대값과 비교한다
 async Task ConsoleUsabilityCheck()
