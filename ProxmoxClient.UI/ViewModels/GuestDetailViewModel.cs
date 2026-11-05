@@ -43,7 +43,8 @@ public sealed partial class GuestDetailViewModel : ViewModelBase, IReloadable
     /// <summary>실시간 상태(일시정지 VM 은 "paused").</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StatusText), nameof(CanStart), nameof(CanShutdown), nameof(CanReboot),
-        nameof(CanStop), nameof(CanSuspend), nameof(CanResume), nameof(CanReset), nameof(IsRunning))]
+        nameof(CanStop), nameof(CanSuspend), nameof(CanResume), nameof(CanReset), nameof(IsRunning),
+        nameof(CanOpenConsole))]
     public partial string Status { get; private set; }
 
     public string StatusText => StatusLabel(Status);
@@ -63,6 +64,15 @@ public sealed partial class GuestDetailViewModel : ViewModelBase, IReloadable
     public bool CanResume => !IsTaskRunning && Status is "paused" or "suspended";
 
     public bool CanReset => !IsTaskRunning && IsRunning && IsQemu;
+
+    /// <summary>화면 콘솔 — 실행 중인 VM, 비밀번호 로그인(콘솔 티켓에 세션 티켓이 필요)일 때.</summary>
+    public bool CanOpenConsole => IsRunning && IsQemu && Session.Api.AuthTicket is not null;
+
+    [RelayCommand]
+    private Task OpenConsole()
+    {
+        return AppServices.Navigator.PushAsync(new ConsoleViewModel(Session, Guest));
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanStart), nameof(CanShutdown), nameof(CanReboot), nameof(CanStop),

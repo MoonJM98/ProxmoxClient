@@ -132,6 +132,47 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Connect_TokenPrompt" xml:space="preserve">
     <value>{0} 토큰 비밀값을 입력하세요.</value>
   </data>
+  <data name="Console_CadSend" xml:space="preserve">
+    <value>보내기</value>
+  </data>
+  <data name="Console_CadText" xml:space="preserve">
+    <value>게스트에 Ctrl+Alt+Del 을 보낼까요? 게스트가 재시작될 수 있습니다.</value>
+  </data>
+  <data name="Console_CadTitle" xml:space="preserve">
+    <value>Ctrl+Alt+Del</value>
+  </data>
+  <data name="Console_Closed" xml:space="preserve">
+    <value>콘솔 연결이 끊어졌습니다.</value>
+  </data>
+  <data name="Console_ClosedError" xml:space="preserve">
+    <value>콘솔 연결이 끊어졌습니다.
+{0}</value>
+  </data>
+  <data name="Console_ConnectFailed" xml:space="preserve">
+    <value>콘솔에 연결하지 못했습니다.
+{0}</value>
+  </data>
+  <data name="Console_Connecting" xml:space="preserve">
+    <value>콘솔에 연결하는 중…</value>
+  </data>
+  <data name="Console_Fit" xml:space="preserve">
+    <value>화면 맞춤</value>
+  </data>
+  <data name="Console_Keyboard" xml:space="preserve">
+    <value>키보드</value>
+  </data>
+  <data name="Console_ModeMouse" xml:space="preserve">
+    <value>마우스</value>
+  </data>
+  <data name="Console_ModeTouch" xml:space="preserve">
+    <value>터치</value>
+  </data>
+  <data name="Console_MoreKeys" xml:space="preserve">
+    <value>키 더 보기</value>
+  </data>
+  <data name="Console_Open" xml:space="preserve">
+    <value>콘솔</value>
+  </data>
   <data name="Desktop_SelectItem" xml:space="preserve">
     <value>왼쪽 목록에서 항목을 고르세요</value>
   </data>

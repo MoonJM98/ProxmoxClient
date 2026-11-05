@@ -45,6 +45,8 @@ class H(BaseHTTPRequestHandler):
         b=json.dumps({'data':data}).encode(); self.send_response(code); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
     def do_GET(self):
         p=urllib.parse.urlparse(self.path); path=urllib.parse.unquote(p.path.replace('/api2/json',''))
+        if path.endswith('/vncwebsocket') and self.headers.get('Upgrade','').lower()=='websocket':
+            import vnc; vnc.serve(self); self.close_connection=True; return
         if self.ext('GET', path): return
         if path=='/version': return self.send(dict(version='9.0.10',release='9.0',repoid='abcdef'))
         if path=='/cluster/resources':
@@ -80,6 +82,8 @@ class H(BaseHTTPRequestHandler):
         p=urllib.parse.urlparse(self.path); path=p.path.replace('/api2/json','')
         ln=int(self.headers.get('Content-Length',0)); body=urllib.parse.parse_qs(self.rfile.read(ln).decode())
         flat={k:v[0] for k,v in body.items()}
+        if path.endswith('/vncproxy'):
+            return self.send(dict(port=5900, ticket='PVEVNC:FAKE', user='root@pam', cert='', upid=upid('pve1','vncproxy','100')))
         if path!='/access/ticket' and self.ext('POST', urllib.parse.unquote(path), flat): return
         if path=='/access/ticket':
             if body.get('password',[''])[0] in ('secret',) or body.get('password',[''])[0].startswith('PVE:'):
@@ -110,7 +114,7 @@ class H(BaseHTTPRequestHandler):
         sys.stderr.write("UNHANDLED DELETE %s\n"%path); self.send(None)
 if __name__=='__main__':
     port=int(sys.argv[1]) if len(sys.argv)>1 else 8006
-    here=os.path.dirname(os.path.abspath(__file__))
+    here=os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, here)
     cert=os.path.join(os.environ.get('TMPDIR','/tmp'),'fakepve-cert'); os.makedirs(cert,exist_ok=True)
     c,k=os.path.join(cert,'cert.pem'),os.path.join(cert,'key.pem')
     if not os.path.exists(c):

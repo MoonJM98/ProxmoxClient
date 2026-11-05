@@ -132,6 +132,47 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Connect_TokenPrompt" xml:space="preserve">
     <value>Enter the secret for token {0}.</value>
   </data>
+  <data name="Console_CadSend" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="Console_CadText" xml:space="preserve">
+    <value>Send Ctrl+Alt+Del to the guest? It may restart.</value>
+  </data>
+  <data name="Console_CadTitle" xml:space="preserve">
+    <value>Ctrl+Alt+Del</value>
+  </data>
+  <data name="Console_Closed" xml:space="preserve">
+    <value>The console was disconnected.</value>
+  </data>
+  <data name="Console_ClosedError" xml:space="preserve">
+    <value>The console was disconnected.
+{0}</value>
+  </data>
+  <data name="Console_ConnectFailed" xml:space="preserve">
+    <value>Could not connect to the console.
+{0}</value>
+  </data>
+  <data name="Console_Connecting" xml:space="preserve">
+    <value>Connecting to console…</value>
+  </data>
+  <data name="Console_Fit" xml:space="preserve">
+    <value>Fit to screen</value>
+  </data>
+  <data name="Console_Keyboard" xml:space="preserve">
+    <value>Keyboard</value>
+  </data>
+  <data name="Console_ModeMouse" xml:space="preserve">
+    <value>Mouse</value>
+  </data>
+  <data name="Console_ModeTouch" xml:space="preserve">
+    <value>Touch</value>
+  </data>
+  <data name="Console_MoreKeys" xml:space="preserve">
+    <value>More keys</value>
+  </data>
+  <data name="Console_Open" xml:space="preserve">
+    <value>Console</value>
+  </data>
   <data name="Desktop_SelectItem" xml:space="preserve">
     <value>Select an item from the list</value>
   </data>

@@ -40,6 +40,12 @@
             <!-- 전원 -->
             <TextBlock Classes="section" Text="{l:Tr Guest_Power}" />
             <WrapPanel>
+                <Button Classes="action accent" Command="{Binding OpenConsoleCommand}" IsVisible="{Binding CanOpenConsole}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Classes="icon" Data="{StaticResource IconMonitor}" />
+                        <TextBlock Text="{l:Tr Console_Open}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
                 <Button Classes="action accent" Command="{Binding StartCommand}" IsVisible="{Binding CanStart}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Path Classes="icon" Data="{StaticResource IconPlay}" />

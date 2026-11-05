@@ -18,6 +18,7 @@ public static class PageFactory
             GuestDetailViewModel => new GuestDetailPage(),
             NodeDetailViewModel => new NodeDetailPage(),
             TaskLogViewModel => new TaskLogPage(),
+            ConsoleViewModel => new Console.ConsolePage(),
             _ => throw new ArgumentOutOfRangeException(nameof(viewModel), viewModel.GetType().Name, null)
         };
         page.DataContext = viewModel;
