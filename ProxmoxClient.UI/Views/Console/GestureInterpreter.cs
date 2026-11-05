@@ -151,10 +151,17 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
                 }
                 else
                 {
+                    // 문턱을 넘었다 — 이번 이벤트만큼만 움직인다(문턱 전 움직임은 이미 따라갔다). 모아 둔 12px 를
+                    // 마지막 8ms 로 나눠 '빠른 손짓'으로 보고 가속해 커서가 툭 튀던 문제(실기기 보고)를 막는다
                     _gesture = Gesture.CursorMove;
-                    MoveCursor(view - finger.Start, ms - finger.Time);
+                    MoveCursor(delta, ms - finger.Time);
                 }
 
+                break;
+            case Gesture.Pending when Mode == TouchInputMode.Mouse && !_doubleTapDrag && !_longPressFired:
+                // 문턱 전에도 커서가 손가락을 바로 따라간다(가속 없이) — 멈춰 있다가 문턱에서 한꺼번에 움직이지 않게.
+                // 탭은 문턱 안이라 커서가 거의 움직이지 않는다
+                MoveCursor(delta, ms - finger.Time, accelerate: false);
                 break;
             case Gesture.CursorMove:
                 MoveCursor(delta, ms - finger.Time);
@@ -341,7 +348,7 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
     /// <summary>속도를 부드럽게 하는 시간 상수 — 터치 점이 묶여 와 한 이벤트의 시간 간격이 0·16ms 로 튀어도 가속이 고르게.</summary>
     private const double SpeedSmoothingMs = 60;
 
-    private void MoveCursor(Vector viewDelta, long elapsedMs)
+    private void MoveCursor(Vector viewDelta, long elapsedMs, bool accelerate = true)
     {
         // 빠르게 움직일수록 더 멀리(가속) — 작은 화면에서도 큰 원격 화면을 끝까지 옮길 수 있게.
         // 이벤트마다 속도를 새로 재면 Android 가 묶어 보내는 터치 점(시각 차 0ms·16ms)에서 배율이 번갈아 튀어
@@ -351,7 +358,8 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
         _speedDistance = _speedDistance * weight + Length(viewDelta);
         _speedTime = _speedTime * weight + dt;
         _speed = _speedTime > 0.5 ? _speedDistance / _speedTime : _speed;
-        var accel = Math.Clamp(1 + (_speed - 0.3) * 1.2, 1, 3);
+        // 부드러운 가속 — 느리면 1:1, 0.4px/ms 넘으면 조금씩 늘어 최대 2.5배(계단 없이 이어지게)
+        var accel = accelerate ? Math.Clamp(1 + (_speed - 0.4) * 1.0, 1, 2.5) : 1;
         var remoteDelta = viewDelta / viewport.Scale * CursorSpeed * accel;
         var next = Cursor + remoteDelta;
         Cursor = new Point(Math.Clamp(next.X, 0, Math.Max(0, viewport.Remote.Width - 1)),

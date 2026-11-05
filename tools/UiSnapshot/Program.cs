@@ -975,6 +975,32 @@ async Task ConsoleUsabilityCheck()
     Check("커서를 서버보다 먼저(모양 커서)", "모양 받음, 손가락 자리 픽셀에 커서가 그려짐(30px 이상 바뀜)",
         $"모양 {(surface.HasCursorShape ? "받음" : "없음")}, 바뀐 픽셀 {changedPixels}", surface.HasCursorShape && changedPixels >= 30);
 
+    // 끌기 시작 문턱 — 손가락을 천천히 움직이기 시작할 때(문턱 12px 를 넘는 순간) 커서가 확 튀지 않아야 한다.
+    // 손가락은 이벤트마다 2px(8ms) 로 고르게. 문턱을 넘은 첫 걸음이 그 뒤 걸음들보다 2배 넘게 크면 튐.
+    g.Mode = TouchInputMode.Mouse;
+    g.ResetCursor(new Avalonia.Point(200, 300));
+    var slowAt = center - new Avalonia.Vector(100, 0);
+    g.Down(31, slowAt, now);
+    var slowSteps = new List<double>();
+    var slowPrev = g.Cursor;
+    for (var i = 1; i <= 30; i++)
+    {
+        now += 8;
+        slowAt += new Avalonia.Vector(2, 0);
+        g.Move(31, slowAt, now);
+        var step = g.Cursor.X - slowPrev.X;
+        if (step > 0) slowSteps.Add(step);
+        slowPrev = g.Cursor;
+    }
+
+    g.Up(31, slowAt, now);
+    now += 400;
+    Events();
+    var firstStep = slowSteps.FirstOrDefault();
+    var typical = slowSteps.Skip(1).DefaultIfEmpty(0).Average();
+    Check("끌기 시작 문턱(천천히)", "첫 걸음이 보통 걸음의 3배 이하(확 튀지 않음)",
+        $"첫 걸음 {firstStep:F1}px, 보통 {typical:F1}px", typical > 0 && firstStep <= typical * 3);
+
     // 끌기 매끄러움 — 손가락은 고르게(이벤트마다 12px, 약 1.5px/ms) 움직이지만 Android 처럼 터치 점이 두 개씩 묶여
     // 와서 시각 간격이 0ms·16ms 로 번갈아 올 때, 원격 커서도 이벤트마다 고르게 움직여야 한다(가속이 튀면 끊겨 보인다)
     g.Mode = TouchInputMode.Mouse;
