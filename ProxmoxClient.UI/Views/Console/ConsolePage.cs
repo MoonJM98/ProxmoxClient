@@ -14,7 +14,7 @@ namespace ProxmoxClient.UI.Views.Console;
 ///     VM 콘솔 화면 — 원격 화면 + 아래쪽 특수키 막대(키보드 · Esc · Tab · Ctrl/Alt 고정 · Win · 방향키 · 더 보기(F1~F12 등)
 ///     · Ctrl+Alt+Del · 마우스/터치 모드 · 화면 맞춤). 데스크톱은 물리 키보드·마우스를 그대로 쓴다.
 /// </summary>
-public sealed class ConsolePage : ContentPage
+public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
 {
     private readonly VncSurface _surface = new();
     private readonly TextBox _input;

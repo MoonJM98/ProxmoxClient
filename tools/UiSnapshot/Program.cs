@@ -918,6 +918,32 @@ async Task ConsoleUsabilityCheck()
     Check("끌기 매끄러움(묶여 오는 터치)", "커서 이동 폭 변동 ≤ 10%, 버튼 누른 채", $"변동 {cv:P0}, 마스크 {Masks(dragEvents)}",
         cv <= 0.10 && Masks(dragEvents).StartsWith("1"));
 
+    // 실제 터치 입력 경로로 끌기 — 화면 위 다른 손짓(뒤로 가기 밀기 등)이 터치를 가로채면 커서가 툭 움직이고 멈춘다.
+    // 손가락을 떼지 않고 오른쪽으로 240px(30 단계) 끄는 동안 커서가 끝까지 따라와야 한다(마우스 모드).
+    if (!desktop || tablet)
+    {
+        g.Mode = TouchInputMode.Mouse;
+        g.ResetCursor(new Avalonia.Point(100, 300));
+        Events();
+        var touchFrom = surface.TranslatePoint(new Avalonia.Point(surface.Bounds.Width * 0.3, surface.Bounds.Height / 2), window)!.Value;
+        var t = window.TouchBegin(touchFrom, Avalonia.Input.RawInputModifiers.None);
+        Pump(30);
+        var startX = g.Cursor.X;
+        for (var i = 1; i <= 30; i++)
+        {
+            window.TouchMove(t, touchFrom + new Avalonia.Vector(i * 8, 0), Avalonia.Input.RawInputModifiers.None);
+            Pump(16);
+        }
+
+        var midX = g.Cursor.X;
+        window.TouchEnd(t, touchFrom + new Avalonia.Vector(240, 0), Avalonia.Input.RawInputModifiers.None);
+        Pump(300);
+        var moves = Events().Count(e => e.StartsWith("pointer"));
+        Check("실제 터치로 계속 끌기(가로 240px)", "커서가 끝까지 따라감(150px 이상), 이동 20개 이상",
+            $"커서 +{midX - startX:F0}px, 이동 {moves}개, 화면 {(nav.CurrentPage == page ? "그대로" : "바뀜")}",
+            midX - startX >= 150 && moves >= 20 && nav.CurrentPage == page);
+    }
+
     // 실시간 마우스 끌기 — 8ms 마다 움직인 이동이 서버에 고르게 도착하는가(보내는 쪽 간격 두기·타이머 오차 없음)
     if (desktop)
     {

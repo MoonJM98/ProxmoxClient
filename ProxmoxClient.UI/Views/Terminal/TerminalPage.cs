@@ -18,7 +18,7 @@ namespace ProxmoxClient.UI.Views.Terminal;
 ///     터미널 화면(WPF TerminalWindow) — 위 도구 막대(재연결/연결 끊기 · 복사 · 붙여넣기 · 글자 크기),
 ///     가운데 터미널, 아래 상태 줄. 터치 기기는 특수 키 막대(Esc·Tab·Ctrl/Alt 고정·방향키·기호·F1~F12)를 더한다.
 /// </summary>
-public sealed class TerminalPage : ContentPage
+public sealed class TerminalPage : ContentPage, IOwnsTouchDrag
 {
     private readonly TerminalView _terminal;
     private readonly Button _reconnect;

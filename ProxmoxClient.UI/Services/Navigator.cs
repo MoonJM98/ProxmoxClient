@@ -15,6 +15,25 @@ public sealed class Navigator
     internal void Attach(NavigationPage navigation)
     {
         _navigation = navigation;
+        navigation.Pushed += (_, _) => UpdateSwipeBack();
+        navigation.Popped += (_, _) => UpdateSwipeBack();
+        navigation.PoppedToRoot += (_, _) => UpdateSwipeBack();
+    }
+
+    /// <summary>
+    ///     밀어서 뒤로 가기 — 손가락 끌기를 직접 쓰는 화면(원격 콘솔·터미널, <see cref="IOwnsTouchDrag" />)에서는 끈다.
+    ///     켜 두면 가로로 끄는 순간 페이지의 밀기 인식기가 터치를 가로채(포인터 캡처) 콘솔 커서가 한 번 툭 움직이고
+    ///     멈췄다(실제 터치 입력 경로로 재현). 뒤로 가기는 위쪽 ← 단추와 기기의 뒤로 가기 키로 한다.
+    /// </summary>
+    private void UpdateSwipeBack()
+    {
+        if (_navigation is not { } navigation) return;
+
+        var enabled = navigation.CurrentPage is not IOwnsTouchDrag;
+        navigation.IsGestureEnabled = enabled;
+        foreach (var recognizer in navigation.GestureRecognizers)
+            if (recognizer is Avalonia.Input.GestureRecognizers.SwipeGestureRecognizer swipe)
+                swipe.IsEnabled = enabled;
     }
 
     public Task PushAsync(ViewModelBase viewModel)
@@ -46,6 +65,9 @@ public sealed class Navigator
     private NavigationPage Navigation =>
         _navigation ?? throw new InvalidOperationException("Navigator is not attached.");
 }
+
+/// <summary>손가락 끌기를 스스로 다루는 페이지 — 이 페이지가 보이는 동안 밀어서 뒤로 가기를 끈다.</summary>
+public interface IOwnsTouchDrag;
 
 /// <summary>상세 화면을 자기 안에 띄울 수 있는 페이지(데스크톱 분할 화면).</summary>
 public interface IDetailHost
