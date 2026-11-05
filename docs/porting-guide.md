@@ -85,4 +85,12 @@ dotnet run --project tools/UiSnapshot -- --port <포트> --out <폴더> --mode m
 - 휴대폰(`!IsDesktop`): 표는 테두리 있는 카드(`ListBox Classes="cards"`), 입력칸은 화면 폭을 꽉 채우고(칸 안 돋보기·지우기),
   새로고침은 목록을 당겨서, 도구 모음은 폭 600dp 미만이면 아이콘만(`CompactButton`, 길게 누르면 이름 알림).
   버튼 이름을 나중에 바꿀 때는 `button.Content = ...` 대신 `CompactButton.SetLabel(button, ...)`.
+- 휴대폰 규칙(검사 도구가 확인):
+  - 단추 줄은 **한 줄** — 넘치면 가로로 밀어 보는 줄(`ScrollViewer` 가로 + `StackPanel` 가로). `WrapPanel` 로 두 줄로 꺾지 않는다
+    (콘솔·터미널 특수 키 막대). 선택지가 많으면 칩 대신 목록(`ComboBox`).
+  - 입력 칸은 **오른쪽 끝까지** — PC 고정 폭은 `HardwareInput.PcWidth(폭)`·`PcAlign`(휴대폰이면 남은 폭), 숫자 칸은
+    `HardwareInput.Numeric` 이 휴대폰에서 폭을 무시한다.
+  - 단추 글자는 한 줄 — 좁으면 아이콘만(`CompactButton`).
+  - 검사: `AUDIT=1 dotnet tools/UiSnapshot/... --mode mobile --target <화면>` → `AUDIT` 줄(두 줄 글자·잘림·화면 밖·
+    두 줄 단추 줄·좁은 입력)이 없어야 한다.
 - 데스크톱 표는 WPF TableTab 과 같이 행 사이 가로선.

@@ -123,18 +123,9 @@
             <Border Classes="card">
                 <StackPanel Spacing="12">
                     <TextBlock Classes="label" Text="{l:Tr ProfileDialog_10}" />
-                    <WrapPanel>
-                        <RadioButton Classes="chip" GroupName="proxy" Content="{l:Tr ProfileDialog_11}"
-                                     IsChecked="{Binding IsProxyNone}" Margin="0,0,6,6" />
-                        <RadioButton Classes="chip" GroupName="proxy" Content="{l:Tr ProfileDialog_12}"
-                                     IsChecked="{Binding IsProxySystem}" Margin="0,0,6,6" />
-                        <RadioButton Classes="chip" GroupName="proxy" Content="HTTP"
-                                     IsChecked="{Binding IsProxyHttp}" Margin="0,0,6,6" />
-                        <RadioButton Classes="chip" GroupName="proxy" Content="HTTPS"
-                                     IsChecked="{Binding IsProxyHttps}" Margin="0,0,6,6" />
-                        <RadioButton Classes="chip" GroupName="proxy" Content="SOCKS5"
-                                     IsChecked="{Binding IsProxySocks5}" Margin="0,0,6,6" />
-                    </WrapPanel>
+                    <!-- 휴대폰은 다섯 가지를 한 줄 목록으로(칩은 두 줄로 꺾였다) -->
+                    <ComboBox ItemsSource="{Binding ProxyModeNames}" SelectedIndex="{Binding ProxyModeIndex}"
+                              HorizontalAlignment="Stretch" />
                     <StackPanel Spacing="12" IsVisible="{Binding IsProxyDetailVisible}">
                         <StackPanel>
                             <TextBlock Classes="label" Text="{l:Tr ProfileDialog_13}" />

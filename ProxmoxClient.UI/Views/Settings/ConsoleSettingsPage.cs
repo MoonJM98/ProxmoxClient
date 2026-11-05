@@ -124,7 +124,7 @@ public sealed class ConsoleSettingsPage : UserControl
         var panel = new StackPanel { Margin = new Thickness(20, 12, 20, 10), Spacing = 10 };
 
         _encoding = ChoiceBox.Create(EncodingChoices, s.Encoding.ToString(), stretch: false);
-        _encoding.Width = 220;
+        _encoding.Width = ProxmoxClient.UI.Platform.PlatformInfo.IsDesktop ? 220 : double.NaN; // 휴대폰은 끝까지
         _encoding.SelectionChanged += (_, _) => UpdateEncodingRows();
         panel.Children.Add(HardwareInput.Form(Loc.T("ConsoleSettingsWindow_03"), _encoding,
             Loc.T("ConsoleSettingsWindow_04")));
@@ -154,7 +154,7 @@ public sealed class ConsoleSettingsPage : UserControl
             Loc.T("ConsoleSettings_ClipboardHint")));
 
         _cursorVnc = ChoiceBox.Create(CursorChoices, s.LocalCursor.ToString(), stretch: false);
-        _cursorVnc.Width = 220;
+        _cursorVnc.Width = ProxmoxClient.UI.Platform.PlatformInfo.IsDesktop ? 220 : double.NaN; // 휴대폰은 끝까지
         panel.Children.Add(HardwareInput.Form(Loc.T("ConsoleSettings_LocalCursor"), _cursorVnc,
             Loc.T("ConsoleSettings_LocalCursorHint")));
 
@@ -190,7 +190,7 @@ public sealed class ConsoleSettingsPage : UserControl
         _directRenderRdp.IsCheckedChanged += (_, _) => _directRenderVnc.IsChecked = _directRenderRdp.IsChecked;
 
         _cursorRdp = ChoiceBox.Create(CursorChoices, s.RdpLocalCursor.ToString(), stretch: false);
-        _cursorRdp.Width = 220;
+        _cursorRdp.Width = ProxmoxClient.UI.Platform.PlatformInfo.IsDesktop ? 220 : double.NaN; // 휴대폰은 끝까지
         panel.Children.Add(HardwareInput.Form(Loc.T("ConsoleSettings_LocalCursor"), _cursorRdp,
             Loc.T("ConsoleSettings_RdpCursorHint")));
         return panel;

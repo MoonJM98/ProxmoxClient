@@ -98,10 +98,15 @@ if (!desktop)
 
     // 영역 가져오기(모바일 서버 편집) — 서버의 인증 영역을 읽어 고르면 사용자 칸이 이름@영역 으로
     var edit = (ProfileEditViewModel)nav.CurrentPage!.DataContext!;
-    edit.FetchRealmsCommand.Execute(null);
-    WaitFor(() => AppServices.Dialogs.Current is not null || edit.Realms.Count > 0 || edit.RealmStatus.Contains(':'), 6000);
-    AppServices.Dialogs.Current?.ConfirmCommand.Execute(null); // 처음 보는 인증서 — 신뢰
-    WaitFor(() => !edit.IsFetchingRealms && edit.Realms.Count > 0, 6000);
+    // 화면이 열리며 자동으로 가져오는 중일 수 있다 — 끝날 때까지 인증서 질문은 신뢰로 답하고, 서버 영역(설명 있음)이 올 때까지
+    bool ServerRealms() => edit.Realms.Any(r => r.Comment.Length > 0);
+    var realmDeadline = DateTime.UtcNow.AddSeconds(10);
+    while (DateTime.UtcNow < realmDeadline && !(ServerRealms() && !edit.IsFetchingRealms))
+    {
+        if (AppServices.Dialogs.Current is { } trust) trust.ConfirmCommand.Execute(null);
+        else if (!edit.IsFetchingRealms && !ServerRealms()) edit.FetchRealmsCommand.Execute(null);
+        Pump(150);
+    }
     var other = edit.Realms.FirstOrDefault(r => r.Realm != "pam");
     if (other is not null) edit.SelectedRealm = other;
     Pump(300);
@@ -226,7 +231,7 @@ foreach (var (prefix, vmid) in new[] { ("guest", 100), ("lxc", 200) })
     foreach (var entry in detail.ManagementEntries)
     {
         var feature = (GuestFeature)entry.Parameter!;
-        await Wait(AppServices.Navigator.PushViewAsync(feature.Id, feature.Create(cluster.Session, guest)));
+        await Wait(AppServices.Navigator.PushViewAsync($"{guest.VmId} · {L.T(feature.LabelKey)}", feature.Create(cluster.Session, guest)));
         Pump(1200);
         Shot($"{prefix}{id}-{feature.Id}");
         WalkSubTabs($"{prefix}{id}-{feature.Id}");
@@ -1309,6 +1314,75 @@ void Shot(string name)
     var file = Path.Combine(outDir, $"{++shot:000}-{name}.png");
     window.CaptureRenderedFrame()!.Save(file);
     Console.WriteLine("shot " + file);
+    if (Environment.GetEnvironmentVariable("AUDIT") == "1") AuditButtons(name);
+}
+
+// 버튼 규칙 검사 — 글자가 두 줄로 꺾이거나, 잘리거나, 화면 밖으로 나간 단추를 적는다(사용자 요청: 규칙대로 정리)
+void AuditButtons(string screen)
+{
+    var winWidth = window.Bounds.Width;
+    // 휴대폰에서 고정 폭으로 좁은 입력 칸(규칙: 모바일 입력은 오른쪽 끝까지)
+    if (!desktop)
+        foreach (var input in window.GetVisualDescendants().OfType<Control>().Where(c => c is TextBox or ComboBox or NumericUpDown or AutoCompleteBox))
+        {
+            if (!input.IsEffectivelyVisible || double.IsNaN(input.Width) || input.Width >= winWidth * 0.6) continue;
+            if (input.Opacity < 0.1 || input.Width <= 4) continue; // 숨은 입력 칸(키보드용)
+            var tip = (input as TextBox)?.PlaceholderText ?? input.Name ?? input.GetType().Name;
+            Console.WriteLine($"AUDIT {screen} | 좁은 입력 | {input.GetType().Name} '{tip}' | {input.Width:F0}px");
+        }
+
+    // 단추 줄이 두 줄 이상으로 꺾임(WrapPanel 안 단추들의 줄 수)
+    foreach (var wrap in window.GetVisualDescendants().OfType<WrapPanel>())
+    {
+        if (!wrap.IsEffectivelyVisible) continue;
+        var buttons = wrap.Children.OfType<Button>().Where(b => b.IsVisible).ToList();
+        if (buttons.Count < 2) continue;
+        var rows = buttons.Select(b => Math.Round(b.Bounds.Y / 4)).Distinct().Count();
+        if (rows > 1)
+        {
+            var names = string.Join(",", buttons.Take(4).Select(b => ToolTip.GetTip(b) as string ?? b.Content as string ?? "?"));
+            Console.WriteLine($"AUDIT {screen} | 단추 줄 {rows}줄 | {wrap.Parent?.GetType().Name}/{names}… ({buttons.Count}개)");
+        }
+    }
+    foreach (var button in window.GetVisualDescendants().OfType<Avalonia.Controls.Button>())
+    {
+        if (!button.IsEffectivelyVisible || button.Bounds.Width <= 0) continue;
+        var origin = button.TranslatePoint(new Avalonia.Point(0, 0), window);
+        if (origin is null) continue;
+        var o = origin.Value;
+        if (o.Y > window.Bounds.Height || o.Y + button.Bounds.Height < 0) continue; // 스크롤 밖
+        // 가로 스크롤 줄 안의 단추는 넘쳐도 된다(한 줄 키 막대)
+        var inHScroll = button.GetVisualAncestors().OfType<ScrollViewer>().Any(sv =>
+            sv.HorizontalScrollBarVisibility != Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled);
+        var label = ToolTip.GetTip(button) as string ?? button.Content as string ??
+                    string.Join(" ", button.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).Where(t => !string.IsNullOrEmpty(t)));
+        foreach (var tb in button.GetVisualDescendants().OfType<TextBlock>())
+        {
+            if (string.IsNullOrEmpty(tb.Text) || !tb.IsEffectivelyVisible) continue;
+            var line = tb.FontSize * 1.45;
+            if (tb.Bounds.Height > line * 1.4) Console.WriteLine($"AUDIT {screen} | 두 줄 | '{label}' | {tb.Bounds.Height:F0}px");
+            var full = new Avalonia.Media.TextFormatting.TextLayout(tb.Text, new Avalonia.Media.Typeface(tb.FontFamily, tb.FontStyle, tb.FontWeight),
+                tb.FontSize, null).Width;
+            if (tb.TextWrapping == Avalonia.Media.TextWrapping.NoWrap && full > tb.Bounds.Width + 1.5)
+                Console.WriteLine($"AUDIT {screen} | 잘림 | '{label}' | {full:F0}>{tb.Bounds.Width:F0}");
+        }
+        // 글자만 넣은 단추는 TextBlock 없이 ContentPresenter 가 직접 글자를 그린다
+        foreach (var cp in button.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>())
+        {
+            if (cp.Content is not string text || text.Length == 0 || !cp.IsEffectivelyVisible) continue;
+            var face = new Avalonia.Media.Typeface(cp.FontFamily, cp.FontStyle, cp.FontWeight);
+            var full = new Avalonia.Media.TextFormatting.TextLayout(text, face, cp.FontSize, null).Width;
+            var inner = cp.Bounds.Width - cp.Padding.Left - cp.Padding.Right;
+            var line = cp.FontSize * 1.45;
+            var innerH = cp.Bounds.Height - cp.Padding.Top - cp.Padding.Bottom;
+            if (cp.TextWrapping != Avalonia.Media.TextWrapping.NoWrap && innerH > line * 1.4 && full > inner + 1)
+                Console.WriteLine($"AUDIT {screen} | 두 줄 | '{label}' | {full:F0}>{inner:F0}");
+            else if (full > inner + 1.5)
+                Console.WriteLine($"AUDIT {screen} | 잘림 | '{label}' | {full:F0}>{inner:F0}");
+        }
+        if (!inHScroll && o.X + button.Bounds.Width > winWidth + 1)
+            Console.WriteLine($"AUDIT {screen} | 화면 밖 | '{label}' | x {o.X:F0}+{button.Bounds.Width:F0} > {winWidth:F0}");
+    }
 }
 
 void Pump(int ms)

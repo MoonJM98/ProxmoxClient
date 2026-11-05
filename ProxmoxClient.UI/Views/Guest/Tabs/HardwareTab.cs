@@ -30,10 +30,10 @@ public sealed class HardwareTab : UserControl
     private readonly TextBox _balloon = HardwareInput.Numeric(false, 140);
     private readonly AutoCompleteBox _bridge = new()
     {
-        Width = 220, HorizontalAlignment = HorizontalAlignment.Left, FilterMode = AutoCompleteFilterMode.None
+        Width = HardwareInput.PcWidth(220), HorizontalAlignment = HardwareInput.PcAlign, FilterMode = AutoCompleteFilterMode.None
     };
-    private readonly ComboBox _nicModel = new() { Width = 260, HorizontalAlignment = HorizontalAlignment.Left };
-    private readonly TextBox _mac = new() { Width = 220, HorizontalAlignment = HorizontalAlignment.Left };
+    private readonly ComboBox _nicModel = new() { Width = HardwareInput.PcWidth(260), HorizontalAlignment = HardwareInput.PcAlign };
+    private readonly TextBox _mac = new() { Width = HardwareInput.PcWidth(220), HorizontalAlignment = HardwareInput.PcAlign };
     private readonly TextBox _vlan = HardwareInput.Numeric(false, 140);
     private readonly TextBox _ip = new();
     private readonly CheckBox _nicFirewall = new() { Margin = new Thickness(0, 6, 0, 0) };

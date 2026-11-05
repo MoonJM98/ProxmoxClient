@@ -20,6 +20,7 @@ internal static class HardwareInput
     /// <param name="width">칸 폭(0 이면 남은 폭을 채운다).</param>
     public static TextBox Numeric(bool decimals, double width = 0)
     {
+        if (!PlatformInfo.IsDesktop) width = 0; // 휴대폰: 입력 칸은 오른쪽 끝까지(규칙)
         var box = new TextBox { MinWidth = 80, Width = width > 0 ? width : double.NaN, HorizontalAlignment = width > 0 ? HorizontalAlignment.Left : HorizontalAlignment.Stretch };
         var guard = false;
         box.TextChanged += (_, _) =>
@@ -91,6 +92,11 @@ internal static class HardwareInput
     }
 
     /// <summary>테마 자원(아이콘 기하·브러시) 찾기 — 없으면 null.</summary>
+    /// <summary>PC 폭 — 휴대폰이면 NaN(남은 폭을 채운다).</summary>
+    public static double PcWidth(double width) => PlatformInfo.IsDesktop ? width : double.NaN;
+
+    public static HorizontalAlignment PcAlign => PlatformInfo.IsDesktop ? HorizontalAlignment.Left : HorizontalAlignment.Stretch;
+
     public static object? Resource(string key)
     {
         var app = Application.Current;

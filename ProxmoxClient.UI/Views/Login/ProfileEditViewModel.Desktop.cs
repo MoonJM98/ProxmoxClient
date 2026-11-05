@@ -84,6 +84,27 @@ public sealed partial class ProfileEditViewModel
         }
     }
 
+    /// <summary>휴대폰 목록용 — PC 의 다섯 단추와 같은 순서·이름.</summary>
+    public IReadOnlyList<string> ProxyModeNames { get; } =
+        [L.T("ProfileDialog_11"), L.T("ProfileDialog_12"), "HTTP", "HTTPS", "SOCKS5"];
+
+    private static readonly ProxyMode[] ProxyModeOrder =
+        [ProxyMode.None, ProxyMode.System, ProxyMode.Http, ProxyMode.Https, ProxyMode.Socks5];
+
+    public int ProxyModeIndex
+    {
+        get => Array.IndexOf(ProxyModeOrder, ProxyMode);
+        set
+        {
+            if (value >= 0 && value < ProxyModeOrder.Length) ProxyMode = ProxyModeOrder[value];
+        }
+    }
+
+    partial void OnProxyModeChanged(ProxyMode value)
+    {
+        OnPropertyChanged(nameof(ProxyModeIndex));
+    }
+
     /// <summary>프록시 주소·포트 칸은 직접 연결·시스템 설정일 때 숨긴다(WPF).</summary>
     public bool IsProxyDetailVisible => ProxyMode is not (ProxyMode.None or ProxyMode.System);
 

@@ -123,8 +123,9 @@ public sealed class TerminalPage : ContentPage, IOwnsTouchDrag
         // 특수 키 막대(터치)
         _ctrl = Toggle("Ctrl");
         _alt = Toggle("Alt");
-        var main = new WrapPanel
+        var main = new StackPanel
         {
+            Orientation = Orientation.Horizontal,
             Children =
             {
                 WithContent(KeyButton(L.T("Console_Keyboard"), () => _terminal.FocusInput(), L.T("Console_Keyboard")), KeyboardIcon()),
@@ -135,7 +136,7 @@ public sealed class TerminalPage : ContentPage, IOwnsTouchDrag
                 KeyButton("⋯", () => _more!.IsVisible = !_more.IsVisible, L.T("Console_MoreKeys"))
             }
         };
-        var extra = new WrapPanel();
+        var extra = new StackPanel { Orientation = Orientation.Horizontal };
         foreach (var (label, key) in new[]
                  {
                      ("Home", Avalonia.Input.Key.Home), ("End", Avalonia.Input.Key.End),
@@ -148,12 +149,13 @@ public sealed class TerminalPage : ContentPage, IOwnsTouchDrag
         for (var i = 0; i < 12; i++) extra.Children.Add(Key($"F{i + 1}", Avalonia.Input.Key.F1 + i));
         foreach (var (label, letter) in new[] { ("^C", 'c'), ("^D", 'd'), ("^Z", 'z'), ("^L", 'l'), ("^R", 'r') })
             extra.Children.Add(KeyButton(label, () => _terminal.Send(((char)(letter - 'a' + 1)).ToString(), false)));
-        _more = new Border { IsVisible = false, Child = extra };
+        _more = new Border { IsVisible = false, Child = Row(extra) };
 
         var keysBar = new Border
         {
-            Background = new SolidColorBrush(Color.Parse("#F0202020")), Padding = new Thickness(4, 4, 4, 6),
-            Child = new StackPanel { Children = { _more, main } }, IsVisible = PlatformInfo.IsTouch
+            Background = new SolidColorBrush(Color.Parse("#E0181818")), Padding = new Thickness(4, 4, 4, 6),
+            // 한 줄 — 넘치면 옆으로 밀어 본다(콘솔과 같은 규칙, 두 줄로 꺾이지 않게)
+            Child = new StackPanel { Spacing = 2, Children = { _more, Row(main) } }, IsVisible = PlatformInfo.IsTouch
         };
         DockPanel.SetDock(keysBar, Dock.Bottom);
 
@@ -212,6 +214,16 @@ public sealed class TerminalPage : ContentPage, IOwnsTouchDrag
         var result = (_ctrl.IsChecked == true, _alt.IsChecked == true);
         _ctrl.IsChecked = _alt.IsChecked = false;
         return result;
+    }
+
+    /// <summary>한 줄 가로 스크롤(스크롤 막대는 숨기고 손가락으로 민다).</summary>
+    private static ScrollViewer Row(Control content)
+    {
+        return new ScrollViewer
+        {
+            Content = content, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
+        };
     }
 
     private static Button ToolButton(string label, string? iconKey, Func<Task> run, string? tip = null)
