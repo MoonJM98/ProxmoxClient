@@ -1,10 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Templates;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
+using Avalonia.Data;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
+using Avalonia.VisualTree;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Api.Domains;
 using ProxmoxClient.Core.Models;
@@ -12,14 +15,15 @@ using ProxmoxClient.UI.Converters;
 using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Platform;
 using ProxmoxClient.UI.Services;
+using ProxmoxClient.UI.Views.Controls;
 using ProxmoxClient.UI.Views.Shared;
 
 namespace ProxmoxClient.UI.Views.Guest.Hardware;
 
 /// <summary>
-///     VM·CT 하드웨어 화면 — WPF HardwareView 와 같은 도구 모음·목록·편집 창(웹 UI qemu/HardwareView.js).
-///     WPF 의 표(DataGrid)는 줄마다 "항목 / 값" 카드로 바꿨다. 데스크톱은 두 칸, 모바일은 세로로 쌓는다.
-///     …/pending 으로 읽어 재시작 후 적용될 값을 주황색 줄로 따로 보여 주고, 되돌리기(revert)를 할 수 있다.
+///     VM·CT 하드웨어 화면 — WPF HardwareView 와 같은 도구 모음·표(DataGrid)·편집 창(웹 UI qemu/HardwareView.js).
+///     데스크톱은 WPF 와 같은 열(항목 220 · 값 · 대기 중 값)의 표를 쓴다. 모바일은 줄마다 "항목 / 값" 카드로 바꾼다.
+///     …/pending 으로 읽어 재시작 후 적용될 값을 주황색 열·줄로 따로 보여 주고, 되돌리기(revert)를 할 수 있다.
 ///     (메뉴·편집·디스크 작업은 HardwareView.Menus.cs)
 /// </summary>
 public partial class HardwareView : UserControl
@@ -27,18 +31,28 @@ public partial class HardwareView : UserControl
     private readonly ProxmoxApiClient _api;
     private readonly PveResource _guest;
     private readonly bool _isCt;
-    private readonly ListBox _list = new() { Background = Brushes.Transparent };
+
+    /// <summary>별 폭 열의 최소 폭 — 표 창(TableTab)과 같이, 값 열이 한 글자 폭으로 눌리지 않게 한다.</summary>
+    private const double StarMinWidth = 140;
+
+    /// <summary>WPF 의 항목 열 폭(고정 220).</summary>
+    private const double NameColumnWidth = 220;
+
+    private readonly DataGrid? _grid;
+    private readonly DataGridTextColumn? _valueColumn;
+    private readonly DataGridTextColumn? _pendingColumn;
+    private readonly ListBox? _cards;
     private readonly TextBlock _status = new()
     {
-        Classes = { "subtle" }, TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.None
+        Classes = { "DialogStatus" }, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0)
     };
     private readonly Button _add;
     private readonly Button _remove;
     private readonly Button _edit;
     private readonly Button _disk;
     private readonly Button _revert;
-    private readonly MenuFlyout _addMenu = new();
-    private readonly MenuFlyout _diskMenu = new();
+    private readonly MenuFlyout _addMenu = new() { Placement = PlacementMode.Bottom };
+    private readonly MenuFlyout _diskMenu = new() { Placement = PlacementMode.Bottom };
     private readonly MenuItem _menuMove;
     private readonly MenuItem _menuReassign;
     private readonly MenuItem _menuResize;
@@ -53,18 +67,18 @@ public partial class HardwareView : UserControl
         _guest = guest;
         _isCt = guest.Kind == ResourceKind.Lxc;
 
-        // 웹 UI 하드웨어 도구 모음: 추가(메뉴) · 제거(분리) · 편집 · 디스크 작업(메뉴) · 되돌리기 · 새로 고침
-        _add = ActionBar.IconButton(Loc.T("Hw_AddMenu"), "IconPlus", this);
+        // 웹 UI 하드웨어 도구 모음(WPF 와 같은 순서·아이콘): 추가(메뉴) · 제거(분리) · 편집 · 디스크 작업(메뉴) · 되돌리기 · 새로 고침
+        _add = Tool(Loc.T("Hw_AddMenu"), "IconPlus", dropdown: true);
         _add.Flyout = _addMenu;
 
-        _remove = ActionBar.IconButton(Loc.T("Hw_Remove"), "IconTrash", this);
+        _remove = Tool(Loc.T("Hw_Remove"), "IconTrash");
         _remove.Click += async (_, _) => await OnRemoveAsync();
 
-        _edit = ActionBar.IconButton(Loc.T("ServerManagerWindow_03"), "IconPencil", this);
+        _edit = Tool(Loc.T("ServerManagerWindow_03"), "IconPencil");
         _edit.Click += async (_, _) => await OnEditAsync();
 
         // CT 는 웹 UI 처럼 "볼륨 작업" — EFI 인증서 메뉴는 없다
-        _disk = ActionBar.IconButton(Loc.T(_isCt ? "Ct_VolumeMenu" : "Hw_DiskMenu"), "IconDatabase", this);
+        _disk = Tool(Loc.T(_isCt ? "Ct_VolumeMenu" : "Hw_DiskMenu"), "IconDatabase", dropdown: true);
         _disk.Flyout = _diskMenu;
 
         _menuMove = DiskMenuItem("Hw_DiskMove", () => OnMoveDiskAsync());
@@ -72,29 +86,79 @@ public partial class HardwareView : UserControl
         _menuResize = DiskMenuItem("Hw_DiskResize", () => OnResizeDiskAsync());
         _menuEnroll = DiskMenuItem("Hw_DiskEnroll", () => OnEnrollCertsAsync());
 
-        _revert = ActionBar.IconButton(Loc.T("OptionsTab_Revert"), "IconUndo", this);
+        _revert = Tool(Loc.T("OptionsTab_Revert"), "IconUndo");
         _revert.Click += async (_, _) => await OnRevertAsync();
 
-        var refresh = ActionBar.IconButton(Loc.T("MainWindow_03"), "IconRefresh", this);
+        var refresh = Tool(Loc.T("MainWindow_03"), "IconRefresh");
         refresh.Click += async (_, _) =>
         {
             _status.Text = string.Empty;
             await ReloadAsync();
         };
 
-        var toolbar = new WrapPanel { Children = { _add, _remove, _edit, _disk, _revert, refresh } };
-
-        _list.ItemTemplate = RowTemplate();
-        _list.SelectionChanged += (_, _) => UpdateButtons();
-        _list.DoubleTapped += async (_, _) => await OnEditAsync();
-
-        DockPanel.SetDock(toolbar, Dock.Top);
-        DockPanel.SetDock(_status, Dock.Bottom);
-        Content = new Border
+        var toolbar = new WrapPanel
         {
-            Padding = new Thickness(12),
-            Child = new DockPanel { Children = { toolbar, _status, _list } }
+            Margin = new Thickness(0, 0, 0, 6),
+            Children = { _add, _remove, _edit, _disk, _revert, refresh }
         };
+
+        Control body;
+        if (PlatformInfo.IsDesktop)
+        {
+            // WPF: 대기 중 값 열 — 글자색은 BrushWarn(주황). 값은 PendingText 를 그대로 보인다.
+            _pendingColumn = new DataGridTextColumn
+            {
+                Header = Loc.T("OptionsTab_Pending"), Binding = new Binding("PendingText") { Mode = BindingMode.OneWay },
+                Width = new DataGridLength(1, DataGridLengthUnitType.Star), MinWidth = StarMinWidth,
+                Foreground = HardwareInput.Brush("BrushWarn")
+            };
+            _grid = new DataGrid
+            {
+                AutoGenerateColumns = false, IsReadOnly = true, SelectionMode = DataGridSelectionMode.Single,
+                GridLinesVisibility = DataGridGridLinesVisibility.Horizontal,
+                HeadersVisibility = DataGridHeadersVisibility.Column
+            };
+            _grid.Columns.Add(new DataGridTextColumn
+            {
+                Header = Loc.T("MainWindow_40"), Binding = new Binding("Header") { Mode = BindingMode.OneWay },
+                Width = new DataGridLength(220)
+            });
+            _valueColumn = new DataGridTextColumn
+            {
+                Header = Loc.T("DeviceTable_Value"), Binding = new Binding("Display") { Mode = BindingMode.OneWay },
+                Width = new DataGridLength(1, DataGridLengthUnitType.Star), MinWidth = StarMinWidth
+            };
+            _grid.Columns.Add(_valueColumn);
+            _grid.SizeChanged += (_, e) => FitValueColumns(e.NewSize.Width);
+            _grid.SelectionChanged += (_, _) => UpdateButtons();
+            // WPF: 줄을 더블클릭하면 편집 창(머리글 더블클릭은 무시)
+            _grid.DoubleTapped += async (_, e) =>
+            {
+                if ((e.Source as Visual)?.FindAncestorOfType<DataGridRow>(true)?.DataContext
+                    is HardwareRow { HasEditor: true })
+                    await OnEditAsync();
+            };
+            body = _grid;
+        }
+        else
+        {
+            _cards = new ListBox { Background = Brushes.Transparent, ItemTemplate = CardTemplate() };
+            _cards.SelectionChanged += (_, _) => UpdateButtons();
+            _cards.DoubleTapped += async (_, _) => await OnEditAsync();
+            body = _cards;
+        }
+
+        var root = new Grid
+        {
+            RowDefinitions = RowDefinitions.Parse("Auto,*,Auto"),
+            Margin = PlatformInfo.IsDesktop ? new Thickness(20, 16) : new Thickness(12)
+        };
+        root.Children.Add(toolbar);
+        root.Children.Add(body);
+        root.Children.Add(_status);
+        Grid.SetRow(body, 1);
+        Grid.SetRow(_status, 2);
+        Content = root;
 
         UpdateButtons();
         AttachedToVisualTree += async (_, _) =>
@@ -106,7 +170,46 @@ public partial class HardwareView : UserControl
         };
     }
 
-    private HardwareRow? Selected => _list.SelectedItem as HardwareRow;
+    private HardwareRow? Selected => (_grid?.SelectedItem ?? _cards?.SelectedItem) as HardwareRow;
+
+    /// <summary>도구 모음 단추 — WPF 와 같은 여백·최소 폭, 드롭다운이면 ▾ 표시.</summary>
+    private static Button Tool(string label, string iconKey, bool dropdown = false)
+    {
+        var button = HardwareInput.Button(label, iconKey);
+        button.Margin = new Thickness(0, 0, 8, 4);
+        IconAssist.SetDropdown(button, dropdown);
+        return button;
+    }
+
+    private void SetPendingColumn(bool show)
+    {
+        if (_grid is null || _pendingColumn is null || _valueColumn is null) return;
+
+        if (show && !_grid.Columns.Contains(_pendingColumn))
+        {
+            _grid.Columns.Add(_pendingColumn);
+            FitValueColumns(_grid.Bounds.Width);
+        }
+        else if (!show && _grid.Columns.Contains(_pendingColumn))
+        {
+            _grid.Columns.Remove(_pendingColumn);
+            _valueColumn.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
+        }
+    }
+
+    /// <summary>
+    ///     대기 중 값 열이 보일 때 WPF 의 "*" "*" 처럼 값 열 둘이 남은 폭을 똑같이 나눈다(이름 열 220 제외).
+    ///     Avalonia 의 별 폭 배분은 내용에 따라 한쪽으로 쏠리므로 픽셀 폭으로 맞춘다.
+    /// </summary>
+    private void FitValueColumns(double gridWidth)
+    {
+        if (_grid is null || _valueColumn is null || _pendingColumn is null || !_grid.Columns.Contains(_pendingColumn))
+            return;
+
+        var half = Math.Max(StarMinWidth, Math.Floor((gridWidth - NameColumnWidth - 4) / 2));
+        _valueColumn.Width = new DataGridLength(half);
+        _pendingColumn.Width = new DataGridLength(half);
+    }
 
     private MenuItem DiskMenuItem(string labelKey, Func<Task> run)
     {
@@ -116,18 +219,18 @@ public partial class HardwareView : UserControl
         return item;
     }
 
-    /// <summary>줄 한 개 — 데스크톱은 항목 칸과 값 칸을 나란히, 모바일은 항목 아래 값.</summary>
-    private static IDataTemplate RowTemplate()
+    /// <summary>모바일 줄 한 개 — 항목 제목, 아래 값(대기 중 값은 주황색 줄).</summary>
+    private static IDataTemplate CardTemplate()
     {
-        return new FuncDataTemplate<HardwareRow>((row, _) => BuildRow(row), supportsRecycling: false);
+        return new FuncDataTemplate<HardwareRow>((row, _) => BuildCard(row), supportsRecycling: false);
     }
 
-    private static Control BuildRow(HardwareRow? row)
+    private static Control BuildCard(HardwareRow? row)
     {
-        var value = new StackPanel { Spacing = 2 };
-        var panel = new Grid { Margin = new Thickness(0, 6), ColumnSpacing = 12 };
+        var panel = new Grid { Margin = new Thickness(0, 6), RowSpacing = 2 };
         if (row is null) return panel;
 
+        var value = new StackPanel { Spacing = 2 };
         value.Children.Add(new TextBlock { Text = row.Display, TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.None });
         if (row.PendingText.Length > 0)
             value.Children.Add(new TextBlock
@@ -139,19 +242,8 @@ public partial class HardwareView : UserControl
         var title = new TextBlock
         {
             Text = row.Header, Classes = { "title" }, TextWrapping = TextWrapping.Wrap,
-            TextTrimming = TextTrimming.None, FontSize = 15, VerticalAlignment = VerticalAlignment.Top
+            TextTrimming = TextTrimming.None, FontSize = 15
         };
-
-        if (PlatformInfo.IsDesktop)
-        {
-            panel.ColumnDefinitions = new ColumnDefinitions("220,*");
-            Grid.SetColumn(title, 0);
-            Grid.SetColumn(value, 1);
-            panel.Children.Add(title);
-            panel.Children.Add(value);
-            return panel;
-        }
-
         panel.RowDefinitions = new RowDefinitions("Auto,Auto");
         Grid.SetRow(title, 0);
         Grid.SetRow(value, 1);
@@ -170,8 +262,19 @@ public partial class HardwareView : UserControl
             _ctx = new HardwareContext(_api, _guest, config, running);
             var selectedKey = Selected?.Key;
             var rows = _isCt ? HardwareRows.BuildCt(config) : HardwareRows.Build(config);
-            _list.ItemsSource = rows;
-            _list.SelectedItem = rows.FirstOrDefault(r => r.Key == selectedKey);
+            if (_grid is not null)
+            {
+                _grid.ItemsSource = rows;
+                _grid.SelectedItem = rows.FirstOrDefault(r => r.Key == selectedKey);
+                // WPF: 대기 중 값이 하나도 없으면 그 열은 숨긴다(열을 넣고 빼서 두 값 열이 같은 폭을 나눈다)
+                SetPendingColumn(rows.Any(r => r.HasPending));
+            }
+            else if (_cards is not null)
+            {
+                _cards.ItemsSource = rows;
+                _cards.SelectedItem = rows.FirstOrDefault(r => r.Key == selectedKey);
+            }
+
             BuildAddMenu(rows);
             UpdateButtons();
         }
@@ -201,7 +304,7 @@ public partial class HardwareView : UserControl
         var row = Selected;
         _edit.IsEnabled = !_busy && row is { HasEditor: true };
         _remove.IsEnabled = !_busy && row is { CanRemove: true };
-        SetLabel(_remove, Loc.T(row is { IsUsedDisk: true } ? "Hw_Detach" : "Hw_Remove"));
+        _remove.Content = Loc.T(row is { IsUsedDisk: true } ? "Hw_Detach" : "Hw_Remove");
         _revert.IsEnabled = !_busy && row is { HasPending: true };
 
         var diskLike = row is { IsDisk: true } || row?.Item == HardwareItem.Efi
@@ -217,14 +320,6 @@ public partial class HardwareView : UserControl
         _menuEnroll.IsVisible = row?.Item == HardwareItem.Efi;
         _menuEnroll.IsEnabled = _disk.IsEnabled && _ctx is not null && DiskActions.CanEnrollCertificates(_ctx);
         _add.IsEnabled = !_busy;
-    }
-
-    /// <summary>아이콘 단추의 글자와 툴팁을 바꾼다(ActionBar.IconButton 이 만든 구조 기준).</summary>
-    private static void SetLabel(Button button, string text)
-    {
-        if (button.Content is StackPanel panel && panel.Children.OfType<TextBlock>().FirstOrDefault() is { } label)
-            label.Text = text;
-        ToolTip.SetTip(button, text);
     }
 
     // ------------------------------------------------------------ 제거 · 되돌리기

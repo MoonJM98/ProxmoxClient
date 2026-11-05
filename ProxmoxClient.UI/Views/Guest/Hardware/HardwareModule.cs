@@ -22,5 +22,10 @@ internal static class HardwareModule
             ctx => new HardwareTab(ctx.Api, ctx.Vm)));
         PreviewRegistry.Add("guest-hardware", new PreviewTab("ct-quick", "GuestHardware_Quick", "IconBox",
             ctx => new HardwareTab(ctx.Api, ctx.Ct)));
+        // 하위 탭 줄(WPF GuestNavigator 의 "hardware" 칸과 같은 모양)
+        PreviewRegistry.Add("guest-hardware", new PreviewTab("vm-tabs", "GuestTab_Hardware", "IconBox",
+            ctx => HardwareSubTabs.For(ctx.Api, ctx.Vm)));
+        PreviewRegistry.Add("guest-hardware", new PreviewTab("ct-tabs", "GuestTab_Hardware", "IconBox",
+            ctx => HardwareSubTabs.For(ctx.Api, ctx.Ct)));
     }
 }
