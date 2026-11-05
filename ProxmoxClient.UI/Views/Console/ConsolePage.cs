@@ -145,6 +145,8 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
             else
                 _surface.MarkDirty(x, y, w, h);
         };
+        // 게스트 커서 모양 — 이후 커서는 이 모양으로 손가락·마우스 자리에 바로 그린다(서버 응답을 기다리지 않음)
+        vm.Vnc.CursorShape += shape => Avalonia.Threading.Dispatcher.UIThread.Post(() => _surface.SetCursorShape(shape));
         // 데스크톱은 마우스로 바로 다루므로 터치 모드(누른 곳 클릭)가 기본
         if (PlatformInfo.IsDesktop) _surface.Gestures.Mode = TouchInputMode.Touch;
         _mode.Content = ModeLabel();

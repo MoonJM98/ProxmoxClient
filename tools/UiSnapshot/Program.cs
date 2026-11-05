@@ -891,6 +891,45 @@ async Task ConsoleUsabilityCheck()
     k = Keys();
     Check("포커스를 잃으면 눌린 키 해제", "Alt ↓38 ↑38", Codes(k), Codes(k) == "↓0x38 ↑0x38");
 
+    // 커서는 서버 응답 전에 바로 — 서버가 보낸 커서 모양을 손가락 자리에 그린다. 가짜 서버는 포인터를 받아도 화면을
+    // 다시 보내지 않으므로 손가락 둘레 픽셀이 바뀌었다면 앱이 직접 그린 것이다(실제 터치 입력 경로로)
+    WaitFor(() => surface.HasCursorShape, 3000);
+    g.Mode = TouchInputMode.Touch;
+    var fingerView = new Avalonia.Point(surface.Bounds.Width * 0.6, surface.Bounds.Height * 0.4);
+    var fingerWin = surface.TranslatePoint(fingerView, window)!.Value;
+    var cursorAt = fingerWin + new Avalonia.Vector(30, 10);
+    int Changed(Avalonia.Media.Imaging.Bitmap a, Avalonia.Media.Imaging.Bitmap b, Avalonia.Point at)
+    {
+        var box = new PixelRect((int)at.X - 2, (int)at.Y - 2, 24, 40);
+        var sa = new byte[box.Width * box.Height * 4];
+        var sb = new byte[sa.Length];
+        unsafe
+        {
+            fixed (byte* pa = sa) a.CopyPixels(box, (nint)pa, sa.Length, box.Width * 4);
+            fixed (byte* pb = sb) b.CopyPixels(box, (nint)pb, sb.Length, box.Width * 4);
+        }
+
+        var n = 0;
+        for (var k = 0; k < sa.Length; k += 4)
+            if (Math.Abs(sa[k] - sb[k]) + Math.Abs(sa[k + 1] - sb[k + 1]) + Math.Abs(sa[k + 2] - sb[k + 2]) > 60) n++;
+        return n;
+    }
+
+    Pump(200);
+    var before = window.CaptureRenderedFrame()!;
+    var touch = window.TouchBegin(fingerWin, Avalonia.Input.RawInputModifiers.None);
+    Pump(30);
+    window.TouchMove(touch, cursorAt, Avalonia.Input.RawInputModifiers.None); // 끌기 시작 — 서버 화면 갱신 없음
+    Pump(60);
+    var during = window.CaptureRenderedFrame()!;
+    var changedPixels = Changed(before, during, cursorAt);
+    Shot("console-local-cursor");
+    window.TouchEnd(touch, cursorAt, Avalonia.Input.RawInputModifiers.None);
+    Pump(300);
+    Events();
+    Check("커서를 서버보다 먼저(모양 커서)", "모양 받음, 손가락 자리 픽셀에 커서가 그려짐(30px 이상 바뀜)",
+        $"모양 {(surface.HasCursorShape ? "받음" : "없음")}, 바뀐 픽셀 {changedPixels}", surface.HasCursorShape && changedPixels >= 30);
+
     // 끌기 매끄러움 — 손가락은 고르게(이벤트마다 12px, 약 1.5px/ms) 움직이지만 Android 처럼 터치 점이 두 개씩 묶여
     // 와서 시각 간격이 0ms·16ms 로 번갈아 올 때, 원격 커서도 이벤트마다 고르게 움직여야 한다(가속이 튀면 끊겨 보인다)
     g.Mode = TouchInputMode.Mouse;

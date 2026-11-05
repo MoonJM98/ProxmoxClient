@@ -33,6 +33,24 @@ def make_desktop():
 
 DESKTOP = None
 
+# 화살표 커서 12x19 — '#' 검정 테두리, '.' 흰 채움
+ARROW = [
+    '#', '##', '#.#', '#..#', '#...#', '#....#', '#.....#', '#......#', '#.......#', '#........#',
+    '#.........#', '#..........#', '#......#####', '#...#..#', '#..##..#', '#.#  #..#', '##   #..#', '#     #..#', '      ###']
+CW, CH = 12, 19
+
+
+def cursor_shape():
+    pixels = bytearray(CW * CH * 4)
+    mask = bytearray(((CW + 7) // 8) * CH)
+    for y, row in enumerate(ARROW):
+        for x, c in enumerate(row[:CW]):
+            if c in '#.':
+                v = 0 if c == '#' else 255
+                pixels[(y * CW + x) * 4:(y * CW + x) * 4 + 4] = bytes((v, v, v, 0))
+                mask[y * ((CW + 7) // 8) + x // 8] |= 0x80 >> (x % 8)
+    return bytes(pixels) + bytes(mask)
+
 
 class WebSocket:
     def __init__(self, sock):
@@ -129,6 +147,9 @@ def serve(handler):
             elif t == 2:  # SetEncodings
                 _, n = struct.unpack('>BH', stream.read(3))
                 encs = struct.unpack('>%di' % n, stream.read(4 * n))
+                if -239 in encs:  # 커서 모양(RichCursor) — QEMU 처럼 커서는 화면에 그리지 않고 모양만 보낸다
+                    ws.send(struct.pack('>BBH', 0, 0, 1) + struct.pack('>HHHHi', 0, 0, CW, CH, -239) + cursor_shape())
+                    log('cursor shape sent')
                 if -258 in encs:  # QEMU 확장 키 이벤트를 안다고 알린다(의사 영역 -258)
                     ws.send(struct.pack('>BBH', 0, 0, 1) + struct.pack('>HHHHi', 0, 0, 0, 0, -258))
                     log('qemu-ext-key on')

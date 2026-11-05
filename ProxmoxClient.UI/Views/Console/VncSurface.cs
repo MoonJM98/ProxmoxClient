@@ -113,10 +113,71 @@ public sealed class VncSurface : Control, IRemotePointer
                }))
             bitmap.Render(context, vp.Offset, vp.Scale, new Rect(Bounds.Size));
 
-        if (Gestures.Mode == TouchInputMode.Mouse) DrawCursor(context, vp.ToView(Gestures.Cursor));
+        // 커서는 서버 응답을 기다리지 않고 지금 손가락·커서 자리에 그린다(서버는 커서를 화면에 그리지 않는다 — 모양만 보냄)
+        if (_shape is { } shape && _touchSeen)
+            DrawShape(context, shape, vp.ToView(Gestures.Cursor), vp.Scale);
+        else if (Gestures.Mode == TouchInputMode.Mouse) DrawCursor(context, vp.ToView(Gestures.Cursor));
         if (Gestures.LongPressArmed)
             context.DrawEllipse(null, new Pen(new SolidColorBrush(Color.Parse("#B0FFFFFF")), 3),
                 vp.ToView(Gestures.Cursor), 26, 26);
+    }
+
+    /// <summary>게스트가 보낸 커서 모양(없으면 null — 대체 화살표). 크기 0 이면 게스트가 커서를 숨긴 것.</summary>
+    private (WriteableBitmap? Bitmap, PixelPoint Hot, PixelSize Size)? _shape;
+
+    /// <summary>터치로 조작한 적이 있다 — 모양 커서는 터치 입력 동안 그린다(마우스는 운영체제 커서로 바뀐다).</summary>
+    private bool _touchSeen;
+
+    /// <summary>지금 커서를 그릴 자리(화면 좌표) — 서버 응답 전에 바로 바뀐다(검사용).</summary>
+    public Point LocalCursorView => Viewport.ToView(Gestures.Cursor);
+
+    public bool HasCursorShape => _shape is not null;
+
+    /// <summary>
+    ///     게스트 커서 모양(RichCursor) — UI 스레드에서. 마우스는 이 모양으로 운영체제 커서를 만들어 지연 없이 움직이고,
+    ///     터치는 손가락·가상 커서 자리에 그린다. 서버는 커서를 화면 그림에 넣지 않으므로 화면 갱신을 기다릴 필요가 없다.
+    /// </summary>
+    public void SetCursorShape(Core.Vnc.RfbCursor cursor)
+    {
+        if (cursor.IsEmpty)
+        {
+            _shape = (null, default, default);
+            Cursor = new Cursor(StandardCursorType.None);
+            InvalidateVisual();
+            return;
+        }
+
+        var bitmap = new WriteableBitmap(new PixelSize(cursor.Width, cursor.Height), new Vector(96, 96),
+            PixelFormat.Bgra8888, AlphaFormat.Unpremul);
+        using (var fb = bitmap.Lock())
+        {
+            var rowBytes = cursor.Width * 4;
+            for (var y = 0; y < cursor.Height; y++)
+                System.Runtime.InteropServices.Marshal.Copy(cursor.Pixels, y * rowBytes, fb.Address + y * fb.RowBytes, rowBytes);
+        }
+
+        _shape = (bitmap, new PixelPoint(cursor.HotX, cursor.HotY), new PixelSize(cursor.Width, cursor.Height));
+        try
+        {
+            Cursor = new Cursor(bitmap, new PixelPoint(cursor.HotX, cursor.HotY));
+        }
+        catch (Exception)
+        {
+            // 운영체제 커서를 못 만드는 플랫폼(모바일) — 터치 쪽 그리기만 쓴다
+        }
+
+        InvalidateVisual();
+    }
+
+    private static void DrawShape(DrawingContext context, (WriteableBitmap? Bitmap, PixelPoint Hot, PixelSize Size) shape,
+        Point at, double scale)
+    {
+        if (shape.Bitmap is not { } bitmap) return; // 게스트가 커서를 숨김
+
+        // 원격 화면과 같은 배율로(원격 화면 위 실제 크기), 너무 작아지지 않게 최소 1배
+        var s = Math.Max(1, scale);
+        var rect = new Rect(at.X - shape.Hot.X * s, at.Y - shape.Hot.Y * s, shape.Size.Width * s, shape.Size.Height * s);
+        context.DrawImage(bitmap, rect);
     }
 
     private static void DrawCursor(DrawingContext context, Point tip)
@@ -147,6 +208,7 @@ public sealed class VncSurface : Control, IRemotePointer
         var p = e.GetPosition(this);
         if (e.Pointer.Type == PointerType.Touch)
         {
+            _touchSeen = true;
             e.Pointer.Capture(this);
             Gestures.Down(e.Pointer.Id, p, (long)e.Timestamp);
             _longPressTimer.Start();
