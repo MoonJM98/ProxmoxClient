@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPICE 연결 파일(.vv, 비밀번호 포함)은 앱 캐시의 spice 폴더에만 만들고, 이 경로만 FileProvider 로 다른 앱에 준다 -->
+<paths>
+    <cache-path name="spice" path="spice/" />
+</paths>

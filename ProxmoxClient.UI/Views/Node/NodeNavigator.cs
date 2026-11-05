@@ -84,7 +84,7 @@ public static class NodeNavigator
             () => new NodeSummaryTab(api, node,
                 [..NodePowerActions.Create(api, node, permissions), ..ReportAction(api, node, audit)]));
         tabs.Add("notes", "NodeTab_Notes", "IconPencil", audit, () => CreateSectionTab(api, node, Notes));
-        tabs.Add("shell", "NodeTab_Shell", "IconTerminal", permissions.CanSysConsole, () => new NodeShellTab());
+        tabs.Add("shell", "NodeTab_Shell", "IconTerminal", permissions.CanSysConsole, () => new NodeShellTab(api, node));
         tabs.Add("network", "NodeTab_Network", "IconSwitch", audit,
             () => NodeTables.Network(api, node, permissions.CanSysModify));
         tabs.Add("certificates", "NodeTab_Certificates", "IconShield", audit,

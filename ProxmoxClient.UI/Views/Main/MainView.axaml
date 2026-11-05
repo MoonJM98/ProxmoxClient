@@ -59,10 +59,9 @@
                             MinWidth="96" Margin="0,0,12,0" Command="{Binding OpenDatacenterCommand}"
                             IsEnabled="{Binding HasDatacenter}" />
                 </StackPanel>
-                <!-- 앱 설정 창은 아직 옮기지 않았다 — 자리만 두고 누를 수 없게 한다 -->
                 <Button DockPanel.Dock="Right" c:IconAssist.Icon="{StaticResource IconSettings}"
                         Content="{l:Tr MainWindow_04}" Margin="12,0,0,0" ToolTip.Tip="{l:Tr MainWindow_05}"
-                        IsEnabled="False" />
+                        Command="{Binding OpenAppSettingsCommand}" />
                 <CheckBox DockPanel.Dock="Right" Content="{l:Tr MainWindow_06}" IsChecked="{Binding AutoRefresh}"
                           VerticalAlignment="Center" />
                 <TextBlock DockPanel.Dock="Right" Text="{Binding ConnectionStatus}" VerticalAlignment="Center"
@@ -194,8 +193,8 @@
                                                         Margin="4,4,10,4" />
                                             </StackPanel>
 
-                                            <!-- 웹 UI 처럼 [콘솔 | ▾] — VM 은 ▾ 가 있다(지금은 VNC 콘솔), CT 는 버튼만 -->
-                                            <SplitButton Classes="AccentButton" Command="{Binding OpenConsoleCommand}"
+                                            <!-- 웹 UI 처럼 [콘솔 | ▾] — VM 은 ▾ 에 VNC·RDP·SPICE·직렬(이관 대기). 메뉴를 열 때 설정을 읽어 항목을 정한다 -->
+                                            <SplitButton x:Name="ConsoleSplit" Classes="AccentButton" Command="{Binding OpenConsoleCommand}"
                                                          Margin="0,0,6,0" IsVisible="{Binding ShowConsoleMenuButton}">
                                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                                     <Path Classes="icon" Width="15" Height="15"
@@ -208,6 +207,28 @@
                                                                   Command="{Binding OpenConsoleCommand}">
                                                             <MenuItem.Icon>
                                                                 <Path Classes="icon" Data="{StaticResource IconMonitor}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="{l:Tr Console_KindRdp}"
+                                                                  Command="{Binding OpenRdpConsoleCommand}"
+                                                                  IsVisible="{Binding ShowRdpConsoleItem}">
+                                                            <MenuItem.Icon>
+                                                                <Path Classes="icon" Data="{StaticResource IconMonitor}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="{l:Tr Console_KindSpice}"
+                                                                  Command="{Binding OpenSpiceConsoleCommand}"
+                                                                  IsVisible="{Binding ShowSpiceConsoleItem}"
+                                                                  IsEnabled="{Binding SpiceConsoleEnabled}">
+                                                            <MenuItem.Icon>
+                                                                <Path Classes="icon" Data="{StaticResource IconExternal}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="{Binding SerialConsoleLabel}"
+                                                                  Command="{Binding OpenSerialConsoleCommand}"
+                                                                  IsEnabled="{Binding SerialConsoleEnabled}">
+                                                            <MenuItem.Icon>
+                                                                <Path Classes="icon" Data="{StaticResource IconTerminal}" />
                                                             </MenuItem.Icon>
                                                         </MenuItem>
                                                     </MenuFlyout>

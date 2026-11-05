@@ -120,7 +120,7 @@ public sealed partial class MainViewModel
             return;
         }
 
-        await AppServices.Navigator.PushAsync(new ConsoleViewModel(Session, guest));
+        await ConsoleLauncher.OpenGuestAsync(Session, guest); // CT 는 터미널, VM 은 디스플레이에 따라 RDP/VNC
     }
 
     [RelayCommand] private Task OpenSnapshotsAsync() => OpenGuestTabAsync("snapshots");

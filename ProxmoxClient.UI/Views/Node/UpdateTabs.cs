@@ -87,12 +87,20 @@ internal static class UpdateTabs
                     "NodeApt_VersionsHint")))
         });
 
-        // 웹 UI 의 '업그레이드'와 같다 — 노드 셸에서 apt dist-upgrade 를 실행해 진행을 직접 본다(터미널 이관 대기)
+        // 웹 UI 의 '업그레이드'와 같다 — 노드 셸에서 apt dist-upgrade 를 실행해 진행을 직접 본다.
+        // 시스템이 바뀌는 작업이라 셸을 열기 전에 확인을 받는다
         if (canConsole)
             actions.Add(new TableAction
             {
                 LabelKey = "NodeApt_Upgrade", IconKey = "IconTerminal",
-                Run = (_, _) => Task.FromResult<string?>(NodeUi.TerminalPending)
+                Run = async (_, _) =>
+                {
+                    if (!await Ask.ConfirmAsync(Loc.T("Terminal_ConfirmUpgrade", node), Loc.T("NodeApt_Upgrade")))
+                        return null;
+
+                    await Services.ConsoleLauncher.OpenNodeShellAsync(api, node, "upgrade");
+                    return Loc.T("NodeApt_UpgradeOpened");
+                }
             });
 
         return actions;

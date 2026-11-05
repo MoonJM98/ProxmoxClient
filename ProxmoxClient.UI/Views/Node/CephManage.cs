@@ -29,14 +29,25 @@ internal static class CephManage
         new() { Key = "data_pool", HeaderKey = "CephTab_DataPool", Width = 0 }
     ];
 
-    /// <summary>Ceph 설치 — 웹 UI 처럼 터미널에서 설치 마법사(pveceph install)를 띄운다. 터미널은 아직 옮기지 않았다.</summary>
+    /// <summary>Ceph 설치 — 웹 UI 처럼 터미널에서 설치 마법사(pveceph install)를 띄운다(먼저 확인).</summary>
     public static TableAction Install(ProxmoxApiClient api, string node)
     {
         return new TableAction
         {
             LabelKey = "CephTab_Install", IconKey = "IconTerminal",
-            Run = (_, _) => Task.FromResult<string?>(NodeUi.TerminalPending)
+            Run = async (_, _) =>
+            {
+                await OpenInstallerAsync(api, node);
+                return null;
+            }
         };
+    }
+
+    /// <summary>확인을 받고 노드 셸에서 pveceph install 을 연다.</summary>
+    public static async Task OpenInstallerAsync(ProxmoxApiClient api, string node)
+    {
+        if (await Ask.ConfirmAsync(Loc.T("Terminal_ConfirmCephInstall", node), Loc.T("CephTab_Install")))
+            await Services.ConsoleLauncher.OpenNodeShellAsync(api, node, "ceph_install");
     }
 
     /// <summary>

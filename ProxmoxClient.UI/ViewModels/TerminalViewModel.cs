@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
 using ProxmoxClient.Core.Terminal;
 using ProxmoxClient.UI.Localization;
@@ -24,15 +25,15 @@ public sealed partial class TerminalViewModel : ViewModelBase
     private int _columns = 80;
     private int _rows = 24;
 
-    public TerminalViewModel(ServerSession session, ConsoleTarget target, string title, PveResource? guest = null)
+    public TerminalViewModel(ProxmoxApiClient api, ConsoleTarget target, string title, PveResource? guest = null)
     {
-        SessionInfo = session;
+        Api = api;
         Target = target;
         Guest = guest;
         _title = title;
     }
 
-    public ServerSession SessionInfo { get; }
+    public ProxmoxApiClient Api { get; }
 
     public ConsoleTarget Target { get; }
 
@@ -97,7 +98,7 @@ public sealed partial class TerminalViewModel : ViewModelBase
         IsConnecting = true;
         SetState(L.T("ConsoleWindow_06"), true);
 
-        var session = new ProxmoxTerminalSession(SessionInfo.Api);
+        var session = new ProxmoxTerminalSession(Api);
         _session = session;
         bool IsCurrent() => ReferenceEquals(_session, session);
 

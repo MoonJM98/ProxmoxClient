@@ -622,4 +622,10 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Terminal_FontLarger" xml:space="preserve">
     <value>Larger text</value>
   </data>
+  <data name="Terminal_ConfirmUpgrade" xml:space="preserve">
+    <value>This starts a package upgrade (apt dist-upgrade) in the shell of node {0}. It changes the system — continue?</value>
+  </data>
+  <data name="Terminal_ConfirmCephInstall" xml:space="preserve">
+    <value>This starts the Ceph installer (pveceph install) in the shell of node {0}. It changes the system — continue?</value>
+  </data>
 </root>

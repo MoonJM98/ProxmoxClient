@@ -13,7 +13,6 @@ internal static class NodeUi
     /// <summary>
     ///     터미널(노드 셸·설치 마법사·업그레이드)은 아직 옮기지 않았다. 셸을 여는 버튼은 이 안내만 보여 준다.
     /// </summary>
-    internal static string TerminalPending => Loc.T("Node_TerminalPending");
 
     internal static Geometry? Icon(string key)
     {

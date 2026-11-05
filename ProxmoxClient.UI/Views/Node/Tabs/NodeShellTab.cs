@@ -7,19 +7,17 @@ using ProxmoxClient.UI.Views.Controls;
 
 namespace ProxmoxClient.UI.Views.Node.Tabs;
 
-/// <summary>
-///     노드 창의 셸 탭. 노드 셸은 터미널(에뮬레이터)이 있어야 열 수 있는데 아직 옮기지 않았다 — 그래서 열기 버튼은
-///     비활성이고 "이관 대기: 터미널" 안내만 보인다. 터미널이 옮겨지면 이 버튼에 연결한다.
-/// </summary>
+/// <summary>노드 창의 셸 탭 — [셸 열기] 로 노드 셸 터미널(termproxy)을 연다(WPF 는 따로 뜬 창).</summary>
 public sealed class NodeShellTab : UserControl
 {
-    public NodeShellTab()
+    public NodeShellTab(ProxmoxClient.Core.Api.ProxmoxApiClient api, string node)
     {
         var open = new Button
         {
             Content = Loc.T("NodeShell_Open"), Classes = { "AccentButton" }, MinWidth = 170,
-            HorizontalAlignment = HorizontalAlignment.Center, IsEnabled = false
+            HorizontalAlignment = HorizontalAlignment.Center
         };
+        open.Click += async (_, _) => await Services.ConsoleLauncher.OpenNodeShellAsync(api, node);
         IconAssist.SetIcon(open, NodeUi.Icon("IconExternal"));
 
         Content = new StackPanel
@@ -38,12 +36,7 @@ public sealed class NodeShellTab : UserControl
                     Text = Loc.T("NodeShell_Description"), TextWrapping = TextWrapping.Wrap,
                     TextAlignment = TextAlignment.Center, Classes = { "subtle" }, Margin = new Thickness(0, 0, 0, 18)
                 },
-                open,
-                new TextBlock
-                {
-                    Text = NodeUi.TerminalPending, Classes = { "DialogStatus" }, TextAlignment = TextAlignment.Center,
-                    Margin = new Thickness(0, 14, 0, 0)
-                }
+                open
             }
         };
     }

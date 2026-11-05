@@ -24,7 +24,7 @@ internal static class CephGate
     public static Control Wrap(ProxmoxApiClient api, string? node, Func<Task> probe, Func<Control> content)
     {
         var host = new Grid();
-        var notice = Notice(api);
+        var notice = Notice(api, node);
         notice.IsVisible = false;
         host.Children.Add(notice);
         Control? built = null;
@@ -60,7 +60,7 @@ internal static class CephGate
         return host;
     }
 
-    private static Border Notice(ProxmoxApiClient api)
+    private static Border Notice(ProxmoxApiClient api, string? node)
     {
         var isRoot = string.Equals(api.Profile.UserName, RootUser, StringComparison.OrdinalIgnoreCase);
         var panel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
@@ -69,16 +69,16 @@ internal static class CephGate
             Text = Loc.T(isRoot ? "CephGate_NotInstalledRoot" : "CephGate_NotInstalledUser"),
             TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, MaxWidth = 380
         });
-        if (isRoot)
+        if (isRoot && node is not null)
         {
-            // 설치 마법사는 터미널(노드 셸)에서 도므로 아직 옮기지 않았다 — 버튼은 두고 안내만 보여 준다
+            // 설치 마법사는 노드 셸(터미널)에서 돈다 — 확인을 받고 연다
             var install = new Button
             {
                 Content = Loc.T("CephTab_Install"), Margin = new Thickness(0, 12, 0, 0),
                 HorizontalAlignment = HorizontalAlignment.Center, Classes = { "AccentButton" }
             };
             IconAssist.SetIcon(install, NodeUi.Icon("IconTerminal"));
-            install.Click += async (_, _) => await Ask.InfoAsync(NodeUi.TerminalPending);
+            install.Click += async (_, _) => await CephManage.OpenInstallerAsync(api, node);
             panel.Children.Add(install);
         }
 

@@ -260,7 +260,7 @@ async Task TerminalCheck()
     var results = new List<(string Name, string Expect, string Got, bool Pass)>();
     void Check(string name, string expect, string got, bool pass) => results.Add((name, expect, got, pass));
 
-    var vm = new TerminalViewModel(cluster.Session, ProxmoxClient.Core.Models.ConsoleTarget.ForNode("pve1"), "pve1 · 셸");
+    var vm = new TerminalViewModel(cluster.Session.Api, ProxmoxClient.Core.Models.ConsoleTarget.ForNode("pve1"), "pve1 · 셸");
     await Wait(AppServices.Navigator.PushAsync(vm));
     var page = (ProxmoxClient.UI.Views.Terminal.TerminalPage)nav.CurrentPage!;
     var term = page.Terminal;

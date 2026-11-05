@@ -13,6 +13,7 @@ using ProxmoxClient.Core.Settings;
 using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Services;
 using ProxmoxClient.UI.ViewModels;
+using ProxmoxClient.UI.Views.Settings;
 
 namespace ProxmoxClient.UI.Views.Main;
 
@@ -156,7 +157,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public bool NoSelectedGuest => SelectedGuest is null;
 
     /// <summary>"만들기" 메뉴 — 등록된 클러스터 기능(마법사 등). 없으면 버튼을 잠근다.</summary>
-    public IReadOnlyList<ClusterFeature> CreateEntries => FeatureRegistry.ClusterFeatures.OrderBy(f => f.Order).ToList();
+    public IReadOnlyList<ClusterFeature> CreateEntries => FeatureRegistry.ClusterFeatures
+        .Where(f => f.Id != SettingsModule.AppSettingsFeatureId) // 앱 설정은 "관리" 항목이라 만들기 메뉴에는 없다
+        .OrderBy(f => f.Order).ToList();
 
     public bool HasCreateEntries => CreateEntries.Count > 0;
 
@@ -203,6 +206,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public Task<AppSettings> LoadSettingsAsync()
     {
         return _settingsTask ??= LoadSettingsCoreAsync();
+    }
+
+    /// <summary>
+    ///     앱 설정 화면에서 저장한 뒤 다시 읽는다 — 캐시를 버려야 이후 영역 크기 저장이 옛 값을 되돌리지 않는다.
+    ///     새로고침 간격·자동 새로고침·템플릿 표시·용량 단위도 곧바로 적용된다.
+    /// </summary>
+    internal Task ReloadSettingsAsync()
+    {
+        _settingsTask = LoadSettingsCoreAsync();
+        return _settingsTask;
     }
 
     /// <summary>영역 크기 손잡이를 놓았다 — 다음 실행에도 같은 크기로 열리게 저장한다(WPF 와 같다).</summary>

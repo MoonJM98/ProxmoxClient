@@ -65,13 +65,13 @@ public sealed partial class GuestDetailViewModel : ViewModelBase, IReloadable
 
     public bool CanReset => !IsTaskRunning && IsRunning && IsQemu;
 
-    /// <summary>화면 콘솔 — 실행 중인 VM, 비밀번호 로그인(콘솔 티켓에 세션 티켓이 필요)일 때.</summary>
-    public bool CanOpenConsole => IsRunning && IsQemu && Session.Api.AuthTicket is not null;
+    /// <summary>콘솔 — 실행 중인 게스트(VM 화면·CT 터미널), 비밀번호 로그인(콘솔 티켓에 세션 티켓이 필요)일 때.</summary>
+    public bool CanOpenConsole => IsRunning && Session.Api.AuthTicket is not null;
 
     [RelayCommand]
     private Task OpenConsole()
     {
-        return AppServices.Navigator.PushAsync(new ConsoleViewModel(Session, Guest));
+        return ConsoleLauncher.OpenGuestAsync(Session, Guest);
     }
 
     [ObservableProperty]

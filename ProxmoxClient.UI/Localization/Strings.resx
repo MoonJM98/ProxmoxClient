@@ -622,4 +622,10 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Terminal_FontLarger" xml:space="preserve">
     <value>글자 크게</value>
   </data>
+  <data name="Terminal_ConfirmUpgrade" xml:space="preserve">
+    <value>노드 {0} 의 셸에서 패키지 업그레이드(apt dist-upgrade)를 시작합니다. 시스템이 바뀌는 작업입니다 — 계속할까요?</value>
+  </data>
+  <data name="Terminal_ConfirmCephInstall" xml:space="preserve">
+    <value>노드 {0} 의 셸에서 Ceph 설치 마법사(pveceph install)를 시작합니다. 시스템이 바뀌는 작업입니다 — 계속할까요?</value>
+  </data>
 </root>

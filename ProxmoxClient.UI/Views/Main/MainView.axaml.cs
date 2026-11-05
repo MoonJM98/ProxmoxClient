@@ -29,6 +29,9 @@ public partial class MainView : ContentPage
         NodeList.DoubleTapped += OnNodeListDoubleTapped;
         StorageGrid.DoubleTapped += OnStorageDoubleTapped;
         TaskGrid.DoubleTapped += OnTaskDoubleTapped;
+        // 콘솔 ▾ 메뉴를 열 때마다 VM 설정을 읽어 RDP·SPICE 항목을 정한다(WPF OnConsoleMenu 와 같다)
+        if (ConsoleSplit.Flyout is { } consoleFlyout)
+            consoleFlyout.Opened += (_, _) => _ = Vm?.RefreshConsoleKindsAsync();
     }
 
     private MainViewModel? Vm => DataContext as MainViewModel;
