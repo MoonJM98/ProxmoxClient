@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Settings_SftpPending" xml:space="preserve">
+    <value>SFTP account editing will be ported together with the guest file features.</value>
+  </data>
+  <data name="Spice_StatusMissing" xml:space="preserve">
+    <value>Not installed - a SPICE client (remote-viewer or a SPICE app) is required for the SPICE console.</value>
+  </data>
+  <data name="Spice_TitleAndroid" xml:space="preserve">
+    <value>Install a SPICE client app</value>
+  </data>
+  <data name="Spice_GuideLinux" xml:space="preserve">
+    <value>Linux: install virt-viewer with your distribution's package manager. Debian/Ubuntu: sudo apt install virt-viewer · Fedora: sudo dnf install virt-viewer. The remote-viewer command must be on PATH.</value>
+  </data>
+  <data name="Spice_GuideMac" xml:space="preserve">
+    <value>macOS: install with Homebrew (brew install virt-viewer), or put RemoteViewer.app in /Applications and it will be used. Press [Search again] after installing.</value>
+  </data>
+  <data name="Spice_GuideAndroid" xml:space="preserve">
+    <value>Android: install a SPICE app (for example aSPICE or Opaque). When you open a console, the connection file (.vv) is handed to that app. Search the app store for 'SPICE' to find one.</value>
+  </data>
+  <data name="Spice_InstallAskOther" xml:space="preserve">
+    <value>A SPICE client (remote-viewer) is required to connect with SPICE, but none was found on this device. Would you like to see how to install it?</value>
+  </data>
+  <data name="Spice_InstallAskAndroid" xml:space="preserve">
+    <value>No app is available to open the SPICE connection. Would you like to see how to install one?</value>
+  </data>
+  <data name="Spice_PageStore" xml:space="preserve">
+    <value>Find in app store</value>
+  </data>
+</root>

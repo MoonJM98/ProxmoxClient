@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="using:ProxmoxClient.UI.Localization"
+             xmlns:c="using:ProxmoxClient.UI.Views.Controls"
+             xmlns:login="using:ProxmoxClient.UI.Views.Login"
+             x:Class="ProxmoxClient.UI.Views.Login.ProfileRegisterView"
+             x:DataType="login:ProfileRegisterViewModel">
+    <!-- WPF ProfileRegisterWindow 과 같은 배치: 620 폭, 위는 입력, 아래는 등록·취소와 상태 줄 -->
+    <Grid ColumnDefinitions="*,620,*" RowDefinitions="*,Auto">
+        <ScrollViewer Grid.Column="1" Grid.Row="0">
+            <StackPanel Margin="20,16,20,10">
+                <c:FormRow Label="{l:Tr ProfileDialog_02}" Hint="{l:Tr ProfileRegisterWindow_02}">
+                    <TextBox Text="{Binding Name}" />
+                </c:FormRow>
+                <c:FormRow Label="{l:Tr ProfileDialog_03}" Hint="{l:Tr ProfileRegisterWindow_03}">
+                    <TextBox Text="{Binding Host}" />
+                </c:FormRow>
+                <c:FormRow Label="{l:Tr FirewallWindow_11}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" c:IconAssist.Icon="{StaticResource IconCheck}"
+                                Content="{l:Tr ProfileRegisterWindow_04}" Classes="AccentButton" MinWidth="104"
+                                Margin="6,0,0,0" Command="{Binding VerifyCommand}" IsEnabled="{Binding !IsVerifying}" />
+                        <TextBox Text="{Binding Port}" Width="140" HorizontalAlignment="Left" />
+                    </DockPanel>
+                </c:FormRow>
+                <c:FormRow Label="{l:Tr ProfileDialog_05}">
+                    <CheckBox Content="{l:Tr ProfileDialog_07}" IsChecked="{Binding SelfSigned}" Margin="0,6,0,0" />
+                </c:FormRow>
+
+                <Border Classes="FormPanel" Margin="0,4,0,6" IsVisible="{Binding ServerInfoVisible}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding ServerInfo}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock Text="{Binding AuthTypes}" Foreground="{StaticResource BrushDim}" FontSize="12"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <login:InfoTip Margin="0,6,0,0" Text="{l:Tr ProfileRegisterWindow_05}" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Column="1" Grid.Row="1" Classes="DialogFooter">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button c:IconAssist.Icon="{StaticResource IconSave}" Content="{l:Tr ProfileRegisterWindow_06}"
+                            Classes="DialogPrimaryButton" Command="{Binding RegisterCommand}"
+                            IsEnabled="{Binding CanRegister}" />
+                    <Button c:IconAssist.Icon="{StaticResource IconX}" Content="{l:Tr AppSettingsWindow_13}"
+                            Classes="DialogButton" Command="{Binding CloseCommand}" />
+                </StackPanel>
+                <TextBlock Classes="DialogStatus" Text="{Binding Status}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

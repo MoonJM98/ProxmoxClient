@@ -119,6 +119,26 @@ Signer  : CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washin
 
 ---
 
+## 8. Pretendard 1.3.9 (글꼴)
+
+- 저작권: (c) 2021 Kil Hyung-jin (Pretendard), 바탕 글꼴 Inter (c) The Inter Project Authors, Source Han Sans (c) Adobe
+- 라이선스: SIL Open Font License 1.1
+- 출처: https://github.com/orioncactus/pretendard
+- 포함 형태: 글꼴 파일을 앱에 내장(`ProxmoxClient.UI/Assets/Fonts/Pretendard-*.otf`, 라이선스 `Pretendard-LICENSE.txt`) —
+  Avalonia 앱(데스크톱·Android)의 기본 글꼴(한글·라틴).
+
+---
+
+## 9. JetBrains Mono (글꼴)
+
+- 저작권: (c) 2020 JetBrains s.r.o.
+- 라이선스: SIL Open Font License 1.1 (배포 패키지에 따라 Apache-2.0 표기 — 둘 다 내장 배포 허용)
+- 출처: https://github.com/JetBrains/JetBrainsMono
+- 포함 형태: 글꼴 파일을 앱에 내장(`ProxmoxClient.UI/Assets/Fonts/JetBrainsMono-*.ttf`, 라이선스
+  `JetBrainsMono-LICENSE.txt`) — 터미널(콘솔)과 로그 등 고정폭 글자.
+
+---
+
 ## 함께 사용하지만 포함하지 않는 소프트웨어
 
 아래 프로그램은 배포물에 **포함되지 않으며**, 사용자의 PC 에 설치된 것을 별도 프로세스로

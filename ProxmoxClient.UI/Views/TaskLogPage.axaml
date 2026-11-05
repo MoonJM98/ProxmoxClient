@@ -1,0 +1,10 @@
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:ProxmoxClient.UI.Views"
+             xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+             xmlns:c="using:ProxmoxClient.UI.Converters"
+             x:Class="ProxmoxClient.UI.Views.TaskLogPage"
+             x:DataType="vm:TaskLogViewModel"
+             Header="{Binding Title}">
+    <views:TaskLogView />
+</ContentPage>

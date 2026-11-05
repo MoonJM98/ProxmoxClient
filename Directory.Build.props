@@ -1,0 +1,6 @@
+<Project>
+    <!-- Avalonia 패키지 버전 — 모바일 공용·Android 프로젝트가 같은 값을 쓴다 -->
+    <PropertyGroup>
+        <AvaloniaVersion>12.1.5</AvaloniaVersion>
+    </PropertyGroup>
+</Project>

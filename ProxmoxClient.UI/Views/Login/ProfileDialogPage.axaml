@@ -1,0 +1,110 @@
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+             xmlns:l="using:ProxmoxClient.UI.Localization"
+             xmlns:c="using:ProxmoxClient.UI.Views.Controls"
+             x:Class="ProxmoxClient.UI.Views.Login.ProfileDialogPage"
+             x:DataType="vm:ProfileEditViewModel"
+             Header="{Binding DialogTitle}">
+    <!-- WPF ProfileDialog 과 같은 배치: 660 폭 한 칸, 위는 입력(스크롤), 아래는 저장·취소와 상태 줄 -->
+    <Grid ColumnDefinitions="*,660,*" RowDefinitions="*,Auto">
+        <ScrollViewer Grid.Column="1" Grid.Row="0">
+            <StackPanel Margin="20,16,20,10">
+
+                <TextBlock Classes="FormSection" Text="{l:Tr CreateGuestWindow_02}" />
+                <c:FormRow Label="{l:Tr ProfileDialog_02}">
+                    <TextBox Text="{Binding Name}" />
+                </c:FormRow>
+                <c:FormRow Label="{l:Tr ProfileDialog_03}">
+                    <TextBox Text="{Binding Host}" />
+                </c:FormRow>
+                <c:FormRow Label="{l:Tr FirewallWindow_11}" Hint="{l:Tr ProfileDialog_04}">
+                    <TextBox Text="{Binding Port}" Width="140" HorizontalAlignment="Left" />
+                </c:FormRow>
+                <c:FormRow Label="{l:Tr ProfileDialog_05}" Hint="{l:Tr ProfileDialog_06}">
+                    <StackPanel>
+                        <CheckBox Content="{l:Tr ProfileDialog_07}" IsChecked="{Binding AcceptSelfSigned}"
+                                  Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding CertificateStatus}" TextWrapping="Wrap" FontSize="11"
+                                   Foreground="{StaticResource BrushDim}" Margin="0,6,0,0" />
+                        <Button c:IconAssist.Icon="{StaticResource IconShield}" Content="{l:Tr ProfileDialog_08}"
+                                HorizontalAlignment="Left" Margin="0,8,0,0"
+                                IsEnabled="{Binding CanVerifyCertificate}"
+                                Command="{Binding VerifyCertificateCommand}" />
+                    </StackPanel>
+                </c:FormRow>
+
+                <TextBlock Classes="FormSection" Text="{l:Tr ProfileDialog_09}" />
+                <c:FormRow Label="{l:Tr ProfileDialog_10}">
+                    <WrapPanel>
+                        <!-- WPF RadioButton 기본 여백 0,4,14,4 -->
+                        <RadioButton GroupName="ProxyMode" Content="{l:Tr ProfileDialog_11}" Margin="0,4,14,4"
+                                     IsChecked="{Binding IsProxyNone}" />
+                        <RadioButton GroupName="ProxyMode" Content="{l:Tr ProfileDialog_12}" Margin="0,4,14,4"
+                                     IsChecked="{Binding IsProxySystem}" />
+                        <RadioButton GroupName="ProxyMode" Content="HTTP" Margin="0,4,14,4"
+                                     IsChecked="{Binding IsProxyHttp}" />
+                        <RadioButton GroupName="ProxyMode" Content="HTTPS" Margin="0,4,14,4"
+                                     IsChecked="{Binding IsProxyHttps}" />
+                        <RadioButton GroupName="ProxyMode" Content="SOCKS5" Margin="0,4,14,4"
+                                     IsChecked="{Binding IsProxySocks5}" />
+                    </WrapPanel>
+                </c:FormRow>
+
+                <StackPanel IsVisible="{Binding IsProxyDetailVisible}">
+                    <c:FormRow Label="{l:Tr ProfileDialog_13}">
+                        <TextBox Text="{Binding ProxyHost}" />
+                    </c:FormRow>
+                    <c:FormRow Label="{l:Tr ProfileDialog_14}">
+                        <TextBox Text="{Binding ProxyPortText}" Width="140" HorizontalAlignment="Left" />
+                    </c:FormRow>
+                    <c:FormRow Label="{l:Tr ProfileDialog_15}" Hint="{l:Tr ProfileDialog_16}">
+                        <TextBox Text="{Binding ProxyUserName}" />
+                    </c:FormRow>
+                    <c:FormRow Label="{l:Tr ProfileDialog_17}">
+                        <TextBox Text="{Binding ProxyPassword}" PasswordChar="•"
+                                 TextInputOptions.IsSensitive="True" />
+                    </c:FormRow>
+                </StackPanel>
+
+                <!-- VPN: 로그인 전에 OpenVPN 터널을 연다(데스크톱). 터널을 열 수 없는 기기(Android)는 끈다 -->
+                <TextBlock Classes="FormSection" Text="VPN (OpenVPN)" />
+                <c:FormRow Label="{l:Tr ProfileDialog_18}" Hint="{l:Tr Login_VpnNote}">
+                    <CheckBox Content="{l:Tr ProfileDialog_19}" IsChecked="{Binding UseVpn}"
+                              IsEnabled="{Binding VpnSupported}" Margin="0,6,0,0" />
+                </c:FormRow>
+
+                <StackPanel IsVisible="{Binding UseVpn}" IsEnabled="{Binding VpnSupported}">
+                    <c:FormRow Label="{l:Tr ProfileDialog_20}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" c:IconAssist.Icon="{StaticResource IconFolder}"
+                                    Content="{l:Tr ProfileDialog_21}" Margin="6,0,0,0"
+                                    Command="{Binding BrowseVpnConfigCommand}" />
+                            <TextBox Text="{Binding VpnConfigPath}" />
+                        </DockPanel>
+                    </c:FormRow>
+                    <c:FormRow Label="{Binding VpnExeLabel}" Hint="{Binding DetectedVpnExe}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" c:IconAssist.Icon="{StaticResource IconFolder}"
+                                    Content="{l:Tr ProfileDialog_21}" Margin="6,0,0,0"
+                                    Command="{Binding BrowseVpnExeCommand}" />
+                            <TextBox Text="{Binding VpnExePath}" />
+                        </DockPanel>
+                    </c:FormRow>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Column="1" Grid.Row="1" Classes="DialogFooter">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button c:IconAssist.Icon="{StaticResource IconSave}" Content="{l:Tr AppSettingsWindow_12}"
+                            Classes="DialogPrimaryButton" Command="{Binding SaveSettingsCommand}" />
+                    <Button c:IconAssist.Icon="{StaticResource IconX}" Content="{l:Tr AppSettingsWindow_13}"
+                            Classes="DialogButton" Command="{Binding CancelSettingsCommand}" />
+                </StackPanel>
+                <TextBlock Classes="DialogStatus" Text="{Binding StatusText}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</ContentPage>

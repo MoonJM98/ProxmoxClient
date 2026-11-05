@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        화면 검증 도구 — 가짜 PVE 서버(tools/FakePve)에 로그인해 옮긴 화면을 차례로 열고 캡처한다(헤드리스, 화면 없이).
+        사용법: dotnet run (프로젝트 tools/UiSnapshot) 뒤에 port, out, mode(desktop·mobile), target 인자 — Program.cs 첫 줄 참고
+    -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia.Headless" Version="$(AvaloniaVersion)" />
+        <PackageReference Include="Avalonia.Skia" Version="$(AvaloniaVersion)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\ProxmoxClient.UI\ProxmoxClient.UI.csproj" />
+    </ItemGroup>
+
+</Project>

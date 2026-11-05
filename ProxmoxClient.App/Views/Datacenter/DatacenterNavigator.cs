@@ -65,7 +65,7 @@ public static class DatacenterNavigator
             () => DatacenterTables.Groups(api, permissions.Has("Group.Allocate")));
         tabs.Add("pools", "DcTab_Pools", "IconBox", true,
             () => DatacenterTables.Pools(api, permissions.Has("Pool.Allocate")));
-        tabs.Add("roles", "DcTab_Roles", "IconKeyboard", access,
+        tabs.Add("roles", "DcTab_Roles", "IconIdCard", access,
             () => DatacenterTables.Roles(api, permissions.Has("Sys.Modify")));
         tabs.Add("realms", "DcTab_Realms", "IconServer", access,
             () => RealmSyncJobs.View(api, permissions.Has("Realm.Allocate"),
@@ -85,7 +85,7 @@ public static class DatacenterNavigator
             () => FirewallTabs.Create(api, permissions.CanSysModify));
         tabs.Add("metrics", "DcTab_Metrics", "IconList", audit,
             () => MonitoringTabs.Metrics(api, permissions.CanSysModify));
-        tabs.Add("mappings", "DcTab_Mappings", "IconKeyboard", permissions.HasAny("Mapping.Audit", "Mapping.Modify"),
+        tabs.Add("mappings", "DcTab_Mappings", "IconLink", permissions.HasAny("Mapping.Audit", "Mapping.Modify"),
             () => ClusterTabs.Mappings(api, permissions.Has("Mapping.Modify")),
             api.Mappings.Feature(nameof(MappingsApi.ListAsync)));
         tabs.Add("cpumodels", "CpuModel_Tab", "IconSettings", audit,

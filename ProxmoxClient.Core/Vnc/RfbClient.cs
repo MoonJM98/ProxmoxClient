@@ -55,11 +55,6 @@ public sealed partial class RfbClient
     /// <summary>ServerInit·DesktopSize 해상도 상한 — 비정상 값으로 거대 할당·int 오버플로가 나지 않도록.</summary>
     private const int MaxFramebufferDimension = 16384;
     private const int MaxCursorSize = 256;
-    /// <summary>
-    ///     포인터 이동 최소 간격(noVNC 와 같은 17ms, 약 60Hz) — 고주사율 마우스의 이동을 모두 보내면 서버가
-    ///     이동마다 화면 갱신을 만들어 대역폭과 지연이 늘어난다. 버튼·휠·키는 간격 없이 바로 보낸다.
-    /// </summary>
-    private static readonly TimeSpan PointerMoveInterval = TimeSpan.FromMilliseconds(17);
     /// <summary>연결 종료 후 읽기 루프가 끝나기를 기다렸다 해제기를 정리하는 최대 시간.</summary>
     private static readonly TimeSpan InflaterReleaseTimeout = TimeSpan.FromSeconds(2);
     /// <summary>현재 FramebufferUpdate 의 변경 영역(읽기 루프 전용).</summary>
@@ -354,37 +349,17 @@ public sealed partial class RfbClient
         return Task.CompletedTask;
     }
     /// <summary>
-    ///     단일 전송 루프 — 큐 순서대로 보내되, 큐에 연달아 쌓인 포인터 이동은 마지막 것만 보낸다.
-    ///     직전 이동을 보낸 지 <see cref="PointerMoveInterval" /> 이 안 됐으면 그만큼 기다렸다가 그사이 쌓인 이동까지 합친다.
+    ///     단일 전송 루프 — 큐 순서대로 보내되, 큐에 연달아 쌓인 포인터 이동은 마지막 것만 보낸다(소켓이 밀리는 만큼만
+    ///     합쳐진다). 시간으로 간격을 두지 않는다 — Windows 타이머는 약 15.6ms 단위라 Task.Delay(몇 ms) 가 들쭉날쭉
+    ///     15~31ms 가 되어 끌기가 끊겨 보였다. 이동 메시지는 6바이트라 그대로 보내도 부담이 없다.
     /// </summary>
     private async Task RunSendLoopAsync(CancellationToken ct)
     {
         var reader = _outgoing.Reader;
-        long? lastMove = null;
         while (await reader.WaitToReadAsync(ct).ConfigureAwait(false))
         while (reader.TryRead(out var message))
         {
-            if (message.IsPointerMove)
-            {
-                var wait = lastMove is { } last
-                    ? PointerMoveInterval - System.Diagnostics.Stopwatch.GetElapsedTime(last)
-                    : TimeSpan.Zero;
-                if (wait > TimeSpan.Zero)
-                {
-                    try
-                    {
-                        await Task.Delay(wait, ct).ConfigureAwait(false);
-                    }
-                    catch
-                    {
-                        ArrayPool<byte>.Shared.Return(message.Buffer);
-                        throw;
-                    }
-                }
-
-                message = LatestMove(reader, message);
-                lastMove = System.Diagnostics.Stopwatch.GetTimestamp();
-            }
+            if (message.IsPointerMove) message = LatestMove(reader, message);
 
             try
             {

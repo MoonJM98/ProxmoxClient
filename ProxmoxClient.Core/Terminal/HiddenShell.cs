@@ -23,8 +23,12 @@ public sealed class HiddenShell : IDisposable
     private const int InputChunk = 57 * 1024;
 
     private const int MaxPendingSends = 16;
-    private static readonly TimeSpan ReadyProbeInterval = TimeSpan.FromSeconds(2);
-    private const int ReadyProbes = 10;
+    /// <summary>
+    ///     준비 줄을 다시 보내기까지 기다리는 시간 — 셸이 뜨는 동안 보낸 줄은 버려지므로 처음엔 짧게, 점점 길게
+    ///     (모두 합쳐 약 18초). 줄을 거듭 받아도 해가 없다(임시 폴더는 한 번만 만들고, 남는 준비 답은 무시).
+    /// </summary>
+    private static readonly TimeSpan[] ReadyProbeWaits =
+        [.. new[] { 250, 500, 1000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000 }.Select(ms => TimeSpan.FromMilliseconds(ms))];
 
     /// <summary>
     ///     준비 줄 — 기록·줄 편집 끄기, 입력 표시·신호·확장·흐름 제어 끄기, 세션 전용 임시 폴더(끝나면 지움).
@@ -86,12 +90,12 @@ public sealed class HiddenShell : IDisposable
         var line = Preamble + setup + " printf '__PVC_%s__\\n' READY\n";
         if (line.Length > MaxLine) throw new ArgumentException("setup line too long", nameof(setup));
 
-        for (var i = 0; i < ReadyProbes && !_ready.Task.IsCompleted; i++)
+        for (var i = 0; i < ReadyProbeWaits.Length && !_ready.Task.IsCompleted; i++)
         {
             _session.SendInput(line);
             try
             {
-                await _ready.Task.WaitAsync(ReadyProbeInterval, ct).ConfigureAwait(false);
+                await _ready.Task.WaitAsync(ReadyProbeWaits[i], ct).ConfigureAwait(false);
             }
             catch (TimeoutException)
             {

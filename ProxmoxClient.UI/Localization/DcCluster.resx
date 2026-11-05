@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="DcOptions_Hint" xml:space="preserve">
+    <value>데이터센터 전체에 적용되는 옵션입니다. 항목을 고른 뒤 편집을 누르면 바꿀 수 있습니다.</value>
+  </data>
+  <data name="DcOptions_Updated" xml:space="preserve">
+    <value>데이터센터 옵션을 저장했습니다.</value>
+  </data>
+  <data name="Table_Value" xml:space="preserve">
+    <value>값</value>
+  </data>
+  <data name="DcCluster_CpuModelsUnsupported" xml:space="preserve">
+    <value>사용자 CPU 모델은 PVE 9.2 이상 서버에서만 쓸 수 있습니다.</value>
+  </data>
+</root>

@@ -1,0 +1,71 @@
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+             xmlns:l="using:ProxmoxClient.UI.Localization"
+             xmlns:p="using:ProxmoxClient.UI.Platform"
+             x:Class="ProxmoxClient.UI.Views.ProfilesPage"
+             x:DataType="vm:ProfilesViewModel"
+             Header="Proxmox Client">
+    <Grid>
+        <ScrollViewer>
+            <StackPanel Margin="16,12,16,100" Spacing="10" MaxWidth="640">
+                <TextBlock Classes="section" Text="{l:Tr Profiles_Section}" IsVisible="{Binding !IsEmpty}" />
+                <ItemsControl ItemsSource="{Binding Profiles}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="10" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ProfileItem">
+                            <Border Classes="card" Padding="0">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Button Classes="row"
+                                            Command="{Binding $parent[ItemsControl].((vm:ProfilesViewModel)DataContext).ConnectCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Grid ColumnDefinitions="Auto,*">
+                                            <Border Width="42" Height="42" CornerRadius="21"
+                                                    Background="{StaticResource AccentBrush}">
+                                                <TextBlock Text="{Binding Initial}" Foreground="White" FontSize="18"
+                                                           FontWeight="SemiBold" HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="14,0,0,0" Spacing="2"
+                                                        VerticalAlignment="Center">
+                                                <TextBlock Classes="title" Text="{Binding DisplayName}" />
+                                                <TextBlock Classes="subtle" Text="{Binding Address}" />
+                                                <TextBlock Classes="subtle" Text="{Binding Account}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Button>
+                                    <Button Grid.Column="1" Classes="icon" Margin="0,0,6,0"
+                                            Command="{Binding $parent[ItemsControl].((vm:ProfilesViewModel)DataContext).EditCommand}"
+                                            CommandParameter="{Binding}" ToolTip.Tip="{l:Tr Action_Edit}">
+                                        <Path Classes="icon" Data="{StaticResource IconPencil}" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- 빈 목록 안내 -->
+                <StackPanel IsVisible="{Binding IsEmpty}" Margin="12,80,12,0" Spacing="12"
+                            HorizontalAlignment="Center">
+                    <Path Classes="icon" Width="56" Height="56" StrokeThickness="1.5"
+                          Data="{StaticResource IconServer}" HorizontalAlignment="Center" />
+                    <TextBlock Classes="title" Text="{l:Tr Profiles_EmptyTitle}" HorizontalAlignment="Center" />
+                    <TextBlock Classes="subtle" Text="{l:Tr Profiles_EmptyText}" TextWrapping="Wrap"
+                               TextAlignment="Center" TextTrimming="None" />
+                </StackPanel>
+
+                <!-- 렌더링 방식(Vulkan·EGL·소프트웨어 등)과 버전 — 기기에서 바로 확인 -->
+                <p:RenderInfoText Margin="0,24,0,0" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Button Classes="fab accent" Command="{Binding AddCommand}">
+            <Path Classes="icon" Width="22" Height="22" Data="{StaticResource IconPlus}" />
+        </Button>
+    </Grid>
+</ContentPage>

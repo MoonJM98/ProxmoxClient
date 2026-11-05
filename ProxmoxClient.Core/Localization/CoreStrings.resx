@@ -406,6 +406,9 @@
   <data name="SshKey_Ed25519Passphrase" xml:space="preserve"><value>이 키 생성 기능에서 Ed25519는 키 암호 없이 생성합니다. 키 암호를 사용하려면 RSA 3072를 선택하세요.</value></data>
   <data name="SshKey_CleanupFailed" xml:space="preserve"><value>키 생성을 완료하지 못했고 다음 파일을 정리할 수 없습니다. 파일 권한을 확인한 뒤 삭제하세요.
 {0}</value></data>
+    <data name="ProxmoxApiClient_LoginRejected" xml:space="preserve">
+      <value>사용자 이름·비밀번호·영역이 맞지 않습니다. 영역(PAM/PVE 등)도 확인하세요.</value>
+    </data>
     <data name="ProxmoxApiClient_NeedTfa" xml:space="preserve">
     <value>이 계정은 2단계 인증(TOTP 등)을 사용합니다. 아직 지원하지 않으므로 API 토큰으로 연결하세요.</value>
   </data>

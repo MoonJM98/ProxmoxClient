@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        데스크톱 헤드(Windows · Linux · macOS) — 화면·로직은 ProxmoxClient.UI(Android 와 공용)에 있고,
+        여기에는 시작 코드와 실행 파일 설정만 둔다. OS 별 차이는 ProxmoxClient.UI/Platform 에서 분기한다.
+        기존 WPF 앱(ProxmoxClient.App)은 기능이 모두 옮겨질 때까지 함께 유지한다.
+    -->
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>ProxmoxClient.Desktop</RootNamespace>
+        <AssemblyName>ProxmoxClient</AssemblyName>
+        <ApplicationIcon>app.ico</ApplicationIcon>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <Product>Proxmox Client</Product>
+        <Version>1.0.3</Version>
+        <Copyright>Copyright (c) 2026 ProxmoxClient Contributors</Copyright>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\ProxmoxClient.UI\ProxmoxClient.UI.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>

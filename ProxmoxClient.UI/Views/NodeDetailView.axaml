@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+             xmlns:c="using:ProxmoxClient.UI.Converters"
+             xmlns:l="using:ProxmoxClient.UI.Localization"
+             x:Class="ProxmoxClient.UI.Views.NodeDetailView"
+             x:DataType="vm:NodeDetailViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="16,12,16,32" Spacing="12">
+            <Border Classes="banner" IsVisible="{Binding HasError}">
+                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Ellipse Classes="dot" Fill="{Binding Node.Status, Converter={x:Static c:Conv.StatusBrush}}" />
+                        <TextBlock Classes="headline" Text="{Binding Node.Node}" />
+                    </StackPanel>
+                    <TextBlock Classes="subtle" Text="{Binding CpuModel}" TextWrapping="Wrap" TextTrimming="None" />
+                    <TextBlock Classes="subtle" Text="{Binding Kernel}" TextWrapping="Wrap" TextTrimming="None" />
+                    <TextBlock Classes="subtle">
+                        <Run Text="{l:Tr Node_Uptime}" />
+                        <Run Text="{Binding UptimeText}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="CPU" />
+                            <TextBlock Grid.Column="1" Classes="subtle" Text="{Binding CpuText}" />
+                        </Grid>
+                        <ProgressBar Classes="usage" Value="{Binding CpuRatio}" />
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{l:Tr Node_Load}" />
+                        <TextBlock Grid.Column="1" Classes="subtle" Text="{Binding LoadText}" />
+                    </Grid>
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{l:Tr Common_Memory}" />
+                            <TextBlock Grid.Column="1" Classes="subtle" Text="{Binding MemText}" />
+                        </Grid>
+                        <ProgressBar Classes="usage" Value="{Binding MemRatio}" />
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{l:Tr Node_Swap}" />
+                            <TextBlock Grid.Column="1" Classes="subtle" Text="{Binding SwapText}" />
+                        </Grid>
+                        <ProgressBar Classes="usage" Value="{Binding SwapRatio}" />
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{l:Tr Node_RootFs}" />
+                            <TextBlock Grid.Column="1" Classes="subtle" Text="{Binding RootFsText}" />
+                        </Grid>
+                        <ProgressBar Classes="usage" Value="{Binding RootFsRatio}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card" Padding="0" IsVisible="{Binding HasNodeManagement}">
+                <Button Classes="row" Command="{Binding OpenNodeManagementCommand}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Path Classes="icon" Data="{StaticResource IconSettings}" />
+                        <TextBlock Grid.Column="1" Margin="12,0" Text="{l:Tr Node_Manage}" VerticalAlignment="Center" />
+                        <Path Grid.Column="2" Classes="icon" Width="14" Height="14" Opacity="0.5"
+                              Data="{StaticResource IconChevronRight}" />
+                    </Grid>
+                </Button>
+            </Border>
+
+            <TextBlock Classes="section" Text="{l:Tr Node_Guests}" />
+            <ItemsControl ItemsSource="{Binding Guests}" Tag="{Binding OpenGuestCommand}"
+                          ItemTemplate="{StaticResource GuestRowTemplate}"
+                          ItemsPanel="{StaticResource CardListPanel}" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

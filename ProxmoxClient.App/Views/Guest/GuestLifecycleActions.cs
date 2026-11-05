@@ -120,7 +120,7 @@ internal static class GuestLifecycleActions
     {
         return new TableAction
         {
-            LabelKey = "GuestLife_UnlinkUnused", IconKey = "IconTrash",
+            LabelKey = "GuestLife_UnlinkUnused", IconKey = "IconUnlink",
             Run = async (_, owner) =>
             {
                 var config = await api.GetGuestConfigAsync(guest.Node, guest.Kind, guest.VmId);

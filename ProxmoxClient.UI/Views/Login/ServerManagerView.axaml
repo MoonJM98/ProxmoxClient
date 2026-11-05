@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+             xmlns:l="using:ProxmoxClient.UI.Localization"
+             xmlns:c="using:ProxmoxClient.UI.Views.Controls"
+             xmlns:login="using:ProxmoxClient.UI.Views.Login"
+             x:Class="ProxmoxClient.UI.Views.Login.ServerManagerView"
+             x:DataType="login:ServerManagerViewModel">
+    <!-- WPF ServerManagerWindow 과 같은 배치: 600 폭 한 칸, 위는 목록, 아래는 상태 줄과 닫기 -->
+    <Grid ColumnDefinitions="*,600,*" RowDefinitions="*,Auto">
+        <Grid Grid.Column="1" Grid.Row="0" Margin="20,16,20,16" RowDefinitions="Auto,*,Auto">
+            <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button c:IconAssist.Icon="{StaticResource IconPlus}" Content="{l:Tr ServerManagerWindow_02}"
+                            Classes="AccentButton" MinWidth="84" Command="{Binding AddCommand}" />
+                    <Button c:IconAssist.Icon="{StaticResource IconPencil}" Content="{l:Tr ServerManagerWindow_03}"
+                            MinWidth="84" Margin="8,0,0,0" Command="{Binding EditCommand}" />
+                    <!-- WPF: IconAssist.Brush = BrushErr — 삭제 아이콘만 빨갛게 -->
+                    <Button Classes="DangerButton" MinWidth="84" Margin="8,0,0,0" Command="{Binding DeleteCommand}"
+                            HorizontalContentAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Classes="icon" Width="15" Height="15" Margin="0,0,6,0" VerticalAlignment="Center"
+                                  Stroke="{StaticResource BrushErr}" Data="{StaticResource IconTrash}" />
+                            <TextBlock Text="{l:Tr FirewallWindow_04}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+                <TextBlock Classes="FormSection" Text="{l:Tr ServerManagerWindow_04}" VerticalAlignment="Center"
+                           Margin="0" />
+            </DockPanel>
+
+            <ListBox Grid.Row="1" ItemsSource="{Binding Profiles}" SelectedItem="{Binding Selected}" MinHeight="120"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ProfileItem">
+                        <StackPanel Orientation="Horizontal" Margin="2,4">
+                            <Path Classes="icon" Width="18" Height="18" Margin="0,0,10,0"
+                                  VerticalAlignment="Center" Data="{StaticResource IconServer}" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                <TextBlock Classes="subtle" FontSize="11">
+                                    <Run Text="{Binding Profile.Host}" /><Run Text=":" /><Run
+                                        Text="{Binding Profile.Port, StringFormat='{}{0}'}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <login:InfoTip Grid.Row="2" Margin="0,10,0,0" Text="{l:Tr ServerManagerWindow_05}" />
+        </Grid>
+
+        <Border Grid.Column="1" Grid.Row="1" Classes="DialogFooter">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button c:IconAssist.Icon="{StaticResource IconX}" Content="{l:Tr FirewallWindow_18}"
+                            Classes="DialogButton" Command="{Binding CloseCommand}" />
+                </StackPanel>
+                <TextBlock Classes="DialogStatus" Foreground="{StaticResource BrushDim}" Text="{Binding Status}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

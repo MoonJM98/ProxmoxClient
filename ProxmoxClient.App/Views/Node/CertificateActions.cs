@@ -65,7 +65,7 @@ internal static class CertificateActions
             },
             new TableAction
             {
-                LabelKey = "NodeCert_AcmeRevoke", IconKey = "IconTrash",
+                LabelKey = "NodeCert_AcmeRevoke", IconKey = "IconBan",
                 Confirm = _ => Loc.T("NodeCert_AcmeRevokeConfirm", node),
                 Run = async (_, _) => await RunTaskAsync(api,
                     api.Nodes.RevokeAcmeCertificateAsync(node), "NodeCert_AcmeRevoked")

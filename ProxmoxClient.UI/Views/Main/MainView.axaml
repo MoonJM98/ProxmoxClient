@@ -1,0 +1,850 @@
+<!--
+    데스크톱 메인 화면 — WPF MainWindow.xaml 과 같은 배치(도구 모음 · 가로 탭 · 게스트 상세 | 게스트 표 ·
+    노드 목록 | 상세 · 스토리지 표 · 작업 표 · 상태 표시줄). 같은 이름의 스타일·아이콘·문구 키를 쓴다.
+-->
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ProxmoxClient.UI.Views.Main"
+             xmlns:l="using:ProxmoxClient.UI.Localization"
+             xmlns:c="using:ProxmoxClient.UI.Views.Controls"
+             xmlns:m="using:ProxmoxClient.Core.Models"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             x:Class="ProxmoxClient.UI.Views.Main.MainView"
+             x:DataType="vm:MainViewModel"
+             NavigationPage.HasNavigationBar="False">
+
+    <ContentPage.Styles>
+        <!-- WPF 의 IconAssist.Brush: 시작은 초록, 종료는 노랑, 정지는 빨강 아이콘 -->
+        <Style Selector="Button.Ok /template/ Path#icon">
+            <Setter Property="Stroke" Value="{StaticResource BrushOk}" />
+        </Style>
+        <Style Selector="Button.Warn /template/ Path#icon">
+            <Setter Property="Stroke" Value="{StaticResource BrushWarn}" />
+        </Style>
+        <Style Selector="Button.Err /template/ Path#icon">
+            <Setter Property="Stroke" Value="{StaticResource BrushErr}" />
+        </Style>
+        <!-- 표 머리글 — Avalonia 는 정렬 표시·구분선 자리를 더 잡으므로 여백을 줄여 WPF 의 열 제목이 잘리지 않게 한다 -->
+        <Style Selector="DataGrid DataGridColumnHeader">
+            <Setter Property="Padding" Value="4,6" />
+        </Style>
+        <!-- WPF AccentSplitButton -->
+        <Style Selector="SplitButton.AccentButton /template/ Button">
+            <Setter Property="Background" Value="{StaticResource BrushAccent}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BrushAccent}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="SplitButton /template/ Button">
+            <Setter Property="Background" Value="{StaticResource BrushControl}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+            <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+        </Style>
+    </ContentPage.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- 도구 모음 -->
+        <Border Grid.Row="0" BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1" Padding="14,9">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <Button Classes="AccentButton" c:IconAssist.Icon="{StaticResource IconSwitch}"
+                            Content="{l:Tr MainWindow_01}" MinWidth="100" Margin="0,0,8,0"
+                            Command="{Binding LeaveServerCommand}" />
+                    <Button c:IconAssist.Icon="{StaticResource IconLogOut}" Content="{l:Tr MainWindow_02}"
+                            MinWidth="96" Margin="0,0,8,0" Command="{Binding LeaveServerCommand}" />
+                    <Button c:IconAssist.Icon="{StaticResource IconRefresh}" Content="{l:Tr MainWindow_03}"
+                            MinWidth="90" Margin="0,0,8,0" Command="{Binding RefreshCommand}"
+                            IsEnabled="{Binding CanRefresh}" />
+                    <Button c:IconAssist.Icon="{StaticResource IconDatabase}" Content="{l:Tr MainWindow_Datacenter}"
+                            MinWidth="96" Margin="0,0,12,0" Command="{Binding OpenDatacenterCommand}"
+                            IsEnabled="{Binding HasDatacenter}" />
+                </StackPanel>
+                <Button DockPanel.Dock="Right" c:IconAssist.Icon="{StaticResource IconSettings}"
+                        Content="{l:Tr MainWindow_04}" Margin="12,0,0,0" ToolTip.Tip="{l:Tr MainWindow_05}"
+                        Command="{Binding OpenAppSettingsCommand}" />
+                <CheckBox DockPanel.Dock="Right" Content="{l:Tr MainWindow_06}" IsChecked="{Binding AutoRefresh}"
+                          VerticalAlignment="Center" />
+                <TextBlock DockPanel.Dock="Right" Text="{Binding ConnectionStatus}" VerticalAlignment="Center"
+                           Margin="0,0,16,0" />
+                <TextBlock Text="{Binding ServerInfo}" Foreground="{StaticResource BrushDim}"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <!-- 내용 영역 -->
+        <Grid Grid.Row="1" Margin="14,10,14,6" RowDefinitions="Auto,*">
+
+            <!-- 내비게이션(가로 탭) -->
+            <ListBox Grid.Row="0" Classes="NavListBox" SelectedIndex="{Binding NavIndex, Mode=TwoWay}"
+                     Background="Transparent" BorderThickness="0" Margin="0,0,0,8">
+                <ListBoxItem MinWidth="110">
+                    <c:IconLabel Icon="{StaticResource IconMonitor}" Text="{l:Tr Tab_Guests}" />
+                </ListBoxItem>
+                <ListBoxItem MinWidth="100">
+                    <c:IconLabel Icon="{StaticResource IconServer}" Text="{l:Tr Tab_Nodes}" />
+                </ListBoxItem>
+                <ListBoxItem MinWidth="100">
+                    <c:IconLabel Icon="{StaticResource IconDatabase}" Text="{l:Tr MainWindow_07}" />
+                </ListBoxItem>
+                <ListBoxItem MinWidth="100">
+                    <c:IconLabel Icon="{StaticResource IconList}" Text="{l:Tr Tab_Tasks}" />
+                </ListBoxItem>
+            </ListBox>
+
+            <!-- 패널 컨테이너 — 같은 칸에 탭별 화면을 겹쳐 두고 보이는 것만 보인다 -->
+            <Grid Grid.Row="1">
+
+                <!-- ===== 패널 0: 게스트 — 위: 선택 게스트 상세 / 아래: 게스트 목록 ===== -->
+                <Grid x:Name="GuestPanel" IsVisible="{Binding ShowGuestsPanel}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="300" MinHeight="110" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" MinHeight="160" />
+                    </Grid.RowDefinitions>
+
+                    <!-- ===== 선택 게스트 상세 ===== -->
+                    <Border Grid.Row="0" Classes="FormPanel" Padding="0" Margin="0">
+                        <Grid>
+                            <!-- 선택 없음 안내 -->
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,28"
+                                        IsVisible="{Binding NoSelectedGuest}">
+                                <Path Classes="icon" Data="{StaticResource IconMonitor}" Width="28" Height="28"
+                                      Stroke="{StaticResource BrushDim}" HorizontalAlignment="Center" />
+                                <TextBlock Text="{l:Tr MainWindow_08}" Foreground="{StaticResource BrushDim}"
+                                           Margin="0,8,0,0" />
+                            </StackPanel>
+
+                            <Grid IsVisible="{Binding HasSelectedGuest}" RowDefinitions="Auto,*">
+
+                                <!-- 헤더: 게스트 식별 + 동작 -->
+                                <Border Grid.Row="0" BorderBrush="{StaticResource BrushBorder}"
+                                        BorderThickness="0,0,0,1" Padding="14,10">
+                                    <DockPanel>
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
+                                                    VerticalAlignment="Center">
+                                            <!-- 전원 묶음: [시작] [종료 | ▾] | -->
+                                            <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowPowerGroup}">
+                                                <Button Classes="Ok" c:IconAssist.Icon="{StaticResource IconPlay}"
+                                                        Content="{l:Tr MainWindow_33}" Margin="0,0,6,0"
+                                                        Command="{Binding StartCommand}"
+                                                        IsVisible="{Binding ShowStartButton}"
+                                                        IsEnabled="{Binding IsIdle}" />
+                                                <!-- 웹 UI 처럼 [종료 | ▾] — 재부팅·일시 정지·재개·최대 절전·정지·리셋은 ▾ 안에 -->
+                                                <SplitButton Command="{Binding ShutdownCommand}" Margin="0,0,6,0"
+                                                             IsVisible="{Binding ShowStopSplit}"
+                                                             IsEnabled="{Binding IsIdle}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <Path Classes="icon" Width="15" Height="15"
+                                                              Data="{StaticResource IconPower}"
+                                                              Stroke="{StaticResource BrushWarn}"
+                                                              VerticalAlignment="Center" />
+                                                        <TextBlock Text="{l:Tr MainWindow_35}"
+                                                                   VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                    <SplitButton.Flyout>
+                                                        <MenuFlyout>
+                                                            <MenuItem Header="{l:Tr MainWindow_34}"
+                                                                      Command="{Binding RebootCommand}"
+                                                                      IsVisible="{Binding ShowRebootItem}">
+                                                                <MenuItem.Icon>
+                                                                    <Path Classes="icon" Data="{StaticResource IconRotate}" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <MenuItem Header="{l:Tr MainWindow_11}"
+                                                                      Command="{Binding SuspendCommand}"
+                                                                      IsVisible="{Binding ShowSuspendItem}">
+                                                                <MenuItem.Icon>
+                                                                    <Path Classes="icon" Data="{StaticResource IconPause}" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <MenuItem Header="{l:Tr MainWindow_12}"
+                                                                      Command="{Binding ResumeCommand}"
+                                                                      IsVisible="{Binding ShowResumeItem}">
+                                                                <MenuItem.Icon>
+                                                                    <Path Classes="icon" Data="{StaticResource IconResume}" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <MenuItem Header="{l:Tr MainWindow_13}"
+                                                                      Command="{Binding HibernateCommand}"
+                                                                      IsVisible="{Binding ShowHibernateItem}">
+                                                                <MenuItem.Icon>
+                                                                    <Path Classes="icon" Data="{StaticResource IconMoon}" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <MenuItem Header="{l:Tr MainWindow_36}"
+                                                                      Command="{Binding StopCommand}"
+                                                                      IsVisible="{Binding ShowStopItem}">
+                                                                <MenuItem.Icon>
+                                                                    <Path Classes="icon" Data="{StaticResource IconSquare}"
+                                                                          Stroke="{StaticResource BrushErr}" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                            <MenuItem Header="{l:Tr GuestPower_Reset}"
+                                                                      Command="{Binding ResetCommand}"
+                                                                      IsVisible="{Binding ShowResetItem}">
+                                                                <MenuItem.Icon>
+                                                                    <Path Classes="icon" Data="{StaticResource IconRotate}" />
+                                                                </MenuItem.Icon>
+                                                            </MenuItem>
+                                                        </MenuFlyout>
+                                                    </SplitButton.Flyout>
+                                                </SplitButton>
+                                                <Border Width="1" Background="{StaticResource BrushBorder}"
+                                                        Margin="4,4,10,4" />
+                                            </StackPanel>
+
+                                            <!-- 웹 UI 처럼 [콘솔 | ▾] — VM 은 ▾ 에 VNC·RDP·SPICE·직렬(이관 대기). 메뉴를 열 때 설정을 읽어 항목을 정한다 -->
+                                            <SplitButton x:Name="ConsoleSplit" Classes="AccentButton" Command="{Binding OpenConsoleCommand}"
+                                                         Margin="0,0,6,0" IsVisible="{Binding ShowConsoleMenuButton}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <Path Classes="icon" Width="15" Height="15"
+                                                          Data="{StaticResource IconMonitor}" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{l:Tr MainWindow_09}" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <SplitButton.Flyout>
+                                                    <MenuFlyout>
+                                                        <MenuItem Header="{l:Tr Console_KindVnc}"
+                                                                  Command="{Binding OpenConsoleCommand}">
+                                                            <MenuItem.Icon>
+                                                                <Path Classes="icon" Data="{StaticResource IconMonitor}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="{l:Tr Console_KindRdp}"
+                                                                  Command="{Binding OpenRdpConsoleCommand}"
+                                                                  IsVisible="{Binding ShowRdpConsoleItem}">
+                                                            <MenuItem.Icon>
+                                                                <Path Classes="icon" Data="{StaticResource IconMonitor}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="{l:Tr Console_KindSpice}"
+                                                                  Command="{Binding OpenSpiceConsoleCommand}"
+                                                                  IsVisible="{Binding ShowSpiceConsoleItem}"
+                                                                  IsEnabled="{Binding SpiceConsoleEnabled}">
+                                                            <MenuItem.Icon>
+                                                                <Path Classes="icon" Data="{StaticResource IconExternal}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="{Binding SerialConsoleLabel}"
+                                                                  Command="{Binding OpenSerialConsoleCommand}"
+                                                                  IsEnabled="{Binding SerialConsoleEnabled}">
+                                                            <MenuItem.Icon>
+                                                                <Path Classes="icon" Data="{StaticResource IconTerminal}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                    </MenuFlyout>
+                                                </SplitButton.Flyout>
+                                            </SplitButton>
+                                            <Button Classes="AccentButton" c:IconAssist.Icon="{StaticResource IconMonitor}"
+                                                    Content="{l:Tr MainWindow_09}" Margin="0,0,6,0"
+                                                    Command="{Binding OpenConsoleCommand}"
+                                                    IsVisible="{Binding ShowConsolePlainButton}" />
+
+                                            <Button c:IconAssist.Icon="{StaticResource IconCamera}"
+                                                    Content="{l:Tr MainWindow_Snapshots}" Margin="0,0,6,0"
+                                                    Command="{Binding OpenSnapshotsCommand}"
+                                                    IsVisible="{Binding CanOpenSnapshots}"
+                                                    IsEnabled="{Binding CanOpenSnapshotTab}" />
+
+                                            <!-- [설정 | ▾] — 복제·백업·방화벽은 ▾ 안에 -->
+                                            <SplitButton Command="{Binding OpenSettingsTabCommand}" Margin="0,0,6,0"
+                                                         IsVisible="{Binding ShowSettingsSplit}"
+                                                         IsEnabled="{Binding CanOpenSettingsTab}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <Path Classes="icon" Width="15" Height="15"
+                                                          Data="{StaticResource IconSettings}" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{l:Tr MainWindow_04}" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <SplitButton.Flyout>
+                                                    <MenuFlyout>
+                                                        <MenuItem Header="{l:Tr MainWindow_14}"
+                                                                  Command="{Binding OpenCloneTabCommand}"
+                                                                  IsVisible="{Binding ShowCloneItem}"
+                                                                  IsEnabled="{Binding CanOpenCloneTab}">
+                                                            <MenuItem.Icon>
+                                                                <Path Classes="icon" Data="{StaticResource IconCopy}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="{l:Tr MainWindow_15}"
+                                                                  Command="{Binding OpenBackupTabCommand}"
+                                                                  IsVisible="{Binding ShowBackupItem}"
+                                                                  IsEnabled="{Binding CanOpenBackupTab}">
+                                                            <MenuItem.Icon>
+                                                                <Path Classes="icon" Data="{StaticResource IconArchive}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="{l:Tr MainWindow_16}"
+                                                                  Command="{Binding OpenFirewallTabCommand}"
+                                                                  IsVisible="{Binding ShowFirewallItem}"
+                                                                  IsEnabled="{Binding CanOpenFirewallTab}">
+                                                            <MenuItem.Icon>
+                                                                <Path Classes="icon" Data="{StaticResource IconShield}" />
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                    </MenuFlyout>
+                                                </SplitButton.Flyout>
+                                            </SplitButton>
+                                        </StackPanel>
+
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Path Classes="icon" Width="22" Height="22" Margin="0,0,10,0"
+                                                  Data="{Binding SelectedGuest.Kind, Converter={x:Static vm:MainConv.KindIcon}, Mode=OneWay}" />
+                                            <StackPanel>
+                                                <TextBlock FontSize="15" FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding SelectedGuest.Name}" />
+                                                <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11"
+                                                           Margin="0,1,0,0">
+                                                    <Run Text="{Binding SelectedGuest.Kind, Converter={x:Static vm:MainConv.KindLabel}, Mode=OneWay}" />
+                                                    <Run Text="{Binding SelectedGuest.VmId}" />
+                                                    <Run Text="{l:Tr MainWindow_17}" />
+                                                    <Run Text="{Binding SelectedGuest.Node}" />
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <Border Background="{StaticResource BrushControl}" CornerRadius="10"
+                                                    Padding="9,3" Margin="14,0,0,0" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse Width="8" Height="8" Margin="0,0,6,0"
+                                                             VerticalAlignment="Center"
+                                                             Fill="{Binding SelectedGuest.Status, Converter={x:Static vm:MainConv.StatusBrush}, Mode=OneWay}" />
+                                                    <TextBlock Text="{Binding SelectedGuest.Status}" FontSize="12" />
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- 본문: 정보 | 그래프 -->
+                                <Grid Grid.Row="1" Margin="14,10,14,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="320" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <Grid Grid.Column="0" Margin="0,0,20,0" ColumnDefinitions="70,*"
+                                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                                        <!-- 사용량은 값을 막대 위에 겹쳐 이름과 같은 줄에 둔다 -->
+                                        <TextBlock Grid.Row="0" Text="CPU" Foreground="{StaticResource BrushDim}"
+                                                   VerticalAlignment="Center" Margin="0,0,0,6" />
+                                        <Grid Grid.Row="0" Grid.Column="1" Margin="0,0,0,6">
+                                            <ProgressBar Height="18" Minimum="0" Maximum="100"
+                                                         Value="{Binding SelectedGuest.CpuUsagePercent}" />
+                                            <TextBlock FontSize="11" HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center">
+                                                <Run Text="{Binding SelectedGuest.CpuUsagePercent, StringFormat='{}{0:F1}%', Mode=OneWay}" />
+                                                <Run Text=" · " />
+                                                <Run Text="{Binding SelectedGuest.CpuCount}" />
+                                                <Run Text="{l:Tr MainWindow_18}" />
+                                            </TextBlock>
+                                        </Grid>
+
+                                        <TextBlock Grid.Row="1" Text="{l:Tr MainWindow_19}"
+                                                   Foreground="{StaticResource BrushDim}"
+                                                   VerticalAlignment="Center" Margin="0,0,0,6" />
+                                        <Grid Grid.Row="1" Grid.Column="1" Margin="0,0,0,6">
+                                            <ProgressBar Height="18" Minimum="0" Maximum="{Binding GuestMemBar.Maximum}"
+                                                         Value="{Binding GuestMemBar.Value}" />
+                                            <TextBlock Text="{Binding GuestMemBar.Text}" FontSize="11"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Grid>
+
+                                        <TextBlock Grid.Row="2" Text="{l:Tr MainWindow_20}"
+                                                   Foreground="{StaticResource BrushDim}"
+                                                   VerticalAlignment="Center" Margin="0,0,0,6" />
+                                        <Grid Grid.Row="2" Grid.Column="1" Margin="0,0,0,6">
+                                            <ProgressBar Height="18" Minimum="0" Maximum="{Binding GuestDiskBar.Maximum}"
+                                                         Value="{Binding GuestDiskBar.Value}" />
+                                            <TextBlock Text="{Binding GuestDiskBar.Text}" FontSize="11"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Grid>
+
+                                        <TextBlock Grid.Row="3" Text="{l:Tr MainWindow_21}"
+                                                   Foreground="{StaticResource BrushDim}" Margin="0,0,0,8" />
+                                        <TextBlock Grid.Row="3" Grid.Column="1" FontSize="12" Margin="0,0,0,8"
+                                                   Text="{Binding SelectedGuest.UptimeDisplaySeconds, Converter={x:Static vm:MainConv.Uptime}, Mode=OneWay}" />
+
+                                        <TextBlock Grid.Row="4" Text="{l:Tr MainWindow_22}"
+                                                   Foreground="{StaticResource BrushDim}" Margin="0,0,0,8" />
+                                        <TextBlock Grid.Row="4" Grid.Column="1" FontSize="12" Margin="0,0,0,8"
+                                                   Text="{Binding GuestPoolText}" />
+
+                                        <TextBlock Grid.Row="5" Text="{l:Tr MainWindow_23}"
+                                                   Foreground="{StaticResource BrushDim}" />
+                                        <ItemsControl Grid.Row="5" Grid.Column="1" ItemsSource="{Binding SelectedGuest.Tags}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="sys:String">
+                                                    <Border Background="{Binding Converter={x:Static vm:MainConv.TagBrush}, Mode=OneWay}"
+                                                            CornerRadius="7" Padding="7,1" Margin="0,0,4,4">
+                                                        <TextBlock Text="{Binding}" FontSize="11" Foreground="White" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+
+                                    <Grid Grid.Column="1" RowDefinitions="Auto,*">
+                                        <DockPanel Grid.Row="0" Margin="0,0,0,4">
+                                            <ListBox DockPanel.Dock="Right" Background="Transparent" BorderThickness="0"
+                                                     ItemsSource="{Binding Timeframes}"
+                                                     SelectedItem="{Binding GuestTimeframeOption, Mode=TwoWay}">
+                                                <ListBox.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal" />
+                                                    </ItemsPanelTemplate>
+                                                </ListBox.ItemsPanel>
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:TimeframeOption">
+                                                        <TextBlock Text="{Binding Label}" />
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
+                                            <TextBlock Text="{l:Tr MainWindow_29}" VerticalAlignment="Center"
+                                                       Foreground="{StaticResource BrushDim}" />
+                                        </DockPanel>
+                                        <Grid Grid.Row="1" MinHeight="120">
+                                            <c:GraphLine Series="{Binding GuestGraphSeries}"
+                                                         XLabels="{Binding GuestGraphXLabels}"
+                                                         Timestamps="{Binding GuestGraphTimes}"
+                                                         IsVisible="{Binding GuestGraphSeries, Converter={x:Static ObjectConverters.IsNotNull}, Mode=OneWay}" />
+                                        </Grid>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <GridSplitter Grid.Row="1" Classes="PaneSplitterH" DragCompleted="OnPaneSplitterDragCompleted" />
+
+                    <!-- ===== 게스트 목록 ===== -->
+                    <Grid Grid.Row="2" RowDefinitions="Auto,*">
+                        <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                            <Button x:Name="CreateButton" DockPanel.Dock="Right" Classes="AccentButton"
+                                    c:IconAssist.Icon="{StaticResource IconPlus}" Content="{l:Tr MainWindow_30}"
+                                    Click="OnCreateClick" IsVisible="{Binding CanCreate}"
+                                    IsEnabled="{Binding HasCreateEntries}" />
+                            <!-- 템플릿 표시 — 끄면 목록에서 템플릿과 '템플릿' 열을 숨긴다(설정에 저장) -->
+                            <CheckBox DockPanel.Dock="Right" Content="{l:Tr MainWindow_ShowTemplates}"
+                                      IsChecked="{Binding ShowTemplates}" VerticalAlignment="Center"
+                                      Margin="0,0,14,0" />
+                            <TextBlock VerticalAlignment="Center">
+                                <Run Text="{l:Tr MainWindow_31}" FontWeight="SemiBold" />
+                                <Run Text="  " />
+                                <Run Text="{Binding VisibleGuestCount}" Foreground="{StaticResource BrushDim}" />
+                                <Run Text="{l:Tr MainWindow_32}" Foreground="{StaticResource BrushDim}" />
+                            </TextBlock>
+                        </DockPanel>
+
+                        <DataGrid Grid.Row="1" x:Name="GuestGrid" x:CompileBindings="False"
+                                  ItemsSource="{Binding VisibleGuests}"
+                                  SelectedItem="{Binding SelectedGuest, Mode=TwoWay}"
+                                  AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal"
+                                  HeadersVisibility="Column" CanUserSortColumns="True">
+                            <DataGrid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{l:Tr MainWindow_09}" Command="{Binding OpenConsoleCommand}"
+                                              IsVisible="{Binding CanOpenConsole}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconMonitor}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <Separator />
+                                    <MenuItem Header="{l:Tr MainWindow_33}" Command="{Binding StartCommand}"
+                                              IsVisible="{Binding ShowStartButton}" IsEnabled="{Binding IsIdle}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconPlay}"
+                                                  Stroke="{StaticResource BrushOk}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="{l:Tr MainWindow_11}" Command="{Binding SuspendCommand}"
+                                              IsVisible="{Binding ShowSuspendItem}" IsEnabled="{Binding IsIdle}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconPause}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="{l:Tr MainWindow_12}" Command="{Binding ResumeCommand}"
+                                              IsVisible="{Binding ShowResumeItem}" IsEnabled="{Binding IsIdle}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconResume}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="{l:Tr MainWindow_13}" Command="{Binding HibernateCommand}"
+                                              IsVisible="{Binding ShowHibernateItem}" IsEnabled="{Binding IsIdle}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconMoon}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="{l:Tr GuestPower_Reset}" Command="{Binding ResetCommand}"
+                                              IsVisible="{Binding ShowResetItem}" IsEnabled="{Binding IsIdle}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconRotate}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="{l:Tr MainWindow_34}" Command="{Binding RebootCommand}"
+                                              IsVisible="{Binding ShowRebootItem}" IsEnabled="{Binding IsIdle}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconRotate}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="{l:Tr MainWindow_35}" Command="{Binding ShutdownCommand}"
+                                              IsVisible="{Binding ShowShutdownItem}" IsEnabled="{Binding IsIdle}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconPower}"
+                                                  Stroke="{StaticResource BrushWarn}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="{l:Tr MainWindow_36}" Command="{Binding StopCommand}"
+                                              IsVisible="{Binding ShowStopItem}" IsEnabled="{Binding IsIdle}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconSquare}"
+                                                  Stroke="{StaticResource BrushErr}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <Separator />
+                                    <MenuItem Header="{l:Tr MainWindow_37}" Command="{Binding OpenSnapshotsCommand}"
+                                              IsVisible="{Binding CanOpenSnapshots}"
+                                              IsEnabled="{Binding CanOpenSnapshotTab}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconCamera}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="{l:Tr MainWindow_14}" Command="{Binding OpenCloneTabCommand}"
+                                              IsVisible="{Binding ShowCloneItem}" IsEnabled="{Binding CanOpenCloneTab}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconCopy}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="{l:Tr MainWindow_15}" Command="{Binding OpenBackupTabCommand}"
+                                              IsVisible="{Binding ShowBackupItem}" IsEnabled="{Binding CanOpenBackupTab}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconArchive}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <Separator />
+                                    <MenuItem Header="{l:Tr MainWindow_16}" Command="{Binding OpenFirewallTabCommand}"
+                                              IsVisible="{Binding ShowFirewallItem}"
+                                              IsEnabled="{Binding CanOpenFirewallTab}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconShield}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="{l:Tr MainWindow_38}" Command="{Binding OpenSettingsTabCommand}"
+                                              IsVisible="{Binding ShowSettingsItem}"
+                                              IsEnabled="{Binding CanOpenSettingsTab}">
+                                        <MenuItem.Icon>
+                                            <Path Classes="icon" Data="{StaticResource IconSettings}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
+                            <DataGrid.Columns>
+                                <!-- 종류는 아이콘만(모니터 = VM, 상자 = CT) — 글자는 툴팁으로 -->
+                                <DataGridTemplateColumn Header="{l:Tr MainWindow_39}" Width="68">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="m:PveResource">
+                                            <Path Classes="icon" Width="14" Height="14" Margin="2,0,0,0"
+                                                  HorizontalAlignment="Left"
+                                                  Data="{Binding Kind, Converter={x:Static vm:MainConv.KindIcon}, Mode=OneWay}"
+                                                  ToolTip.Tip="{Binding Kind, Converter={x:Static vm:MainConv.KindLabel}, Mode=OneWay}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="VMID" Binding="{Binding VmId, Mode=OneWay}" Width="80" />
+                                <DataGridTemplateColumn Header="{l:Tr MainWindow_40}" Width="260">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="m:PveResource">
+                                            <!-- 태그는 이름 옆에 한 줄로 — 행 높이(30) 안에서 잘리지 않도록 -->
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                                <ItemsControl ItemsSource="{Binding Tags}" Margin="8,0,0,0"
+                                                              VerticalAlignment="Center">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="sys:String">
+                                                            <Border Background="{Binding Converter={x:Static vm:MainConv.TagBrush}, Mode=OneWay}"
+                                                                    CornerRadius="7" Padding="7,0" Margin="0,0,4,0">
+                                                                <TextBlock Text="{Binding}" FontSize="10" Foreground="White" />
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="{l:Tr MainWindow_41}" Binding="{Binding Node, Mode=OneWay}" Width="100" />
+                                <DataGridTemplateColumn Header="{l:Tr MainWindow_42}" Width="100">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="m:PveResource">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Width="9" Height="9" Margin="2,2,6,2"
+                                                         Fill="{Binding Status, Converter={x:Static vm:MainConv.StatusBrush}, Mode=OneWay}" />
+                                                <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="CPU" Width="120">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="m:PveResource">
+                                            <Grid VerticalAlignment="Center" Margin="0,2">
+                                                <ProgressBar Minimum="0" Maximum="100" Height="12"
+                                                             Value="{Binding CpuUsagePercent}" />
+                                                <TextBlock Text="{Binding CpuUsagePercent, StringFormat='{}{0:F1}%', Mode=OneWay}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           FontSize="11" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="{l:Tr MainWindow_19}" Width="100"
+                                                    Binding="{Binding MemBytes, Converter={x:Static vm:MainConv.Bytes}, Mode=OneWay}" />
+                                <DataGridTextColumn Header="{l:Tr MainWindow_20}" Width="100"
+                                                    Binding="{Binding DiskBytes, Converter={x:Static vm:MainConv.Bytes}, Mode=OneWay}" />
+                                <DataGridTextColumn Header="{l:Tr MainWindow_21}" Width="*" MinWidth="120"
+                                                    Binding="{Binding UptimeDisplaySeconds, Converter={x:Static vm:MainConv.Uptime}, Mode=OneWay}" />
+                                <DataGridCheckBoxColumn Header="{l:Tr MainWindow_43}" Width="80"
+                                                        Binding="{Binding IsTemplate, Mode=OneWay}" IsReadOnly="True"
+                                                        IsVisible="{Binding ShowTemplates}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Grid>
+
+                <!-- ===== 패널 1: 노드 — 목록 | 상세 ===== -->
+                <Grid x:Name="NodePanel" IsVisible="{Binding ShowNodesPanel}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="290" MinWidth="180" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" MinWidth="360" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Background="{StaticResource BrushPanel}" CornerRadius="6" Padding="10"
+                            BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" Margin="0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Text="{l:Tr MainWindow_NodeList}"
+                                       Classes="SectionHeader" Margin="0,0,0,6" />
+                            <ListBox ItemsSource="{Binding Nodes}" SelectedItem="{Binding SelectedNode, Mode=TwoWay}"
+                                     x:Name="NodeList" x:CompileBindings="False"
+                                     Background="Transparent" BorderThickness="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="m:PveNode">
+                                        <StackPanel Margin="2,5">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Width="9" Height="9" Margin="2,2,6,2"
+                                                         Fill="{Binding Status, Converter={x:Static vm:MainConv.StatusBrush}, Mode=OneWay}" />
+                                                <TextBlock Text="{Binding Node}" FontWeight="SemiBold" />
+                                            </StackPanel>
+                                            <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11"
+                                                       Margin="17,2,0,0">
+                                                <Run Text="CPU " />
+                                                <Run Text="{Binding CpuUsagePercent, StringFormat='{}{0:F0}%', Mode=OneWay}" />
+                                                <Run Text="{l:Tr MainWindow_44}" /><Run Text="{Binding CpuCount}" />
+                                            </TextBlock>
+                                            <TextBlock Foreground="{StaticResource BrushDim}" FontSize="11"
+                                                       Margin="17,0,0,0">
+                                                <Run Text="{l:Tr MainWindow_45}" />
+                                                <Run Text="{Binding MemBytes, Converter={x:Static vm:MainConv.Bytes}, Mode=OneWay}" />
+                                                <Run Text=" / " />
+                                                <Run Text="{Binding MaxMemBytes, Converter={x:Static vm:MainConv.Bytes}, Mode=OneWay}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
+
+                    <GridSplitter Grid.Column="1" Classes="PaneSplitterV" DragCompleted="OnPaneSplitterDragCompleted" />
+
+                    <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <DockPanel Margin="2,0,0,8">
+                                <Button DockPanel.Dock="Right" c:IconAssist.Icon="{StaticResource IconSettings}"
+                                        Content="{l:Tr MainWindow_NodeManage}"
+                                        Command="{Binding OpenSelectedNodeCommand}"
+                                        IsEnabled="{Binding HasNodeManagement}" />
+                                <!-- 꺼진 노드만 — 켜진 노드가 Wake-on-LAN 패킷을 보낸다(노드 옵션의 MAC 필요) -->
+                                <Button DockPanel.Dock="Right" c:IconAssist.Icon="{StaticResource IconPower}"
+                                        Content="{l:Tr NodeWake_Button}" Command="{Binding WakeNodeCommand}"
+                                        Margin="0,0,6,0" ToolTip.Tip="{l:Tr NodeWake_Hint}"
+                                        IsVisible="{Binding ShowWakeButton}" IsEnabled="{Binding CanWakeNode}" />
+                                <TextBlock Text="{l:Tr MainWindow_NodeDetail}" Classes="SectionHeader"
+                                           VerticalAlignment="Center" />
+                            </DockPanel>
+                            <Border Background="{StaticResource BrushPanel}" CornerRadius="6" Padding="12"
+                                    BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" Margin="0,0,0,10">
+                                <Grid ColumnDefinitions="110,*"
+                                      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{l:Tr MainWindow_46}"
+                                               Classes="FieldLabel" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding NodeKernelText}"
+                                               Margin="0,0,0,6" />
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{l:Tr MainWindow_47}"
+                                               Classes="FieldLabel" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding NodeCoresText}"
+                                               Margin="0,0,0,6" />
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="{l:Tr MainWindow_48}"
+                                               Classes="FieldLabel" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,0,0,6">
+                                        <Run Text="{Binding NodeLoad1Text}" />
+                                        <Run Text=" / " Foreground="{StaticResource BrushDim}" />
+                                        <Run Text="{Binding NodeLoad5Text}" />
+                                        <Run Text=" / " Foreground="{StaticResource BrushDim}" />
+                                        <Run Text="{Binding NodeLoad15Text}" />
+                                        <Run Text="{l:Tr MainWindow_49}" Foreground="{StaticResource BrushDim}"
+                                             FontSize="11" />
+                                    </TextBlock>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="{l:Tr MainWindow_21}"
+                                               Classes="FieldLabel" />
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding NodeUptimeText}"
+                                               Margin="0,0,0,6" />
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="{l:Tr MainWindow_19}"
+                                               Classes="FieldLabel" Margin="0,0,0,6" />
+                                    <Grid Grid.Row="4" Grid.Column="1" Margin="0,0,0,6">
+                                        <ProgressBar Height="18" Minimum="0" Maximum="{Binding NodeMemBar.Maximum}"
+                                                     Value="{Binding NodeMemBar.Value}" />
+                                        <TextBlock Text="{Binding NodeMemBar.Text}" FontSize="11"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Grid>
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="{l:Tr MainWindow_50}"
+                                               Classes="FieldLabel" Margin="0,0,0,6" />
+                                    <Grid Grid.Row="5" Grid.Column="1" Margin="0,0,0,6">
+                                        <ProgressBar Height="18" Minimum="0" Maximum="{Binding NodeSwapBar.Maximum}"
+                                                     Value="{Binding NodeSwapBar.Value}" />
+                                        <TextBlock Text="{Binding NodeSwapBar.Text}" FontSize="11"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Grid>
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="{l:Tr MainWindow_51}"
+                                               Classes="FieldLabel" Margin="0,0,0,6" />
+                                    <Grid Grid.Row="6" Grid.Column="1" Margin="0,0,0,6">
+                                        <ProgressBar Height="18" Minimum="0" Maximum="{Binding NodeRootBar.Maximum}"
+                                                     Value="{Binding NodeRootBar.Value}" />
+                                        <TextBlock Text="{Binding NodeRootBar.Text}" FontSize="11"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Text="{l:Tr MainWindow_52}" Classes="SectionHeader" Margin="2,0,0,6" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="{l:Tr MainWindow_53}" VerticalAlignment="Center"
+                                           Foreground="{StaticResource BrushDim}" Margin="0,0,4,0" />
+                                <ListBox Background="Transparent" BorderThickness="0"
+                                         ItemsSource="{Binding Timeframes}"
+                                         SelectedItem="{Binding NodeTimeframeOption, Mode=TwoWay}">
+                                    <ListBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ListBox.ItemsPanel>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:TimeframeOption">
+                                            <TextBlock Text="{Binding Label}" />
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+                            <Grid Height="190">
+                                <c:GraphLine Series="{Binding NodeGraphSeries}"
+                                             XLabels="{Binding NodeGraphXLabels}"
+                                             Timestamps="{Binding NodeGraphTimes}"
+                                             IsVisible="{Binding NodeGraphSeries, Converter={x:Static ObjectConverters.IsNotNull}, Mode=OneWay}" />
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- ===== 패널 2: 스토리지 — 더블클릭하면 콘텐츠 화면 ===== -->
+                <DataGrid IsVisible="{Binding ShowStoragePanel}" x:CompileBindings="False"
+                          ItemsSource="{Binding Storages}" AutoGenerateColumns="False" IsReadOnly="True"
+                          GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                          ToolTip.Tip="{l:Tr MainWindow_StorageOpenHint}" x:Name="StorageGrid">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="{l:Tr MainWindow_40}" Binding="{Binding Storage, Mode=OneWay}" Width="160" />
+                        <DataGridTextColumn Header="{l:Tr MainWindow_41}" Binding="{Binding Node, Mode=OneWay}" Width="110" />
+                        <DataGridTextColumn Header="{l:Tr MainWindow_54}" Binding="{Binding PluginType, Mode=OneWay}" Width="110" />
+                        <DataGridTextColumn Header="{l:Tr MainWindow_55}" Binding="{Binding Content, Mode=OneWay}" Width="200" />
+                        <DataGridTemplateColumn Header="{l:Tr MainWindow_56}" Width="160">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="m:PveStorage">
+                                    <Grid VerticalAlignment="Center" Margin="0,2">
+                                        <ProgressBar Minimum="0" Maximum="100" Height="12"
+                                                     Value="{Binding UsagePercent}" />
+                                        <TextBlock Text="{Binding UsagePercent, StringFormat='{}{0:F1}%', Mode=OneWay}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   FontSize="11" />
+                                    </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="{l:Tr MainWindow_57}" Width="100"
+                                            Binding="{Binding DiskBytes, Converter={x:Static vm:MainConv.Bytes}, Mode=OneWay}" />
+                        <DataGridTextColumn Header="{l:Tr MainWindow_58}" Width="100"
+                                            Binding="{Binding MaxDiskBytes, Converter={x:Static vm:MainConv.Bytes}, Mode=OneWay}" />
+                        <DataGridTemplateColumn Header="{l:Tr MainWindow_42}" Width="90">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="m:PveStorage">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="9" Height="9" Margin="2,2,6,2"
+                                                 Fill="{Binding Status, Converter={x:Static vm:MainConv.StatusBrush}, Mode=OneWay}" />
+                                        <TextBlock Text="{Binding StatusDisplay}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- ===== 패널 3: 작업 — 더블클릭하면 작업 로그 ===== -->
+                <DataGrid IsVisible="{Binding ShowTasksPanel}" x:CompileBindings="False"
+                          ItemsSource="{Binding Tasks}" AutoGenerateColumns="False" IsReadOnly="True"
+                          GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                          ToolTip.Tip="{l:Tr MainWindow_TaskLogHint}" x:Name="TaskGrid">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="{l:Tr MainWindow_TaskStart}" Width="165"
+                                            Binding="{Binding StartTimeUtc, Converter={x:Static vm:MainConv.LocalTime}, Mode=OneWay}" />
+                        <DataGridTextColumn Header="{l:Tr MainWindow_TaskEnd}" Width="165"
+                                            Binding="{Binding EndTimeUtc, Converter={x:Static vm:MainConv.LocalTime}, Mode=OneWay}" />
+                        <DataGridTextColumn Header="{l:Tr MainWindow_41}" Binding="{Binding Node, Mode=OneWay}" Width="100" />
+                        <DataGridTextColumn Header="{l:Tr MainWindow_54}" Binding="{Binding Type, Mode=OneWay}" Width="130" />
+                        <DataGridTextColumn Header="{l:Tr MainWindow_59}" Binding="{Binding Id, Mode=OneWay}" Width="140" />
+                        <DataGridTextColumn Header="{l:Tr MainWindow_60}" Binding="{Binding User, Mode=OneWay}" Width="150" />
+                        <DataGridTemplateColumn Header="{l:Tr MainWindow_42}" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="m:PveTask">
+                                    <TextBlock Text="{Binding Status}"
+                                               Foreground="{Binding Status, Converter={x:Static vm:MainConv.TaskBrush}, Mode=OneWay}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Grid>
+
+        <!-- 상태 표시줄 -->
+        <Border Grid.Row="2" BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,1,0,0" Padding="14,5">
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" Foreground="{StaticResource BrushDim}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="1" Margin="0,0,16,0">
+                    <Run Text="{l:Tr MainWindow_61}" />
+                    <Run Text="{Binding GuestTotal}" FontWeight="SemiBold" />
+                    <Run Text="{l:Tr MainWindow_62}" />
+                    <Run Text="{Binding NodeTotal}" FontWeight="SemiBold" />
+                    <Run Text="{l:Tr MainWindow_32}" />
+                </TextBlock>
+                <TextBlock Grid.Column="2" Text="{Binding ConnectionStatus}" Foreground="{StaticResource BrushDim}" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

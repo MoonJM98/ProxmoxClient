@@ -1,0 +1,119 @@
+<TabbedPage xmlns="https://github.com/avaloniaui"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+            xmlns:m="using:ProxmoxClient.Core.Models"
+            xmlns:c="using:ProxmoxClient.UI.Converters"
+            xmlns:s="using:ProxmoxClient.UI.Services"
+            xmlns:l="using:ProxmoxClient.UI.Localization"
+            x:Class="ProxmoxClient.UI.Views.ClusterPage"
+            x:DataType="vm:ClusterViewModel"
+            Header="{Binding Title}"
+            TabPlacement="Bottom">
+
+    <NavigationPage.TopCommandBar>
+        <StackPanel Orientation="Horizontal" Spacing="2">
+            <Button Classes="icon" Command="{Binding RefreshCommand}" ToolTip.Tip="{l:Tr Common_Refresh}">
+                <Path Classes="icon" Data="{StaticResource IconRefresh}" />
+            </Button>
+            <Button Classes="icon" Command="{Binding LogoutCommand}" ToolTip.Tip="{l:Tr Cluster_Logout}">
+                <Path Classes="icon" Data="{StaticResource IconLogOut}" />
+            </Button>
+        </StackPanel>
+    </NavigationPage.TopCommandBar>
+
+    <!-- 게스트 -->
+    <ContentPage Header="{l:Tr Cluster_TabGuests}">
+        <Grid RowDefinitions="Auto,Auto,Auto,*">
+            <Border Classes="banner" Margin="16,10,16,0" IsVisible="{Binding HasError}">
+                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+            </Border>
+            <StackPanel Grid.Row="1" Margin="16,12,16,0" Spacing="10">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Classes="subtle" Text="{Binding Subtitle}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Classes="subtle" Text="{Binding GuestSummary}"
+                               VerticalAlignment="Center" />
+                </Grid>
+                <TextBox Text="{Binding SearchText}" PlaceholderText="{l:Tr Cluster_SearchHint}"
+                         TextInputOptions.ContentType="Search">
+                    <TextBox.InnerLeftContent>
+                        <Path Classes="icon" Width="16" Height="16" Margin="10,0,0,0" Opacity="0.6"
+                              Data="{StaticResource IconSearch}" />
+                    </TextBox.InnerLeftContent>
+                </TextBox>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="16,10,16,4">
+                <RadioButton Classes="chip" GroupName="filter" IsChecked="{Binding FilterAll}"
+                             Content="{l:Tr Cluster_FilterAll}" />
+                <RadioButton Classes="chip" GroupName="filter" IsChecked="{Binding FilterRunning}"
+                             Content="{l:Tr Cluster_FilterRunning}" />
+                <RadioButton Classes="chip" GroupName="filter" IsChecked="{Binding FilterStopped}"
+                             Content="{l:Tr Cluster_FilterStopped}" />
+            </StackPanel>
+            <RefreshContainer Grid.Row="3" RefreshRequested="OnRefreshRequested">
+                <ScrollViewer>
+                    <StackPanel Margin="16,8,16,24">
+                        <ItemsControl ItemsSource="{Binding Guests}" Tag="{Binding OpenGuestCommand}"
+                                      ItemTemplate="{StaticResource GuestRowTemplate}"
+                                      ItemsPanel="{StaticResource CardListPanel}" />
+                        <TextBlock Classes="subtle" Margin="0,40,0,0" HorizontalAlignment="Center"
+                                   Text="{l:Tr Cluster_NoGuests}" IsVisible="{Binding IsGuestListEmpty}" />
+                        <ProgressBar IsIndeterminate="True" Margin="40,40,40,0"
+                                     IsVisible="{Binding !IsLoaded}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </RefreshContainer>
+        </Grid>
+    </ContentPage>
+
+    <!-- 노드 -->
+    <ContentPage Header="{l:Tr Cluster_TabNodes}">
+        <RefreshContainer RefreshRequested="OnRefreshRequested">
+            <ScrollViewer>
+                <StackPanel Margin="16,12,16,24" Spacing="10">
+                    <TextBlock Classes="subtle" Text="{Binding NodeSummary}" Margin="4,0" />
+                    <ItemsControl ItemsSource="{Binding Nodes}" ItemTemplate="{StaticResource NodeRowTemplate}" Tag="{Binding OpenNodeCommand}" ItemsPanel="{StaticResource CardListPanel}">
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </RefreshContainer>
+    </ContentPage>
+
+    <!-- 스토리지 -->
+    <ContentPage Header="{l:Tr Cluster_TabStorage}">
+        <RefreshContainer RefreshRequested="OnRefreshRequested">
+            <ScrollViewer>
+                <ItemsControl Margin="16,12,16,24" ItemsSource="{Binding Storages}" ItemTemplate="{StaticResource StorageRowTemplate}" Tag="{Binding OpenStorageCommand}"
+                              ItemsPanel="{StaticResource CardListPanel}">
+                </ItemsControl>
+            </ScrollViewer>
+        </RefreshContainer>
+    </ContentPage>
+
+    <!-- 작업 -->
+    <ContentPage Header="{l:Tr Cluster_TabTasks}">
+        <RefreshContainer RefreshRequested="OnRefreshRequested">
+            <ScrollViewer>
+                <ItemsControl Margin="16,12,16,24" ItemsSource="{Binding Tasks}" ItemTemplate="{StaticResource TaskRowTemplate}" Tag="{Binding OpenTaskCommand}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="8" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </ScrollViewer>
+        </RefreshContainer>
+    </ContentPage>
+    <!-- 관리(데이터센터·만들기) -->
+    <ContentPage Header="{l:Tr Cluster_TabManage}">
+        <ScrollViewer>
+            <StackPanel Margin="16,12,16,24" Spacing="10">
+                <Border Classes="card" Padding="0" IsVisible="{Binding HasManagementEntries}">
+                    <ItemsControl ItemsSource="{Binding ManagementEntries}"
+                                  ItemTemplate="{StaticResource MenuEntryTemplate}" />
+                </Border>
+                <TextBlock Classes="subtle" HorizontalAlignment="Center" Margin="0,40,0,0"
+                           Text="{l:Tr Cluster_ManageEmpty}" IsVisible="{Binding !HasManagementEntries}" />
+            </StackPanel>
+        </ScrollViewer>
+    </ContentPage>
+</TabbedPage>
