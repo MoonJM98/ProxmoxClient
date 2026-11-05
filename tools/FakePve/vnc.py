@@ -138,14 +138,14 @@ def serve(handler):
                     pending_full = False
                     ws.send(struct.pack('>BBH', 0, 0, 1) + struct.pack('>HHHHi', 0, 0, W, H, 0) + DESKTOP)
                 else:
-                    time.sleep(0.05)
-                    ws.send(struct.pack('>BBH', 0, 0, 0))  # 바뀐 것 없음
+                    # 바뀐 것 없음 — 실제 QEMU 처럼 입력 읽기를 막지 않고 조금 뒤에 답한다(막으면 입력이 50ms 씩 몰려 도착)
+                    threading.Timer(0.05, lambda: ws.send(struct.pack('>BBH', 0, 0, 0))).start()
             elif t == 4:  # KeyEvent
                 down, _, keysym = struct.unpack('>BHI', stream.read(7))
                 log('key down=%d keysym=0x%x' % (down, keysym))
             elif t == 5:  # PointerEvent
                 mask, x, y = struct.unpack('>BHH', stream.read(5))
-                log('pointer mask=%d x=%d y=%d' % (mask, x, y))
+                log('pointer mask=%d x=%d y=%d t=%.4f' % (mask, x, y, time.monotonic()))
             elif t == 6:  # ClientCutText
                 _, n = struct.unpack('>3sI', stream.read(7))
                 log('cut %r' % stream.read(n))

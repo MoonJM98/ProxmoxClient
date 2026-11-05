@@ -891,6 +891,55 @@ async Task ConsoleUsabilityCheck()
     k = Keys();
     Check("포커스를 잃으면 눌린 키 해제", "Alt ↓38 ↑38", Codes(k), Codes(k) == "↓0x38 ↑0x38");
 
+    // 끌기 매끄러움 — 손가락은 고르게(이벤트마다 12px, 약 1.5px/ms) 움직이지만 Android 처럼 터치 점이 두 개씩 묶여
+    // 와서 시각 간격이 0ms·16ms 로 번갈아 올 때, 원격 커서도 이벤트마다 고르게 움직여야 한다(가속이 튀면 끊겨 보인다)
+    g.Mode = TouchInputMode.Mouse;
+    g.ResetCursor(new Avalonia.Point(40, 300));
+    var dragAt = center - new Avalonia.Vector(150, 0);
+    g.Down(9, dragAt, now);
+    now += 700;
+    g.Tick(now); // 길게 눌러 끌기 시작
+    var steps = new List<double>();
+    var prevCursor = g.Cursor;
+    for (var i = 1; i <= 14; i++)
+    {
+        now += i % 2 == 0 ? 0 : 16;
+        dragAt += new Avalonia.Vector(12, 0);
+        g.Move(9, dragAt, now);
+        if (i > 4) steps.Add(g.Cursor.X - prevCursor.X); // 처음 몇 개는 속도가 자리 잡는 구간
+        prevCursor = g.Cursor;
+    }
+
+    g.Up(9, dragAt, now);
+    now += 300;
+    var mean = steps.Average();
+    var cv = Math.Sqrt(steps.Sum(v => (v - mean) * (v - mean)) / steps.Count) / mean;
+    var dragEvents = Events();
+    Check("끌기 매끄러움(묶여 오는 터치)", "커서 이동 폭 변동 ≤ 10%, 버튼 누른 채", $"변동 {cv:P0}, 마스크 {Masks(dragEvents)}",
+        cv <= 0.10 && Masks(dragEvents).StartsWith("1"));
+
+    // 실시간 마우스 끌기 — 8ms 마다 움직인 이동이 서버에 고르게 도착하는가(보내는 쪽 간격 두기·타이머 오차 없음)
+    if (desktop)
+    {
+        Events();
+        var liveFrom = surface.TranslatePoint(new Avalonia.Point(200, 200), window)!.Value;
+        window.MouseDown(liveFrom, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+        for (var i = 1; i <= 60; i++)
+        {
+            window.MouseMove(liveFrom + new Avalonia.Vector(i * 3, 0), Avalonia.Input.RawInputModifiers.LeftMouseButton);
+            Thread.Sleep(8);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        window.MouseUp(liveFrom + new Avalonia.Vector(180, 0), Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+        var times = Events().Where(e => e.StartsWith("pointer mask=1"))
+            .Select(e => double.Parse(e.Split(' ').First(p => p.StartsWith("t="))[2..], CultureInfo.InvariantCulture)).ToList();
+        var gaps = times.Zip(times.Skip(1), (a, b) => (b - a) * 1000).ToList();
+        var maxGap = gaps.Count > 0 ? gaps.Max() : 999;
+        Check("실시간 마우스 끌기(8ms 간격)", "이동 50개 이상 도착, 최대 간격 ≤ 25ms",
+            $"{times.Count}개, 최대 {maxGap:F0}ms", times.Count >= 50 && maxGap <= 25);
+    }
+
     Shot("console-keys");
     Console.WriteLine();
     Console.WriteLine("| 조작 | 기대 | 결과 | 판정 |");

@@ -82,6 +82,7 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
         _maxFingers = Math.Max(_maxFingers, _fingers.Count);
         if (_fingers.Count == 1)
         {
+            _speed = _speedDistance = _speedTime = 0; // 새 손짓 — 지난 속도를 이어 쓰지 않는다
             _gesture = Gesture.Pending;
             _gestureStart = ms;
             _longPressFired = false;
@@ -260,11 +261,26 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
         return Mode == TouchInputMode.Mouse ? Cursor : viewport.ToRemote(finger.Start);
     }
 
+    private double _speedDistance;
+    private double _speedTime;
+
+    /// <summary>손가락 속도(px/ms) — 이벤트 사이 시간으로 부드럽게 한 값(가속 배율에 쓴다).</summary>
+    private double _speed;
+
+    /// <summary>속도를 부드럽게 하는 시간 상수 — 터치 점이 묶여 와 한 이벤트의 시간 간격이 0·16ms 로 튀어도 가속이 고르게.</summary>
+    private const double SpeedSmoothingMs = 60;
+
     private void MoveCursor(Vector viewDelta, long elapsedMs)
     {
-        // 빠르게 움직일수록 더 멀리(가속) — 작은 화면에서도 큰 원격 화면을 끝까지 옮길 수 있게
-        var speed = elapsedMs > 0 ? Length(viewDelta) / elapsedMs : 0; // px/ms
-        var accel = Math.Clamp(1 + (speed - 0.3) * 1.2, 1, 3);
+        // 빠르게 움직일수록 더 멀리(가속) — 작은 화면에서도 큰 원격 화면을 끝까지 옮길 수 있게.
+        // 이벤트마다 속도를 새로 재면 Android 가 묶어 보내는 터치 점(시각 차 0ms·16ms)에서 배율이 번갈아 튀어
+        // 커서가 툭툭 끊겨 움직인다 — 거리·시간을 시간 상수로 누적해 속도를 부드럽게 한다.
+        var dt = Math.Max(0, elapsedMs);
+        var weight = Math.Exp(-dt / SpeedSmoothingMs);
+        _speedDistance = _speedDistance * weight + Length(viewDelta);
+        _speedTime = _speedTime * weight + dt;
+        _speed = _speedTime > 0.5 ? _speedDistance / _speedTime : _speed;
+        var accel = Math.Clamp(1 + (_speed - 0.3) * 1.2, 1, 3);
         var remoteDelta = viewDelta / viewport.Scale * CursorSpeed * accel;
         var next = Cursor + remoteDelta;
         Cursor = new Point(Math.Clamp(next.X, 0, Math.Max(0, viewport.Remote.Width - 1)),
