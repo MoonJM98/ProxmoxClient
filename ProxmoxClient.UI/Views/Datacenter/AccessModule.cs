@@ -22,7 +22,7 @@ internal static class AccessModule
             ctx => DatacenterTables.Groups(ctx.Api, canEdit: true)));
         PreviewRegistry.Add("dc-access", new PreviewTab("pools", "DcTab_Pools", "IconBox",
             ctx => DatacenterTables.Pools(ctx.Api, canEdit: true)));
-        PreviewRegistry.Add("dc-access", new PreviewTab("roles", "DcTab_Roles", "IconKeyboard",
+        PreviewRegistry.Add("dc-access", new PreviewTab("roles", "DcTab_Roles", "IconIdCard",
             ctx => DatacenterTables.Roles(ctx.Api, canEdit: true)));
         PreviewRegistry.Add("dc-access", new PreviewTab("realms", "DcTab_Realms", "IconServer",
             ctx => RealmSyncJobs.View(ctx.Api, canEdit: true, () => DatacenterTables.Realms(ctx.Api, canEdit: true))));

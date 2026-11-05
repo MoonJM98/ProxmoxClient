@@ -29,7 +29,7 @@ internal static class ServicesModule
             ctx => FirewallTabs.Create(ctx.Api, true)));
         PreviewRegistry.Add("dc-services", new PreviewTab("metrics", "DcTab_Metrics", "IconList",
             ctx => MonitoringTabs.Metrics(ctx.Api, true)));
-        PreviewRegistry.Add("dc-services", new PreviewTab("mappings", "DcTab_Mappings", "IconKeyboard",
+        PreviewRegistry.Add("dc-services", new PreviewTab("mappings", "DcTab_Mappings", "IconLink",
             ctx => ClusterTabs.Mappings(ctx.Api, true)));
         PreviewRegistry.Add("dc-services", new PreviewTab("notifications", "DcTab_Notifications", "IconExternal",
             ctx => MonitoringTabs.Notifications(ctx.Api, true)));

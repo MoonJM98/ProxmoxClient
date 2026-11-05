@@ -122,7 +122,7 @@ internal static class DiskTabs
             },
             new TableAction
             {
-                LabelKey = "NodeDisks_Wipe", IconKey = "IconTrash", NeedsSelection = true,
+                LabelKey = "NodeDisks_Wipe", IconKey = "IconEraser", NeedsSelection = true,
                 Run = (row, owner) =>
                 {
                     var device = row!["devpath"];

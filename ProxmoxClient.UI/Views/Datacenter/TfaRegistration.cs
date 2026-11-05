@@ -32,11 +32,11 @@ internal static class TfaRegistration
             },
             new TableAction
             {
-                LabelKey = "DcTfa_AddYubico", IconKey = "IconKeyboard", Run = (_, owner) => AddYubicoAsync(api, owner)
+                LabelKey = "DcTfa_AddYubico", IconKey = "IconUsb", Run = (_, owner) => AddYubicoAsync(api, owner)
             },
             new TableAction
             {
-                LabelKey = "DcTfa_AddRecovery", IconKey = "IconKeyboard",
+                LabelKey = "DcTfa_AddRecovery", IconKey = "IconLifeBuoy",
                 Run = (_, owner) => AddRecoveryAsync(api, owner)
             }
         ];

@@ -70,4 +70,15 @@
     <Geometry x:Key="IconFolderPlus">M12,10 V16 M9,13 H15 M20,20 A2,2 0 0 0 22,18 V8 A2,2 0 0 0 20,6 H12.1 A2,2 0 0 1 10.41,5.1 L9.6,3.9 A2,2 0 0 0 7.93,3 H4 A2,2 0 0 0 2,5 V18 A2,2 0 0 0 4,20 Z</Geometry>
     <Geometry x:Key="IconLink">M10,13 A5,5 0 0 0 17.54,13.54 L20.54,10.54 A5,5 0 0 0 13.47,3.47 L11.75,5.18 M14,11 A5,5 0 0 0 6.46,10.46 L3.46,13.46 A5,5 0 0 0 10.53,20.53 L12.24,18.82</Geometry>
 
+
+    <!-- 아이콘만 보이는 좁은 화면에서도 구분되도록 따로 둔 아이콘(키보드·휴지통 재사용 대신) -->
+    <Geometry x:Key="IconKey">M3,15.5 A4.5,4.5 0 1 0 12,15.5 A4.5,4.5 0 1 0 3,15.5 Z M10.7,12.3 L21,2 M16,7 L19,10 M18.5,4.5 L20.5,6.5</Geometry>
+    <Geometry x:Key="IconTicket">M2,9 A3,3 0 0 1 2,15 V17 A2,2 0 0 0 4,19 H20 A2,2 0 0 0 22,17 V15 A3,3 0 0 1 22,9 V7 A2,2 0 0 0 20,5 H4 A2,2 0 0 0 2,7 Z M13,5 V7 M13,11 V13 M13,17 V19</Geometry>
+    <Geometry x:Key="IconUsb">M9,2 H15 V8 H9 Z M7,8 H17 V20 A2,2 0 0 1 15,22 H9 A2,2 0 0 1 7,20 Z M12,13 V17</Geometry>
+    <Geometry x:Key="IconLifeBuoy">M2,12 A10,10 0 1 0 22,12 A10,10 0 1 0 2,12 Z M8,12 A4,4 0 1 0 16,12 A4,4 0 1 0 8,12 Z M4.93,4.93 L9.17,9.17 M14.83,14.83 L19.07,19.07 M14.83,9.17 L19.07,4.93 M9.17,14.83 L4.93,19.07</Geometry>
+    <Geometry x:Key="IconIdCard">M4,4 H20 A2,2 0 0 1 22,6 V18 A2,2 0 0 1 20,20 H4 A2,2 0 0 1 2,18 V6 A2,2 0 0 1 4,4 Z M7,9 A2,2 0 1 0 11,9 A2,2 0 1 0 7,9 Z M5.5,16 A3.5,3.5 0 0 1 12.5,16 M15,9 H19 M15,13 H19</Geometry>
+    <Geometry x:Key="IconScissors">M3,6 A3,3 0 1 0 9,6 A3,3 0 1 0 3,6 Z M3,18 A3,3 0 1 0 9,18 A3,3 0 1 0 3,18 Z M8.12,8.12 L12,12 M20,4 L8.12,15.88 M14.8,14.8 L20,20</Geometry>
+    <Geometry x:Key="IconUnlink">M9,17 H7 A5,5 0 0 1 7,7 H9 M15,7 H17 A5,5 0 0 1 17,17 H15 M3,3 L21,21</Geometry>
+    <Geometry x:Key="IconBan">M2,12 A10,10 0 1 0 22,12 A10,10 0 1 0 2,12 Z M4.9,4.9 L19.1,19.1</Geometry>
+    <Geometry x:Key="IconEraser">M7,21 L3.6,17.6 A2,2 0 0 1 3.6,14.8 L13.6,4.8 A2,2 0 0 1 16.4,4.8 L21.2,9.6 A2,2 0 0 1 21.2,12.4 L12,21.6 Z M22,21 H7 M5,11 L14,20</Geometry>
 </ResourceDictionary>

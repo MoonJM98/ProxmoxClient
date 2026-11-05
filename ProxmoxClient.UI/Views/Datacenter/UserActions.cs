@@ -26,7 +26,7 @@ internal static class UserActions
         {
             new()
             {
-                LabelKey = "DcUsers_Password", IconKey = "IconKeyboard", NeedsSelection = true,
+                LabelKey = "DcUsers_Password", IconKey = "IconKey", NeedsSelection = true,
                 Run = (row, owner) => ChangePasswordAsync(api, row!["userid"], owner)
             },
             AccessExtras.TokensAction(api)

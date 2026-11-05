@@ -36,7 +36,7 @@ internal static class AccessExtras
     {
         return new TableAction
         {
-            LabelKey = "DcTokens_Button", IconKey = "IconKeyboard", NeedsSelection = true,
+            LabelKey = "DcTokens_Button", IconKey = "IconTicket", NeedsSelection = true,
             Run = (row, owner) =>
             {
                 var user = row!["userid"];

@@ -21,7 +21,7 @@ internal static class PruneAction
     {
         return new TableAction
         {
-            LabelKey = "Prune_Action", IconKey = "IconTrash", NeedsSelection = true,
+            LabelKey = "Prune_Action", IconKey = "IconScissors", NeedsSelection = true,
             Run = (row, owner) => RunAsync(api, node, storage, row!, owner)
         };
     }
