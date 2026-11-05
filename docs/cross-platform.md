@@ -103,7 +103,7 @@ GPU 경로가 초기화는 되는데 창이 검게 나오면 `PROXMOXCLIENT_REND
 | VPN | 실제 OpenVPN 2.6 서버(자체 CA·tun) + 터널 주소에만 묶은 가짜 PVE, `--vpn` | 터널 → 로그인 → 종료 시 정리, 강제 종료 뒤 남은 openvpn 정리 |
 | Linux 실제 데스크톱 | 릴리스 빌드를 Xvfb(X11) 에서 실행, xdotool 로 조작 | 인증서 확인·로그인·메인·CT 터미널(vim·top)·VNC 콘솔(물리 키 → 스캔코드) 정상 |
 | Linux 렌더링 경로 | 같은 실행에서 `PROXMOXCLIENT_LOG=1` 로 초기화 기록 확인 | GPU 없음: Vulkan(드라이버 없음) → EGL(libEGL 없음) → GLX(llvmpipe 는 Avalonia 가 거부) → 소프트웨어로 정상 전환. Mesa lavapipe 를 깔면 **Vulkan** 으로 그리며 로그인·메인·CT 터미널·VNC(타일 업로드·확대)·휠 입력 정상 |
-| Windows 빌드(Wine 9, Xvfb) | win-x64 자체 포함 빌드를 Wine 으로 실행 | Win32 플랫폼으로 시작. ANGLE(D3D11) 은 Wine 의 D3D 변환에서 창이 검게 나옴(Wine 한계로 보임 — 실제 Windows 미확인) → `PROXMOXCLIENT_RENDER=software` 로 로그인 화면 정상(라벨 'Software · Windows · Desktop'). 가짜 서버에 Windows 빌드로 접속: 자체 서명 인증서 확인 창 → 신뢰 → 영역 목록 받기 → 틀린 비밀번호는 '사용자 이름·비밀번호·영역이 맞지 않습니다' → 맞는 비밀번호로 메인(게스트 5·노드 2, 자동 새로고침) |
+| Windows 빌드(Wine 9, Xvfb) | win-x64 자체 포함 빌드를 Wine 으로 실행 | Win32 플랫폼으로 시작. ANGLE(D3D11) 은 Wine 의 D3D 변환에서 창이 검게 나옴(Wine 한계로 보임 — 실제 Windows 미확인) → `PROXMOXCLIENT_RENDER=software` 로 로그인 화면 정상(라벨 'Software · Windows · Desktop'). 가짜 서버에 Windows 빌드로 접속: 자체 서명 인증서 확인 창 → 신뢰 → 영역 목록 받기 → 틀린 비밀번호는 '사용자 이름·비밀번호·영역이 맞지 않습니다' → 맞는 비밀번호로 메인(게스트 5·노드 2, 자동 새로고침, 상세 그래프) → 더블클릭으로 VNC 콘솔(웹소켓·화면·커서 모양, 클릭 mask=1, 키 a/b → QEMU 스캔코드 0x1e/0x30) |
 | Android | 헤드 빌드(AOT 설정 포함) | 빌드만 — 실기기·에뮬레이터 확인 필요(이 환경은 KVM 없음) |
 | Windows·macOS | 빌드(WPF·데스크톱 헤드) | 실기기 확인 필요(Direct3D/ANGLE·Metal 경로, Credential Manager·Keychain, remote-viewer·openvpn 실행) |
 | 실제 Proxmox 서버 | — | 실서버 확인 필요(가짜 서버는 PVE 9.0 API 응답 형식을 따른다) |
