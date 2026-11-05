@@ -1,0 +1,186 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:m="using:ProxmoxClient.Core.Models"
+                    xmlns:c="using:ProxmoxClient.UI.Converters"
+                    xmlns:l="using:ProxmoxClient.UI.Localization">
+
+    <!--
+        게스트 한 줄 — 누르면 목록(ItemsControl)의 Tag 에 넣은 명령을 실행한다(클러스터·노드 화면 공용).
+    -->
+    <DataTemplate x:Key="GuestRowTemplate" x:DataType="m:PveResource">
+        <Border Classes="card" Padding="0">
+            <Button Classes="row" Command="{Binding $parent[ItemsControl].Tag}" CommandParameter="{Binding}">
+                <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                    <Ellipse Classes="dot" Margin="0,0,12,0"
+                             Fill="{Binding Status, Converter={x:Static c:Conv.StatusBrush}}" />
+                    <StackPanel Grid.Column="1" Spacing="2">
+                        <TextBlock Classes="title" Text="{Binding Name}" />
+                        <TextBlock Classes="subtle">
+                            <Run Text="{Binding VmId}" />
+                            <Run Text="·" />
+                            <Run Text="{Binding Kind, Converter={x:Static c:Conv.KindLabel}}" />
+                            <Run Text="·" />
+                            <Run Text="{Binding Node}" />
+                        </TextBlock>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Border IsVisible="{Binding IsTemplate}" CornerRadius="6" Padding="6,2"
+                                Background="{DynamicResource TrackBrush}">
+                            <TextBlock Text="{l:Tr Guest_Template}" FontSize="11" />
+                        </Border>
+                        <Path Classes="icon" Width="14" Height="14" Data="{StaticResource IconChevronRight}"
+                              Opacity="0.5" />
+                    </StackPanel>
+
+                    <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" ColumnDefinitions="*,16,*"
+                          Margin="0,10,0,0" IsVisible="{Binding IsRunning}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="subtle" FontSize="11">
+                                <Run Text="CPU" />
+                                <Run Text="{Binding CpuUsagePercent, Converter={x:Static c:Conv.Percent}}" />
+                            </TextBlock>
+                            <ProgressBar Classes="usage" Value="{Binding CpuUsagePercent}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="4">
+                            <TextBlock Classes="subtle" FontSize="11">
+                                <Run Text="{l:Tr Common_Memory}" />
+                                <Run>
+                                    <Run.Text>
+                                        <MultiBinding Converter="{x:Static c:Conv.UsedOf}">
+                                            <Binding Path="MemBytes" />
+                                            <Binding Path="MaxMemBytes" />
+                                        </MultiBinding>
+                                    </Run.Text>
+                                </Run>
+                            </TextBlock>
+                            <ProgressBar Classes="usage">
+                                <ProgressBar.Value>
+                                    <MultiBinding Converter="{x:Static c:Conv.Ratio}">
+                                        <Binding Path="MemBytes" />
+                                        <Binding Path="MaxMemBytes" />
+                                    </MultiBinding>
+                                </ProgressBar.Value>
+                            </ProgressBar>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Button>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="NodeRowTemplate" x:DataType="m:PveNode">
+            <Border Classes="card" Padding="0">
+                <Button Classes="row"
+                        Command="{Binding $parent[ItemsControl].Tag}"
+                        CommandParameter="{Binding}">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Ellipse Classes="dot" Margin="0,0,12,0"
+                                     Fill="{Binding Status, Converter={x:Static c:Conv.StatusBrush}}" />
+                            <TextBlock Grid.Column="1" Classes="title" Text="{Binding Node}" />
+                            <TextBlock Grid.Column="2" Classes="subtle"
+                                       Text="{Binding UptimeSeconds, Converter={x:Static c:Conv.Uptime}}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,16,*" IsVisible="{Binding IsOnline}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="subtle" FontSize="11">
+                                    <Run Text="CPU" />
+                                    <Run Text="{Binding CpuUsagePercent, Converter={x:Static c:Conv.Percent}}" />
+                                    <Run Text="·" />
+                                    <Run Text="{Binding CpuCount}" />
+                                    <Run Text="{l:Tr Common_Cores}" />
+                                </TextBlock>
+                                <ProgressBar Classes="usage" Value="{Binding CpuUsagePercent}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Spacing="4">
+                                <TextBlock Classes="subtle" FontSize="11">
+                                    <Run Text="{l:Tr Common_Memory}" />
+                                    <Run>
+                                        <Run.Text>
+                                            <MultiBinding Converter="{x:Static c:Conv.UsedOf}">
+                                                <Binding Path="MemBytes" />
+                                                <Binding Path="MaxMemBytes" />
+                                            </MultiBinding>
+                                        </Run.Text>
+                                    </Run>
+                                </TextBlock>
+                                <ProgressBar Classes="usage">
+                                    <ProgressBar.Value>
+                                        <MultiBinding Converter="{x:Static c:Conv.Ratio}">
+                                            <Binding Path="MemBytes" />
+                                            <Binding Path="MaxMemBytes" />
+                                        </MultiBinding>
+                                    </ProgressBar.Value>
+                                </ProgressBar>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Button>
+            </Border>
+        </DataTemplate>
+
+    <DataTemplate x:Key="StorageRowTemplate" x:DataType="m:PveStorage">
+            <Border Classes="card">
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Ellipse Classes="dot" Margin="0,0,12,0"
+                                 Fill="{Binding Status, Converter={x:Static c:Conv.StatusBrush}}" />
+                        <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Classes="title" Text="{Binding Storage}" />
+                            <TextBlock Classes="subtle">
+                                <Run Text="{Binding Node}" />
+                                <Run Text="·" />
+                                <Run Text="{Binding PluginType}" />
+                            </TextBlock>
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Classes="subtle" VerticalAlignment="Top"
+                                   Text="{Binding UsagePercent, Converter={x:Static c:Conv.Percent}}" />
+                    </Grid>
+                    <ProgressBar Classes="usage" Value="{Binding UsagePercent}" />
+                    <TextBlock Classes="subtle" FontSize="12">
+                        <Run>
+                            <Run.Text>
+                                <MultiBinding Converter="{x:Static c:Conv.UsedOf}">
+                                    <Binding Path="DiskBytes" />
+                                    <Binding Path="MaxDiskBytes" />
+                                </MultiBinding>
+                            </Run.Text>
+                        </Run>
+                    </TextBlock>
+                    <TextBlock Classes="subtle" FontSize="12" Text="{Binding Content}"
+                               TextWrapping="Wrap" TextTrimming="None" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+    <DataTemplate x:Key="TaskRowTemplate" x:DataType="m:PveTask">
+            <Border Classes="card" Padding="0">
+                <Button Classes="row"
+                        Command="{Binding $parent[ItemsControl].Tag}"
+                        CommandParameter="{Binding}">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Ellipse Classes="dot" Margin="0,0,12,0" VerticalAlignment="Top"
+                                 Fill="{Binding Status, Converter={x:Static c:Conv.TaskBrush}}" />
+                        <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Classes="title" FontSize="15"
+                                       Text="{Binding Converter={x:Static c:Conv.TaskTitle}}" />
+                            <TextBlock Classes="subtle">
+                                <Run Text="{Binding Node}" />
+                                <Run Text="·" />
+                                <Run Text="{Binding User}" />
+                                <Run Text="·" />
+                                <Run Text="{Binding StartTimeUtc, Converter={x:Static c:Conv.LocalTime}}" />
+                            </TextBlock>
+                            <TextBlock Classes="subtle" Foreground="{StaticResource DangerBrush}"
+                                       Text="{Binding Status}" IsVisible="{Binding IsFailed}"
+                                       TextWrapping="Wrap" TextTrimming="None" />
+                        </StackPanel>
+                    </Grid>
+                </Button>
+            </Border>
+        </DataTemplate>
+
+    <ItemsPanelTemplate x:Key="CardListPanel">
+        <StackPanel Spacing="10" />
+    </ItemsPanelTemplate>
+</ResourceDictionary>

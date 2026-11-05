@@ -1,0 +1,132 @@
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+             xmlns:l="using:ProxmoxClient.UI.Localization"
+             x:Class="ProxmoxClient.UI.Views.ClusterDesktopPage"
+             x:DataType="vm:ClusterViewModel"
+             Header="{Binding Title}"
+             NavigationPage.HasNavigationBar="False">
+    <!--
+        데스크톱 배치 — 왼쪽 메뉴 | 목록 | 상세. 모바일 탭 화면(ClusterPage)과 같은 뷰모델·같은 줄 템플릿을 쓴다.
+    -->
+    <Grid ColumnDefinitions="220,420,Auto,*">
+
+        <!-- 왼쪽 메뉴 -->
+        <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="0,0,1,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Margin="16,18,16,12" Spacing="4">
+                    <TextBlock Classes="headline" Text="{Binding Title}" />
+                    <TextBlock Classes="subtle" Text="{Binding Subtitle}" />
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Bottom" Margin="8,8,8,12" Spacing="2">
+                    <Button Classes="row" Padding="12,10" Command="{Binding RefreshCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Path Classes="icon" Data="{StaticResource IconRefresh}" />
+                            <TextBlock Text="{l:Tr Common_Refresh}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="row" Padding="12,10" Command="{Binding LogoutCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Path Classes="icon" Data="{StaticResource IconLogOut}" />
+                            <TextBlock Text="{l:Tr Cluster_Logout}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+                <ListBox Classes="nav" Margin="8,0" SelectedIndex="{Binding SectionIndex}">
+                    <ListBoxItem>
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Path Classes="icon" Data="{StaticResource IconMonitor}" />
+                            <TextBlock Grid.Column="1" Margin="10,0" Text="{l:Tr Cluster_TabGuests}" />
+                            <TextBlock Grid.Column="2" Classes="subtle" Text="{Binding GuestSummary}" />
+                        </Grid>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Path Classes="icon" Data="{StaticResource IconServer}" />
+                            <TextBlock Grid.Column="1" Margin="10,0" Text="{l:Tr Cluster_TabNodes}" />
+                        </Grid>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Path Classes="icon" Data="{StaticResource IconDatabase}" />
+                            <TextBlock Grid.Column="1" Margin="10,0" Text="{l:Tr Cluster_TabStorage}" />
+                        </Grid>
+                    </ListBoxItem>
+                    <ListBoxItem>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Path Classes="icon" Data="{StaticResource IconList}" />
+                            <TextBlock Grid.Column="1" Margin="10,0" Text="{l:Tr Cluster_TabTasks}" />
+                        </Grid>
+                    </ListBoxItem>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- 목록 -->
+        <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*">
+            <Border Classes="banner" Margin="12,10,12,0" IsVisible="{Binding HasError}">
+                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+            </Border>
+            <StackPanel Grid.Row="1" Margin="12,12,12,4" Spacing="10" IsVisible="{Binding IsGuestsSection}">
+                <TextBox Text="{Binding SearchText}" PlaceholderText="{l:Tr Cluster_SearchHint}">
+                    <TextBox.InnerLeftContent>
+                        <Path Classes="icon" Width="16" Height="16" Margin="10,0,0,0" Opacity="0.6"
+                              Data="{StaticResource IconSearch}" />
+                    </TextBox.InnerLeftContent>
+                </TextBox>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Classes="chip" GroupName="dfilter" IsChecked="{Binding FilterAll}"
+                                 Content="{l:Tr Cluster_FilterAll}" />
+                    <RadioButton Classes="chip" GroupName="dfilter" IsChecked="{Binding FilterRunning}"
+                                 Content="{l:Tr Cluster_FilterRunning}" />
+                    <RadioButton Classes="chip" GroupName="dfilter" IsChecked="{Binding FilterStopped}"
+                                 Content="{l:Tr Cluster_FilterStopped}" />
+                </StackPanel>
+            </StackPanel>
+            <ScrollViewer Grid.Row="2">
+                <StackPanel Margin="12,8,12,20">
+                    <StackPanel IsVisible="{Binding IsGuestsSection}">
+                        <ItemsControl ItemsSource="{Binding Guests}" Tag="{Binding OpenGuestCommand}"
+                                      ItemTemplate="{StaticResource GuestRowTemplate}"
+                                      ItemsPanel="{StaticResource CardListPanel}" />
+                        <TextBlock Classes="subtle" Margin="0,40,0,0" HorizontalAlignment="Center"
+                                   Text="{l:Tr Cluster_NoGuests}" IsVisible="{Binding IsGuestListEmpty}" />
+                    </StackPanel>
+                    <StackPanel IsVisible="{Binding IsNodesSection}" Spacing="10">
+                        <TextBlock Classes="subtle" Text="{Binding NodeSummary}" Margin="4,0" />
+                        <ItemsControl ItemsSource="{Binding Nodes}" Tag="{Binding OpenNodeCommand}"
+                                      ItemTemplate="{StaticResource NodeRowTemplate}"
+                                      ItemsPanel="{StaticResource CardListPanel}" />
+                    </StackPanel>
+                    <ItemsControl IsVisible="{Binding IsStorageSection}" ItemsSource="{Binding Storages}"
+                                  ItemTemplate="{StaticResource StorageRowTemplate}"
+                                  ItemsPanel="{StaticResource CardListPanel}" />
+                    <ItemsControl IsVisible="{Binding IsTasksSection}" ItemsSource="{Binding Tasks}"
+                                  Tag="{Binding OpenTaskCommand}" ItemTemplate="{StaticResource TaskRowTemplate}"
+                                  ItemsPanel="{StaticResource CardListPanel}" />
+                    <ProgressBar IsIndeterminate="True" Margin="40,40,40,0" IsVisible="{Binding !IsLoaded}" />
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <GridSplitter Grid.Column="2" Width="4" ResizeDirection="Columns"
+                      Background="{DynamicResource CardBorderBrush}" />
+
+        <!-- 상세 -->
+        <Grid Grid.Column="3" RowDefinitions="Auto,*">
+            <Border x:Name="DetailHeader" IsVisible="False" BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="0,0,0,1" Padding="20,10,10,10">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock x:Name="DetailTitle" Classes="title" FontSize="18" VerticalAlignment="Center" />
+                    <Button x:Name="DetailReload" Grid.Column="1" Classes="icon" IsVisible="False">
+                        <Path Classes="icon" Data="{StaticResource IconRefresh}" />
+                    </Button>
+                </Grid>
+            </Border>
+            <ContentControl x:Name="DetailContent" Grid.Row="1" />
+            <TextBlock x:Name="DetailPlaceholder" Grid.Row="1" Classes="subtle" HorizontalAlignment="Center"
+                       VerticalAlignment="Center" Text="{l:Tr Desktop_SelectItem}" />
+        </Grid>
+    </Grid>
+</ContentPage>

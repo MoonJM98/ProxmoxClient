@@ -1,0 +1,19 @@
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:ProxmoxClient.UI.Views"
+             xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+             xmlns:m="using:ProxmoxClient.Core.Models"
+             xmlns:c="using:ProxmoxClient.UI.Converters"
+             xmlns:l="using:ProxmoxClient.UI.Localization"
+             x:Class="ProxmoxClient.UI.Views.GuestDetailPage"
+             x:DataType="vm:GuestDetailViewModel"
+             Header="{Binding Title}">
+
+    <NavigationPage.TopCommandBar>
+        <Button Classes="icon" Command="{Binding ReloadCommand}">
+            <Path Classes="icon" Data="{StaticResource IconRefresh}" />
+        </Button>
+    </NavigationPage.TopCommandBar>
+
+    <views:GuestDetailView />
+</ContentPage>

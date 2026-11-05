@@ -1,0 +1,6 @@
+<Solution>
+    <Project Path="ProxmoxClient.Core/ProxmoxClient.Core.csproj"/>
+    <Project Path="ProxmoxClient.UI/ProxmoxClient.UI.csproj"/>
+    <Project Path="ProxmoxClient.Desktop/ProxmoxClient.Desktop.csproj"/>
+    <Project Path="ProxmoxClient.Android/ProxmoxClient.Android.csproj"/>
+</Solution>

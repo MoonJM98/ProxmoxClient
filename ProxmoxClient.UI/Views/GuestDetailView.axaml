@@ -1,0 +1,240 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+             xmlns:m="using:ProxmoxClient.Core.Models"
+             xmlns:c="using:ProxmoxClient.UI.Converters"
+             xmlns:l="using:ProxmoxClient.UI.Localization"
+             x:Class="ProxmoxClient.UI.Views.GuestDetailView"
+             x:DataType="vm:GuestDetailViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="16,12,16,32" Spacing="12">
+
+            <!-- 상태 -->
+            <Border Classes="card">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="headline" Text="{Binding Guest.Name}" />
+                    <TextBlock Classes="subtle">
+                        <Run Text="{Binding KindText}" />
+                        <Run Text="{Binding Guest.VmId}" />
+                        <Run Text="·" />
+                        <Run Text="{Binding Guest.Node}" />
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+                        <Ellipse Classes="dot" Fill="{Binding Status, Converter={x:Static c:Conv.StatusBrush}}" />
+                        <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Classes="subtle" VerticalAlignment="Center" IsVisible="{Binding IsRunning}"
+                                   Text="{Binding Guest.UptimeDisplaySeconds, Converter={x:Static c:Conv.Uptime}}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 진행 중인 작업 -->
+            <Border Classes="card" IsVisible="{Binding IsTaskRunning}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding TaskText}" TextWrapping="Wrap" />
+                    <ProgressBar IsIndeterminate="True" />
+                </StackPanel>
+            </Border>
+
+            <!-- 전원 -->
+            <TextBlock Classes="section" Text="{l:Tr Guest_Power}" />
+            <WrapPanel>
+                <Button Classes="action accent" Command="{Binding StartCommand}" IsVisible="{Binding CanStart}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Classes="icon" Data="{StaticResource IconPlay}" />
+                        <TextBlock Text="{l:Tr Power_Start}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="action" Command="{Binding ResumeCommand}" IsVisible="{Binding CanResume}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Classes="icon" Data="{StaticResource IconResume}" />
+                        <TextBlock Text="{l:Tr Power_Resume}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="action" Command="{Binding ShutdownCommand}" IsVisible="{Binding CanShutdown}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Classes="icon" Data="{StaticResource IconPower}" />
+                        <TextBlock Text="{l:Tr Power_Shutdown}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="action" Command="{Binding RebootCommand}" IsVisible="{Binding CanReboot}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Classes="icon" Data="{StaticResource IconRotate}" />
+                        <TextBlock Text="{l:Tr Power_Reboot}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="action" Command="{Binding SuspendCommand}" IsVisible="{Binding CanSuspend}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Classes="icon" Data="{StaticResource IconPause}" />
+                        <TextBlock Text="{l:Tr Power_Suspend}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="action danger" Command="{Binding StopCommand}" IsVisible="{Binding CanStop}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Classes="icon" Data="{StaticResource IconSquare}" />
+                        <TextBlock Text="{l:Tr Power_Stop}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="action danger" Command="{Binding ResetCommand}" IsVisible="{Binding CanReset}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Path Classes="icon" Data="{StaticResource IconUndo}" />
+                        <TextBlock Text="{l:Tr Power_Reset}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </WrapPanel>
+
+            <!-- 사용량 -->
+            <TextBlock Classes="section" Text="{l:Tr Guest_Usage}" />
+            <Border Classes="card">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="CPU" />
+                            <TextBlock Grid.Column="1" Classes="subtle">
+                                <Run Text="{Binding Guest.CpuUsagePercent, Converter={x:Static c:Conv.Percent}}" />
+                                <Run Text="·" />
+                                <Run Text="{Binding Guest.CpuCount}" />
+                                <Run Text="{l:Tr Common_Cores}" />
+                            </TextBlock>
+                        </Grid>
+                        <ProgressBar Classes="usage" Value="{Binding Guest.CpuUsagePercent}" />
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{l:Tr Common_Memory}" />
+                            <TextBlock Grid.Column="1" Classes="subtle">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{x:Static c:Conv.UsedOf}">
+                                        <Binding Path="Guest.MemBytes" />
+                                        <Binding Path="Guest.MaxMemBytes" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </Grid>
+                        <ProgressBar Classes="usage">
+                            <ProgressBar.Value>
+                                <MultiBinding Converter="{x:Static c:Conv.Ratio}">
+                                    <Binding Path="Guest.MemBytes" />
+                                    <Binding Path="Guest.MaxMemBytes" />
+                                </MultiBinding>
+                            </ProgressBar.Value>
+                        </ProgressBar>
+                    </StackPanel>
+                    <StackPanel Spacing="6" IsVisible="{Binding !IsQemu}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{l:Tr Common_Disk}" />
+                            <TextBlock Grid.Column="1" Classes="subtle">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{x:Static c:Conv.UsedOf}">
+                                        <Binding Path="Guest.DiskBytes" />
+                                        <Binding Path="Guest.MaxDiskBytes" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </Grid>
+                        <ProgressBar Classes="usage">
+                            <ProgressBar.Value>
+                                <MultiBinding Converter="{x:Static c:Conv.Ratio}">
+                                    <Binding Path="Guest.DiskBytes" />
+                                    <Binding Path="Guest.MaxDiskBytes" />
+                                </MultiBinding>
+                            </ProgressBar.Value>
+                        </ProgressBar>
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{l:Tr Common_Network}" />
+                        <TextBlock Grid.Column="1" Classes="subtle">
+                            <Run Text="↓" />
+                            <Run Text="{Binding Guest.NetInBytes, Converter={x:Static c:Conv.Bytes}}" />
+                            <Run Text="  ↑" />
+                            <Run Text="{Binding Guest.NetOutBytes, Converter={x:Static c:Conv.Bytes}}" />
+                        </TextBlock>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- IP 주소 -->
+            <TextBlock Classes="section" Text="{l:Tr Guest_Addresses}" />
+            <Border Classes="card" Padding="6,4">
+                <StackPanel>
+                    <ItemsControl ItemsSource="{Binding Addresses}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Grid ColumnDefinitions="*,Auto" Margin="8,0,0,0">
+                                    <SelectableTextBlock Text="{Binding}" VerticalAlignment="Center"
+                                                         FontFamily="monospace" />
+                                    <Button Grid.Column="1" Classes="icon"
+                                            Command="{Binding $parent[ItemsControl].((vm:GuestDetailViewModel)DataContext).CopyTextCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Path Classes="icon" Width="16" Height="16" Data="{StaticResource IconCopy}" />
+                                    </Button>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Classes="subtle" Margin="8,8" Text="{Binding AddressHint}" TextWrapping="Wrap"
+                               TextTrimming="None" IsVisible="{Binding AddressHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- 스냅숏 -->
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Classes="section" Text="{l:Tr Guest_Snapshots}" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Classes="icon" Command="{Binding CreateSnapshotCommand}"
+                        IsEnabled="{Binding !IsTaskRunning}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Path Classes="icon" Width="16" Height="16" Data="{StaticResource IconPlus}" />
+                        <TextBlock Text="{l:Tr Snapshot_Create}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+            <Border Classes="card" Padding="6,4">
+                <StackPanel>
+                    <ItemsControl ItemsSource="{Binding Snapshots}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="m:PveSnapshot">
+                                <Grid ColumnDefinitions="*,Auto,Auto" Margin="8,4,0,4">
+                                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                        <TextBlock Classes="subtle"
+                                                   Text="{Binding SnapTimeUtc, Converter={x:Static c:Conv.LocalTime}}" />
+                                        <TextBlock Classes="subtle" Text="{Binding Description}" TextWrapping="Wrap"
+                                                   TextTrimming="None"
+                                                   IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Classes="icon"
+                                            Command="{Binding $parent[ItemsControl].((vm:GuestDetailViewModel)DataContext).RollbackSnapshotCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Path Classes="icon" Data="{StaticResource IconUndo}" />
+                                    </Button>
+                                    <Button Grid.Column="2" Classes="icon danger"
+                                            Command="{Binding $parent[ItemsControl].((vm:GuestDetailViewModel)DataContext).DeleteSnapshotCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Path Classes="icon" Data="{StaticResource IconTrash}" />
+                                    </Button>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Classes="subtle" Margin="8,8" Text="{l:Tr Snapshot_None}"
+                               IsVisible="{Binding HasNoSnapshots}" />
+                </StackPanel>
+            </Border>
+
+            <!-- 설정 -->
+            <Expander Header="{l:Tr Guest_Config}" HorizontalAlignment="Stretch" Margin="0,8,0,0">
+                <ItemsControl ItemsSource="{Binding Config}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ConfigEntry">
+                            <StackPanel Margin="0,4" Spacing="1">
+                                <TextBlock Classes="subtle" FontSize="12" Text="{Binding Key}" />
+                                <SelectableTextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
