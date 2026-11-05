@@ -77,6 +77,25 @@ if (desktop)
 await Wait(AppServices.Navigator.PushAsync(new ProfileEditViewModel(profiles.Profiles[0].Profile)));
 Pump(800);
 Shot("profile-edit");
+// 화면 키보드 — 아래쪽 입력 칸에 포커스하고 키보드(360px)가 올라오면 그 칸이 키보드 위에 보여야 한다
+if (!desktop)
+{
+    var shell = window.GetVisualDescendants().OfType<AppShell>().First();
+    var lowest = nav.CurrentPage!.GetVisualDescendants().OfType<TextBox>().Where(t => t.IsEffectivelyVisible)
+        .OrderByDescending(t => t.TranslatePoint(new Avalonia.Point(0, 0), window)!.Value.Y).First();
+    lowest.Focus();
+    Pump(200);
+    const double keyboard = 360;
+    shell.ApplyKeyboardInset(keyboard);
+    Pump(600);
+    var bottom = lowest.TranslatePoint(new Avalonia.Point(0, lowest.Bounds.Height), window)!.Value.Y;
+    var visible = bottom <= window.Height - keyboard + 1;
+    Shot("keyboard-open");
+    Console.WriteLine($"| 화면 키보드 | 포커스 칸이 키보드 위(≤{window.Height - keyboard}) | 칸 아래 끝 {bottom:F0} | {(visible ? "통과" : "실패")} |");
+    if (!visible) failures++;
+    shell.ApplyKeyboardInset(0);
+    Pump(300);
+}
 if (AppServices.Dialogs.Current is { } editorDialog) editorDialog.CancelCommand.Execute(null);
 await Wait(AppServices.Navigator.PopAsync());
 Pump(300);
