@@ -7,3 +7,8 @@ def permissions(m, query, body):
              'Pool.Allocate', 'Permissions.Modify', 'Realm.Allocate', 'SDN.Allocate', 'SDN.Audit',
              'Mapping.Modify', 'Mapping.Audit']
     return {'/': {p: 1 for p in privs}}
+
+# Ceph 를 쓰지 않는 클러스터 — 상태 요청에 빈 상태
+@route('GET', r'/cluster/ceph/status')
+def ceph_status(m, query, body):
+    return {'health': {'status': 'HEALTH_OK'}}
