@@ -56,7 +56,13 @@ var nav = window.GetVisualDescendants().OfType<NavigationPage>().First();
 var shot = 0;
 
 // 로그인(프로필 저장 → 연결 → 인증서 신뢰)
-await AppServices.Profiles.SaveAsync(new ConnectionProfile { Name = "fake", Host = "127.0.0.1", Port = port });
+// --vpn x.ovpn: 로그인 전에 실제 OpenVPN 터널을 연다(--host 는 터널 너머 주소)
+var vpnConfig = options.GetValueOrDefault("vpn");
+await AppServices.Profiles.SaveAsync(new ConnectionProfile
+{
+    Name = "fake", Host = options.GetValueOrDefault("host", "127.0.0.1"), Port = port,
+    UseVpn = vpnConfig is not null, VpnConfigPath = vpnConfig
+});
 AppServices.SecretStore.Set(SecretKey(), "secret");
 var profiles = (ProfilesViewModel)nav.CurrentPage!.DataContext!;
 await Wait(profiles.LoadAsync());
@@ -87,6 +93,7 @@ if (desktop && nav.CurrentPage?.DataContext is MainViewModel mainVm)
         MainViewCheck(mainVm); // 끝에 메인 화면을 닫는다(세션 정리 확인)
         if (target == "cluster")
         {
+            VpnReport();
             Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
             Directory.Delete(profileDir, true);
             return failures == 0 ? 0 : 2;
@@ -170,6 +177,7 @@ if (target == "compact") await CompactButtonCheck();
 if (target == "terminal") await TerminalCheck();
 if (target == "expiry") await ExpiryCheck();
 if (target == "realshell") await RealShellCheck();
+VpnReport();
 
 foreach (var (prefix, vmid) in new[] { ("guest", 100), ("lxc", 200) })
 {
@@ -199,6 +207,21 @@ Directory.Delete(profileDir, true);
 return failures == 0 ? 0 : 2;
 
 // ------------------------------------------------------------------ helpers
+
+// --vpn 로 연 터널 — 상태를 찍고 끊은 뒤 openvpn 프로세스가 남지 않았는지
+void VpnReport()
+{
+    if (vpnConfig is null) return;
+
+    var vpn = VpnTunnel.Manager;
+    Console.WriteLine($"VPN state={vpn.State} ip={vpn.VirtualIp} pid={vpn.ProcessId} in={vpn.BytesIn} out={vpn.BytesOut}");
+    var pid = vpn.ProcessId;
+    if (vpn.State != ProxmoxClient.Core.Vpn.VpnState.Connected) failures++;
+    VpnTunnel.Shutdown();
+    var gone = pid is null || !System.Diagnostics.Process.GetProcesses().Any(p => p.Id == pid);
+    Console.WriteLine($"VPN after shutdown: process {(gone ? "gone" : "STILL RUNNING")}");
+    if (!gone) failures++;
+}
 
 // 좁은 화면 버튼 규칙 — 아이콘만 보이는지, 길게 누르면 이름 알림만(실행 안 함), 짧게 누르면 실행되는지
 async Task CompactButtonCheck()

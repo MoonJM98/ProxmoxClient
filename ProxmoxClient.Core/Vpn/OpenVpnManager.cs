@@ -81,8 +81,8 @@ public sealed class OpenVpnManager : IDisposable
 
     /// <summary>
     ///     Probes, in order: the PROXMOXCLIENT_OPENVPN environment variable,
-    ///     where.exe (PATH), then the default OpenVPN install locations.
-    ///     Returns the first existing openvpn.exe path, or null.
+    ///     PATH, then the default install locations of the current OS (Windows installer, Linux packages,
+    ///     Homebrew/MacPorts). Returns the first existing openvpn(.exe) path, or null.
     /// </summary>
     public static string? DetectOpenVpnExe()
     {
@@ -94,8 +94,17 @@ public sealed class OpenVpnManager : IDisposable
         var onPath = FindOnPath();
         if (onPath is not null) candidates.Add(onPath);
 
-        candidates.Add(@"C:\Program Files\OpenVPN\bin\openvpn.exe");
-        candidates.Add(@"C:\Program Files (x86)\OpenVPN\bin\openvpn.exe");
+        if (OperatingSystem.IsWindows())
+        {
+            candidates.Add(@"C:\Program Files\OpenVPN\bin\openvpn.exe");
+            candidates.Add(@"C:\Program Files (x86)\OpenVPN\bin\openvpn.exe");
+        }
+        else
+        {
+            // Linux 배포판 패키지·Homebrew(Apple Silicon·Intel)·MacPorts 의 기본 위치
+            candidates.AddRange(["/usr/sbin/openvpn", "/usr/local/sbin/openvpn", "/opt/homebrew/sbin/openvpn",
+                "/opt/local/sbin/openvpn", "/usr/bin/openvpn"]);
+        }
 
         return candidates.FirstOrDefault(File.Exists);
     }
@@ -236,32 +245,25 @@ public sealed class OpenVpnManager : IDisposable
         }
     }
 
+    /// <summary>PATH 에서 openvpn(.exe) 찾기 — 운영체제마다 다른 탐색 명령(where·which) 대신 직접 훑는다.</summary>
     private static string? FindOnPath()
     {
-        try
+        var name = OperatingSystem.IsWindows() ? "openvpn.exe" : "openvpn";
+        foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator,
+                     StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            var startInfo = new ProcessStartInfo("where.exe", "openvpn.exe")
+            try
             {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true
-            };
-
-            using var probe = Process.Start(startInfo);
-            if (probe is null) return null;
-
-            var output = probe.StandardOutput.ReadToEnd();
-            if (!probe.WaitForExit(5000)) return null;
-
-            return output
-                .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
-                .Select(line => line.Trim())
-                .FirstOrDefault(File.Exists);
+                var candidate = Path.Combine(dir.Trim('"'), name);
+                if (File.Exists(candidate)) return candidate;
+            }
+            catch (ArgumentException)
+            {
+                // PATH 의 잘못된 항목은 건너뛴다
+            }
         }
-        catch
-        {
-            return null;
-        }
+
+        return null;
     }
 
     private static int GetFreeTcpPort()
@@ -398,11 +400,12 @@ public sealed class OpenVpnManager : IDisposable
 
     private void HandleStateNotification(string line)
     {
-        // >STATE:{unix},{statename},{description},{local_ip},...
+        // >STATE:{unix},{statename},{description},{local_ip},... — 쉼표로 나누면 [0]=">STATE:{unix}", [1]=상태 이름,
+        // [2]=설명(SUCCESS 등), [3]=터널 IP. (예전에는 [2] 를 상태 이름으로 읽어 CONNECTED 를 놓치고 60초 뒤 시간 초과였다)
         var fields = line.Split(',');
-        if (fields.Length < 3) return;
+        if (fields.Length < 2) return;
 
-        var stateName = fields[2];
+        var stateName = fields[1];
 
         switch (stateName)
         {

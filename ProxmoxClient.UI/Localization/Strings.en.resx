@@ -637,4 +637,16 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Console_Reconnect" xml:space="preserve">
     <value>Reconnect</value>
   </data>
+  <data name="Vpn_NotSupportedHere" xml:space="preserve">
+    <value>This device cannot open a VPN tunnel from the app. Connect with a VPN app such as OpenVPN for Android first, then turn off "Use OpenVPN tunnel before connecting" for this server and sign in.</value>
+  </data>
+  <data name="Vpn_ExeLabel" xml:space="preserve">
+    <value>OpenVPN executable</value>
+  </data>
+  <data name="Vpn_PickConfig" xml:space="preserve">
+    <value>Choose .ovpn file</value>
+  </data>
+  <data name="Vpn_PickExe" xml:space="preserve">
+    <value>Choose openvpn executable</value>
+  </data>
 </root>

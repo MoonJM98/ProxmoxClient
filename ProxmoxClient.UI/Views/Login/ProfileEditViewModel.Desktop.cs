@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Profiles;
+using Avalonia.Platform.Storage;
 using ProxmoxClient.Core.Vpn;
 using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Services;
@@ -367,6 +368,37 @@ public sealed partial class ProfileEditViewModel
         profile.VpnConfigPath = UseVpn ? VpnConfigPath.Trim() : null;
         profile.VpnExePath = string.IsNullOrWhiteSpace(VpnExePath) ? null : VpnExePath.Trim();
         return profile;
+    }
+
+    /// <summary>이 기기가 OpenVPN 터널을 열 수 있는가(데스크톱) — 아니면 VPN 칸을 끈다.</summary>
+    public bool VpnSupported => VpnTunnel.IsSupported;
+
+    /// <summary>실행 파일 칸 이름 — Windows 는 WPF 와 같은 openvpn.exe.</summary>
+    public string VpnExeLabel => OperatingSystem.IsWindows() ? "openvpn.exe" : L.T("Vpn_ExeLabel");
+
+    [RelayCommand]
+    private async Task BrowseVpnConfigAsync()
+    {
+        if (await PickFileAsync(L.T("Vpn_PickConfig"), "OpenVPN", ["*.ovpn", "*.conf"]) is { } path) VpnConfigPath = path;
+    }
+
+    [RelayCommand]
+    private async Task BrowseVpnExeAsync()
+    {
+        if (await PickFileAsync(L.T("Vpn_PickExe"), "openvpn", OperatingSystem.IsWindows() ? ["*.exe"] : ["*"]) is { } path)
+            VpnExePath = path;
+    }
+
+    private static async Task<string?> PickFileAsync(string title, string kind, string[] patterns)
+    {
+        if (Views.ClipboardHelper.TopLevel?.StorageProvider is not { CanOpen: true } provider) return null;
+
+        var files = await provider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = title, AllowMultiple = false,
+            FileTypeFilter = [new Avalonia.Platform.Storage.FilePickerFileType(kind) { Patterns = patterns }]
+        });
+        return files.Count == 0 ? null : files[0].TryGetLocalPath();
     }
 
     private static string DetectVpnExe()

@@ -136,6 +136,6 @@ if __name__=='__main__':
     if not os.path.exists(c):
         subprocess.run(['openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',k,'-out',c,'-days','30','-subj','/CN=pve1.local/O=PVE Cluster Manager CA'],check=True,capture_output=True)
     load_routes()
-    srv=ThreadingHTTPServer(('127.0.0.1',port),H)
+    srv=ThreadingHTTPServer((os.environ.get('FAKEPVE_BIND','127.0.0.1'),port),H)
     ctx=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); ctx.load_cert_chain(c,k); srv.socket=ctx.wrap_socket(srv.socket,server_side=True)
     print('listening',port,flush=True); srv.serve_forever()

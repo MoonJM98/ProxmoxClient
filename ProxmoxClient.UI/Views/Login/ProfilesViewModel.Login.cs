@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
 using ProxmoxClient.Core.Profiles;
+using ProxmoxClient.Core.Vpn;
 using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Platform;
 using ProxmoxClient.UI.Services;
@@ -161,16 +162,20 @@ public sealed partial class ProfilesViewModel
 
         if (BuildPasswordProfile(item) is not { } runtime) return;
 
-        if (runtime.UseVpn)
-        {
-            // VPN 터널 연결은 이 화면에서 아직 옮기지 않았다 — 연결하지 않고 알린다
-            Status = L.T("Login_VpnUnsupported");
-            return;
-        }
-
         IsSigningIn = true;
         try
         {
+            // VPN 을 쓰는 서버는 터널을 먼저 연다(WPF 와 같다) — 실패하면 로그인하지 않는다
+            try
+            {
+                await VpnTunnel.EnsureAsync(runtime, text => Status = text);
+            }
+            catch (Exception ex) when (ex is OpenVpnException or IOException or UnauthorizedAccessException)
+            {
+                Status = L.T("MainViewModel_M14", ex.Message);
+                return;
+            }
+
             await SignInWithAsync(item, runtime);
         }
         finally

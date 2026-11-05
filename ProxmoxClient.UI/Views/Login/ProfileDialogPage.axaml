@@ -67,25 +67,27 @@
                     </c:FormRow>
                 </StackPanel>
 
-                <!-- VPN: 칸은 보이지만 이 화면에서는 바꿀 수 없다(연결 기능을 아직 옮기지 않음) -->
+                <!-- VPN: 로그인 전에 OpenVPN 터널을 연다(데스크톱). 터널을 열 수 없는 기기(Android)는 끈다 -->
                 <TextBlock Classes="FormSection" Text="VPN (OpenVPN)" />
                 <c:FormRow Label="{l:Tr ProfileDialog_18}" Hint="{l:Tr Login_VpnNote}">
-                    <CheckBox Content="{l:Tr ProfileDialog_19}" IsChecked="{Binding UseVpn}" IsEnabled="False"
-                              Margin="0,6,0,0" />
+                    <CheckBox Content="{l:Tr ProfileDialog_19}" IsChecked="{Binding UseVpn}"
+                              IsEnabled="{Binding VpnSupported}" Margin="0,6,0,0" />
                 </c:FormRow>
 
-                <StackPanel IsVisible="{Binding UseVpn}" IsEnabled="False">
+                <StackPanel IsVisible="{Binding UseVpn}" IsEnabled="{Binding VpnSupported}">
                     <c:FormRow Label="{l:Tr ProfileDialog_20}">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" c:IconAssist.Icon="{StaticResource IconFolder}"
-                                    Content="{l:Tr ProfileDialog_21}" Margin="6,0,0,0" />
+                                    Content="{l:Tr ProfileDialog_21}" Margin="6,0,0,0"
+                                    Command="{Binding BrowseVpnConfigCommand}" />
                             <TextBox Text="{Binding VpnConfigPath}" />
                         </DockPanel>
                     </c:FormRow>
-                    <c:FormRow Label="openvpn.exe" Hint="{Binding DetectedVpnExe}">
+                    <c:FormRow Label="{Binding VpnExeLabel}" Hint="{Binding DetectedVpnExe}">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" c:IconAssist.Icon="{StaticResource IconFolder}"
-                                    Content="{l:Tr ProfileDialog_21}" Margin="6,0,0,0" />
+                                    Content="{l:Tr ProfileDialog_21}" Margin="6,0,0,0"
+                                    Command="{Binding BrowseVpnExeCommand}" />
                             <TextBox Text="{Binding VpnExePath}" />
                         </DockPanel>
                     </c:FormRow>

@@ -41,6 +41,7 @@ public partial class App : Application
                 singleView.MainView = new AppShell();
                 break;
             case IClassicDesktopStyleApplicationLifetime desktop:
+                desktop.Exit += (_, _) => VpnTunnel.Shutdown(); // 터널(openvpn 프로세스)을 남기지 않는다
                 desktop.MainWindow = new Window
                 {
                     Title = "Proxmox Client",

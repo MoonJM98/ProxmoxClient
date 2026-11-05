@@ -94,7 +94,11 @@ public sealed partial class ProfilesViewModel : ViewModelBase
             profile.Password = SecureStringHelper.FromString(secret);
 
         ServerSession? session = null;
-        var ok = await TryAsync(async () => session = await LoginAsync(profile, item),
+        var ok = await TryAsync(async () =>
+            {
+                await VpnTunnel.EnsureAsync(profile); // VPN 을 쓰는 서버는 터널부터(지원 안 하는 기기면 안내 오류)
+                session = await LoginAsync(profile, item);
+            },
             L.T("Connect_Busy", item.DisplayName));
         if (!ok || session is null) return;
 

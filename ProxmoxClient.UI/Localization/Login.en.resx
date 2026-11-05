@@ -8,6 +8,6 @@
     <value>VPN (OpenVPN) connections are not supported in this version yet. Connect from the WPF app, or sign in to a server that does not need a VPN.</value>
   </data>
   <data name="Login_VpnNote" xml:space="preserve">
-    <value>VPN (OpenVPN) settings cannot be changed in this version. The saved values are kept as they are.</value>
+    <value>Opens an OpenVPN tunnel with this .ovpn before signing in (desktop). On Linux and macOS openvpn needs permission to create the tunnel (root or CAP_NET_ADMIN). On Android, connect with a VPN app first.</value>
   </data>
 </root>
