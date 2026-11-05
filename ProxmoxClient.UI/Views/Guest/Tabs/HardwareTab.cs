@@ -4,6 +4,7 @@ using Avalonia.Layout;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
 using ProxmoxClient.UI.Localization;
+using ProxmoxClient.UI.Platform;
 using ProxmoxClient.UI.Services;
 using ProxmoxClient.UI.Views.Guest.Hardware;
 using ProxmoxClient.UI.Views.Shared;
@@ -38,17 +39,16 @@ public sealed class HardwareTab : UserControl
     private readonly CheckBox _nicFirewall = new() { Margin = new Thickness(0, 6, 0, 0) };
     private readonly TextBlock _status = new()
     {
-        Classes = { "subtle" }, TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-        TextTrimming = Avalonia.Media.TextTrimming.None, VerticalAlignment = VerticalAlignment.Center
+        Classes = { "DialogStatus" }, TextWrapping = Avalonia.Media.TextWrapping.Wrap
     };
-    private readonly HardwareInput.Row _rowSockets;
-    private readonly HardwareInput.Row _rowCores;
-    private readonly HardwareInput.Row _rowCpuLimit;
-    private readonly HardwareInput.Row _rowMemory;
-    private readonly HardwareInput.Row _rowBalloon;
-    private readonly HardwareInput.Row _rowNicModel;
-    private readonly HardwareInput.Row _rowMac;
-    private readonly HardwareInput.Row _rowIp;
+    private readonly Control _rowSockets;
+    private readonly Control _rowCores;
+    private readonly Control _rowCpuLimit;
+    private readonly Control _rowMemory;
+    private readonly Control _rowBalloon;
+    private readonly Control _rowNicModel;
+    private readonly Control _rowMac;
+    private readonly Control _rowIp;
     private readonly Button _save;
     private bool _busy;
     private bool _loaded;
@@ -67,17 +67,18 @@ public sealed class HardwareTab : UserControl
 
         ComboChoices.Fill(_nicModel, ComboChoices.NicModels);
 
-        _rowSockets = new HardwareInput.Row(Loc.T("GuestSettingsWindow_11"), _sockets);
-        _rowCores = new HardwareInput.Row(Loc.T("CreateGuestWindow_08"), _cores);
-        _rowCpuLimit = new HardwareInput.Row(Loc.T("GuestSettingsWindow_12"), _cpuLimit, Loc.T("GuestSettingsWindow_13"));
-        _rowMemory = new HardwareInput.Row(Loc.T("CreateGuestWindow_09"), _memory);
-        _rowBalloon = new HardwareInput.Row(Loc.T("GuestSettingsWindow_14"), _balloon, Loc.T("GuestSettingsWindow_15"));
-        _rowNicModel = new HardwareInput.Row(Loc.T("GuestSettingsWindow_18"), _nicModel);
-        _rowMac = new HardwareInput.Row(Loc.T("GuestSettingsWindow_19"), _mac, Loc.T("GuestSettingsWindow_20"));
-        _rowIp = new HardwareInput.Row("IP", _ip, Loc.T("CreateGuestWindow_19"));
+        _rowSockets = HardwareInput.Form(Loc.T("GuestSettingsWindow_11"), _sockets);
+        _rowCores = HardwareInput.Form(Loc.T("CreateGuestWindow_08"), _cores);
+        _rowCpuLimit = HardwareInput.Form(Loc.T("GuestSettingsWindow_12"), _cpuLimit, Loc.T("GuestSettingsWindow_13"));
+        _rowMemory = HardwareInput.Form(Loc.T("CreateGuestWindow_09"), _memory);
+        _rowBalloon = HardwareInput.Form(Loc.T("GuestSettingsWindow_14"), _balloon, Loc.T("GuestSettingsWindow_15"));
+        _rowNicModel = HardwareInput.Form(Loc.T("GuestSettingsWindow_18"), _nicModel);
+        _rowMac = HardwareInput.Form(Loc.T("GuestSettingsWindow_19"), _mac, Loc.T("GuestSettingsWindow_20"));
+        _rowIp = HardwareInput.Form("IP", _ip, Loc.T("CreateGuestWindow_19"));
 
-        _save = ActionBar.IconButton(Loc.T("AppSettingsWindow_12"), "IconSave", this);
-        _save.Classes.Add("accent");
+        // WPF: 저장 단추(강조색 · 최소 폭 120 · 여백 없음)
+        _save = HardwareInput.Button(Loc.T("AppSettingsWindow_12"), "IconSave");
+        _save.Classes.Add("AccentButton");
         _save.MinWidth = 120;
         _save.Click += async (_, _) => await OnSaveAsync();
 
@@ -98,26 +99,44 @@ public sealed class HardwareTab : UserControl
 
     private Control BuildLayout()
     {
+        // WPF: 데스크톱은 칸 줄을 FormRow 로 두고 여백 20,16 · 저장 줄의 i 아이콘(InfoTip)을 쓴다.
+        // 모바일은 412px 폭에 맞춰 세로로 쌓고 설명은 본문 아래 글로 둔다.
+        var desktop = PlatformInfo.IsDesktop;
         var body = new StackPanel
         {
-            Margin = new Thickness(16, 12, 16, 10), Spacing = 10,
-            Children =
-            {
-                Section(Loc.T("CreateGuestWindow_07")),
-                _rowSockets, _rowCores, _rowCpuLimit, _rowMemory, _rowBalloon,
-                Section(Loc.T("GuestSettingsWindow_16")),
-                new HardwareInput.Row(Loc.T("GuestSettingsWindow_17"), _bridge, Loc.T("CreateGuestWindow_24")),
-                _rowNicModel, _rowMac,
-                new HardwareInput.Row(Loc.T("GuestSettingsWindow_21"), _vlan, Loc.T("GuestSettingsWindow_22")),
-                _rowIp,
-                new HardwareInput.Row(Loc.T("FirewallWindow_01"), _nicFirewall),
-                new TextBlock { Text = Loc.T("GuestSettingsWindow_26"), Classes = { "subtle" }, TextWrapping = Avalonia.Media.TextWrapping.Wrap, FontSize = 12 }
-            }
+            Margin = desktop ? new Thickness(20, 16, 20, 10) : new Thickness(16, 12, 16, 10),
+            Spacing = desktop ? 0 : 10
         };
+        body.Children.Add(Section(Loc.T("CreateGuestWindow_07")));
+        body.Children.Add(_rowSockets);
+        body.Children.Add(_rowCores);
+        body.Children.Add(_rowCpuLimit);
+        body.Children.Add(_rowMemory);
+        body.Children.Add(_rowBalloon);
+        body.Children.Add(Section(Loc.T("GuestSettingsWindow_16")));
+        body.Children.Add(HardwareInput.Form(Loc.T("GuestSettingsWindow_17"), _bridge, Loc.T("CreateGuestWindow_24")));
+        body.Children.Add(_rowNicModel);
+        body.Children.Add(_rowMac);
+        body.Children.Add(HardwareInput.Form(Loc.T("GuestSettingsWindow_21"), _vlan, Loc.T("GuestSettingsWindow_22")));
+        body.Children.Add(_rowIp);
+        body.Children.Add(HardwareInput.Form(Loc.T("FirewallWindow_01"), _nicFirewall));
+        if (!desktop)
+            body.Children.Add(new TextBlock
+            {
+                Text = Loc.T("GuestSettingsWindow_26"), Classes = { "subtle" },
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap, FontSize = 12
+            });
 
-        var footer = new DockPanel { Margin = new Thickness(16, 0, 16, 12) };
+        var footer = new DockPanel { Margin = desktop ? new Thickness(20, 0, 20, 16) : new Thickness(16, 0, 16, 12) };
         DockPanel.SetDock(_save, Dock.Right);
         footer.Children.Add(_save);
+        if (desktop)
+        {
+            var tip = HardwareInput.InfoTip(Loc.T("GuestSettingsWindow_26"));
+            DockPanel.SetDock(tip, Dock.Right);
+            footer.Children.Add(tip);
+        }
+
         footer.Children.Add(_status);
 
         var grid = new Grid { RowDefinitions = new RowDefinitions("*,Auto") };
@@ -131,9 +150,10 @@ public sealed class HardwareTab : UserControl
         return grid;
     }
 
+    /// <summary>구역 제목 — WPF FormSection(데스크톱), 모바일은 기존 구역 글자.</summary>
     private static TextBlock Section(string text)
     {
-        return new TextBlock { Text = text, Classes = { "section" } };
+        return new TextBlock { Text = text, Classes = { PlatformInfo.IsDesktop ? "FormSection" : "section" } };
     }
 
     /// <summary>
@@ -145,9 +165,10 @@ public sealed class HardwareTab : UserControl
         try
         {
             _host = await _api.GetNodeStatusAsync(_guest.Node);
-            _rowCores.Hint = Loc.T("HostLimit_Cores", _host.CpuCores, Math.Max(_host.CpuSockets, 1));
+            HardwareInput.SetHint(_rowCores, Loc.T("HostLimit_Cores", _host.CpuCores, Math.Max(_host.CpuSockets, 1)));
             var total = _host.MemTotalBytes;
-            _rowMemory.Hint = Loc.T("HostLimit_Memory", total / MiB, Math.Max(total - _host.MemUsedBytes, 0) / MiB);
+            HardwareInput.SetHint(_rowMemory,
+                Loc.T("HostLimit_Memory", total / MiB, Math.Max(total - _host.MemUsedBytes, 0) / MiB));
         }
         catch (Exception ex)
         {
