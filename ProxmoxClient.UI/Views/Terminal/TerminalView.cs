@@ -309,7 +309,7 @@ public sealed class TerminalView : Grid
     {
         if (_anchor is not { } a || a == _caret) return string.Empty;
 
-        var (start, end) = Ordered(a, _caret);
+        var (start, end) = Snapped(a, _caret);
         return Buffer.GetText(start.Row, start.Col, end.Row, end.Col);
     }
 
@@ -359,6 +359,26 @@ public sealed class TerminalView : Grid
         (long Row, int Col) b)
     {
         return a.Row < b.Row || a.Row == b.Row && a.Col <= b.Col ? (a, b) : (b, a);
+    }
+
+    /// <summary>
+    ///     차례로 놓고 넓은 글자에 맞춘 선택 — 시작이 넓은 글자의 뒤 칸이면 앞 칸으로, 끝이 넓은 글자의 앞 칸이면 뒤 칸까지
+    ///     (글자 반쪽만 칠하거나 복사에서 빠지지 않게).
+    /// </summary>
+    private ((long Row, int Col) Start, (long Row, int Col) End) Snapped((long Row, int Col) a, (long Row, int Col) b)
+    {
+        var (start, end) = Ordered(a, b);
+        lock (Buffer.Gate)
+        {
+            if (Buffer.GetAbsoluteLine(start.Row) is { } first && start.Col > 0 && start.Col < first.Cells.Length &&
+                first.Cells[start.Col].Width == 0)
+                start.Col--;
+            if (Buffer.GetAbsoluteLine(end.Row) is { } last && end.Col + 1 < last.Cells.Length &&
+                last.Cells[end.Col].Width == 2)
+                end.Col++;
+        }
+
+        return (start, end);
     }
 
     private (long Row, int Col) CellAt(Point p)
@@ -763,7 +783,7 @@ public sealed class TerminalView : Grid
     {
         if (!_touchHandles || _anchor is not { } a || a == _caret) return;
 
-        var (start, end) = Ordered(a, _caret);
+        var (start, end) = Snapped(a, _caret);
         var brush = _renderer.Brush(0x3B78FF);
         foreach (var (cell, isEnd) in new[] { (start, false), (end, true) })
         {
@@ -809,7 +829,7 @@ public sealed class TerminalView : Grid
             using (context.PushTransform(matrix))
             {
                 for (var i = Math.Max(0, row - 2); i <= Math.Min(Buffer.Rows - 1, row + 2); i++)
-                    r.DrawLine(context, Buffer.GetVisibleLine(i, offset).Cells, Buffer.Columns,
+                    r.DrawLine(context, Buffer.GetVisibleLine(i, offset), Buffer.Columns,
                         new Point(Pad.Left, Pad.Top + i * r.CellHeight));
                 DrawSelection(context, offset);
                 // 지금 끄는 끝을 막대로
@@ -847,7 +867,7 @@ public sealed class TerminalView : Grid
             for (var row = 0; row < rows; row++)
             {
                 var line = Buffer.GetVisibleLine(row, offset);
-                r.DrawLine(context, line.Cells, columns, new Point(Pad.Left, Pad.Top + row * r.CellHeight));
+                r.DrawLine(context, line, columns, new Point(Pad.Left, Pad.Top + row * r.CellHeight));
             }
 
             DrawSelection(context, offset);
@@ -864,7 +884,7 @@ public sealed class TerminalView : Grid
         if (_anchor is not { } a || a == _caret) return;
 
         var r = _renderer;
-        var (start, end) = Ordered(a, _caret);
+        var (start, end) = Snapped(a, _caret);
         var brush = r.Brush(0x3B78FF, 0x70);
         for (var row = 0; row < Buffer.Rows; row++)
         {

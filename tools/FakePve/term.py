@@ -22,7 +22,9 @@ def banner():
 
 def ls():
     return ('\x1b[1;34mbackup\x1b[0m  \x1b[1;34mdump\x1b[0m  \x1b[1;32mrun.sh\x1b[0m  notes.txt  '
-            '\x1b[1;36mlink\x1b[0m  \x1b[30;43m공유폴더\x1b[0m  보고서.pdf\r\n')
+            '\x1b[1;36mlink\x1b[0m  \x1b[30;43m공유폴더\x1b[0m  보고서.pdf\r\n'
+            # 결합 문자 묶음 — macOS NFD 파일 이름(한글), e+◌́, ZWJ 가족 이모지, 국기
+            '\u1112\u1161\u11ab\u1100\u1173\u11af.txt  cafe\u0301  \U0001F468\u200d\U0001F469\u200d\U0001F467  \U0001F1F0\U0001F1F7\r\n')
 
 
 def colors():

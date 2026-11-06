@@ -258,6 +258,8 @@ public sealed class TerminalBuffer
                     if (cell.Width == 0) continue;
 
                     text.Append(cell.Rune == 0 ? " " : char.ConvertFromUtf32(cell.Rune));
+                    // 붙은 글자는 받은 그대로(정규화하지 않는다 — 파일 이름 등을 원래 코드 포인트로 붙여 넣게)
+                    if (line.GetExtra(c) is { } extra) text.Append(extra);
                 }
 
                 var s = text.ToString();
@@ -884,7 +886,14 @@ public sealed class TerminalBuffer
         if (_g[_gl] && cp is >= 0x5F and <= 0x7E) cp = DecGraphics[cp - 0x5F];
 
         var width = CharWidth.Of(cp);
-        if (width == 0) return; // 결합 문자는 앞 글자에 붙지 않고 버린다(칸 수만 맞춘다)
+        // 결합 문자·ZWJ 뒤 글자는 새 칸을 쓰지 않고 앞 칸에 붙는다
+        if (width == 0 || JoinsPrevious())
+        {
+            Attach(cp);
+            return;
+        }
+
+        if (CharWidth.IsRegionalIndicator(cp) && PairRegional(cp)) return;
 
         _lastRune = cp;
         var screen = Screen;
@@ -935,15 +944,80 @@ public sealed class TerminalBuffer
         }
     }
 
+    /// <summary>붙을 칸 — 커서 바로 앞 글자(넓은 글자의 뒤 칸이면 앞 칸). 없으면 -1.</summary>
+    private int PreviousCell()
+    {
+        var x = _pendingWrap ? _x : _x - 1;
+        if (x < 0 || x >= Columns) return -1;
+
+        var cells = Screen[_y].Cells;
+        if (cells[x].Width == 0 && x > 0) x--;
+        return cells[x].Width == 0 ? -1 : x;
+    }
+
+    /// <summary>앞 칸이 ZWJ(U+200D)로 끝나면 다음 글자는 그 묶음에 붙는다(👨‍👩‍👧 같은 이모지).</summary>
+    private bool JoinsPrevious()
+    {
+        var x = PreviousCell();
+        return x >= 0 && Screen[_y].GetExtra(x) is { Length: > 0 } extra && extra[^1] == '‍';
+    }
+
+    /// <summary>결합 문자를 앞 칸에 붙인다. 앞 칸이 없으면(줄 처음) 버린다.</summary>
+    private void Attach(int cp)
+    {
+        var x = PreviousCell();
+        if (x < 0) return;
+
+        Screen[_y].AppendExtra(x, cp);
+    }
+
+    /// <summary>
+    ///     국기 — 짝 없는 지역 표시 문자 바로 뒤에 또 오면 앞 칸을 2칸으로 넓혀 한 묶음으로 만든다(wcwidth 합과 같은 2칸).
+    ///     만들었으면 true.
+    /// </summary>
+    private bool PairRegional(int cp)
+    {
+        if (_pendingWrap || _x < 1 || _x >= Columns) return false;
+
+        var row = Screen[_y];
+        ref var prev = ref row.Cells[_x - 1];
+        if (prev.Width != 1 || !CharWidth.IsRegionalIndicator(prev.Rune) || prev.Flags.HasFlag(CellFlags.Combined))
+            return false;
+
+        if (_insertMode) ShiftRight(row, _x, 1);
+        ClearCell(row, _x);
+        prev = ref row.Cells[_x - 1];
+        prev.Width = 2;
+        row.AppendExtra(_x - 1, cp);
+        row.Cells[_x] = new TerminalCell
+        {
+            Rune = 0, Width = 0, Flags = _flags, Foreground = row.Cells[_x - 1].Foreground, Background = row.Cells[_x - 1].Background
+        };
+        _x++;
+        if (_x >= Columns)
+        {
+            _x = Columns - 1;
+            _pendingWrap = true;
+        }
+
+        return true;
+    }
+
     /// <summary>칸을 덮어쓰기 전에, 그 칸이 넓은 글자의 절반이면 나머지 절반을 비운다.</summary>
     private void ClearCell(Line row, int x)
     {
         if (x < 0 || x >= Columns) return;
 
         var cells = row.Cells;
-        if (cells[x].Width == 0 && x > 0) cells[x - 1] = TerminalCell.Blank(cells[x - 1].Background);
+        if (cells[x].Width == 0 && x > 0)
+        {
+            cells[x - 1] = TerminalCell.Blank(cells[x - 1].Background);
+            row.ClearExtra(x - 1);
+        }
+
         if (cells[x].Width == 2 && x + 1 < Columns) cells[x + 1] = TerminalCell.Blank(cells[x + 1].Background);
         cells[x] = TerminalCell.Blank(_bg);
+        row.ClearExtra(x);
     }
 
     private void ShiftRight(Line row, int x, int count)
@@ -953,12 +1027,16 @@ public sealed class TerminalBuffer
         ClearCell(row, x); // 넓은 글자의 오른쪽 반에 끼워 넣으면 반쪽이 남지 않게
         Array.Copy(cells, x, cells, x + count, Columns - x - count);
         for (var i = x; i < x + count; i++) cells[i] = TerminalCell.Blank(_bg);
+        row.ShiftExtras(x, count);
         FixRightEdge(row);
     }
 
     private void FixRightEdge(Line row)
     {
-        if (row.Cells[Columns - 1].Width == 2) row.Cells[Columns - 1] = TerminalCell.Blank(row.Cells[Columns - 1].Background);
+        if (row.Cells[Columns - 1].Width != 2) return;
+
+        row.Cells[Columns - 1] = TerminalCell.Blank(row.Cells[Columns - 1].Background);
+        row.ClearExtra(Columns - 1);
     }
 
     // ------------------------------------------------------------ 커서·스크롤
@@ -1125,6 +1203,7 @@ public sealed class TerminalBuffer
         if (x + count < Columns && row.Cells[x + count].Width == 0) row.Cells[x + count] = TerminalCell.Blank(_bg);
         Array.Copy(row.Cells, x + count, row.Cells, x, Columns - x - count);
         for (var i = Columns - count; i < Columns; i++) row.Cells[i] = TerminalCell.Blank(_bg);
+        row.ShiftExtras(x, -count);
         _pendingWrap = false;
     }
 
@@ -1596,10 +1675,65 @@ public sealed class TerminalBuffer
             }
         }
 
+        /// <summary>
+        ///     칸에 붙은 글자(결합 문자·ZWJ 이모지·국기 둘째 글자 등) — 칸 번호 → 덧붙은 코드 포인트. 드물어서 따로 둔다.
+        ///     칸에 <see cref="CellFlags.Combined" /> 가 있을 때만 쓴다(칸을 옮기거나 지우다 남은 값은 무시된다).
+        /// </summary>
+        public Dictionary<int, string>? Extra { get; private set; }
+
+        /// <summary>한 칸에 붙일 수 있는 글자 수(UTF-16) — 끝없이 붙는 결합 문자(자고 글자)로 커지지 않게.</summary>
+        public const int MaxExtra = 32;
+
+        /// <summary>칸에 붙은 글자(없으면 null).</summary>
+        public string? GetExtra(int column)
+        {
+            return Extra is not null && (uint)column < (uint)Cells.Length &&
+                   Cells[column].Flags.HasFlag(CellFlags.Combined) && Extra.TryGetValue(column, out var s)
+                ? s
+                : null;
+        }
+
+        /// <summary>칸에 글자를 덧붙인다.</summary>
+        public void AppendExtra(int column, int cp)
+        {
+            var before = GetExtra(column) ?? "";
+            if (before.Length >= MaxExtra) return;
+
+            Extra ??= [];
+            Extra[column] = before + char.ConvertFromUtf32(cp);
+            Cells[column].Flags |= CellFlags.Combined;
+        }
+
+        public void ClearExtra(int column)
+        {
+            if (Extra is null) return;
+
+            Extra.Remove(column);
+            if (Extra.Count == 0) Extra = null;
+        }
+
+        /// <summary>칸을 옮길 때(삽입·삭제) 붙은 글자도 함께 — <paramref name="from" /> 부터 <paramref name="delta" /> 만큼.</summary>
+        public void ShiftExtras(int from, int delta)
+        {
+            if (Extra is null) return;
+
+            var moved = new Dictionary<int, string>();
+            foreach (var (column, s) in Extra)
+            {
+                var to = column >= from ? column + delta : column;
+                if (column >= from && (to < from || to >= Cells.Length)) continue;
+
+                moved[to] = s;
+            }
+
+            Extra = moved.Count > 0 ? moved : null;
+        }
+
         public Line Reset(uint background)
         {
             Array.Fill(Cells, TerminalCell.Blank(background));
             Wrapped = false;
+            Extra = null;
             return this;
         }
 
@@ -1613,6 +1747,10 @@ public sealed class TerminalBuffer
             for (var i = old.Length; i < columns; i++) cells[i] = TerminalCell.Blank(TerminalColor.Default);
             if (cells[columns - 1].Width == 2) cells[columns - 1] = TerminalCell.Blank(cells[columns - 1].Background);
             Cells = cells;
+            if (Extra is null) return;
+
+            foreach (var column in Extra.Keys.Where(k => k >= columns).ToList()) Extra.Remove(column);
+            if (Extra.Count == 0) Extra = null;
         }
     }
 }

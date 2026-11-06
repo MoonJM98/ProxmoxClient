@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
@@ -36,6 +37,7 @@ internal sealed class TerminalRenderer
     private readonly Dictionary<(int Rune, bool Bold), Fallback?> _fallbacks = [];
     private readonly List<GlyphInfo> _runGlyphs = [];
     private readonly List<char> _runChars = [];
+    private readonly Dictionary<(string Text, bool Bold, uint Color), FormattedText> _clusters = [];
 
     private GlyphTypeface _regular = null!;
     private GlyphTypeface _bold = null!;
@@ -72,6 +74,7 @@ internal sealed class TerminalRenderer
         CellHeight = Math.Ceiling(Math.Max(m.LineSpacing * scale, ascent + descent));
         Baseline = Math.Round((CellHeight - (ascent + descent)) / 2 + ascent);
         _fallbacks.Clear();
+        _clusters.Clear();
     }
 
     /// <summary>
@@ -166,8 +169,15 @@ internal sealed class TerminalRenderer
 
     // ------------------------------------------------------------ 한 줄 그리기
 
+    /// <summary>한 줄 — 결합 문자가 붙은 칸(<see cref="CellFlags.Combined" />)까지 그린다.</summary>
+    public void DrawLine(DrawingContext context, TerminalBuffer.Line line, int columns, Point origin)
+    {
+        DrawLine(context, line.Cells, columns, origin, line);
+    }
+
     /// <summary>한 줄의 바탕 → 글자 → 밑줄·취소선 순으로 그린다.</summary>
-    public void DrawLine(DrawingContext context, TerminalCell[] cells, int columns, Point origin)
+    public void DrawLine(DrawingContext context, TerminalCell[] cells, int columns, Point origin,
+        TerminalBuffer.Line? line = null)
     {
         var cw = CellWidth;
         var ch = CellHeight;
@@ -209,8 +219,9 @@ internal sealed class TerminalRenderer
                     new Rect(Math.Round(x), origin.Y + Math.Round(ch / 2), Math.Round(cw * cell.Width), Math.Max(1, Math.Round(FontSize / 14))));
 
             var face = bold ? _bold : _regular;
-            var blank = rune is 0 or ' ' || fg == bg;
-            var primary = !blank && cell.Width == 1 && rune <= 0xFFFF && !BoxDrawing.Handles(rune) &&
+            var cluster = cell.Flags.HasFlag(CellFlags.Combined) ? line?.GetExtra(c) : null;
+            var blank = cluster is null && rune is 0 or ' ' || fg == bg;
+            var primary = !blank && cluster is null && cell.Width == 1 && rune <= 0xFFFF && !BoxDrawing.Handles(rune) &&
                           face.CharacterToGlyphMap.TryGetGlyph(rune, out _);
 
             if (_runChars.Count > 0 && (!primary || fg != runFg || alpha != runAlpha || bold != runBold))
@@ -234,7 +245,10 @@ internal sealed class TerminalRenderer
                 continue;
             }
 
-            DrawSingle(context, rune, cell.Width, bold, Brush(fg, alpha), new Point(x, origin.Y));
+            if (cluster is not null)
+                DrawCluster(context, rune, cluster, cell.Width, bold, fg, alpha, new Point(x, origin.Y));
+            else
+                DrawSingle(context, rune, cell.Width, bold, Brush(fg, alpha), new Point(x, origin.Y));
         }
 
         if (_runChars.Count > 0) FlushRun(context, origin, runStart, runFg, runAlpha, runBold);
@@ -269,6 +283,50 @@ internal sealed class TerminalRenderer
         var run = new GlyphRun(fallback.Face, size, text, [new GlyphInfo(fallback.Glyph, 0, glyphWidth)],
             new Point(cellOrigin.X + (span - glyphWidth) / 2, cellOrigin.Y + Baseline));
         context.DrawGlyphRun(brush, run);
+    }
+
+    /// <summary>
+    ///     결합 문자가 붙은 칸 — 글자 묶음을 NFC 로 합쳐(한글 첫가끝 자모 → 음절, e+◌́ → é) 한 글자가 되면
+    ///     <see cref="DrawSingle" /> 로, 아니면(ZWJ 이모지·국기 등) 글꼴 대체까지 하는 FormattedText 로 칸 안에 그린다.
+    /// </summary>
+    public void DrawCluster(DrawingContext context, int rune, string extra, int width, bool bold, uint fg, byte alpha,
+        Point cellOrigin)
+    {
+        var text = (rune is 0 ? " " : char.ConvertFromUtf32(rune)) + extra;
+        try
+        {
+            text = text.Normalize(NormalizationForm.FormC);
+        }
+        catch (ArgumentException)
+        {
+            // 짝 없는 서러게이트 등 — 그대로 그린다
+        }
+
+        if (text.EnumerateRunes().Count() == 1)
+        {
+            DrawSingle(context, char.ConvertToUtf32(text, 0), width, bold, Brush(fg, alpha), cellOrigin);
+            return;
+        }
+
+        var key = (text, bold, fg | (uint)alpha << 24);
+        if (!_clusters.TryGetValue(key, out var formatted))
+        {
+            var span = CellWidth * width;
+            var typeface = new Typeface(new FontFamily(_family + ", " + AppFonts.FamilyName), FontStyle.Normal,
+                bold ? FontWeight.Bold : FontWeight.Normal);
+            formatted = new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface,
+                FontSize, Brush(fg, alpha));
+            // 칸보다 넓으면 줄여서 옆 칸을 덮지 않게
+            if (formatted.WidthIncludingTrailingWhitespace > span + 0.5)
+                formatted = new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface,
+                    FontSize * span / formatted.WidthIncludingTrailingWhitespace, Brush(fg, alpha));
+            if (_clusters.Count > 512) _clusters.Clear();
+            _clusters[key] = formatted;
+        }
+
+        var w = formatted.WidthIncludingTrailingWhitespace;
+        context.DrawText(formatted,
+            new Point(cellOrigin.X + (CellWidth * width - w) / 2, cellOrigin.Y + Baseline - formatted.Baseline));
     }
 
     private Fallback? Find(int rune, bool bold)

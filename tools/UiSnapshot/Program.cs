@@ -649,6 +649,11 @@ async Task TerminalCheck()
     var wide = lsRow >= 0 && buffer.GetVisibleLine(lsRow, 0).Cells is var cells &&
                Array.FindIndex(cells, c => c.Rune == '공') is var i && cells[i].Width == 2 && cells[i + 1].Width == 0;
     Check("한글 폭(2칸)", "'공' 2칸 + 이어진 칸", wide ? "2칸" : "어긋남", wide);
+    // NFD 한글(첫가끝 자모)은 초성 칸 하나(2칸)에 중성·종성이 붙는다
+    var nfdRow = Enumerable.Range(0, buffer.Rows).FirstOrDefault(r => buffer.GetVisibleLine(r, 0).Cells[0].Rune == 0x1112, -1);
+    var nfd = nfdRow >= 0 && buffer.GetVisibleLine(nfdRow, 0) is var nfdLine && nfdLine.Cells[0].Width == 2 &&
+              nfdLine.GetExtra(0) == "\u1161\u11ab" && nfdLine.Cells[2].Rune == 0x1100;
+    Check("NFD 한글 묶음", "'한' 2칸 + 붙은 자모", nfd ? "묶음" : "어긋남", nfd);
 
     // 화면 키보드: Enter 가 '완료'로 키보드를 닫지 않게 여러 줄 칸(Return 키) — 그래도 셸에는 Enter 한 번만 간다.
     // 키보드가 닫힌 뒤 다시 누르면 포커스를 옮겼다 돌려 키보드를 다시 연다(이미 포커스가 있으면 열리지 않던 문제)
