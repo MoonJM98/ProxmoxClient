@@ -48,6 +48,7 @@ jobs:
           dotnet build tests/ProxmoxClient.Core.Tests -c Release
           dotnet build tools/TerminalTests -c Release
           dotnet build tools/UiSnapshot -c Release
+          dotnet build tools/VirtualFido -c Release
 
       - name: Core 단위 검사(xunit)
         run: dotnet test tests/ProxmoxClient.Core.Tests -c Release --no-build --logger "trx;LogFileName=core-tests.trx" --results-directory test-results
@@ -83,6 +84,36 @@ jobs:
             done
           done
           exit "$failed"
+
+      # USB 보안 키 끝까지: uhid 로 가상 FIDO2 키(tools/VirtualFido)를 꽂고 실제 LinuxHidWebAuthnProvider 가 커널 hidraw 를
+      # 거쳐 서명을 받는지(PIN v1·v2·U2F·취소·뽑기·FakePve 로그인), 2단계 인증 창에서 그 키로 로그인되는지 본다(hid-e2e.yml 과 같다)
+      - name: 보안 키 검사(uhid 가상 키 + FakePve)
+        run: |
+          set -u
+          sudo modprobe uhid
+          echo 'KERNEL=="hidraw*", SUBSYSTEM=="hidraw", MODE="0666"' | sudo tee /etc/udev/rules.d/70-virtual-fido.rules > /dev/null
+          sudo udevadm control --reload-rules
+          sudo chmod 666 /dev/uhid
+          mkdir -p shots
+          python3 -I tools/FakePve/fake_pve.py 19702 > shots/fakepve-hid.log 2>&1 &
+          FAKE_PID=$!
+          python3 -I tools/FakePve/fake_pve.py 19703 > shots/fakepve-hid-ui.log 2>&1 &
+          FAKE_UI_PID=$!
+          KEY_PID=
+          trap 'kill "$FAKE_PID" "$FAKE_UI_PID" $KEY_PID 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do grep -q "^listening" shots/fakepve-hid.log && grep -q "^listening" shots/fakepve-hid-ui.log && break; sleep 1; done
+          dotnet run --project tools/VirtualFido -c Release --no-build -- --fakepve 19702 > shots/virtualfido.log 2>&1 || true
+          grep -E "^(PASS|FAIL|SKIP|DONE)" shots/virtualfido.log
+          grep -q "^DONE ok" shots/virtualfido.log || { cat shots/virtualfido.log; exit 1; }
+          dotnet run --project tools/VirtualFido -c Release --no-build -- serve --pin 1234 --always-uv \
+            --cred fake-credential --rp pve.example > shots/virtualfido-serve.log 2>&1 &
+          KEY_PID=$!
+          for i in $(seq 1 30); do grep -q "^READY" shots/virtualfido-serve.log && break; sleep 1; done
+          dotnet run --project tools/UiSnapshot -c Release --no-build -- \
+            --port 19703 --out shots/mobile-webauthn-hid --mode mobile --target webauthn --webauthn-key linux \
+            --serverlog shots/fakepve-hid-ui.log > shots/mobile-webauthn-hid.log 2>&1 || true
+          tail -n 12 shots/mobile-webauthn-hid.log
+          grep -q "^DONE ok" shots/mobile-webauthn-hid.log && grep -q "CBOR 06" shots/virtualfido-serve.log
 
       # RDP 콘솔 끝까지: 러너에 xrdp(+ xorgxrdp·openbox·xterm)와 시험 계정을 두고, 가짜 PVE 의 RDCleanPath 프록시로
       # 붙는다(연결·입력·해상도 변경·다시 연결). 러너 패키지 사정에 따라 깨질 수 있어 실패해도 작업은 막지 않는다
