@@ -35,7 +35,7 @@ public partial class LoginWindow
         var kinds = challenge.AvailableKinds(WindowsWebAuthn.IsAvailable);
         if (kinds.Count == 0) throw new InvalidOperationException(Loc.T("LoginWindow_TfaUnsupported"));
 
-        var hasKey = kinds.Contains(TfaKind.WebAuthn);
+        var hasKey = kinds.Contains(TfaKind.WebAuthn) || kinds.Contains(TfaKind.U2f);
         string? error = hasKey ? Loc.T("LoginWindow_TfaWebAuthnHint")
             : challenge.HasWebAuthn || challenge.HasU2f ? Loc.T("LoginWindow_TfaUnsupported") : null;
         var lastKind = TfaChallenge.WireName(kinds[0]);
@@ -58,18 +58,19 @@ public partial class LoginWindow
             var kind = kinds.First(k => TfaChallenge.WireName(k) == lastKind);
             try
             {
-                if (kind == TfaKind.WebAuthn)
+                if (kind is TfaKind.WebAuthn or TfaKind.U2f)
                 {
+                    // 옛 U2F 도 appid 확장을 쓴 WebAuthn 질문으로 바꿔 Windows 보안 창으로 받는다
                     var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
                     var response = await WindowsWebAuthn.GetAssertionAsync(hwnd, client.ServerOrigin,
-                        challenge.WebAuthnChallengeJson!, CancellationToken.None);
+                        challenge.SecurityKeyJson(kind)!, CancellationToken.None);
                     if (response is null)
                     {
                         error = Loc.T("LoginWindow_TfaWebAuthnCancelled");
                         continue;
                     }
 
-                    await client.CompleteWebAuthnAsync(challenge, response);
+                    await client.CompleteSecurityKeyAsync(challenge, kind, response);
                     return;
                 }
 
@@ -96,6 +97,7 @@ public partial class LoginWindow
             TfaKind.Totp => "LoginWindow_TfaTotp",
             TfaKind.Recovery => "LoginWindow_TfaRecovery",
             TfaKind.WebAuthn => "LoginWindow_TfaWebAuthn",
+            TfaKind.U2f => "LoginWindow_TfaU2f",
             _ => "LoginWindow_TfaYubico"
         };
     }

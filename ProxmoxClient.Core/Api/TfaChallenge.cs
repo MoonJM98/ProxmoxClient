@@ -65,6 +65,30 @@ public sealed record TfaChallenge
 
     public bool HasU2f { get; init; }
 
+    /// <summary>옛 U2F 질문 원문({"challenge":{challenge, appId, version}, "keys":[…]}). 없거나 옛 형식이면 null.</summary>
+    public string? U2fChallengeJson { get; init; }
+
+    /// <summary>
+    ///     보안 키 구현(IWebAuthnProvider)에 넘길 질문 — WebAuthn 은 원문, U2F 는 WebAuthn 모양으로 바꾼 것
+    ///     (<see cref="U2fCompat.ToWebAuthnJson" />). 그 방식이 없거나 읽을 수 없으면 null.
+    /// </summary>
+    public string? SecurityKeyJson(TfaKind kind)
+    {
+        try
+        {
+            return kind switch
+            {
+                TfaKind.WebAuthn when WebAuthn is not null => WebAuthnChallengeJson,
+                TfaKind.U2f when U2fChallengeJson is not null => U2fCompat.ToWebAuthnJson(U2fChallengeJson),
+                _ => null
+            };
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>
     ///     PVE 7.2 이전 형식 — 질문 내용이 없고, 비밀번호와 함께 otp 칸에 코드를 넣어 다시 로그인한다(TOTP·Yubico 만).
     /// </summary>
@@ -92,6 +116,13 @@ public sealed record TfaChallenge
         var kinds = new List<TfaKind>();
         if (securityKey && !IsLegacy && WebAuthn is not null) kinds.Add(TfaKind.WebAuthn);
         kinds.AddRange(SupportedKinds);
+        // 옛 U2F — PVE 웹 UI 처럼 복구 키 뒤, Yubico 앞
+        if (securityKey && !IsLegacy && SecurityKeyJson(TfaKind.U2f) is not null)
+        {
+            var at = kinds.IndexOf(TfaKind.Yubico);
+            kinds.Insert(at < 0 ? kinds.Count : at, TfaKind.U2f);
+        }
+
         return kinds;
     }
 
@@ -168,7 +199,8 @@ public sealed record TfaChallenge
                 WebAuthnChallengeJson = root.TryGetProperty("webauthn", out var wa) && wa.ValueKind == JsonValueKind.Object
                     ? wa.GetRawText()
                     : null,
-                HasU2f = root.TryGetProperty("u2f", out var u2f) && u2f.ValueKind == JsonValueKind.Object
+                HasU2f = root.TryGetProperty("u2f", out var u2f) && u2f.ValueKind == JsonValueKind.Object,
+                U2fChallengeJson = u2f.ValueKind == JsonValueKind.Object ? u2f.GetRawText() : null
             };
         }
     }

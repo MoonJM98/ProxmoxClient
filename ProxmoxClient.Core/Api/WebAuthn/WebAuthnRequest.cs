@@ -30,6 +30,12 @@ public sealed record WebAuthnRequest
     /// <summary>U2F 시절 등록한 키용 appid 확장(https://host:8006 등). 없으면 null.</summary>
     public string? AppId { get; init; }
 
+    /// <summary>
+    ///     옛 U2F 질문을 바꾼 것 — clientData 를 U2F 모양({"typ":"navigator.id.getAssertion",…})으로 만들고
+    ///     CTAP2 를 건너뛰어 U2F authenticate 로만 서명받는다(<see cref="U2fCompat" />).
+    /// </summary>
+    public bool U2f { get; init; }
+
     /// <summary>질문 원문(webauthn 항목 JSON)에서 읽는다. 형식이 다르면 <see cref="FormatException" />.</summary>
     public static WebAuthnRequest Parse(string webauthnJson)
     {
@@ -62,6 +68,8 @@ public sealed record WebAuthnRequest
 
             return new WebAuthnRequest
             {
+                U2f = root.ValueKind == JsonValueKind.Object && root.TryGetProperty("u2f", out var u2f) &&
+                      u2f.ValueKind == JsonValueKind.True,
                 Challenge = challenge,
                 RpId = pk.TryGetProperty("rpId", out var rp) && rp.ValueKind == JsonValueKind.String
                     ? rp.GetString()
@@ -97,6 +105,12 @@ public sealed record WebAuthnRequest
     /// </summary>
     public byte[] BuildClientDataJson(Uri origin)
     {
+        // U2F JS API(u2f.sign)가 만드는 모양 — PVE(proxmox-tfa u2f)는 challenge·origin 만 본다
+        if (U2f)
+            return Encoding.UTF8.GetBytes("{\"typ\":\"navigator.id.getAssertion\",\"challenge\":" +
+                                          JsonSerializer.Serialize(Challenge) + ",\"origin\":" +
+                                          JsonSerializer.Serialize(OriginString(origin)) + "}");
+
         var json = "{\"type\":\"webauthn.get\",\"challenge\":" + JsonSerializer.Serialize(Challenge) +
                    ",\"origin\":" + JsonSerializer.Serialize(OriginString(origin)) + ",\"crossOrigin\":false}";
         return Encoding.UTF8.GetBytes(json);
@@ -112,6 +126,73 @@ public sealed record WebAuthnRequest
     public static byte[] RpIdHash(string rpIdOrAppId)
     {
         return SHA256.HashData(Encoding.UTF8.GetBytes(rpIdOrAppId));
+    }
+}
+
+/// <summary>
+///     옛 U2F 질문(PVE 8/9 도 datacenter.cfg 에 u2f 설정이 있고 U2F 로 등록한 사용자에게 아직 준다):
+///     {"challenge":{"challenge","appId","version"},"keys":[{"keyHandle","version"}]}. 웹 UI 는 u2f.sign 결과
+///     {"keyHandle","clientData","signatureData"}(base64url)를 "u2f:" 뒤에 보낸다(TfaWindow.js loginU2F, proxmox-tfa u2f.rs).
+///     보안 키 구현은 WebAuthn 하나로 두고, 질문을 appid 확장을 쓴 WebAuthn 질문으로 바꿔 서명받은 뒤 응답을 U2F 모양으로 되돌린다
+///     (U2F 키의 서명 대상 SHA-256(appId) ‖ 플래그 ‖ 횟수 ‖ SHA-256(clientData) 는 WebAuthn 인증기 데이터 ‖ 해시와 같다).
+/// </summary>
+public static class U2fCompat
+{
+    /// <summary>U2F 질문 → 보안 키 구현에 넘길 WebAuthn 모양 JSON({"u2f":true,"publicKey":{…,"extensions":{"appid"}}}).</summary>
+    public static string ToWebAuthnJson(string u2fJson)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(u2fJson);
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("challenge", out var ch) || ch.ValueKind != JsonValueKind.Object ||
+                ch.GetProperty("challenge").GetString() is not { Length: > 0 } challenge ||
+                ch.GetProperty("appId").GetString() is not { Length: > 0 } appId)
+                throw new FormatException(Res.T("Tfa_BadChallenge"));
+
+            var keys = root.TryGetProperty("keys", out var k) && k.ValueKind == JsonValueKind.Array
+                ? k.EnumerateArray().Select(e => e.GetProperty("keyHandle").GetString()!).ToList()
+                : [];
+            // rpId 는 appId 의 호스트 — CTAP2 경로(Windows)는 rpId 로 못 찾으면 appid 로 다시 찾는다
+            var rpId = Uri.TryCreate(appId, UriKind.Absolute, out var app) ? app.IdnHost : appId;
+            return JsonSerializer.Serialize(new
+            {
+                u2f = true,
+                publicKey = new
+                {
+                    challenge,
+                    rpId,
+                    allowCredentials = keys.Select(id => new { type = "public-key", id }),
+                    userVerification = "discouraged",
+                    extensions = new { appid = appId }
+                }
+            });
+        }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException)
+        {
+            throw new FormatException(Res.T("Tfa_BadChallenge"), ex);
+        }
+    }
+
+    /// <summary>
+    ///     WebAuthn 모양 응답(<see cref="WebAuthnAssertion.ToPveResponse" />) → "u2f:" 뒤 JSON
+    ///     {"keyHandle","clientData","signatureData"} — signatureData = 사용자 확인 바이트 ‖ 횟수(4) ‖ DER 서명.
+    /// </summary>
+    public static string FromWebAuthnResponse(string webauthnResponseJson)
+    {
+        using var doc = JsonDocument.Parse(webauthnResponseJson);
+        var root = doc.RootElement;
+        var response = root.GetProperty("response");
+        var authData = Base64Url.Decode(response.GetProperty("authenticatorData").GetString()!);
+        if (authData.Length < 37) throw new FormatException("authenticatorData");
+
+        var signature = Base64Url.Decode(response.GetProperty("signature").GetString()!);
+        return JsonSerializer.Serialize(new
+        {
+            keyHandle = root.GetProperty("id").GetString(),
+            clientData = response.GetProperty("clientDataJSON").GetString(),
+            signatureData = Base64Url.Encode([.. authData.AsSpan(32, 5), .. signature])
+        });
     }
 }
 

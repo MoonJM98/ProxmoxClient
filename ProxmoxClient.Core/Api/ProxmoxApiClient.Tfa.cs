@@ -70,10 +70,23 @@ public sealed partial class ProxmoxApiClient
     /// </summary>
     public Task CompleteWebAuthnAsync(TfaChallenge challenge, string assertionJson, CancellationToken ct = default)
     {
-        ArgumentNullException.ThrowIfNull(challenge);
-        if (challenge.IsLegacy || !challenge.HasWebAuthn) throw new ProxmoxApiException(0, null, Res.T("Tfa_BadChallenge"));
+        return CompleteSecurityKeyAsync(challenge, TfaKind.WebAuthn, assertionJson, ct);
+    }
 
-        return CompleteTfaAsync(challenge, TfaKind.WebAuthn, assertionJson, ct);
+    /// <summary>
+    ///     보안 키 서명으로 로그인을 마친다 — WebAuthn 은 password=webauthn:{JSON}, 옛 U2F 는 응답을 U2F 모양으로 바꿔
+    ///     password=u2f:{"keyHandle","clientData","signatureData"}(<see cref="U2fCompat.FromWebAuthnResponse" />).
+    ///     <paramref name="assertionJson" /> 은 보안 키 구현이 돌려준 WebAuthn 모양 응답.
+    /// </summary>
+    public Task CompleteSecurityKeyAsync(TfaChallenge challenge, TfaKind kind, string assertionJson,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(challenge);
+        if (challenge.IsLegacy || kind is not (TfaKind.WebAuthn or TfaKind.U2f) || challenge.SecurityKeyJson(kind) is null)
+            throw new ProxmoxApiException(0, null, Res.T("Tfa_BadChallenge"));
+
+        var value = kind == TfaKind.U2f ? U2fCompat.FromWebAuthnResponse(assertionJson) : assertionJson;
+        return CompleteTfaAsync(challenge, kind, value, ct);
     }
 
     /// <summary>입력값 정리 — TOTP 는 사이 공백("123 456")을 빼고, 복구 키는 소문자로(웹 UI 형식 xxxx-xxxx-xxxx-xxxx).</summary>

@@ -9,7 +9,8 @@ namespace ProxmoxClient.UI.Platform;
 /// <summary>
 ///     보안 키(WebAuthn) 2단계 인증 — 이 기기의 보안 키에서 서명을 받는다.
 ///     구현은 <see cref="WebAuthnProviders.CreateDefault" /> 한 곳에서 고른다: Windows 는 webauthn.dll(Windows 보안 창),
-///     Linux 는 USB 보안 키(/dev/hidraw, CTAPHID), Android 는 헤드 프로젝트가 NFC 구현을 넣는다. macOS·iOS 는 아직 없다.
+///     Linux 는 USB 보안 키(/dev/hidraw, CTAPHID), macOS 는 USB 보안 키(IOKit IOHIDManager), Android 는 헤드 프로젝트가
+///     NFC·USB 구현을 넣는다. iOS 는 아직 없다.
 /// </summary>
 public interface IWebAuthnProvider
 {
@@ -26,9 +27,10 @@ public interface IWebAuthnProvider
     ///     서명을 받아 PVE 2단계 응답 JSON(password 의 "webauthn:" 뒤, <see cref="WebAuthnAssertion.ToPveResponse" />)을 돌려준다.
     ///     <paramref name="serverOrigin" /> 은 clientDataJSON 의 origin(https://호스트:8006),
     ///     <paramref name="publicKeyJson" /> 은 질문의 webauthn 항목({"publicKey":{…}}). 사용자가 취소하면 null,
-    ///     실패하면 <see cref="WebAuthnException" />(문구를 그대로 보인다).
+    ///     실패하면 <see cref="WebAuthnException" />(문구를 그대로 보인다). 키가 PIN 을 요구하면 <paramref name="pin" /> 으로
+    ///     묻는다(Windows 는 Windows 보안 창이 직접 묻는다). 옛 U2F 질문도 WebAuthn 모양으로 바꿔 같은 메서드로 받는다.
     /// </summary>
-    Task<string?> GetAssertionAsync(Uri serverOrigin, string publicKeyJson, CancellationToken ct);
+    Task<string?> GetAssertionAsync(Uri serverOrigin, string publicKeyJson, PinPrompt? pin, CancellationToken ct);
 }
 
 /// <summary>운영체제별 보안 키 구현 선택 — OS 분기는 여기서만 한다.</summary>
@@ -47,9 +49,12 @@ public static class WebAuthnProviders
     {
         if (OperatingSystem.IsWindows()) return new WindowsWebAuthnProvider();
         if (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) return new LinuxHidWebAuthnProvider();
-        if (OperatingSystem.IsIOS()) return new UnavailableWebAuthnProvider("Tfa_WebAuthnNoIos");
+        if (OperatingSystem.IsMacOS()) return new MacHidWebAuthnProvider();
 
-        return new UnavailableWebAuthnProvider("Tfa_WebAuthnNoMac");
+        // iOS: 다른 서버(PVE 주소)를 rpId 로 쓰는 WebAuthn(ASAuthorization)은 그 서버에 연결 도메인(apple-app-site-association)
+        // 등록이 필요하고, 앱이 USB·Lightning HID 에 직접 접근할 수 없다. NFC 보안 키 직접 통신(CoreNFC ISO 7816, FIDO AID)은
+        // 엔타이틀먼트·Info.plist 와 Xcode 빌드 검증이 필요해 아직 넣지 않았다.
+        return new UnavailableWebAuthnProvider("Tfa_WebAuthnNoIos");
     }
 }
 
@@ -60,7 +65,7 @@ public sealed class UnavailableWebAuthnProvider(string reasonKey) : IWebAuthnPro
     public string UnavailableReason => L.T(reasonKey);
     public string PromptText => string.Empty;
 
-    public Task<string?> GetAssertionAsync(Uri serverOrigin, string publicKeyJson, CancellationToken ct)
+    public Task<string?> GetAssertionAsync(Uri serverOrigin, string publicKeyJson, PinPrompt? pin, CancellationToken ct)
     {
         throw new WebAuthnException(UnavailableReason);
     }
@@ -73,8 +78,9 @@ public sealed class WindowsWebAuthnProvider : IWebAuthnProvider
     public string UnavailableReason => L.T("Tfa_WebAuthnNoWindows");
     public string PromptText => L.T("Tfa_WebAuthnPromptWindows");
 
-    public Task<string?> GetAssertionAsync(Uri serverOrigin, string publicKeyJson, CancellationToken ct)
+    public Task<string?> GetAssertionAsync(Uri serverOrigin, string publicKeyJson, PinPrompt? pin, CancellationToken ct)
     {
+        // PIN·지문은 Windows 보안 창이 직접 묻는다
         if (!OperatingSystem.IsWindows()) throw new WebAuthnException(UnavailableReason);
 
         return WindowsWebAuthn.GetAssertionAsync(OwnerWindowHandle(), serverOrigin, publicKeyJson, ct);

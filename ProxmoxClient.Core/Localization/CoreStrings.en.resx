@@ -377,7 +377,22 @@
     <value>The security key check timed out. Try again.</value>
   </data>
   <data name="WebAuthn_PinRequired" xml:space="preserve">
-    <value>This security key requires a PIN, which is not supported on this device. Use TOTP or a recovery key.</value>
+    <value>This security key requires PIN or fingerprint verification, which cannot be done with this key here — use TOTP or a recovery key.</value>
+  </data>
+  <data name="WebAuthn_PinInvalid" xml:space="preserve">
+    <value>Incorrect PIN.</value>
+  </data>
+  <data name="WebAuthn_PinTooShort" xml:space="preserve">
+    <value>The PIN must be at least 4 characters.</value>
+  </data>
+  <data name="WebAuthn_PinBlocked" xml:space="preserve">
+    <value>The security key's PIN is blocked (too many attempts). The key must be reset before it can be used again — use TOTP or a recovery key.</value>
+  </data>
+  <data name="WebAuthn_PinAuthBlocked" xml:space="preserve">
+    <value>Too many wrong PIN attempts. Remove and reinsert (or re-tap) the security key, then try again.</value>
+  </data>
+  <data name="WebAuthn_PinNotSet" xml:space="preserve">
+    <value>The server requires user verification, but this security key has no PIN set. Set a PIN with the key's management tool.</value>
   </data>
   <data name="WebAuthn_NotFidoKey" xml:space="preserve">
     <value>This is not a FIDO security key.</value>

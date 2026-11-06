@@ -34,8 +34,8 @@ public class MainApplication : AvaloniaAndroidApplication<App>
         ProxmoxClient.UI.Platform.SpiceLaunchers.Current = new AndroidSpiceLauncher(this);
         // 터미널 연결 유지 — 연결된 동안 포그라운드 서비스(알림)로 앱을 살려 두어 배경에서도 세션이 끊기지 않게
         ProxmoxClient.UI.Platform.SessionKeepAlive.Host = new AndroidSessionKeepAliveHost(this);
-        // 2단계 인증 보안 키(WebAuthn) — NFC 보안 키에 직접 서명을 받는다
-        ProxmoxClient.UI.Platform.WebAuthnProviders.Current = new AndroidNfcWebAuthnProvider(this);
+        // 2단계 인증 보안 키(WebAuthn) — NFC·USB 보안 키에 직접 서명을 받는다
+        ProxmoxClient.UI.Platform.WebAuthnProviders.Current = new AndroidWebAuthnProvider(this);
         // 설정의 "화면 보호" — 액티비티 창에 FLAG_SECURE
         ProxmoxClient.UI.Platform.ScreenSecurity.Host = new AndroidScreenSecurityHost();
         AppServices.ProfilesDirectory = Path.Combine(FilesDir!.AbsolutePath, "profiles");

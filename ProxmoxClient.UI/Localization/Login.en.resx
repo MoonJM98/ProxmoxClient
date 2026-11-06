@@ -41,10 +41,13 @@
     <value>Verifying…</value>
   </data>
   <data name="Tfa_SecurityKeyUnsupported" xml:space="preserve">
-    <value>Legacy U2F security key requests are not supported in this app — use TOTP or a recovery key, or an API token.</value>
+    <value>Legacy-format (pre-PVE 7.2) U2F security key requests are not supported in this app — use TOTP or a recovery key, or an API token.</value>
   </data>
   <data name="Tfa_KindWebAuthn" xml:space="preserve">
     <value>Security key</value>
+  </data>
+  <data name="Tfa_KindU2f" xml:space="preserve">
+    <value>Security key (U2F)</value>
   </data>
   <data name="Tfa_WebAuthnStart" xml:space="preserve">
     <value>Use security key</value>
@@ -77,16 +80,37 @@
     <value>Security keys (WebAuthn) need a USB security key (/dev/hidraw) — use TOTP or a recovery key.</value>
   </data>
   <data name="Tfa_WebAuthnNoMac" xml:space="preserve">
-    <value>The macOS version of this app does not support security keys (WebAuthn) yet — use TOTP or a recovery key.</value>
+    <value>USB security keys cannot be used on this Mac — use TOTP or a recovery key.</value>
   </data>
   <data name="Tfa_WebAuthnNoIos" xml:space="preserve">
     <value>Security keys (WebAuthn) are not supported on iOS yet — use TOTP or a recovery key.</value>
   </data>
   <data name="Tfa_WebAuthnNoNfc" xml:space="preserve">
-    <value>This device has no NFC, so security keys (WebAuthn) cannot be used — use TOTP or a recovery key.</value>
+    <value>This device has neither NFC nor USB host support, so security keys (WebAuthn) cannot be used — use TOTP or a recovery key.</value>
   </data>
   <data name="Tfa_WebAuthnNfcOff" xml:space="preserve">
     <value>NFC is turned off. Turn on NFC in Settings and try again.</value>
+  </data>
+  <data name="Tfa_PinWatermark" xml:space="preserve">
+    <value>Security key PIN</value>
+  </data>
+  <data name="Tfa_PinPrompt" xml:space="preserve">
+    <value>Enter the security key PIN. For an NFC key, tap it again after entering the PIN.</value>
+  </data>
+  <data name="Tfa_PinPromptRetries" xml:space="preserve">
+    <value>Enter the security key PIN ({0} attempts left). For an NFC key, tap it again after entering the PIN.</value>
+  </data>
+  <data name="Tfa_PinEmpty" xml:space="preserve">
+    <value>Enter the PIN.</value>
+  </data>
+  <data name="Tfa_WebAuthnMacOpen" xml:space="preserve">
+    <value>Could not open the USB security key. If another program (such as a browser) is using it, close it and try again.</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptAndroid" xml:space="preserve">
+    <value>Hold your security key against the back of the phone (NFC), or plug it in via USB and touch its button…</value>
+  </data>
+  <data name="Tfa_WebAuthnUsbDenied" xml:space="preserve">
+    <value>Access to the USB security key was not allowed.</value>
   </data>
   <data name="Tfa_NoMethod" xml:space="preserve">
     <value>No two-factor method usable for this account. Check its two-factor settings in the web UI or use an API token.</value>

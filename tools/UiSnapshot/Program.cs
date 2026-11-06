@@ -293,7 +293,7 @@ if (target == "restore")
     return failures == 0 ? 0 : 2;
 }
 
-// ---- 보안 키 2단계 인증(--target webauthn): 가짜 키로 창(보안 키 기본) → 취소는 창 유지 → 서명은 webauthn:{JSON} 으로 로그인 ----
+// ---- 보안 키 2단계 인증(--target webauthn): 가짜 키로 창(보안 키 기본) → 취소는 창 유지 → PIN 묻기(틀리면 다시) → 서명은 webauthn:{JSON} 으로 로그인 ----
 if (target == "webauthn")
 {
     var fakeKey = new UiSnapshot.FakeWebAuthnProvider { CancelFirst = 1 };
@@ -326,7 +326,19 @@ if (target == "webauthn")
         Check0("보안 키 취소", "취소 안내 · 창 유지", waDialog.CurrentError,
             ReferenceEquals(AppServices.Dialogs.Sheet, waDialog) && !waDialog.Completed
             && waDialog.CurrentError == L.T("Tfa_WebAuthnCancelled"));
-        await Wait(waDialog.UseSecurityKeyAsync());
+        // 키가 PIN 을 요구 — 창에 PIN 칸(남은 횟수), 틀리면 오류와 함께 다시, 맞으면 서명
+        fakeKey.AskPin = true;
+        var waKeyTask = waDialog.UseSecurityKeyAsync();
+        WaitFor(() => waDialog.WaitingForPin);
+        Shot("webauthn-pin");
+        Check0("보안 키 PIN 묻기", "PIN 칸 · 남은 횟수 8", waDialog.PinHint,
+            waDialog.WaitingForPin && waDialog.PinHint.Contains('8'));
+        waDialog.EnterPin("0000");
+        WaitFor(() => waDialog.WaitingForPin && waDialog.CurrentError.Length > 0);
+        Check0("틀린 PIN", "오류 · 남은 횟수 7 · 다시 묻기", $"{waDialog.CurrentError} / {waDialog.PinHint}",
+            waDialog.WaitingForPin && waDialog.PinHint.Contains('7') && waDialog.CurrentError.Length > 0);
+        waDialog.EnterPin("1234");
+        await Wait(waKeyTask);
         WaitFor(() => nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel, 15000);
         var waSession = nav.CurrentPage?.DataContext switch
         {

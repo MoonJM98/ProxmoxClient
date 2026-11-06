@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Input.TextInput;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Platform;
@@ -22,7 +23,9 @@ public sealed class TfaDialog : UserControl, IDismissible
     private readonly TfaChallenge _challenge;
     private readonly IWebAuthnProvider _webAuthn;
     private CancellationTokenSource? _keyWait;
+    private TaskCompletionSource<string?>? _pinWait;
     private readonly TextBox _code = new() { MinHeight = 40 };
+    private readonly TextBox _pin = new() { MinHeight = 40, PasswordChar = '•', IsVisible = false, MaxLength = 63 };
     private readonly TextBlock _error = new() { Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _hint = new() { Classes = { "subtle" }, TextWrapping = TextWrapping.Wrap, FontSize = 12 };
     private readonly Button _ok = new() { Content = L.T("Common_Ok"), MinWidth = 88, MinHeight = 40 };
@@ -47,9 +50,21 @@ public sealed class TfaDialog : UserControl, IDismissible
             _ = SubmitAsync();
         };
         _code.AttachedToVisualTree += (_, _) => _code.Focus();
+        _pin.PlaceholderText = L.T("Tfa_PinWatermark");
+        _pin.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter) return;
+            e.Handled = true;
+            SubmitPin();
+        };
 
         _ok.Classes.Add("accent");
-        _ok.Click += (_, _) => _ = SubmitAsync();
+        _ok.Click += (_, _) =>
+        {
+            // 보안 키가 PIN 을 기다리면 PIN 을 넘긴다
+            if (_pinWait is not null) SubmitPin();
+            else _ = SubmitAsync();
+        };
         _cancel.Click += (_, _) =>
         {
             // 보안 키를 기다리는 중이면 기다림만 멈춘다
@@ -87,6 +102,7 @@ public sealed class TfaDialog : UserControl, IDismissible
         }
 
         body.Children.Add(_code);
+        body.Children.Add(_pin);
         body.Children.Add(_hint);
         if (SecurityKeyNote(challenge, webAuthn) is { } note)
             body.Children.Add(new TextBlock
@@ -117,6 +133,19 @@ public sealed class TfaDialog : UserControl, IDismissible
     /// <summary>코드 칸의 화면 키보드 종류(테스트·스냅샷용).</summary>
     public TextInputContentType CodeContentType => TextInputOptions.GetContentType(_code);
 
+    /// <summary>보안 키가 PIN 을 기다리고 있다(스냅샷 검사용).</summary>
+    public bool WaitingForPin => _pinWait is not null;
+
+    /// <summary>PIN 안내 줄(남은 횟수, 스냅샷 검사용).</summary>
+    public string PinHint => _pinWait is null ? string.Empty : _hint.Text ?? string.Empty;
+
+    /// <summary>PIN 을 넣고 확인한다(스냅샷 검사용).</summary>
+    public void EnterPin(string pin)
+    {
+        _pin.Text = pin;
+        SubmitPin();
+    }
+
     /// <summary>
     ///     2단계 인증을 받아 로그인을 마친다. 취소하면 false. 앱에서 입력할 방식이 없으면(보안 키만) 안내하고 false.
     /// </summary>
@@ -143,9 +172,9 @@ public sealed class TfaDialog : UserControl, IDismissible
     }
 
     /// <summary>보안 키로 확인한다(스냅샷 검사용 — "보안 키"를 고르고 확인을 누른 것과 같다).</summary>
-    public Task UseSecurityKeyAsync()
+    public Task UseSecurityKeyAsync(TfaKind kind = TfaKind.WebAuthn)
     {
-        SelectKind(TfaKind.WebAuthn);
+        SelectKind(kind);
         return SubmitAsync();
     }
 
@@ -155,7 +184,7 @@ public sealed class TfaDialog : UserControl, IDismissible
         _kind = kind;
         _code.Text = string.Empty;
         _error.Text = string.Empty;
-        var key = kind == TfaKind.WebAuthn;
+        var key = IsSecurityKey(kind);
         _code.IsVisible = !key;
         _ok.Content = key ? L.T("Tfa_WebAuthnStart") : L.T("Common_Ok");
         // TOTP 는 숫자 키보드, 나머지는 글자 키보드
@@ -171,7 +200,7 @@ public sealed class TfaDialog : UserControl, IDismissible
         _hint.Text = kind switch
         {
             TfaKind.Recovery => RecoveryHint(),
-            TfaKind.WebAuthn => L.T("Tfa_WebAuthnHint"),
+            TfaKind.WebAuthn or TfaKind.U2f => L.T("Tfa_WebAuthnHint"),
             _ => string.Empty
         };
         _hint.IsVisible = _hint.Text.Length > 0;
@@ -198,10 +227,20 @@ public sealed class TfaDialog : UserControl, IDismissible
     /// </summary>
     private static string? SecurityKeyNote(TfaChallenge challenge, IWebAuthnProvider webAuthn)
     {
-        if (challenge.HasWebAuthn && !challenge.IsLegacy)
-            return webAuthn.IsAvailable && challenge.WebAuthn is not null ? null : webAuthn.UnavailableReason;
+        if (!challenge.HasWebAuthn && !challenge.HasU2f) return null;
+        // 옛 형식(PVE 7.2 이전)의 U2F 는 질문 내용이 없어 받을 수 없다
+        if (challenge.IsLegacy) return L.T("Tfa_SecurityKeyUnsupported");
 
-        return challenge.HasU2f ? L.T("Tfa_SecurityKeyUnsupported") : null;
+        var usable = challenge.SecurityKeyJson(TfaKind.WebAuthn) is not null ||
+                     challenge.SecurityKeyJson(TfaKind.U2f) is not null;
+        if (!usable) return L.T("Tfa_SecurityKeyUnsupported");
+
+        return webAuthn.IsAvailable ? null : webAuthn.UnavailableReason;
+    }
+
+    private static bool IsSecurityKey(TfaKind kind)
+    {
+        return kind is TfaKind.WebAuthn or TfaKind.U2f;
     }
 
     private static string KindLabel(TfaKind kind)
@@ -209,6 +248,7 @@ public sealed class TfaDialog : UserControl, IDismissible
         return kind switch
         {
             TfaKind.WebAuthn => L.T("Tfa_KindWebAuthn"),
+            TfaKind.U2f => L.T("Tfa_KindU2f"),
             TfaKind.Totp => L.T("Tfa_KindTotp"),
             TfaKind.Recovery => L.T("Tfa_KindRecovery"),
             _ => L.T("Tfa_KindYubico")
@@ -219,7 +259,7 @@ public sealed class TfaDialog : UserControl, IDismissible
     {
         if (_busy) return;
 
-        if (_kind == TfaKind.WebAuthn)
+        if (IsSecurityKey(_kind))
         {
             await SubmitSecurityKeyAsync();
             return;
@@ -256,7 +296,10 @@ public sealed class TfaDialog : UserControl, IDismissible
         }
     }
 
-    /// <summary>보안 키 서명을 받아 password=webauthn:{JSON} 으로 보낸다. 기다리는 동안 취소 단추는 기다림을 멈춘다.</summary>
+    /// <summary>
+    ///     보안 키 서명을 받아 password=webauthn:{JSON}(옛 U2F 는 u2f:{JSON})으로 보낸다. 기다리는 동안 취소 단추는 기다림을 멈춘다.
+    ///     키가 PIN 을 요구하면 이 창에 PIN 칸을 보여 받는다(<see cref="PromptPinAsync" />).
+    /// </summary>
     private async Task SubmitSecurityKeyAsync()
     {
         _busy = true;
@@ -266,8 +309,8 @@ public sealed class TfaDialog : UserControl, IDismissible
         _keyWait = wait;
         try
         {
-            var response = await _webAuthn.GetAssertionAsync(_api.ServerOrigin, _challenge.WebAuthnChallengeJson!,
-                wait.Token);
+            var response = await _webAuthn.GetAssertionAsync(_api.ServerOrigin, _challenge.SecurityKeyJson(_kind)!,
+                PromptPinAsync, wait.Token);
             _keyWait = null;
             if (response is null)
             {
@@ -277,7 +320,7 @@ public sealed class TfaDialog : UserControl, IDismissible
 
             _cancel.IsEnabled = false;
             _error.Text = L.T("Tfa_Verifying");
-            await _api.CompleteWebAuthnAsync(_challenge, response);
+            await _api.CompleteSecurityKeyAsync(_challenge, _kind, response);
             Completed = true;
             _busy = false;
             AppServices.Dialogs.CloseSheet();
@@ -295,8 +338,58 @@ public sealed class TfaDialog : UserControl, IDismissible
         finally
         {
             _keyWait = null;
+            HidePin();
             _busy = false;
             _ok.IsEnabled = _cancel.IsEnabled = true;
         }
+    }
+
+    /// <summary>
+    ///     보안 키 PIN 을 묻는다(보안 키 구현이 아무 스레드에서나 부른다) — PIN 칸·남은 횟수·바로 전 오류를 보이고,
+    ///     확인을 누르면 PIN 을, 취소하면 기다림 취소로 끝낸다.
+    /// </summary>
+    private Task<string?> PromptPinAsync(PinPromptInfo info, CancellationToken ct)
+    {
+        return Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            var wait = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            ct.Register(() => wait.TrySetCanceled(ct));
+            _pinWait = wait;
+            _pin.Text = string.Empty;
+            _pin.IsVisible = true;
+            _hint.Text = info.RetriesLeft is { } left ? L.T("Tfa_PinPromptRetries", left) : L.T("Tfa_PinPrompt");
+            _hint.IsVisible = true;
+            _error.Text = info.Error ?? string.Empty;
+            _ok.Content = L.T("Common_Ok");
+            _ok.IsEnabled = true;
+            if (TopLevel.GetTopLevel(_pin) is not null) _pin.Focus();
+            return wait.Task;
+        });
+    }
+
+    private void SubmitPin()
+    {
+        if (_pinWait is not { } wait) return;
+
+        var pin = _pin.Text ?? string.Empty;
+        if (pin.Length == 0)
+        {
+            _error.Text = L.T("Tfa_PinEmpty");
+            return;
+        }
+
+        HidePin();
+        _ok.IsEnabled = false;
+        _error.Text = _webAuthn.PromptText;
+        wait.TrySetResult(pin);
+    }
+
+    private void HidePin()
+    {
+        _pinWait = null;
+        _pin.Text = string.Empty;
+        _pin.IsVisible = false;
+        _ok.Content = L.T("Tfa_WebAuthnStart");
+        _hint.Text = L.T("Tfa_WebAuthnHint");
     }
 }

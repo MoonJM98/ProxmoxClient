@@ -1160,10 +1160,13 @@ The setup window downloads the Windows installer (about 80 MB) from the official
     <value>Yubico OTP</value>
   </data>
   <data name="LoginWindow_TfaUnsupported" xml:space="preserve">
-    <value>Security keys (WebAuthn) require Windows 10 1903 or later, and legacy U2F requests are not supported — use TOTP or a recovery key, or an API token.</value>
+    <value>Security keys (WebAuthn/U2F) require Windows 10 1903 or later, and legacy-format (pre-PVE 7.2) U2F requests are not supported — use TOTP or a recovery key, or an API token.</value>
   </data>
   <data name="LoginWindow_TfaWebAuthn" xml:space="preserve">
     <value>Security key (WebAuthn)</value>
+  </data>
+  <data name="LoginWindow_TfaU2f" xml:space="preserve">
+    <value>Security key (U2F)</value>
   </data>
   <data name="LoginWindow_TfaWebAuthnHint" xml:space="preserve">
     <value>For a security key, leave the code empty and press OK — the Windows Security prompt opens.</value>

@@ -6,7 +6,7 @@ namespace ProxmoxClient.UI.Platform;
 /// <summary>
 ///     Linux — USB 보안 키를 /dev/hidraw* 로 직접 쓴다(CTAPHID, libfido2 가 하는 일). FIDO 장치는 보고서 설명자의
 ///     사용 페이지 0xF1D0 으로 알아본다. 장치 파일을 열 권한은 보통 systemd(uaccess)·libfido2 의 udev 규칙이 준다 —
-///     권한이 없으면 안내한다. 키를 꽂지 않았으면 제한 시간까지 기다린다.
+///     권한이 없으면 안내한다. 키를 꽂지 않았으면 제한 시간까지 기다린다. PIN 이 필요하면 2단계 인증 창이 묻는다.
 /// </summary>
 public sealed class LinuxHidWebAuthnProvider : IWebAuthnProvider
 {
@@ -16,47 +16,22 @@ public sealed class LinuxHidWebAuthnProvider : IWebAuthnProvider
     public string UnavailableReason => L.T("Tfa_WebAuthnNoLinux");
     public string PromptText => L.T("Tfa_WebAuthnPromptUsb");
 
-    public async Task<string?> GetAssertionAsync(Uri serverOrigin, string publicKeyJson, CancellationToken ct)
+    public Task<string?> GetAssertionAsync(Uri serverOrigin, string publicKeyJson, PinPrompt? pin, CancellationToken ct)
     {
-        var request = WebAuthnRequest.Parse(publicKeyJson);
-        var deadline = DateTime.UtcNow.AddMilliseconds(request.TimeoutMs);
-        string? device;
-        while ((device = FindFidoDevice()) is null)
-        {
-            if (DateTime.UtcNow > deadline) throw new WebAuthnException(L.T("Tfa_WebAuthnNoKey"));
+        return HidSecurityKey.GetAssertionAsync(_ => Task.FromResult(TryOpen()), serverOrigin, publicKeyJson, pin, ct);
+    }
 
-            await Task.Delay(500, ct); // 키를 꽂기를 기다린다
-        }
+    private static IHidReportDevice? TryOpen()
+    {
+        if (FindFidoDevice() is not { } path) return null;
 
-        FileStream stream;
         try
         {
-            stream = new FileStream(device, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, 0);
+            return new Hidraw(new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, 0));
         }
         catch (UnauthorizedAccessException ex)
         {
-            throw new WebAuthnException(L.T("Tfa_WebAuthnHidPermission", device), ex);
-        }
-
-        await using (stream)
-        {
-            var transport = new HidCtapTransport(
-                (frame, token) => Task.Run(() =>
-                {
-                    // hidraw 쓰기: 보고서 번호(0) + 64바이트
-                    var report = new byte[HidCtapTransport.ReportSize + 1];
-                    frame.CopyTo(report, 1);
-                    stream.Write(report);
-                }, token),
-                token => Task.Run(() =>
-                {
-                    var buffer = new byte[HidCtapTransport.ReportSize];
-                    var n = stream.Read(buffer);
-                    return n > 0 ? buffer[..n] : throw new WebAuthnException(L.T("Tfa_WebAuthnNoKey"));
-                }, CancellationToken.None));
-            await transport.OpenAsync(ct);
-            var assertion = await FidoClient.GetAssertionAsync(transport, request, serverOrigin, ct);
-            return assertion.ToPveResponse(request.Challenge);
+            throw new WebAuthnException(L.T("Tfa_WebAuthnHidPermission", path), ex);
         }
     }
 
@@ -83,5 +58,37 @@ public sealed class LinuxHidWebAuthnProvider : IWebAuthnProvider
         }
 
         return null;
+    }
+
+    /// <summary>
+    ///     /dev/hidrawN — 쓰기는 보고서 번호(0) + 64바이트, 읽기는 64바이트. 읽기는 막히는 호출이라 스레드 풀에서 한다
+    ///     (취소하면 CTAPHID CANCEL 에 키가 답해 풀린다).
+    /// </summary>
+    private sealed class Hidraw(FileStream stream) : IHidReportDevice
+    {
+        public Task WriteAsync(byte[] report, CancellationToken ct)
+        {
+            return Task.Run(() =>
+            {
+                var buffer = new byte[HidCtapTransport.ReportSize + 1];
+                report.CopyTo(buffer, 1);
+                stream.Write(buffer);
+            }, ct);
+        }
+
+        public Task<byte[]> ReadAsync(CancellationToken ct)
+        {
+            return Task.Run(() =>
+            {
+                var buffer = new byte[HidCtapTransport.ReportSize];
+                var n = stream.Read(buffer);
+                return n > 0 ? buffer[..n] : throw new WebAuthnException(L.T("Tfa_WebAuthnNoKey"));
+            }, CancellationToken.None);
+        }
+
+        public void Dispose()
+        {
+            stream.Dispose();
+        }
     }
 }

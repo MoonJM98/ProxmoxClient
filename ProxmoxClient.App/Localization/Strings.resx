@@ -1510,10 +1510,13 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>Yubico OTP</value>
   </data>
   <data name="LoginWindow_TfaUnsupported" xml:space="preserve">
-    <value>보안 키(WebAuthn)는 Windows 10 1903 이상에서 쓸 수 있고, 옛 U2F 요청은 지원하지 않습니다 — TOTP나 복구 키를 쓰거나 API 토큰을 쓰세요.</value>
+    <value>보안 키(WebAuthn·U2F)는 Windows 10 1903 이상에서 쓸 수 있고, 옛 형식(PVE 7.2 이전) U2F 요청은 지원하지 않습니다 — TOTP나 복구 키를 쓰거나 API 토큰을 쓰세요.</value>
   </data>
   <data name="LoginWindow_TfaWebAuthn" xml:space="preserve">
     <value>보안 키(WebAuthn)</value>
+  </data>
+  <data name="LoginWindow_TfaU2f" xml:space="preserve">
+    <value>보안 키(U2F)</value>
   </data>
   <data name="LoginWindow_TfaWebAuthnHint" xml:space="preserve">
     <value>보안 키는 코드 없이 확인을 누르면 Windows 보안 창이 뜹니다.</value>
