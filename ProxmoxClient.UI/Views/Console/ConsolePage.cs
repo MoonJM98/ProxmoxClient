@@ -131,7 +131,7 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         };
         DetachedFromVisualTree += (_, e) =>
         {
-            if (TopLevel.GetTopLevel(e.Root as Visual)?.InputPane is { } pane) pane.StateChanged -= OnInputPaneChanged;
+            if (TopLevel.GetTopLevel(e.RootVisual)?.InputPane is { } pane) pane.StateChanged -= OnInputPaneChanged;
         };
         _surface.KeySink = (keysym, down) => _vm?.SendKey(keysym, down);
         _surface.ScanKeySink = (xt, keysym, down) => _vm?.SendScanKey(xt, keysym, down); // 물리 키보드: 키 위치 + keysym

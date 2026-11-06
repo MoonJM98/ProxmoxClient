@@ -91,6 +91,18 @@ public sealed class TerminalBuffer
     public MouseTracking MouseTracking { get; private set; }
     public bool SgrMouse { get; private set; }
 
+    /// <summary>
+    ///     동기화 출력(DEC 2026) 중 — 프로그램이 한 화면을 다 쓸 때까지 그리지 않는다(Claude Code·neovim 등은 다시 그릴 때마다
+    ///     켜고 끈다). 그리는 중간 상태가 보이면 글자가 튀거나 겹쳐 보인다.
+    /// </summary>
+    public bool SynchronizedOutput { get; private set; }
+
+    /// <summary>
+    ///     동기화 출력이 켜진 시각(<see cref="Environment.TickCount64" />) — 끄는 신호가 오지 않으면(프로그램이 죽음) 그리는 쪽이
+    ///     잠시 뒤 그냥 그린다.
+    /// </summary>
+    public long SynchronizedSince { get; private set; }
+
     public int ScrollbackCount => _scrollback.Count;
 
     /// <summary>스크롤백 한도를 넘어 버린 줄 수 — 선택 영역을 줄 번호로 붙잡아 둘 때 쓴다.</summary>
@@ -518,6 +530,12 @@ public sealed class TerminalBuffer
         if (_intermediate == '!' && final == 'p')
         {
             SoftReset();
+            return;
+        }
+
+        if (_intermediate == '$' && final == 'p')
+        {
+            ReportMode();
             return;
         }
 
@@ -985,7 +1003,43 @@ public sealed class TerminalBuffer
             case 2004:
                 BracketedPaste = on;
                 break;
+            case 2026:
+                SynchronizedOutput = on;
+                if (on) SynchronizedSince = Environment.TickCount64;
+                break;
         }
+    }
+
+    /// <summary>
+    ///     모드 질의(DECRQM, CSI ? Ps $ p) — 1 켜짐 · 2 꺼짐 · 0 모름. 프로그램은 이 답으로 동기화 출력(2026) 같은 기능을 쓸지
+    ///     정한다.
+    /// </summary>
+    private void ReportMode()
+    {
+        var mode = P0(0);
+        if (_prefix != '?')
+        {
+            var plain = mode switch { 4 => _insertMode, 20 => _newLineMode, _ => (bool?)null };
+            _responses.Append($"\x1b[{mode};{(plain is null ? 0 : plain.Value ? 1 : 2)}$y");
+            return;
+        }
+
+        bool? state = mode switch
+        {
+            1 => ApplicationCursorKeys,
+            6 => _originMode,
+            7 => _autoWrap,
+            25 => CursorVisible,
+            47 or 1047 or 1049 => IsAlternateScreen,
+            1000 => MouseTracking == MouseTracking.Click,
+            1002 => MouseTracking == MouseTracking.Drag,
+            1003 => MouseTracking == MouseTracking.Any,
+            1006 => SgrMouse,
+            2004 => BracketedPaste,
+            2026 => SynchronizedOutput,
+            _ => null
+        };
+        _responses.Append($"\x1b[?{mode};{(state is null ? 0 : state.Value ? 1 : 2)}$y");
     }
 
     private void SwitchScreen(bool alternate, bool clear)
@@ -1203,6 +1257,7 @@ public sealed class TerminalBuffer
     private void FullReset()
     {
         SoftReset();
+        SynchronizedOutput = false;
         if (IsAlternateScreen) SwitchScreen(false, false);
         foreach (var line in _main) line.Reset(TerminalColor.Default);
         _x = _y = 0;

@@ -479,6 +479,28 @@ async Task RealShellCheck()
 
     if (!desktop)
     {
+        // 화면 키보드로 터미널이 줄면 전체 화면 프로그램(대체 화면)도 새 크기를 받아 다시 그려야 한다(사용자 요청)
+        var kbShell = window.GetVisualDescendants().OfType<AppShell>().First();
+        Run("clear; tput smcup; trap 'tput clear; echo WINCH $(stty size)' WINCH; echo READY $(stty size); while :; do read -r -t 0.1 _; done"); // read 는 셸 안 명령 — sleep 이면 WINCH 가 sleep 쪽으로 간다
+        WaitFor(() => buffer.IsAlternateScreen && Screen().Contains("READY"), 4000);
+        var rowsBefore = buffer.Rows;
+        kbShell.ApplyKeyboardInset(300);
+        Pump(800);
+        WaitFor(() => Screen().Contains($"WINCH {buffer.Rows} {buffer.Columns}"), 4000);
+        var kbRows = buffer.Rows;
+        Shot("realshell-keyboard-alt");
+        var shrunk = kbRows < rowsBefore && Screen().Contains($"WINCH {kbRows} {buffer.Columns}");
+        kbShell.ApplyKeyboardInset(0);
+        Pump(800);
+        WaitFor(() => Screen().Contains($"WINCH {buffer.Rows} {buffer.Columns}"), 4000);
+        var restored = buffer.Rows == rowsBefore && Screen().Contains($"WINCH {rowsBefore} {buffer.Columns}");
+        Check("키보드 → 대체 화면 크기 변경", $"행 {rowsBefore}→줄어듦→{rowsBefore}, 프로그램이 WINCH 받음",
+            $"행 {rowsBefore}→{kbRows}→{buffer.Rows}, 화면 [{Screen().Split('\n').FirstOrDefault(l => l.Length > 0)}]", shrunk && restored);
+        Key(Avalonia.Input.Key.C, Avalonia.Input.RawInputModifiers.Control);
+        Type("tput rmcup; clear");
+        Key(Avalonia.Input.Key.Enter);
+        WaitFor(() => !buffer.IsAlternateScreen && Prompt(), 4000);
+
         // 연결 유지 장치가 있으면(Android 포그라운드 서비스) 배경으로 가도 끊지 않는다 — 같은 셸이 그대로(사용자 요청)
         var keep = new FakeKeepAliveHost();
         ProxmoxClient.UI.Platform.SessionKeepAlive.Host = keep;
@@ -735,7 +757,90 @@ async Task TerminalCheck()
     var selected = term.GetSelectedText();
     Check("선택", "글자가 골라짐", $"'{selected}'", selected.Length > 0);
     Shot("terminal-selection");
+
+    if (!desktop)
+    {
+        // 손가락 선택 — 끝 손잡이를 오른쪽으로 끌면 선택이 늘고, 끄는 동안 확대경을 그린다(사용자 요청: 드래그 커서가 안 보임)
+        var before2 = selected;
+        var cell = term.CellSize;
+        var lines = Screen().Split('\n');
+        var selRow = Array.FindLastIndex(lines, l => l.Contains(before2));
+        var lineText = lines[selRow];
+        var endCol = lineText.TrimEnd().Length - 1;
+        // 지금 선택 끝(단어 끝) 손잡이 — 칸 아래(맨 아랫줄이면 칸 위로 뒤집힌다)
+        var selEnd = lineText.IndexOf(before2, StringComparison.Ordinal) + before2.Length;
+        var lastRow = selRow == buffer.Rows - 1 || 4 + cell.Height * (selRow + 1) + 18 > term.Bounds.Height;
+        var knob = rowY + new Avalonia.Vector(6 + cell.Width * selEnd + 9,
+            lastRow ? 4 + cell.Height * selRow - 9 : 4 + cell.Height * (selRow + 1) + 9);
+        var target = rowY + new Avalonia.Vector(6 + cell.Width * (endCol + 0.5), 4 + cell.Height * (selRow + 0.5));
+        var t = window.TouchBegin(knob, Avalonia.Input.RawInputModifiers.None);
+        Pump(60);
+        var framesBefore = term.FramesDrawn;
+        for (var step = 1; step <= 8; step++)
+        {
+            window.TouchMove(t, knob + (target - knob) * (step / 8.0), Avalonia.Input.RawInputModifiers.None);
+            Pump(30);
+        }
+
+        Shot("terminal-selection-loupe");
+        var drew = term.FramesDrawn > framesBefore;
+        window.TouchEnd(t, target, Avalonia.Input.RawInputModifiers.None);
+        Pump(300);
+        var grown = term.GetSelectedText();
+        Shot("terminal-selection-handles");
+        Check("손잡이 끌어 선택 늘리기", $"'{before2}' → 줄 끝까지 늘어남, 끄는 동안 다시 그림",
+            $"'{grown}', 그리기 {(drew ? "있음" : "없음")}", grown.Length > before2.Length && grown.TrimEnd() == lineText.TrimEnd() && drew);
+    }
+
     term.ClearSelection();
+
+    // 동기화 출력(DEC 2026) — 끄는 신호가 올 때까지 그리지 않는다. 모드 질의(DECRQM)에 지원한다고 답한다
+    Log("input");
+    term.Write("\x1b[?2026$p");
+    var rqm = Log("input");
+    Pump(100);
+    var frames0 = term.FramesDrawn;
+    term.Write("\x1b[?2026h\x1b[2J\x1b[HSYNC-HALF");
+    Pump(120);
+    var heldFrames = term.FramesDrawn - frames0;
+    var heldFlag = buffer.SynchronizedOutput;
+    term.Write(" SYNC-DONE\x1b[?2026l");
+    Pump(120);
+    var shownFrames = term.FramesDrawn - frames0;
+    term.Write("\x1b[?2026h");
+    Pump(400); // 끄는 신호가 오지 않으면 잠시 뒤 그냥 그린다 — 헤드리스는 타이머가 돌지 않아 그 타이머가 부르는 것을 직접 부른다
+    typeof(ProxmoxClient.UI.Views.Terminal.TerminalView).GetMethod("Redraw",
+        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(term, null);
+    Pump(100);
+    var timeoutFrames = term.FramesDrawn - frames0 - shownFrames;
+    term.Write("\x1b[?2026l");
+    Check("동기화 출력(2026)", "질의 답 '?2026;2$y', 켜진 동안 안 그림 → 끄면 그림, 안 끄면 0.2초 뒤 그림",
+        $"답 {string.Join(" ", rqm)}, 켜짐 {heldFrames}번 → 끈 뒤 {shownFrames}번, 시간 초과 {timeoutFrames}번",
+        rqm.SequenceEqual(["input '\\x1b[?2026;2$y'"]) && heldFlag && heldFrames == 0 && shownFrames > 0 && timeoutFrames > 0);
+    Type("clear");
+    Key(Avalonia.Input.Key.Enter);
+    Pump(300);
+
+    // 마우스 보고를 켠 전체 화면 프로그램(Claude Code 전체 화면 모드 등) — 손가락으로 끌면 방향키가 아니라 휠로 보낸다
+    if (!desktop)
+    {
+        term.Write("\x1b[?1049h\x1b[?1000h\x1b[?1006h");
+        Pump(100);
+        Log("input");
+        var t = window.TouchBegin(mid, Avalonia.Input.RawInputModifiers.None);
+        for (var step = 1; step <= 6; step++)
+        {
+            window.TouchMove(t, mid + new Avalonia.Vector(0, step * 20), Avalonia.Input.RawInputModifiers.None);
+            Pump(20);
+        }
+
+        window.TouchEnd(t, mid + new Avalonia.Vector(0, 120), Avalonia.Input.RawInputModifiers.None);
+        var wheel = Log("input");
+        term.Write("\x1b[?1000l\x1b[?1006l\x1b[?1049l");
+        Pump(100);
+        Check("마우스 보고 중 손가락 끌기", "휠 위(\\x1b[<64;…M) 여러 번, 방향키 없음", string.Join(" ", wheel.Take(3)) + (wheel.Count > 3 ? $" …({wheel.Count})" : ""),
+            wheel.Count > 0 && wheel.All(w => w.StartsWith("input '\\x1b[<64;")));
+    }
 
     // 창 크기 변경 → PTY 크기
     var oldColumns = buffer.Columns;

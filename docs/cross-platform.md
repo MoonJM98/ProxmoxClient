@@ -55,6 +55,8 @@ WPF 앱은 기능이 모두 옮겨질 때까지 그대로 유지한다.
 | 터미널 출력 | 수신 스레드에서 VT 해석(화면 스레드 막지 않음) → 다시 그리기는 한 프레임에 한 번으로 모은다 | `Views/Terminal/TerminalView.cs` `Write` |
 | 터미널 그리기 | 같은 모양이 이어지는 글자를 GlyphRun 한 번으로, 바탕은 같은 색 구간을 사각형 하나로. 대체 글꼴(한글) 글리프는 캐시. 선·블록 문자는 도형 | `Views/Terminal/TerminalRenderer.cs`, `BoxDrawing.cs` |
 | 터미널 크기 | 창 크기를 바꾸는 동안 바뀐 크기를 모아 한 번만 PTY 에 보낸다(같은 크기는 세션이 거른다) | `Views/Terminal/TerminalPage.cs` |
+| 터미널 동기화 출력 | DEC 2026(Claude Code·neovim 등이 다시 그릴 때 켜고 끈다) 동안 그리지 않고, 끄는 신호가 0.2초 안에 안 오면 그냥 그린다. 모드 질의(DECRQM)에 답한다 | `Views/Terminal/TerminalView.cs` `Redraw`, `TerminalBuffer.cs` `ReportMode` |
+| 터미널 손가락 선택 | 길게 눌러 단어 선택 → 양 끝 손잡이(맨 아랫줄이면 위로)를 끌어 넓히기·줄이기, 끄는 동안 손가락 위 확대경. 프로그램이 마우스를 받으면(Claude Code 전체 화면·htop) 손가락 끌기는 휠로 보낸다 | `Views/Terminal/TerminalView.cs` |
 | 목록 새로 고침 | 로그인 직후 첫 화면 데이터 미리 요청, gzip 응답, 같은 요청은 동시에 | `ViewModels/ProfilesViewModel.cs`, `Core/Api` |
 
 렌더링 방식은 첫 화면(로그인·서버 목록) 아래에 작게 보인다(예: `Vulkan · Android · Mobile · 1.0.3`). 데스크톱은
@@ -96,8 +98,8 @@ GPU 경로가 초기화는 되는데 창이 검게 나오면 `PROXMOXCLIENT_REND
 |---|---|---|
 | 화면 전체(데스크톱·태블릿·모바일 배치) | UiSnapshot + 가짜 PVE(`tools/FakePve`) | 모든 대상 통과 |
 | VNC 콘솔 조작(제스처·물리 키) | `--target console` | 26/26 |
-| 터미널 해석·입력 | `--target terminal` (가짜 셸) | 16/16 |
-| 터미널 + 실제 프로그램 | `FAKEPVE_REAL_SHELL=1` + `--target realshell` (진짜 bash PTY: stty·vim·top·Ctrl+C·Tab 완성·Tab 후보 목록·최근 명령 기록·5만 줄 출력·크기·종료) | 14/14 |
+| 터미널 해석·입력 | `--target terminal` (가짜 셸: + 손잡이 선택·동기화 출력·마우스 보고 중 스크롤) | 모바일 20/20 |
+| 터미널 + 실제 프로그램 | `FAKEPVE_REAL_SHELL=1` + `--target realshell` (진짜 bash PTY: stty·vim·top·Ctrl+C·Tab 완성·Tab 후보 목록·최근 명령 기록·5만 줄 출력·크기·키보드로 줄 때 대체 화면 크기·종료) | 18/18 |
 | CT 파일(노드 셸 스크립트) | 진짜 bash + pct/lxc-info 심, `preview:files` | 목록·링크 정상 |
 | 세션 만료 | `/__fake/expire` + `--target expiry` | 알림 → 로그인 화면 |
 | VPN | 실제 OpenVPN 2.6 서버(자체 CA·tun) + 터널 주소에만 묶은 가짜 PVE, `--vpn` | 터널 → 로그인 → 종료 시 정리, 강제 종료 뒤 남은 openvpn 정리 |

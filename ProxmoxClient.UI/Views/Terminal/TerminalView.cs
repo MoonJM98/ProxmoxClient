@@ -46,6 +46,8 @@ public sealed class TerminalView : Grid
     private double _scrollRemainder;
     private bool _touchMoved;
     private bool _touchSelecting;
+    private bool _touchHandles; // 손가락으로 만든 선택 — 양 끝에 손잡이를 그리고, 손잡이를 끌어 넓히거나 줄인다
+    private Point _touchPos;
     private double _pinchDistance;
     private double _pinchFont;
     private int _mouseButton = -1;
@@ -59,6 +61,7 @@ public sealed class TerminalView : Grid
         Focusable = false;
 
         _surface = new Surface(this);
+        _surface.Cursor = new Cursor(StandardCursorType.Ibeam); // 실제 마우스 — 글자를 고르는 곳
         _input = new TextBox
         {
             Width = 2, Height = 2, Opacity = 0.01, MinWidth = 0, MinHeight = 0, Padding = new Thickness(0),
@@ -113,11 +116,33 @@ public sealed class TerminalView : Grid
             Dispatcher.UIThread.Post(Redraw, DispatcherPriority.Render);
     }
 
+    /// <summary>동기화 출력을 끄는 신호가 이만큼 오지 않으면 그냥 그린다(xterm·kitty 와 비슷한 값).</summary>
+    private const int SyncTimeoutMs = 200;
+
+    private DispatcherTimer? _syncTimer;
+
     private void Redraw()
     {
         Interlocked.Exchange(ref _redrawQueued, 0);
         lock (Buffer.Gate)
         {
+            // 동기화 출력 중 — 프로그램이 화면을 다 쓸 때까지 기다린다(그리는 중간 상태가 깜박이며 보이지 않게)
+            var waited = Environment.TickCount64 - Buffer.SynchronizedSince;
+            if (Buffer.SynchronizedOutput && waited < SyncTimeoutMs)
+            {
+                _syncTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(SyncTimeoutMs), DispatcherPriority.Render,
+                    (_, _) =>
+                    {
+                        _syncTimer!.Stop();
+                        Redraw();
+                    });
+                _syncTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(1, SyncTimeoutMs - waited));
+                _syncTimer.Stop();
+                _syncTimer.Start();
+                return;
+            }
+
+            _syncTimer?.Stop();
             // 위로 올려 보던 중이면 새 줄만큼 따라 올려 같은 내용을 보이게 한다
             var scrolled = Buffer.ScrolledLines - _seenScrolled;
             _seenScrolled = Buffer.ScrolledLines;
@@ -313,6 +338,7 @@ public sealed class TerminalView : Grid
         _anchor = null;
         _selecting = false;
         _touchSelecting = false;
+        _touchHandles = false;
         if (had) SelectionChanged?.Invoke(false);
         _surface.InvalidateVisual();
     }
@@ -444,6 +470,15 @@ public sealed class TerminalView : Grid
                 _pinchDistance = Distance(pts[0], pts[1]);
                 _pinchFont = _renderer.FontSize;
             }
+            else if (_touches.Count == 1 && GrabHandle(pos))
+            {
+                // 선택 손잡이를 잡았다 — 반대쪽 끝을 고정하고 이 끝을 끈다
+                _touchStart = _touchPos = pos;
+                _touchStartTime = DateTime.UtcNow;
+                _touchMoved = false;
+                _touchSelecting = true;
+                _surface.InvalidateVisual();
+            }
             else if (_touches.Count == 1)
             {
                 _touchStart = pos;
@@ -503,6 +538,7 @@ public sealed class TerminalView : Grid
             var had = HasSelection;
             _anchor = _caret = cell;
             _selecting = true;
+            _touchHandles = false;
             if (had) SelectionChanged?.Invoke(false);
         }
 
@@ -531,6 +567,8 @@ public sealed class TerminalView : Grid
 
             if (_touchSelecting)
             {
+                _touchPos = pos;
+                _touchMoved = true;
                 _caret = CellAt(pos);
                 _surface.InvalidateVisual();
                 return;
@@ -547,7 +585,14 @@ public sealed class TerminalView : Grid
             if (lines == 0) return;
 
             _scrollRemainder -= lines;
-            if (Buffer.IsAlternateScreen)
+            if (Buffer.MouseTracking != MouseTracking.None)
+            {
+                // 프로그램이 마우스를 받는다(Claude Code 전체 화면·htop·mc) — 휠로 보내 그 프로그램이 스크롤하게
+                var (col, row) = ScreenCellAt(pos);
+                for (var i = 0; i < Math.Abs(lines); i++)
+                    Input?.Invoke(TerminalKeys.Mouse(lines > 0 ? 64 : 65, col, row, false, Buffer.SgrMouse));
+            }
+            else if (Buffer.IsAlternateScreen)
             {
                 var key = lines > 0 ? Key.Up : Key.Down;
                 var text = TerminalKeys.Encode(key, KeyModifiers.None, Buffer.ApplicationCursorKeys)!;
@@ -590,6 +635,7 @@ public sealed class TerminalView : Grid
             {
                 _touchSelecting = false;
                 SelectionChanged?.Invoke(HasSelection);
+                _surface.InvalidateVisual(); // 확대경을 지운다
                 return;
             }
 
@@ -599,6 +645,7 @@ public sealed class TerminalView : Grid
             if (DateTime.UtcNow - _touchStartTime >= _longPress.Interval)
             {
                 SelectWord(CellAt(_touchStart), false);
+                _touchHandles = true;
                 SelectionChanged?.Invoke(HasSelection);
                 _surface.InvalidateVisual();
                 return;
@@ -649,7 +696,130 @@ public sealed class TerminalView : Grid
 
         SelectWord(CellAt(_touchStart), false);
         _touchSelecting = true;
+        _touchHandles = true;
+        _touchPos = _touchStart;
         _surface.InvalidateVisual();
+    }
+
+    // ------------------------------------------------------------ 손가락 선택 — 손잡이·확대경
+
+    private const double HandleRadius = 9;
+    private const double HandleGrab = 30; // 손잡이를 잡았다고 보는 거리(손가락은 크다)
+
+    /// <summary>선택 끝(시작이면 그 칸 왼쪽, 끝이면 오른쪽)의 화면 위치 — 칸 아래쪽. 화면 밖이면 null.</summary>
+    private Point? EdgePoint((long Row, int Col) cell, bool isEnd)
+    {
+        var top = Buffer.AbsoluteRow(0, Math.Min(ScrollOffset, Buffer.ScrollbackCount));
+        var row = cell.Row - top;
+        if (row < 0 || row >= Buffer.Rows) return null;
+
+        var x = Pad.Left + (cell.Col + (isEnd ? 1 : 0)) * _renderer.CellWidth;
+        return new Point(Math.Round(x), Pad.Top + (row + 1) * _renderer.CellHeight);
+    }
+
+    /// <summary>손잡이 동그라미 가운데 — 칸 아래, 아래에 자리가 없으면(맨 아랫줄) 칸 위로 뒤집는다.</summary>
+    private Point KnobCenter(Point edge, bool isEnd)
+    {
+        var x = Math.Clamp(edge.X + (isEnd ? HandleRadius : -HandleRadius), HandleRadius,
+            Math.Max(HandleRadius, _surface.Bounds.Width - HandleRadius)); // 화면 끝에서 잘리지 않게
+        var below = edge.Y + HandleRadius * 2 <= _surface.Bounds.Height;
+        return new Point(x, below ? edge.Y + HandleRadius : edge.Y - _renderer.CellHeight - HandleRadius);
+    }
+
+    /// <summary>칸 크기(검사·도우미 배치용).</summary>
+    public Size CellSize => new(_renderer.CellWidth, _renderer.CellHeight);
+
+    /// <summary>손잡이 근처를 눌렀으면 반대쪽 끝을 고정(<see cref="_anchor" />)하고 true.</summary>
+    private bool GrabHandle(Point pos)
+    {
+        if (!_touchHandles || _anchor is not { } a || a == _caret) return false;
+
+        lock (Buffer.Gate)
+        {
+            var (start, end) = Ordered(a, _caret);
+            var startKnob = EdgePoint(start, false) is { } s ? KnobCenter(s, false) : (Point?)null;
+            var endKnob = EdgePoint(end, true) is { } e ? KnobCenter(e, true) : (Point?)null;
+            var toStart = startKnob is { } sk ? Distance(pos, sk) : double.MaxValue;
+            var toEnd = endKnob is { } ek ? Distance(pos, ek) : double.MaxValue;
+            if (Math.Min(toStart, toEnd) > HandleGrab) return false;
+
+            if (toEnd <= toStart)
+            {
+                _anchor = start;
+                _caret = end;
+            }
+            else
+            {
+                _anchor = end;
+                _caret = start;
+            }
+
+            return true;
+        }
+    }
+
+    /// <summary>선택 양 끝 손잡이 — 끝 칸 아래의 세로 막대와 동그라미(Android 텍스트 선택처럼).</summary>
+    private void DrawHandles(DrawingContext context)
+    {
+        if (!_touchHandles || _anchor is not { } a || a == _caret) return;
+
+        var (start, end) = Ordered(a, _caret);
+        var brush = _renderer.Brush(0x3B78FF);
+        foreach (var (cell, isEnd) in new[] { (start, false), (end, true) })
+        {
+            if (EdgePoint(cell, isEnd) is not { } p) continue;
+
+            context.FillRectangle(brush, new Rect(p.X - 1, p.Y - _renderer.CellHeight, 2, _renderer.CellHeight));
+            var knob = KnobCenter(p, isEnd);
+            context.DrawEllipse(brush, null, knob, HandleRadius, HandleRadius);
+            // 막대에 붙은 쪽 모서리를 채워 물방울 모양으로
+            var cornerY = knob.Y > p.Y ? p.Y : knob.Y;
+            context.FillRectangle(brush, new Rect(isEnd ? p.X : p.X - HandleRadius, cornerY, HandleRadius, HandleRadius));
+        }
+    }
+
+    /// <summary>
+    ///     끄는 동안 손가락 위에 확대경 — 손가락에 가린 칸과 선택 끝을 1.6배로 보인다. 손가락 바로 위가 화면 위쪽 끝이면
+    ///     손가락 아래에 둔다.
+    /// </summary>
+    private void DrawLoupe(DrawingContext context, int offset)
+    {
+        if (!_touchSelecting) return;
+
+        const double zoom = 1.6;
+        var r = _renderer;
+        var bounds = _surface.Bounds;
+        var w = Math.Min(bounds.Width - 16, Math.Round(r.CellWidth * 14 * zoom));
+        var h = Math.Round(r.CellHeight * 2.2 * zoom);
+        var x = Math.Clamp(_touchPos.X - w / 2, 8, Math.Max(8, bounds.Width - w - 8));
+        var y = _touchPos.Y - 56 - h;
+        if (y < 4) y = _touchPos.Y + 56;
+        var frame = new Rect(x, y, w, h);
+
+        // 확대할 곳: 손가락이 가리키는 칸의 가운데
+        var (col, row) = ScreenCellAt(_touchPos);
+        var focus = new Point(Pad.Left + (col + 0.5) * r.CellWidth, Pad.Top + (row + 0.5) * r.CellHeight);
+
+        context.DrawRectangle(r.Brush(0x000000, 0x80), null, frame.Translate(new Vector(0, 2)).Inflate(1), 10, 10);
+        using (context.PushClip(new RoundedRect(frame, 10)))
+        {
+            context.FillRectangle(r.Brush(TerminalRenderer.DefaultBackground), frame);
+            var matrix = Matrix.CreateTranslation(-focus.X, -focus.Y) * Matrix.CreateScale(zoom, zoom) *
+                         Matrix.CreateTranslation(frame.Center.X, frame.Center.Y);
+            using (context.PushTransform(matrix))
+            {
+                for (var i = Math.Max(0, row - 2); i <= Math.Min(Buffer.Rows - 1, row + 2); i++)
+                    r.DrawLine(context, Buffer.GetVisibleLine(i, offset).Cells, Buffer.Columns,
+                        new Point(Pad.Left, Pad.Top + i * r.CellHeight));
+                DrawSelection(context, offset);
+                // 지금 끄는 끝을 막대로
+                var caretEnd = _anchor is { } a && Ordered(a, _caret).End == _caret;
+                if (EdgePoint(_caret, caretEnd) is { } p)
+                    context.FillRectangle(r.Brush(0x3B78FF), new Rect(p.X - 1, p.Y - r.CellHeight, 2, r.CellHeight));
+            }
+        }
+
+        context.DrawRectangle(null, new Pen(r.Brush(0xFFFFFF, 0x60)), frame, 10, 10);
     }
 
     private static double Distance(Point a, Point b)
@@ -659,8 +829,12 @@ public sealed class TerminalView : Grid
 
     // ------------------------------------------------------------ 그리기
 
+    /// <summary>화면을 그린 횟수(검사용 — 동기화 출력 중에 그리지 않는지 본다).</summary>
+    public long FramesDrawn { get; private set; }
+
     private void RenderTerminal(DrawingContext context)
     {
+        FramesDrawn++;
         var r = _renderer;
         var bounds = _surface.Bounds;
         context.FillRectangle(r.Brush(TerminalRenderer.DefaultBackground), new Rect(bounds.Size));
@@ -678,6 +852,8 @@ public sealed class TerminalView : Grid
 
             DrawSelection(context, offset);
             if (offset == 0) DrawCursor(context);
+            DrawHandles(context);
+            DrawLoupe(context, offset);
         }
 
         if (ScrollOffset > 0) DrawScrollIndicator(context);
