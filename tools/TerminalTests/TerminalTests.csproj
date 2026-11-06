@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        터미널 해석기 검사 — 화면 없이 TerminalBuffer 에 바이트를 넣고 화면·응답을 확인한다.
+        사용법: dotnet run (프로젝트 tools/TerminalTests) 뒤에 이름 일부를 주면 그 검사만
+        검사 추가: 아무 파일에 static class XxxTests 를 만들고 public static void 메서드(인자 Checker)를 넣으면 저절로 돈다.
+    -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\ProxmoxClient.UI\ProxmoxClient.UI.csproj" />
+    </ItemGroup>
+
+</Project>
