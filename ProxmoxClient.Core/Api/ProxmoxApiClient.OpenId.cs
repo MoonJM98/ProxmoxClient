@@ -39,7 +39,7 @@ public sealed partial class ProxmoxApiClient
         Profile.UserName = user;
         AuthenticatedUser = user;
         _auth = new AuthSession(ticket, GetString(data, "CSRFPreventionToken") is { Length: > 0 } csrf ? csrf : null,
-            Environment.TickCount64);
+            TicketClockMs);
         return user;
     }
 }
