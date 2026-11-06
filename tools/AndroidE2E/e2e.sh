@@ -271,6 +271,8 @@ if [ "${b:-0}" -le 200 ]; then
   adb exec-out screencap > "$OUT/secure-off.raw"
   px=$(python3 -I "$HERE/pixels.py" "$OUT/secure-off.raw")
 fi
+hook state
+state_has "terminal=connected" && pass "terminal still connected after disabling screen protection" || fail "terminal not connected after disabling ($STATE)"
 flags=$(win_flags)
 echo "$flags" | grep -qw SECURE && fail "FLAG_SECURE still set after disabling" || pass "FLAG_SECURE cleared after disabling"
 shot 08-secure-off

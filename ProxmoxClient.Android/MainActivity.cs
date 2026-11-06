@@ -77,8 +77,17 @@ public class MainActivity : AvaloniaMainActivity
     /// <summary>화면 보호(FLAG_SECURE) — 최근 앱 미리보기를 가리고 캡처·녹화를 막는다.</summary>
     internal void ApplyScreenSecurity(bool enabled)
     {
-        if (enabled) Window?.AddFlags(WindowManagerFlags.Secure);
-        else Window?.ClearFlags(WindowManagerFlags.Secure);
+        if (enabled)
+        {
+            Window?.AddFlags(WindowManagerFlags.Secure);
+            return;
+        }
+
+        var wasSecure = Window?.Attributes is { } attributes && (attributes.Flags & WindowManagerFlags.Secure) != 0;
+        Window?.ClearFlags(WindowManagerFlags.Secure);
+        // 끄기는 창 플래그만 지워서는 바로 듣지 않았다 — 에뮬레이터(Android 15)에서 앱이 보이는 동안 캡처가 계속 검게 나오다가
+        // 액티비티를 새로 만들어야 풀렸다(홈 화면 캡처는 정상). 액티비티만 다시 만든다 — 셸(페이지·연결된 터미널)은 그대로 다시 붙는다
+        if (wasSecure && !IsFinishing) Recreate();
     }
 
     /// <summary>
