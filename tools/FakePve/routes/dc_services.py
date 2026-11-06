@@ -18,15 +18,17 @@ def config_nodes(m, query, body):
     ]
 
 
-# /cluster/resources 는 core 가 이미 처리하지만 SDN 영역까지 실서버처럼: 전체 목록과 type=network 에 영역 줄,
-# type=sdn 은 빈 목록(PVE 9), 그 밖에는 core 와 같은 응답(vm·storage·전체).
+# /cluster/resources 는 core 가 이미 처리하지만 SDN 영역까지 실서버처럼: 전체 목록에 영역 줄,
+# type=sdn 은 빈 목록(PVE 9), type=network 는 거절, 그 밖에는 core 와 같은 응답(vm·storage·전체).
 @route('GET', r'/cluster/resources')
 def cluster_resources(m, query, body):
     kind = query.get('type', '')
     if kind == 'sdn':
         return []
     if kind == 'network':
-        return _SDN_STATUS
+        # 실서버(9.2)의 type 선택지는 vm·storage·node·sdn 뿐이다
+        raise STATE.PveError(400, "Parameter verification failed.\n"
+                             "type: value 'network' does not have a value in the enumeration 'vm, storage, node, sdn'\n")
     if kind == 'vm':
         return STATE.GUESTS
     if kind == 'storage':

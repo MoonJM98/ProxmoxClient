@@ -102,11 +102,10 @@ jobs:
           docker exec pve pvesh get /nodes/pve/tasks --limit 30 --output-format json-pretty > shots/tasks.json 2>&1 || true
           # 가짜 서버와 맞춰 볼 실제 응답·스키마
           {
-            for t in "" "--type sdn" "--type network"; do echo "== resources $t"; docker exec pve pvesh get /cluster/resources $t --output-format json-pretty 2>&1; done
+            for t in "" "--type sdn" "--type network"; do echo "== resources $t"; docker exec pve pvesh get /cluster/resources $t --output-format json-pretty 2>&1 || true; done
             for p in /cluster/firewall/options /nodes/pve/firewall/options /nodes/pve/qemu/100/firewall/options; do
-              echo "== usage PUT $p"; docker exec pve pvesh usage $p --command set --verbose 2>&1
+              echo "== usage PUT $p"; docker exec pve pvesh usage $p --command set --verbose 2>&1 || true
             done
-            echo "== usage GET /cluster/resources"; docker exec pve pvesh usage /cluster/resources --command get --verbose 2>&1
           } > shots/api-reference.txt
           cp fixtures.log shots/ 2>/dev/null || true
           docker exec pve journalctl --no-pager -b > shots/journal.txt 2>&1 || true

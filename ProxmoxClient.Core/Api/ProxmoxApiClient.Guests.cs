@@ -94,7 +94,9 @@ public sealed partial class ProxmoxApiClient
             ["newid"] = newId.ToString(),
             ["full"] = full ? "1" : "0"
         };
-        if (!string.IsNullOrWhiteSpace(name)) form["name"] = name;
+        // 새 이름 — VM 은 name, CT 는 hostname(CT 에 name 을 보내면 400 "name: property is not defined in schema",
+        // 실제 PVE 9 로 확인)
+        if (!string.IsNullOrWhiteSpace(name)) form[kind == ResourceKind.Lxc ? "hostname" : "name"] = name;
 
         if (!string.IsNullOrWhiteSpace(targetNode)) form["target"] = targetNode;
 

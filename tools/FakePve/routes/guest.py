@@ -13,6 +13,11 @@ def _agent_result(value):
 # 복제 — 새 VMID 의 작업(UPID)을 돌려준다
 @route('POST', r'/nodes/(\w+)/(qemu|lxc)/(\d+)/clone')
 def clone(m, query, body):
+    # 실서버처럼 이름 칸을 검사한다 — VM 은 name, CT 는 hostname(다른 쪽을 보내면 400)
+    wrong = 'hostname' if m.group(2) == 'qemu' else 'name'
+    if wrong in body:
+        raise STATE.PveError(400, 'Parameter verification failed.\n'
+                             f'{wrong}: property is not defined in schema and the schema does not allow additional properties\n')
     return _upid(m.group(1), 'qmclone' if m.group(2) == 'qemu' else 'vzclone', m.group(3))
 
 # 이전 사전 확인 — 허용 노드, 옮길 수 없는 노드와 이유, 로컬 디스크
