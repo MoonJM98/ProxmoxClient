@@ -55,6 +55,10 @@ WPF 앱은 기능이 모두 옮겨질 때까지 그대로 유지한다.
 | 터미널 출력 | 수신 스레드에서 VT 해석(화면 스레드 막지 않음) → 다시 그리기는 한 프레임에 한 번으로 모은다 | `Views/Terminal/TerminalView.cs` `Write` |
 | 터미널 그리기 | 같은 모양이 이어지는 글자를 GlyphRun 한 번으로, 바탕은 같은 색 구간을 사각형 하나로. 대체 글꼴(한글) 글리프는 캐시. 선·블록 문자는 도형 | `Views/Terminal/TerminalRenderer.cs`, `BoxDrawing.cs` |
 | 터미널 크기 | 창 크기를 바꾸는 동안 바뀐 크기를 모아 한 번만 PTY 에 보낸다(같은 크기는 세션이 거른다) | `Views/Terminal/TerminalPage.cs` |
+| 터미널 대체 글꼴 | JetBrains Mono → Pretendard(한글) → 이모지는 기기 컬러 이모지 먼저 → DejaVu Sans Mono·Noto Sans Math·Symbols 1/2·Symbols Nerd Font Mono → Noto Sans Mono CJK KR(한자·가나·중국어, 16MB — 그런 글자가 처음 나올 때 읽음) → 기기 글꼴 → Noto Emoji(흑백) → 네모 | `Views/Terminal/TerminalFonts.cs`, `Assets/TerminalFonts`, `Assets/CjkFonts` |
+| 터미널 다시 감기 | 폭이 바뀌면 이어진 줄(자동 줄바꿈)을 다시 감는다 — 좁혔다 넓히면 원래대로. 커서·저장 커서·보던 위치 유지. PTY 크기는 120ms 모아 보냄 | `Views/Terminal/TerminalBuffer.Reflow.cs`, `TerminalPage.cs` |
+| 터미널 글자 | 유니코드 16 폭 표(생성: `tools/TerminalTests/gen_width.py`), 결합 문자·NFD 한글·ZWJ 이모지·국기 묶음, 기울임·밑줄 모양(4:n)·밑줄 색(58)·윗줄, 색 OSC 4/10/11/12/104/110~112, 화면 반전 ?5, 깜박임 | `TerminalCell.cs`, `TerminalRenderer.cs`, `BoxDrawing.cs` |
+| 터미널 입력 | 키보드 앱 붙여넣기도 괄호 붙여넣기, 고정 Shift(⇧Tab), AltGr, 휠 한 칸=보고 한 번, 마우스 수식키·?1003 움직임·좌표 95 제한, 포커스 보고 ?1004, ?1007, 숫자패드 응용 모드, 4KB 씩 나눠 보내기 | `TerminalKeys.cs`, `TerminalView.cs`, `ProxmoxTerminalSession.cs` |
 | 터미널 질의 응답 | 창 크기(CSI 18t)·배경색(OSC 10/11)·터미널 이름(XTGETTCAP)·모드(DECRQM)·커서 위치에 바로 답한다 — systemd 는 콘솔을 열 때 0.33초씩만 기다려, 답이 없거나 늦으면 로그인 칸에 `^[[24;80R` 이 찍힌다 | `Views/Terminal/TerminalBuffer.cs` |
 | 터미널 동기화 출력 | DEC 2026(Claude Code·neovim 등이 다시 그릴 때 켜고 끈다) 동안 그리지 않고, 끄는 신호가 0.2초 안에 안 오면 그냥 그린다. 모드 질의(DECRQM)에 답한다 | `Views/Terminal/TerminalView.cs` `Redraw`, `TerminalBuffer.cs` `ReportMode` |
 | 터미널 손가락 선택 | 길게 눌러 단어 선택 → 양 끝 손잡이(맨 아랫줄이면 위로)를 끌어 넓히기·줄이기, 끄는 동안 손가락 위 확대경. 프로그램이 마우스를 받으면(Claude Code 전체 화면·htop) 손가락 끌기는 휠로 보낸다 | `Views/Terminal/TerminalView.cs` |
@@ -99,6 +103,7 @@ GPU 경로가 초기화는 되는데 창이 검게 나오면 `PROXMOXCLIENT_REND
 |---|---|---|
 | 화면 전체(데스크톱·태블릿·모바일 배치) | UiSnapshot + 가짜 PVE(`tools/FakePve`) | 모든 대상 통과 |
 | VNC 콘솔 조작(제스처·물리 키) | `--target console` | 26/26 |
+| 터미널 해석기 | `dotnet run --project tools/TerminalTests` (제어열·질의·유니코드·다시 감기·입력 부호) | 302/302 |
 | 터미널 해석·입력 | `--target terminal` (가짜 셸: + 손잡이 선택·동기화 출력·마우스 보고 중 스크롤) | 모바일 20/20 |
 | 터미널 + 실제 프로그램 | `FAKEPVE_REAL_SHELL=1` + `--target realshell` (진짜 bash PTY: stty·vim·top·Ctrl+C·Tab 완성·Tab 후보 목록·최근 명령 기록·5만 줄 출력·크기·키보드로 줄 때 대체 화면 크기·종료) | 18/18 |
 | CT 파일(노드 셸 스크립트) | 진짜 bash + pct/lxc-info 심, `preview:files` | 목록·링크 정상 |

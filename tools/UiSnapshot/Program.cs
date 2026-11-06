@@ -831,6 +831,23 @@ async Task TerminalCheck()
     Check("동기화 출력(2026)", "질의 답 '?2026;2$y', 켜진 동안 안 그림 → 끄면 그림, 안 끄면 0.2초 뒤 그림",
         $"답 {string.Join(" ", rqm)}, 켜짐 {heldFrames}번 → 끈 뒤 {shownFrames}번, 시간 초과 {timeoutFrames}번",
         rqm.SequenceEqual(["input '\\x1b[?2026;2$y'"]) && heldFlag && heldFrames == 0 && shownFrames > 0 && timeoutFrames > 0);
+    // 대체 글꼴 — 한자·가나·중국어·기호·Nerd 아이콘·이모지가 기기 글꼴 없이도 그려져야 한다(앱에 넣은 글꼴)
+    var samples = new (string Text, string Font)[]
+    {
+        ("漢", "Noto Sans Mono CJK KR"), ("學", "Noto Sans Mono CJK KR"), ("か", "Pretendard|Noto Sans Mono CJK KR"),
+        ("钅", "Noto Sans Mono CJK KR"), ("𠀋", "Noto Sans Mono CJK KR"), ("α", "JetBrains Mono"),
+        ("Ж", "JetBrains Mono"), ("∀", "JetBrains Mono"), ("⏺", "DejaVu Sans Mono|Noto Sans Symbols|Noto Sans Symbols 2|Noto Sans Math"),
+        ("⎿", "DejaVu Sans Mono|Noto Sans Symbols|Noto Sans Symbols 2|Noto Sans Math"), ("\ue0a0", "JetBrains Mono|Symbols Nerd Font Mono"),
+        ("\uf113", "Symbols Nerd Font Mono"), ("😀", "*"), ("한", "Pretendard")
+    };
+    var fontResults = samples.Select(x => (x.Text, Got: term.FontFor(char.ConvertToUtf32(x.Text, 0)) ?? "(없음)", x.Font)).ToList();
+    var fontsOk = fontResults.All(r => r.Font == "*" ? r.Got != "(없음)" : r.Font.Split('|').Contains(r.Got));
+    term.Write("\r\n漢字 學校 かなカナ 中文钅 𠀋 αβγ Жж ∀∂∑ ⏺ ✻ ⎿ ★ \ue0a0\ue0b0 \uf113 😀 한글\r\n");
+    Pump(300);
+    Shot("terminal-fallback-fonts");
+    Check("대체 글꼴(한자·가나·기호·아이콘·이모지)", "모두 앱에 넣은 글꼴(이모지는 기기 또는 Noto Emoji)",
+        string.Join(" ", fontResults.Select(r => $"{r.Text}={r.Got}")), fontsOk);
+
     // systemd 가 콘솔을 열 때 묻는 것들(창 크기 CSI 18t·배경색 OSC 11·터미널 이름 XTGETTCAP) — 답이 없으면 0.33초씩 기다리다
     // 커서 위치 질문으로 넘어가고, 늦게 온 답이 로그인 칸에 '^[[24;80R' 로 찍힌다(사용자 보고). 바로 답해야 한다
     Log("input");

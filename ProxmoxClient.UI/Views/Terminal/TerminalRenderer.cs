@@ -475,33 +475,55 @@ internal sealed class TerminalRenderer
             new Point(cellOrigin.X + (CellWidth * width - w) / 2, cellOrigin.Y + Baseline - formatted.Baseline));
     }
 
+    /// <summary>이 글자를 그릴 글꼴이 있다(검사용 — 없으면 네모를 그린다).</summary>
+    public bool CanDraw(int rune)
+    {
+        return BoxDrawing.Handles(rune) || Find(rune, false) is not null;
+    }
+
+    /// <summary>이 글자를 그리는 글꼴 이름(검사용).</summary>
+    public string? FontFor(int rune)
+    {
+        return Find(rune, false)?.Face.FamilyName;
+    }
+
     private Fallback? Find(int rune, bool bold)
     {
         if (_fallbacks.TryGetValue((rune, bold), out var found)) return found;
 
-        Fallback? result = null;
         var face = bold ? _bold : _regular;
+        var weight = bold ? FontWeight.Bold : FontWeight.Normal;
+        Fallback? result = null;
         if (face.CharacterToGlyphMap.TryGetGlyph(rune, out var own))
-        {
             result = Make(face, own);
-        }
-        else if (FontManager.Current.TryGetGlyphTypeface(new Typeface(AppFonts.Family, FontStyle.Normal,
-                     bold ? FontWeight.Bold : FontWeight.Normal), out var app) &&
-                 app.CharacterToGlyphMap.TryGetGlyph(rune, out var appGlyph))
-        {
-            // 한글 등은 앱에 넣은 Pretendard 로 — 기기마다 대체 글꼴이 달라도(또는 없어도) 같은 모양
-            result = Make(app, appGlyph);
-        }
-        else if (FontManager.Current.TryMatchCharacter(rune, FontStyle.Normal, bold ? FontWeight.Bold : FontWeight.Normal,
-                     FontStretch.Normal, new FontFamily(_family), CultureInfo.CurrentUICulture, out var typeface) &&
-                 typeface.GlyphTypeface is { } other && other.CharacterToGlyphMap.TryGetGlyph(rune, out var glyph))
-        {
-            result = Make(other, glyph);
-        }
+        // 한글 등은 앱에 넣은 Pretendard 로 — 기기마다 대체 글꼴이 달라도(또는 없어도) 같은 모양
+        else if (TerminalFonts.TryGlyph(AppFonts.FamilyName, rune, weight) is { } app)
+            result = Make(app.Face, app.Glyph);
+        else if (TerminalFonts.IsEmoji(rune))
+            // 이모지 — 기기의 컬러 이모지를 먼저, 없으면 넣어 둔 흑백 Noto Emoji
+            result = FromSystem() ?? Bundled(TerminalFonts.Emoji(rune, weight));
+        else
+            // 넣어 둔 기호 글꼴(그리스·키릴·수학·화살표·딩뱃·Nerd 아이콘) → 한자·가나(처음 필요할 때 읽는다) → 기기 글꼴
+            result = Bundled(TerminalFonts.Symbol(rune, weight)) ?? Bundled(TerminalFonts.Cjk(rune, weight)) ??
+                     FromSystem() ?? Bundled(TerminalFonts.Emoji(rune, weight));
 
         if (_fallbacks.Count > 8192) _fallbacks.Clear();
         _fallbacks[(rune, bold)] = result;
         return result;
+
+        static Fallback? Bundled((GlyphTypeface Face, ushort Glyph)? hit)
+        {
+            return hit is { } h ? Make(h.Face, h.Glyph) : null;
+        }
+
+        Fallback? FromSystem()
+        {
+            return FontManager.Current.TryMatchCharacter(rune, FontStyle.Normal, weight, FontStretch.Normal,
+                       new FontFamily(_family), CultureInfo.CurrentUICulture, out var typeface) &&
+                   typeface.GlyphTypeface is { } other && other.CharacterToGlyphMap.TryGetGlyph(rune, out var glyph)
+                ? Make(other, glyph)
+                : null;
+        }
 
         static Fallback Make(GlyphTypeface face, ushort glyph)
         {

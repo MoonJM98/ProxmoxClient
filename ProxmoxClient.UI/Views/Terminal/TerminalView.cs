@@ -114,6 +114,9 @@ public sealed class TerminalView : Grid
 
     public double TerminalFontSize => _renderer.FontSize;
 
+    /// <summary>이 글자를 그리는 글꼴 이름(없으면 null — 검사용).</summary>
+    public string? FontFor(int rune) => _renderer.FontFor(rune);
+
     /// <summary>
     ///     특수 키 막대에 고정해 둔 Ctrl·Alt·Shift(보기만 한다). 실제로 키나 글자를 보낼 때 붙이고
     ///     <see cref="ClearStickyModifiers" /> 로 푼다 — Shift 같은 수식키만 눌렀을 때는 풀리지 않는다.
