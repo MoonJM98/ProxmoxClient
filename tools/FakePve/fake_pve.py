@@ -106,6 +106,19 @@ class H(BaseHTTPRequestHandler):
             return self.send(dict(port=5900, ticket='PVEVNC:FAKE', user='root@pam', cert='', upid=upid('pve1','vncproxy','100')))
         if path!='/access/ticket' and self.ext('POST', urllib.parse.unquote(path), flat): return
         if path=='/access/ticket':
+            # 2단계 인증 사용자 tfa@pam / secret — TOTP 123456, 복구 키 1234-5678-9abc-def0(PVE 7.2+ 새 형식)
+            pw=flat.get('password','')
+            if flat.get('username')=='tfa@pam' or 'tfa-challenge' in flat:
+                if 'tfa-challenge' in flat:
+                    ok=flat['tfa-challenge'].startswith('PVE:!tfa!') and pw in ('totp:123456','recovery:1234-5678-9abc-def0')
+                    sys.stderr.write("TFA answer %s %s\n"%(pw.split(':')[0], 'ok' if ok else 'rejected'))
+                    if ok: return self.send(dict(ticket='PVE:tfa@pam:0000::sig',CSRFPreventionToken='csrf',username='tfa@pam'))
+                    return self.send(None,401)
+                if pw.startswith('PVE:tfa@pam:'): return self.send(dict(ticket='PVE:tfa@pam:0001::sig',CSRFPreventionToken='csrf',username='tfa@pam'))
+                if pw!='secret': return self.send(None,401)
+                chal=json.dumps(dict(totp=True,recovery=[0,2,5,7]),separators=(',',':'))
+                return self.send(dict(ticket='PVE:!tfa!'+urllib.parse.quote(chal,safe="{}[],\"!'()*")+':%08X::sig'%int(time.time()),username='tfa@pam',NeedTFA=1,CSRFPreventionToken='csrf'))
+            if pw.startswith('PVE:!tfa!'): return self.send(None,401) # 반쪽 티켓은 비밀번호로 못 쓴다(incomplete ticket)
             if body.get('password',[''])[0] in ('secret',) or body.get('password',[''])[0].startswith('PVE:'):
                 return self.send(dict(ticket='PVE:root@pam:0000::sig',CSRFPreventionToken='csrf',username='root@pam'))
             return self.send(None,401)

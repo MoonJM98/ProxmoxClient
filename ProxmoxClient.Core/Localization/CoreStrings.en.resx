@@ -350,7 +350,16 @@
     <value>Wrong user name, password or realm. Check the realm (PAM/PVE etc.) too.</value>
   </data>
   <data name="ProxmoxApiClient_NeedTfa" xml:space="preserve">
-    <value>This account uses two-factor authentication (TOTP etc.), which is not supported yet. Connect with an API token instead.</value>
+    <value>This account uses two-factor authentication (TOTP etc.). Enter the verification code to sign in.</value>
+  </data>
+  <data name="ProxmoxApiClient_TfaRejected" xml:space="preserve">
+    <value>The verification code is wrong or expired. Try again.</value>
+  </data>
+  <data name="Tfa_BadChallenge" xml:space="preserve">
+    <value>Could not read the two-factor request sent by the server.</value>
+  </data>
+  <data name="Tfa_EmptyCode" xml:space="preserve">
+    <value>Enter the verification code.</value>
   </data>
   <data name="ProxmoxApiClient_SessionExpired" xml:space="preserve">
     <value>The session expired and could not be renewed. Disconnect and connect again.</value>

@@ -114,7 +114,9 @@ public sealed partial class ProxmoxApiClient : IDisposable
         if (string.IsNullOrWhiteSpace(Profile.UserName) || Profile.Password is null)
             throw new ProxmoxApiException(0, Res.T("ProxmoxApiClient_02"));
 
-        await AcquireTicketAsync(SecureStringHelper.ToPlainString(Profile.Password) ?? string.Empty, ct)
+        // 2단계 인증 계정이면 TfaRequiredException — CompleteTfaAsync 로 마저 로그인한다
+        await AcquireTicketAsync(TicketForm(SecureStringHelper.ToPlainString(Profile.Password) ?? string.Empty),
+                TicketStep.Login, ct)
             .ConfigureAwait(false);
     }
     /// <summary>
@@ -139,11 +141,15 @@ public sealed partial class ProxmoxApiClient : IDisposable
             {
                 try
                 {
-                    await AcquireTicketAsync(current.Ticket, ct).ConfigureAwait(false);
+                    // 완성된 티켓으로 갱신하면 2단계 인증을 다시 묻지 않는다
+                    await AcquireTicketAsync(TicketForm(current.Ticket), TicketStep.Renew, ct).ConfigureAwait(false);
                 }
                 catch (ProxmoxApiException) when (Profile.Password is not null)
                 {
-                    await AcquireTicketAsync(SecureStringHelper.ToPlainString(Profile.Password) ?? string.Empty, ct)
+                    // 비밀번호로 다시 로그인 — 2단계 인증 계정은 여기서 코드를 물을 수 없으니 세션 만료로 끝난다
+                    await AcquireTicketAsync(
+                            TicketForm(SecureStringHelper.ToPlainString(Profile.Password) ?? string.Empty),
+                            TicketStep.Renew, ct)
                         .ConfigureAwait(false);
                 }
             }
@@ -165,14 +171,21 @@ public sealed partial class ProxmoxApiClient : IDisposable
     {
         return new ProxmoxApiException((int)HttpStatusCode.Unauthorized, null, Res.T("ProxmoxApiClient_SessionExpired"));
     }
-    private async Task AcquireTicketAsync(string password, CancellationToken ct)
+    /// <summary>POST /access/ticket 의 기본 양식(사용자 + 비밀번호 또는 티켓).</summary>
+    private Dictionary<string, string> TicketForm(string password)
     {
-        var form = new Dictionary<string, string>
+        return new Dictionary<string, string>
         {
             ["username"] = Profile.UserName,
             ["password"] = password
         };
-
+    }
+    /// <summary>
+    ///     티켓을 받아 인증 상태로 삼는다. 2단계 인증을 기다리는 반쪽 티켓은 인증 상태로 두지 않는다 —
+    ///     로그인이면 <see cref="TfaRequiredException" />, 갱신이면 세션 만료(401), 2단계 응답 뒤에도 또 요구하면 오류.
+    /// </summary>
+    private async Task AcquireTicketAsync(Dictionary<string, string> form, TicketStep step, CancellationToken ct)
+    {
         JsonElement data;
         try
         {
@@ -180,8 +193,9 @@ public sealed partial class ProxmoxApiClient : IDisposable
         }
         catch (ProxmoxApiException ex) when (ex.StatusCode == (int)HttpStatusCode.Unauthorized)
         {
-            // PVE 는 이름·비밀번호·영역이 틀리면 본문 없이 401 만 준다 — 'HTTP 401 {"data":null}' 대신 알아볼 문구로
-            throw new ProxmoxApiException(ex.StatusCode, ex.ResponseExcerpt, Res.T("ProxmoxApiClient_LoginRejected"));
+            // PVE 는 이름·비밀번호·영역(또는 2단계 코드)이 틀리면 본문 없이 401 만 준다 — 알아볼 문구로
+            throw new ProxmoxApiException(ex.StatusCode, ex.ResponseExcerpt,
+                Res.T(step == TicketStep.SecondFactor ? "ProxmoxApiClient_TfaRejected" : "ProxmoxApiClient_LoginRejected"));
         }
 
         var ticket = data.TryGetProperty("ticket", out var ticketEl) ? ticketEl.GetString() : null;
@@ -189,14 +203,15 @@ public sealed partial class ProxmoxApiClient : IDisposable
 
         if (string.IsNullOrEmpty(ticket)) throw new ProxmoxApiException(0, Res.T("ProxmoxApiClient_03"));
         // 2단계 인증 계정 — 서버는 TFA 를 기다리는 반쪽 티켓을 준다. 받아 두면 로그인은 "성공"인데 모든 요청이 401 이다
-        if (data.TryGetProperty("NeedTFA", out var needTfa) && needTfa.ValueKind switch
+        if (TfaChallenge.NeedsSecondFactor(data, ticket))
+            throw step switch
             {
-                JsonValueKind.Number => needTfa.TryGetInt32(out var flag) && flag != 0,
-                JsonValueKind.String => needTfa.GetString() is { Length: > 0 } text && text != "0",
-                JsonValueKind.True => true,
-                _ => false
-            })
-            throw new ProxmoxApiException(0, null, Res.T("ProxmoxApiClient_NeedTfa"));
+                TicketStep.Login => new TfaRequiredException(
+                    await ReadTfaChallengeAsync(data, ticket, form, ct).ConfigureAwait(false)),
+                TicketStep.Renew => new ProxmoxApiException((int)HttpStatusCode.Unauthorized, null,
+                    Res.T("ProxmoxApiClient_SessionExpired")),
+                _ => new ProxmoxApiException(0, null, Res.T("ProxmoxApiClient_NeedTfa"))
+            };
 
         _auth = new AuthSession(ticket, csrfToken, Environment.TickCount64);
         _authRejected = false;

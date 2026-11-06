@@ -410,7 +410,16 @@
       <value>사용자 이름·비밀번호·영역이 맞지 않습니다. 영역(PAM/PVE 등)도 확인하세요.</value>
     </data>
     <data name="ProxmoxApiClient_NeedTfa" xml:space="preserve">
-    <value>이 계정은 2단계 인증(TOTP 등)을 사용합니다. 아직 지원하지 않으므로 API 토큰으로 연결하세요.</value>
+    <value>이 계정은 2단계 인증(TOTP 등)을 사용합니다. 인증 코드를 입력해야 로그인할 수 있습니다.</value>
+  </data>
+  <data name="ProxmoxApiClient_TfaRejected" xml:space="preserve">
+    <value>인증 코드가 맞지 않거나 만료되었습니다. 다시 입력하세요.</value>
+  </data>
+  <data name="Tfa_BadChallenge" xml:space="preserve">
+    <value>서버가 보낸 2단계 인증 요청을 읽을 수 없습니다.</value>
+  </data>
+  <data name="Tfa_EmptyCode" xml:space="preserve">
+    <value>인증 코드를 입력하세요.</value>
   </data>
     <data name="ProxmoxApiClient_SessionExpired" xml:space="preserve">
     <value>세션이 만료되어 다시 로그인할 수 없습니다. 연결을 끊고 다시 연결하세요.</value>

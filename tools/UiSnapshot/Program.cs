@@ -120,6 +120,56 @@ if (!desktop)
 if (AppServices.Dialogs.Current is { } editorDialog) editorDialog.CancelCommand.Execute(null);
 await Wait(AppServices.Navigator.PopAsync());
 Pump(300);
+// ---- 2단계 인증 로그인(--target tfa): 창이 뜨고(TOTP 기본·숫자 키보드), 틀린 코드는 오류 후 다시, 맞는 코드면 로그인 ----
+if (target == "tfa")
+{
+    var tfaProfile = new ConnectionProfile
+    {
+        Name = "tfa", Host = options.GetValueOrDefault("host", "127.0.0.1"), Port = port, UserName = "tfa@pam"
+    };
+    await AppServices.Profiles.SaveAsync(tfaProfile);
+    AppServices.SecretStore.Set($"profile.{tfaProfile.Id:N}.password", "secret");
+    await Wait(profiles.LoadAsync());
+    profiles.ConnectCommand.Execute(profiles.Profiles.First(p => p.Profile.Name == "tfa"));
+    ProxmoxClient.UI.Views.Login.TfaDialog? tfaDialog = null;
+    var tfaDeadline = DateTime.UtcNow.AddSeconds(15);
+    while (DateTime.UtcNow < tfaDeadline
+           && (tfaDialog = AppServices.Dialogs.Sheet as ProxmoxClient.UI.Views.Login.TfaDialog) is null)
+    {
+        if (AppServices.Dialogs.Current is { } tfaTrust) tfaTrust.ConfirmCommand.Execute(null); // 처음 보는 인증서 — 신뢰
+        Pump(150);
+    }
+
+    Check0("2단계 인증 창", "TOTP 기본 · 숫자 키보드",
+        tfaDialog is null ? "창 없음: " + AppServices.Dialogs.Current?.Message : $"{tfaDialog.Kind} · {tfaDialog.CodeContentType}",
+        tfaDialog is { Kind: ProxmoxClient.Core.Api.TfaKind.Totp }
+        && tfaDialog.CodeContentType == Avalonia.Input.TextInput.TextInputContentType.Digits);
+    if (tfaDialog is not null)
+    {
+        Shot("tfa-dialog");
+        await Wait(tfaDialog.SubmitAsync("000000"));
+        Pump(300);
+        Shot("tfa-wrong");
+        Check0("틀린 TOTP 코드", "오류를 보이고 창 유지(다시 입력)", tfaDialog.CurrentError,
+            ReferenceEquals(AppServices.Dialogs.Sheet, tfaDialog) && !tfaDialog.Completed
+            && tfaDialog.CurrentError.Length > 0 && tfaDialog.CurrentError != L.T("Tfa_Verifying"));
+        await Wait(tfaDialog.SubmitAsync("123 456"));
+        WaitFor(() => nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel, 15000);
+        var tfaSession = nav.CurrentPage?.DataContext switch
+        {
+            ClusterViewModel c => c.Session, MainViewModel m => m.Session, _ => null
+        };
+        Check0("맞는 코드로 로그인", "tfa@pam 세션 · 완성된 티켓",
+            $"{tfaSession?.UserDisplay ?? "(로그인 안 됨)"} · {tfaSession?.Api.AuthTicket}",
+            tfaSession is { UserDisplay: "tfa@pam" } && tfaSession.Api.AuthTicket == "PVE:tfa@pam:0000::sig"
+            && AppServices.Dialogs.Sheet is null);
+        Shot("tfa-done");
+    }
+
+    Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
+    Directory.Delete(profileDir, true);
+    return failures == 0 ? 0 : 2;
+}
 profiles.ConnectCommand.Execute(profiles.Profiles[0]);
 WaitFor(() => AppServices.Dialogs.Current is not null || nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel);
 AppServices.Dialogs.Current?.ConfirmCommand.Execute(null); // 인증서 신뢰

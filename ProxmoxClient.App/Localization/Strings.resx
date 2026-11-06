@@ -1491,6 +1491,27 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>로그인 실패: {0}</value>
         <comment>LoginWindow.cs · 메시지</comment>
   </data>
+  <data name="LoginWindow_TfaTitle" xml:space="preserve">
+    <value>2단계 인증</value>
+  </data>
+  <data name="LoginWindow_TfaMethod" xml:space="preserve">
+    <value>방식</value>
+  </data>
+  <data name="LoginWindow_TfaCode" xml:space="preserve">
+    <value>인증 코드</value>
+  </data>
+  <data name="LoginWindow_TfaTotp" xml:space="preserve">
+    <value>인증 앱(TOTP)</value>
+  </data>
+  <data name="LoginWindow_TfaRecovery" xml:space="preserve">
+    <value>복구 키</value>
+  </data>
+  <data name="LoginWindow_TfaYubico" xml:space="preserve">
+    <value>Yubico OTP</value>
+  </data>
+  <data name="LoginWindow_TfaUnsupported" xml:space="preserve">
+    <value>보안 키(WebAuthn)는 이 앱에서 지원하지 않습니다 — TOTP나 복구 키를 쓰거나 API 토큰을 쓰세요.</value>
+  </data>
     <data name="ProfileDialog_M01" xml:space="preserve">
     <value>프로필 추가</value>
         <comment>ProfileDialog.cs · 메시지</comment>

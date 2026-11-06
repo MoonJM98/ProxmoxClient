@@ -127,7 +127,16 @@ public sealed partial class ProfilesViewModel : ViewModelBase
             var api = new ProxmoxApiClient(profile) { WriteGuard = WriteConfirmation.GuardAsync };
             try
             {
-                await api.LoginAsync();
+                try
+                {
+                    await api.LoginAsync();
+                }
+                catch (TfaRequiredException tfa)
+                {
+                    // 2단계 인증 계정 — 코드를 받아 마저 로그인한다. 취소하면 조용히 끝낸다(사용자 취소와 같게)
+                    if (!await Views.Login.TfaDialog.RunAsync(api, tfa.Challenge))
+                        throw new WriteCancelledException("POST", "/access/ticket");
+                }
                 // 버전 확인과 첫 화면 데이터를 동시에 요청한다(화면 전환을 기다리지 않고 미리 받기 시작)
                 var overview = api.GetClusterOverviewAsync();
                 _ = overview.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
