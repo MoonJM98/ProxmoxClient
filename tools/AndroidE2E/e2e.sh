@@ -234,6 +234,27 @@ shot 07-secure-on
 px=$(python3 -I "$HERE/pixels.py" "$OUT/secure-on.raw")
 info "secure on pixels: $px"
 echo "$px" | grep -q "^max=\([0-9]\|1[0-9]\) " && pass "screencap of the app is black with screen protection" || fail "screencap not black with screen protection ($px)"
+# 실행 중에만 켰다 끄기(그동안 SurfaceView 를 새로 만들지 않음) — 끄면 바로 보이는지
+visible_within() { # visible_within <초> <이름> → 걸린 초를 VIS_AFTER 에, 보이면 0
+  local t0 i b
+  t0=$(date +%s)
+  for i in $(seq 1 "$1"); do
+    adb exec-out screencap > "$OUT/$2.raw"
+    b=$(python3 -I "$HERE/pixels.py" "$OUT/$2.raw" | sed -n 's/.*bright=\([0-9]*\).*/\1/p')
+    VIS_AFTER=$(( $(date +%s) - t0 ))
+    [ "${b:-0}" -gt 200 ] && return 0
+    sleep 1
+  done
+  return 1
+}
+hook secure --es on false
+if visible_within 10 secure-off-runtime; then
+  pass "runtime on→off: app visible again after ${VIS_AFTER}s (no surface recreation)"
+else
+  fail "runtime on→off: app still black after ${VIS_AFTER}s"
+fi
+hook secure --es on true
+sleep 2
 # 새 액티비티에도 걸리는지(활동 보관 안 함 — HOME 으로 없어지고 다시 열면 새로 만들어진다)
 n=$(wc -l < "$PCLOG")
 adb shell input keyevent KEYCODE_HOME
@@ -246,7 +267,22 @@ echo "$flags" | grep -qw SECURE && pass "FLAG_SECURE kept on the recreated activ
 adb exec-out screencap > "$OUT/secure-recreated.raw"
 px=$(python3 -I "$HERE/pixels.py" "$OUT/secure-recreated.raw")
 echo "$px" | grep -q "^max=\([0-9]\|1[0-9]\) " && pass "recreated activity screencap black" || fail "recreated activity screencap not black ($px)"
+# 최근 앱(개요) 미리보기 — 보호 중이면 앱 내용이 보이지 않아야 한다
+adb shell input keyevent KEYCODE_APP_SWITCH
+sleep 4
+shot 07b-recents-secure-on
+adb shell dumpsys activity recents > "$OUT/dumpsys-recents-secure-on.txt" 2>&1
+adb shell uiautomator dump /sdcard/ui-recents.xml > /dev/null 2>&1
+adb pull /sdcard/ui-recents.xml "$OUT/ui-recents-secure-on.xml" > /dev/null 2>&1
+launch
+sleep 5
 hook secure --es on false
+grep "screen security False" "$PCLOG" | tail -1 | sed 's/^/    /'
+if visible_within 5 secure-off-quick; then
+  pass "surface created while protected, then off: app visible again after ${VIS_AFTER}s without leaving the app"
+else
+  fail "surface created while protected, then off: app still black after ${VIS_AFTER}s (without leaving the app)"
+fi
 # 끈 뒤 캡처가 다시 보일 때까지 걸린 시간
 t0=$(date +%s)
 px=""
@@ -305,6 +341,12 @@ else
     fail "screencap still dark after disabling ($px; home: $home; relaunch: $again)"
   fi
 fi
+
+adb shell input keyevent KEYCODE_APP_SWITCH
+sleep 4
+shot 08d-recents-secure-off
+launch
+sleep 5
 
 section "4. 마우스 오른쪽 클릭 ≠ 뒤로 가기"
 hook state
