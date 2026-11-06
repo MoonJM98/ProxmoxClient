@@ -216,7 +216,7 @@ jobs:
       - name: 빌드(Desktop — macOS)
         run: dotnet build ProxmoxClient.Desktop -c Release
 
-      # IronRDP 네이티브 라이브러리는 기기용만 있어 시뮬레이터로는 링크가 안 된다 — 서명 없이 기기용으로 컴파일만 확인
+      # 서명 없이 기기용(ios-arm64)으로 컴파일만 확인한다(IronRDP 2026.10 부터는 시뮬레이터용 라이브러리도 있다)
       - name: 빌드(iOS 기기, 서명 없음)
         # 서명·배포가 아닌 컴파일 확인용. Avalonia iOS 와 새 iOS SDK 사이의 연결 경고(IL2037)는 외부 라이브러리 것이라
         # 오류로 다루지 않는다
