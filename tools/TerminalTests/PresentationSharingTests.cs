@@ -17,7 +17,7 @@ public static class PresentationSharingTests
         LoadUi();
         c.Is(AppUi.Current is not null, "Avalonia 가 AppUi 를 넣었다");
         c.Is(AppParts.Current is not null, "Avalonia 가 AppParts 를 넣었다");
-        c.Is(AppParts.Current.SendsDigest, "Avalonia 는 digest 를 보낸다");
+        c.Is(AppParts.Current?.SendsDigest == true, "Avalonia 는 digest 를 보낸다");
         c.Equal("IconTrash", AppUi.DestructiveIcon("IconBan"), "되돌릴 수 없는 작업은 휴지통 아이콘(위험 확인)");
     }
 
