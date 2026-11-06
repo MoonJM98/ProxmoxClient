@@ -38,26 +38,42 @@ public sealed class LinuxHidWebAuthnProvider : IWebAuthnProvider
     /// <summary>FIDO 보안 키의 /dev/hidrawN — 보고서 설명자에 사용 페이지 0xF1D0(06 D0 F1)이 있는 장치.</summary>
     private static string? FindFidoDevice()
     {
+        IEnumerable<string> dirs;
         try
         {
-            foreach (var dir in Directory.EnumerateDirectories(HidrawClass).Order())
-            {
-                var descriptor = Path.Combine(dir, "device", "report_descriptor");
-                if (!File.Exists(descriptor)) continue;
+            dirs = Directory.EnumerateDirectories(HidrawClass).Order().ToList();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
 
-                var bytes = File.ReadAllBytes(descriptor);
-                if (bytes.AsSpan().IndexOf([(byte)0x06, (byte)0xD0, (byte)0xF1]) >= 0)
-                    return "/dev/" + Path.GetFileName(dir);
-            }
-        }
-        catch (IOException)
-        {
-        }
-        catch (UnauthorizedAccessException)
-        {
-        }
+        foreach (var dir in dirs)
+            if (ReadDescriptor(Path.Combine(dir, "device", "report_descriptor")) is { } bytes &&
+                bytes.AsSpan().IndexOf([(byte)0x06, (byte)0xD0, (byte)0xF1]) >= 0)
+                return "/dev/" + Path.GetFileName(dir);
 
         return null;
+    }
+
+    /// <summary>
+    ///     sysfs 의 report_descriptor 는 크기를 4096(HID_MAX_DESCRIPTOR_SIZE)으로 알리지만 실제로는 설명자 길이만큼만 읽힌다 —
+    ///     File.ReadAllBytes 는 알린 크기보다 짧으면 EndOfStreamException 을 던지므로 끝까지 읽어 모은다.
+    ///     못 읽는 장치는 건너뛴다(null).
+    /// </summary>
+    private static byte[]? ReadDescriptor(string path)
+    {
+        try
+        {
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 0);
+            using var ms = new MemoryStream();
+            fs.CopyTo(ms);
+            return ms.ToArray();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     /// <summary>
