@@ -1074,8 +1074,15 @@ async Task TerminalCheck()
     if (!desktop)
     {
         // 손가락 선택 — 끝 손잡이를 오른쪽으로 끌면 선택이 늘고, 끄는 동안 확대경을 그린다(사용자 요청: 드래그 커서가 안 보임)
-        var before2 = selected;
+        // 프롬프트 줄(root@pve1:~#)의 첫 단어를 길게 눌러 고른다 — 칸 크기로 정확히 짚는다(특수 키 막대 높이에 따라 행 수가 바뀐다)
         var cell = term.CellSize;
+        term.ClearSelection();
+        var press = rowY + new Avalonia.Vector(6 + cell.Width * 1.5, 4 + cell.Height * (buffer.CursorY + 0.5));
+        var lp = window.TouchBegin(press, Avalonia.Input.RawInputModifiers.None);
+        Pump(700);
+        window.TouchEnd(lp, press, Avalonia.Input.RawInputModifiers.None);
+        Pump(300);
+        var before2 = term.GetSelectedText();
         var lines = Screen().Split('\n');
         var selRow = Array.FindLastIndex(lines, l => l.Contains(before2));
         var lineText = lines[selRow];
