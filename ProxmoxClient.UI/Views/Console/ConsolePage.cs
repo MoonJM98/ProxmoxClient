@@ -612,7 +612,7 @@ public sealed class ConsolePage : ContentPage, Services.IOwnsTouchDrag
         foreach (var rune in text.EnumerateRunes())
         {
             events.Clear();
-            SoftKeys.CharEvents(rune.Value, _vm.GuestCapsLock, events, unsent);
+            SoftKeys.CharEvents(rune.Value, _vm.GuestCapsLock, events, unsent, _vm.Protocol == ConsoleProtocol.Rdp);
             if (first)
                 SendWithModifiers(events);
             else

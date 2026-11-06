@@ -77,6 +77,9 @@ class H(BaseHTTPRequestHandler):
             if urllib.parse.parse_qs(p.query).get('port',[''])[0]=='5901':
                 import term; term.serve(self); self.close_connection=True; return
             import vnc; vnc.serve(self); self.close_connection=True; return
+        m=re.match(r'/nodes/[^/]+/qemu/(\d+)/rdp/([^/]+)$',path)
+        if m and self.headers.get('Upgrade','').lower()=='websocket':
+            import rdp; rdp.serve(self, int(m.group(1)), m.group(2)); self.close_connection=True; return # RDCleanPath 프록시
         if self.ext('GET', path): return
         if path=='/version': return self.send(dict(version='9.0.10',release='9.0',repoid='abcdef'))
         if path=='/cluster/resources':

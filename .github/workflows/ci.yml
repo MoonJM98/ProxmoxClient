@@ -84,6 +84,33 @@ jobs:
           done
           exit "$failed"
 
+      # RDP 콘솔 끝까지: 러너에 xrdp(+ xorgxrdp·openbox·xterm)와 시험 계정을 두고, 가짜 PVE 의 RDCleanPath 프록시로
+      # 붙는다(연결·입력·해상도 변경·다시 연결). 러너 패키지 사정에 따라 깨질 수 있어 실패해도 작업은 막지 않는다
+      - name: RDP 콘솔 검사(xrdp + FakePve rdpproxy)
+        continue-on-error: true
+        run: |
+          set -u
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq xrdp xorgxrdp openbox xterm > /dev/null
+          sudo useradd -m -s /bin/bash rdptest
+          echo 'rdptest:RdpTest!234' | sudo chpasswd
+          printf '#!/bin/sh\nxterm -geometry 100x30+20+20 -fa Monospace -fs 14 &\nexec openbox\n' | sudo tee /home/rdptest/.xsession > /dev/null
+          sudo chmod 755 /home/rdptest/.xsession
+          sudo chown rdptest: /home/rdptest/.xsession
+          sudo systemctl restart xrdp-sesman xrdp
+          for i in $(seq 1 30); do ss -ltn | grep -q ':3389 ' && break; sleep 1; done
+          PORT=19701
+          mkdir -p shots
+          python3 -I tools/FakePve/fake_pve.py "$PORT" > shots/fakepve-rdp.log 2>&1 &
+          FAKE_PID=$!
+          trap 'kill "$FAKE_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do grep -q "^listening" shots/fakepve-rdp.log && break; sleep 1; done
+          dotnet run --project tools/UiSnapshot -c Release --no-build -- \
+            --port "$PORT" --out shots/mobile-rdp --mode mobile --target rdp --rdp 127.0.0.1:3389 \
+            --serverlog shots/fakepve-rdp.log > shots/mobile-rdp.log 2>&1 || true
+          tail -n 40 shots/mobile-rdp.log
+          grep -q "^DONE ok" shots/mobile-rdp.log && ! grep -q "^SKIP rdp" shots/mobile-rdp.log
+
       - name: 검사 결과 올리기(실패 시)
         if: failure()
         uses: actions/upload-artifact@v4

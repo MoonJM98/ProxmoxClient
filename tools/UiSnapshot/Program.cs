@@ -465,6 +465,176 @@ if (target == "compact") await CompactButtonCheck();
 if (target == "terminal") await TerminalCheck();
 if (target == "expiry") await ExpiryCheck();
 if (target == "realshell") await RealShellCheck();
+// ---- RDP 콘솔 끝까지(--target rdp, 휴대폰): 가짜 PVE 의 RDCleanPath 프록시(tools/FakePve/rdp.py)가 이 PC 의 실제 RDP 서버
+// (xrdp, --rdp 호스트:포트)로 잇는다. 연결·화면 내용·화면 키보드 글자/특수키(게스트 셸이 파일로 적은 글로 확인)·
+// 창 크기에 맞춘 해상도 변경·웹소켓 끊김 뒤 다시 연결. RDP 서버가 없으면 SKIP(CI 에 xrdp 가 없을 때)
+if (target == "rdp") await RdpCheck();
+async Task RdpCheck()
+{
+    var rdpTarget = options.GetValueOrDefault("rdp", Environment.GetEnvironmentVariable("RDP_TARGET") ?? "127.0.0.1:33890");
+    var rdpUser = options.GetValueOrDefault("rdpuser", Environment.GetEnvironmentVariable("RDP_USER") ?? "rdptest");
+    var rdpPassword = options.GetValueOrDefault("rdppass", Environment.GetEnvironmentVariable("RDP_PASSWORD") ?? "RdpTest!234");
+    var hostPort = rdpTarget.Split(':');
+    // 이 검사의 기다림은 모두 동기(Pump 없이 await 하면 헤드리스 UI 스레드가 이어짐을 돌리지 않아 멈춘다)
+    try
+    {
+        using var probe = new System.Net.Sockets.TcpClient();
+        if (!probe.ConnectAsync(hostPort[0], int.Parse(hostPort[1])).Wait(3000)) throw new TimeoutException();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"SKIP rdp: RDP 서버({rdpTarget})에 붙을 수 없음 — {ex.GetType().Name}");
+        return;
+    }
+
+    // 가짜 PVE 설정: 대상 서버·rdpproxy 가 줄 계정, VM 101 디스플레이를 rdp 로
+    using (var http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true }))
+    {
+        var form = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["target"] = rdpTarget, ["user"] = rdpUser, ["password"] = rdpPassword, ["vmid"] = "101"
+        });
+        http.Send(new HttpRequestMessage(HttpMethod.Post, $"https://127.0.0.1:{port}/__fake/rdp") { Content = form })
+            .EnsureSuccessStatusCode();
+    }
+
+    void Drop()
+    {
+        using var http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true });
+        http.Send(new HttpRequestMessage(HttpMethod.Post, $"https://127.0.0.1:{port}/__fake/rdp-drop")
+        {
+            Content = new FormUrlEncodedContent([])
+        });
+    }
+
+    var guest = cluster.Guests.First(g => g.VmId == 101);
+    await Wait(ConsoleLauncher.OpenGuestAsync(cluster.Session, guest)); // 디스플레이 rdp → RDP 콘솔
+    var page = nav.CurrentPage as ConsolePage;
+    var vm = page?.DataContext as ConsoleViewModel;
+    Check0("RDP 콘솔 고르기", "vga type=rdp → RDP 콘솔", vm?.Protocol.ToString() ?? "(콘솔 없음)",
+        vm?.Protocol == ProxmoxClient.Core.Vnc.ConsoleProtocol.Rdp);
+    if (page is null || vm is null || vm.Protocol != ProxmoxClient.Core.Vnc.ConsoleProtocol.Rdp) return;
+
+    // 화면 내용 — 표본 픽셀의 색 가짓수(검은 화면·한 색이 아니다)
+    int Colors()
+    {
+        var fb = vm.Vnc.Framebuffer;
+        if (fb is null || fb.Length < 4) return 0;
+        var set = new HashSet<int>();
+        for (var i = 0; i + 3 < fb.Length; i += 4 * 97) set.Add(BitConverter.ToInt32(fb, i) & 0xFFFFFF);
+        return set.Count;
+    }
+
+    WaitFor(() => vm.IsConnected || vm.CanReconnect, 30000);
+    WaitFor(() => Colors() > 20, 30000); // 세션(Xorg·창 관리자·xterm 글자)이 뜨기까지 — 처음 로그인은 몇 초 걸린다
+    Pump(2500);
+    Check0("RDP 연결", "연결됨 · 화면 크기 = 보기 크기 · 화면 내용 있음",
+        $"{(vm.IsConnected ? "연결됨" : vm.Status)} · {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지",
+        vm.IsConnected && vm.Vnc.Width > 0 && Colors() > 3);
+    Shot("rdp-connected");
+    if (!vm.IsConnected) return;
+
+    // 화면 키보드: xterm 을 누른 뒤 입력 칸에 글을 넣는다 → 게스트 셸이 파일로 적는다
+    var softInput = page.GetVisualDescendants().OfType<TextBox>().First();
+    void Click(int x, int y)
+    {
+        vm.SendPointer(0, x, y);
+        vm.SendPointer(1, x, y);
+        vm.SendPointer(0, x, y);
+        Pump(300);
+    }
+
+    void Type(string text)
+    {
+        softInput.Text = text;
+        Pump(200);
+    }
+
+    string ReadTyped(string path)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(8);
+        while (DateTime.UtcNow < deadline)
+        {
+            Pump(300);
+            try
+            {
+                if (File.Exists(path)) return File.ReadAllText(path).TrimEnd('\n');
+            }
+            catch (IOException)
+            {
+            }
+        }
+
+        return "(파일 없음)";
+    }
+
+    Click(120, 120);
+    var typedPath = $"/tmp/rdp-typed-{Environment.ProcessId}.txt";
+    // 특수키: 'x' 를 지우기 키로 지운다
+    Type("echo Ab1-x");
+    page.Tap(KeySyms.BackSpace);
+    Type($"c > {typedPath}");
+    page.Tap(KeySyms.Return);
+    var typed = ReadTyped(typedPath);
+    Shot("rdp-typed");
+    Check0("RDP 화면 키보드 글자·특수키", "게스트 셸이 'Ab1-c' 를 받음(대문자·숫자·기호·지우기·Enter)", typed, typed == "Ab1-c");
+
+    // 한글: RDP 는 두벌식 키(영문 입력기에서 'gksrmf')가 아니라 유니코드 키 입력으로 보낸다 — 프록시가 본 빠른 경로 입력
+    // (서버 로그 'RDP unicode U+XXXX')으로 확인한다. xrdp 는 ibus 없이 빌드되면 유니코드 키를 버린다(글자가 안 들어감,
+    // Windows 는 그대로 넣는다) — 그래서 게스트가 받은 글은 참고로만 적는다
+    var serverLog = options.GetValueOrDefault("serverlog", "");
+    long LogSize() => File.Exists(serverLog) ? new FileInfo(serverLog).Length : 0;
+    List<string> LogSince(long offset)
+    {
+        if (!File.Exists(serverLog)) return [];
+        using var fs = new FileStream(serverLog, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        fs.Seek(offset, SeekOrigin.Begin);
+        return new StreamReader(fs).ReadToEnd().Split('\n').Where(l => l.StartsWith("RDP unicode")).Select(l => l[12..].Trim()).ToList();
+    }
+
+    var koreanPath = $"/tmp/rdp-korean-{Environment.ProcessId}.txt";
+    var unicodeFrom = LogSize();
+    Type($"echo 한글 > {koreanPath}\n");
+    var korean = ReadTyped(koreanPath);
+    var unicodeKeys = LogSince(unicodeFrom);
+    Shot("rdp-korean");
+    Check0("RDP 화면 키보드 한글", "유니코드 키 한·글(누름·뗌)이 서버로, 두벌식 키(gksrmf) 아님",
+        $"{string.Join(", ", unicodeKeys)} · 게스트가 적은 글 '{korean}'",
+        unicodeKeys.SequenceEqual(["U+D55C down", "U+D55C up", "U+AE00 down", "U+AE00 up"]) && korean is "한글" or "");
+    // 창 크기 → 게스트 해상도(디스플레이 제어 채널 → 서버가 재활성화로 새 크기)
+    var before = (vm.Vnc.Width, vm.Vnc.Height);
+    window.Width = 600;
+    window.Height = 700;
+    Pump(300);
+    WaitFor(() => page.LastRdpResize is { } r && r != before && vm.Vnc.Width == r.Width && vm.Vnc.Height == r.Height, 15000);
+    Pump(1500);
+    var asked = page.LastRdpResize;
+    Check0("RDP 해상도 맞춤", "창 600×700 → 요청한 크기로 게스트 해상도 바뀜",
+        $"{before.Width}×{before.Height} → 요청 {asked} · 지금 {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지 · {(vm.IsConnected ? "연결됨" : vm.Status)}",
+        asked is { } a && a != before && vm.Vnc.Width == a.Width && vm.Vnc.Height == a.Height && Colors() > 3 && vm.IsConnected);
+    Shot("rdp-resized");
+
+    // 웹소켓 끊김 → 끊김 알림·[다시 연결] → 다시 연결(새 토큰)하면 같은 세션 화면
+    Drop();
+    WaitFor(() => vm.CanReconnect, 30000);
+    Check0("RDP 끊김 알림", "웹소켓이 끊기면 연결 끊김·[다시 연결]", vm.Status ?? "(상태 없음)", vm.CanReconnect && !vm.IsConnected);
+    await Wait(vm.ReconnectAsync());
+    WaitFor(() => vm.IsConnected || vm.CanReconnect, 30000);
+    WaitFor(() => Colors() > 3, 15000);
+    Pump(2000);
+    var reconnectPath = $"/tmp/rdp-again-{Environment.ProcessId}.txt";
+    Click(120, 120);
+    Type($"echo again > {reconnectPath}\n");
+    var again = ReadTyped(reconnectPath);
+    Shot("rdp-reconnected");
+    Check0("RDP 다시 연결", "다시 연결되고 화면·입력이 다시 동작",
+        $"{(vm.IsConnected ? "연결됨" : vm.Status)} · {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지 · 입력 '{again}'",
+        vm.IsConnected && Colors() > 3 && again == "again");
+    Type($"rm -f /tmp/rdp-*-{Environment.ProcessId}.txt; clear\n"); // 게스트 사용자 파일이라 게스트 셸에서 지운다
+    Pump(500);
+    await Wait(AppServices.Navigator.PopAsync());
+    Pump(500);
+}
 // ---- 메인 화면 검사(--target mainscreens, 휴대폰) — 느린 서버의 작업 로그 줄 중복·긴 목록 가상화·탭별 오류/빈 상태·연결 취소
 if (target == "mainscreens") await MainScreensCheck();
 async Task MainScreensCheck()

@@ -140,10 +140,20 @@ public static class SoftKeys
     /// <summary>
     ///     글자 하나 → 게스트에 보낼 이벤트(스캔코드, keysym, 누름). 키로 못 바꾸는 글자는 keysym 만 보내 보고
     ///     (QEMU 는 대개 버린다) 라틴 문자 밖이면 <paramref name="unsent" /> 에 남긴다.
+    ///     <paramref name="unicode" />(RDP): 라틴 밖 글자(한글 등)는 두벌식 키 대신 keysym 만 보낸다 — RDP 세션이 유니코드
+    ///     입력으로 보내 게스트 입력기·키 배치와 상관없이 그 글자가 들어간다(키로 풀면 영문 입력기에서 '한' → 'gks').
     /// </summary>
     public static void CharEvents(int codePoint, bool capsLock, List<(int Xt, int Keysym, bool Down)> output,
-        List<int>? unsent = null)
+        List<int>? unsent = null, bool unicode = false)
     {
+        if (unicode && codePoint >= 0x80)
+        {
+            var glyph = KeySyms.FromChar(codePoint);
+            output.Add((0, glyph, true));
+            output.Add((0, glyph, false));
+            return;
+        }
+
         var strokes = new List<Stroke>(6);
         if (TryStrokes(codePoint, strokes))
         {

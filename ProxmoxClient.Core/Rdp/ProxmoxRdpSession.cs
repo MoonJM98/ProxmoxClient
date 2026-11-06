@@ -189,9 +189,12 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
             }
 
             _channel = channel;
+            // 화면 크기를 먼저 읽는다 — ActiveStage.New 는 연결 결과를 가져가 버려 그 뒤로는 읽을 수 없다
+            // ("ConnectionResult: is consumed or never constructed")
+            using var size = result.GetDesktopSize();
             _stage = ActiveStage.New(result);
             _input = InputDatabase.New();
-            ResetImage(result.GetDesktopSize());
+            ResetImage(size);
             IsConnected = true;
         }
 
@@ -228,6 +231,9 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
         builder.SetDomain(string.Empty);
         builder.SetEnableTls(true);
         builder.SetEnableCredssp(true);
+        // 서버가 CredSSP 없이 TLS 만 고르면 계정은 클라이언트 정보 PDU 로만 간다 — 자동 로그온 표시가 없으면 서버가 로그인
+        // 화면을 띄우는데, 일회성 비밀번호는 사용자가 모르므로 들어갈 수 없다(mstsc 도 비밀번호가 있으면 켠다)
+        builder.SetAutologon(true);
         // 연결 전에 해상도 요청(RequestDesktopSize)이 왔으면 그 크기로 시작한다
         var (width, height) = Volatile.Read(ref _pendingSize) is var pending and not 0
             ? UnpackSize(pending)
