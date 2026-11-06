@@ -727,4 +727,7 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="KeepAlive_DisconnectAll" xml:space="preserve">
     <value>Disconnect all</value>
   </data>
+  <data name="Terminal_RemoteCopied" xml:space="preserve">
+    <value>Copied text from the remote program to the clipboard ({0} chars)</value>
+  </data>
 </root>

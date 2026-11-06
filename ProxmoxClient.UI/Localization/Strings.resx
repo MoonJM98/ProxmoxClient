@@ -727,4 +727,7 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="KeepAlive_DisconnectAll" xml:space="preserve">
     <value>모두 끊기</value>
   </data>
+  <data name="Terminal_RemoteCopied" xml:space="preserve">
+    <value>원격 프로그램이 복사한 글을 클립보드에 넣었습니다 ({0}자)</value>
+  </data>
 </root>

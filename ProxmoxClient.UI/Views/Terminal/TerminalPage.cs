@@ -50,6 +50,12 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
             }, DispatcherPriority.Background);
         };
         _terminal.SelectionChanged += has => _copy!.IsEnabled = has;
+        // 원격 복사(OSC 52 — tmux·vim·neovim 에서 복사) → 이 기기 클립보드
+        _terminal.Buffer.ClipboardWrite += text => Dispatcher.UIThread.Post(async () =>
+        {
+            await ClipboardHelper.SetTextAsync(text);
+            AppServices.Dialogs.Toast(L.T("Terminal_RemoteCopied", text.Length));
+        });
         _terminal.TakeStickyModifiers = TakeSticky;
         _terminal.LineSubmitted += command =>
         {

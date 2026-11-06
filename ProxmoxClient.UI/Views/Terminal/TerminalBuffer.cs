@@ -59,7 +59,7 @@ public sealed class TerminalBuffer
     private bool _autoWrap = true;
     private bool _insertMode;
     private bool _newLineMode;
-    private readonly bool[] _g = new bool[2]; // G0/G1 가 DEC 그래픽인가
+    private readonly bool[] _g = new bool[4]; // G0~G3 가 DEC 그래픽인가(그리는 데는 SI/SO 로 고른 G0·G1 만 쓴다)
     private int _gl; // 0 = G0, 1 = G1(SO)
     private int _lastRune = ' ';
     private SavedCursor _savedMain, _savedAlt;
@@ -103,6 +103,12 @@ public sealed class TerminalBuffer
     ///     잠시 뒤 그냥 그린다.
     /// </summary>
     public long SynchronizedSince { get; private set; }
+
+    /// <summary>커서 깜박임(?12) — 질의에 답하려고 기억만 한다.</summary>
+    public bool CursorBlink { get; private set; }
+
+    /// <summary>색 테마 변경 알림(?2031) — 기억만 한다(테마가 바뀌지 않는다).</summary>
+    public bool ColorSchemeReports { get; private set; }
 
     public int ScrollbackCount => _scrollback.Count;
 
@@ -271,6 +277,7 @@ public sealed class TerminalBuffer
         Ground,
         Escape,
         Charset,
+        Charset96,
         Csi,
         Osc,
         OscEscape,
@@ -291,6 +298,7 @@ public sealed class TerminalBuffer
             return;
         }
 
+        if (_pendingHigh != 0 && !char.IsLowSurrogate(c)) _pendingHigh = '\0'; // 짝 없는 앞 반쪽은 버린다
         int cp = c;
         if (char.IsLowSurrogate(c))
         {
@@ -312,6 +320,15 @@ public sealed class TerminalBuffer
             return;
         }
 
+        if (cp is >= 0x80 and <= 0x9F)
+        {
+            // C1 제어 문자(8비트) — ESC + (c - 0x40) 과 같다. 글자로 그리지 않는다
+            _state = State.Escape;
+            _intermediate = '\0';
+            Escape(cp - 0x40);
+            return;
+        }
+
         switch (_state)
         {
             case State.Ground:
@@ -322,6 +339,10 @@ public sealed class TerminalBuffer
                 break;
             case State.Charset:
                 _g[_charsetSlot] = cp == '0';
+                _state = State.Ground;
+                break;
+            case State.Charset96:
+                _g[_charsetSlot] = false;
                 _state = State.Ground;
                 break;
             case State.Hash:
@@ -339,6 +360,7 @@ public sealed class TerminalBuffer
 
     private void Control(int c)
     {
+        if (c != 0x1B) _lastRune = 0; // REP 은 바로 앞 글자만 되풀이한다(제어열 시작 ESC 는 빼고)
         switch (c)
         {
             case 0x07: // BEL
@@ -402,8 +424,16 @@ public sealed class TerminalBuffer
                 _state = State.Ignore;
                 break;
             case '(' or ')' or '*' or '+':
-                _charsetSlot = c is '(' or '*' ? 0 : 1;
+                _charsetSlot = c - '(';
                 _state = State.Charset;
+                break;
+            case '-' or '.' or '/':
+                // 96글자 문자 집합 지정(G1~G3) — DEC 그래픽은 94글자 쪽에만 있다. 다음 글자 하나를 먹고 일반 글자로 둔다
+                _charsetSlot = c - ',';
+                _state = State.Charset96;
+                break;
+            case 'Z':
+                _responses.Append(DeviceAttributes); // DECID — DA1 과 같은 답
                 break;
             case '#':
                 _state = State.Hash;
@@ -444,16 +474,31 @@ public sealed class TerminalBuffer
 
     private void String(int c)
     {
+        // CAN·SUB 는 문자열을 끊는다. C1 ST(0x9C)는 끝맺음
+        if (c is 0x18 or 0x1A)
+        {
+            _state = State.Ground;
+            return;
+        }
+
+        if (c == 0x9C)
+        {
+            if (_state is State.Osc or State.OscEscape) EndOsc(false);
+            else if (_state is State.Dcs or State.DcsEscape) EndDcs();
+            else _state = State.Ground;
+            return;
+        }
+
         switch (_state)
         {
             case State.Osc:
                 if (c == 0x07) EndOsc(true);
                 else if (c == 0x1B) _state = State.OscEscape;
-                else if (_osc.Length < 4096) _osc.Append(char.ConvertFromUtf32(c));
+                else if (_osc.Length < OscLimit()) _osc.Append(char.ConvertFromUtf32(c));
                 break;
             case State.OscEscape:
                 if (c == '\\') EndOsc(false);
-                else _state = State.Osc;
+                else AbortString(c);
                 break;
             case State.Dcs:
                 if (c == 0x1B) _state = State.DcsEscape;
@@ -462,15 +507,58 @@ public sealed class TerminalBuffer
                 break;
             case State.DcsEscape:
                 if (c == '\\') EndDcs();
-                else _state = State.Dcs;
+                else AbortString(c);
                 break;
             case State.Ignore:
                 if (c == 0x1B) _state = State.IgnoreEscape;
                 else if (c == 0x07 || c == 0x18 || c == 0x1A) _state = State.Ground;
                 break;
             case State.IgnoreEscape:
-                _state = c == '\\' ? State.Ground : State.Ignore;
+                if (c == '\\') _state = State.Ground;
+                else AbortString(c);
                 break;
+        }
+    }
+
+    /// <summary>
+    ///     문자열 안의 ESC 뒤가 ST 가 아니다 — 끝나지 않은 문자열(잘린 제목 등)이다. 버리고 그 ESC 를 새 제어열로 읽는다
+    ///     (xterm 과 같다). 그러지 않으면 뒤따르는 출력을 BEL 이 올 때까지 모두 삼킨다.
+    /// </summary>
+    private void AbortString(int c)
+    {
+        _state = State.Escape;
+        _intermediate = '\0';
+        if (c is < 0x20 or 0x7F) Control(c);
+        else Escape(c);
+    }
+
+    /// <summary>OSC 길이 한도 — 원격 복사(OSC 52)는 큰 글을 담으므로 넉넉히, 나머지는 4KB.</summary>
+    private int OscLimit()
+    {
+        return _osc.Length >= 3 && _osc[0] == '5' && _osc[1] == '2' && _osc[2] == ';' ? 1 << 20 : 4096;
+    }
+
+    /// <summary>
+    ///     원격 프로그램이 클립보드에 넣으라고 보낸 글(OSC 52 — tmux·vim·neovim 의 복사). 수신 스레드에서 불린다.
+    ///     클립보드 읽기 요청(?)에는 답하지 않는다(서버가 사용자 클립보드를 몰래 읽지 못하게).
+    /// </summary>
+    public event Action<string>? ClipboardWrite;
+
+    private void ClipboardOsc(string value)
+    {
+        var sep = value.IndexOf(';');
+        if (sep < 0) return;
+
+        var data = value[(sep + 1)..];
+        if (data == "?" || data.Length == 0) return;
+
+        try
+        {
+            ClipboardWrite?.Invoke(Encoding.UTF8.GetString(Convert.FromBase64String(data)));
+        }
+        catch (FormatException)
+        {
+            // 잘못된 base64 — 무시
         }
     }
 
@@ -483,6 +571,7 @@ public sealed class TerminalBuffer
 
         var code = text[..sep];
         if (code is "0" or "2") Title = text[(sep + 1)..];
+        if (code == "52") ClipboardOsc(text[(sep + 1)..]);
         // 글자색·바탕색 질의(OSC 10/11 ;?) — systemd·vim·Claude Code 가 밝은/어두운 바탕을 고를 때 묻는다. 묻은 끝맺음으로 답한다
         if (code is "10" or "11" && text[(sep + 1)..] == "?")
         {
@@ -491,6 +580,13 @@ public sealed class TerminalBuffer
             _responses.Append($"\x1b]{code};rgb:{Channel(16)}/{Channel(8)}/{Channel(0)}{(bel ? "\x07" : "\x1b\\")}");
         }
     }
+
+    /// <summary>DA1 답 — VT220 급(62) · ANSI 색(22). 그림(sixel 4)·클립보드 읽기는 알리지 않는다.</summary>
+    private const string DeviceAttributes = "\x1b[?62;22c";
+
+    /// <summary>XTVERSION 에 알리는 판.</summary>
+    private static readonly string AppVersion =
+        typeof(TerminalBuffer).Assembly.GetName().Version?.ToString(3) ?? "1.0";
 
     /// <summary>터미널이 알려 주는 이름(XTGETTCAP name) — 서버의 TERM 과 같게.</summary>
     private const string TerminalName = "xterm-256color";
@@ -503,13 +599,91 @@ public sealed class TerminalBuffer
     {
         _state = State.Ground;
         var text = _dcs.ToString();
+        if (text.StartsWith("$q", StringComparison.Ordinal))
+        {
+            RequestSetting(text[2..]);
+            return;
+        }
+
         if (!text.StartsWith("+q", StringComparison.Ordinal)) return;
 
         foreach (var hex in text[2..].Split(';', StringSplitOptions.RemoveEmptyEntries))
-            if (hex.Equals("6E616D65", StringComparison.OrdinalIgnoreCase))
-                _responses.Append($"\x1bP1+r{hex}={Convert.ToHexString(Encoding.ASCII.GetBytes(TerminalName))}\x1b\\");
-            else
+        {
+            string? name = null;
+            try
+            {
+                name = Encoding.ASCII.GetString(Convert.FromHexString(hex));
+            }
+            catch (FormatException)
+            {
+            }
+
+            if (name is null || !Capabilities.TryGetValue(name, out var value))
                 _responses.Append($"\x1bP0+r{hex}\x1b\\");
+            else if (value is null)
+                _responses.Append($"\x1bP1+r{hex}\x1b\\"); // 참·거짓 능력(Tc) — 값 없이
+            else
+                _responses.Append($"\x1bP1+r{hex}={Convert.ToHexString(Encoding.UTF8.GetBytes(value))}\x1b\\");
+        }
+    }
+
+    /// <summary>
+    ///     XTGETTCAP 로 알려 주는 능력 — neovim·tmux 가 24비트 색·커서 모양을 여기서 확인한다(termproxy 는 COLORTERM 을
+    ///     넘기지 않아 이게 없으면 256색으로 떨어진다). 값이 null 이면 참·거짓 능력. 클립보드(Ms)는 읽기 질의에 답하지
+    ///     않으므로 알리지 않는다.
+    /// </summary>
+    private static readonly Dictionary<string, string?> Capabilities = new()
+    {
+        ["name"] = TerminalName,
+        ["TN"] = TerminalName,
+        ["Co"] = "256",
+        ["colors"] = "256",
+        ["RGB"] = "8/8/8",
+        ["Tc"] = null,
+        ["setrgbf"] = "\\E[38;2;%p1%d;%p2%d;%p3%dm",
+        ["setrgbb"] = "\\E[48;2;%p1%d;%p2%d;%p3%dm",
+        ["Ss"] = "\\E[%p1%d q",
+        ["Se"] = "\\E[2 q",
+        ["Smulx"] = "\\E[4:%p1%dm",
+        ["Sync"] = "\\E[?2026%?%p1%{1}%-%tl%eh%;"
+    };
+
+    /// <summary>DECRQSS(DCS $ q 설정 ST) — 지금 설정을 돌려준다. 모르는 설정은 0 $ r.</summary>
+    private void RequestSetting(string setting)
+    {
+        string? value = setting switch
+        {
+            "m" => CurrentSgr() + "m",
+            "r" => $"{_top + 1};{_bottom + 1}r",
+            " q" => $"{CursorStyle} q",
+            "\"p" => "62;1\"p",
+            "\"q" => "0\"q",
+            _ => null
+        };
+        _responses.Append(value is null ? "\x1bP0$r\x1b\\" : $"\x1bP1$r{value}\x1b\\");
+    }
+
+    /// <summary>지금 글자 꾸밈을 SGR 매개변수로(DECRQSS 'm') — neovim 은 24비트 색을 넣어 보고 되돌아오는지로 지원을 본다.</summary>
+    private string CurrentSgr()
+    {
+        var parts = new List<string> { "0" };
+        foreach (var (flag, code) in new[]
+                 {
+                     (CellFlags.Bold, "1"), (CellFlags.Faint, "2"), (CellFlags.Italic, "3"), (CellFlags.Underline, "4"),
+                     (CellFlags.Blink, "5"), (CellFlags.Inverse, "7"), (CellFlags.Hidden, "8"), (CellFlags.Strike, "9")
+                 })
+            if (_flags.HasFlag(flag)) parts.Add(code);
+        AddColor(_fg, 30, 38);
+        AddColor(_bg, 40, 48);
+        return string.Join(';', parts);
+
+        void AddColor(uint color, int basic, int extended)
+        {
+            if (TerminalColor.IsIndexed(color, out var index))
+                parts.Add(index < 8 ? $"{basic + index}" : index < 16 ? $"{basic + 60 + index - 8}" : $"{extended}:5:{index}");
+            else if (TerminalColor.IsRgb(color, out var rgb))
+                parts.Add($"{extended}:2::{(rgb >> 16) & 0xFF}:{(rgb >> 8) & 0xFF}:{rgb & 0xFF}");
+        }
     }
 
     private void Csi(int c)
@@ -567,7 +741,14 @@ public sealed class TerminalBuffer
     {
         if (_intermediate == ' ' && final == 'q')
         {
-            CursorStyle = P0(0);
+            if (P0(0) <= 6) CursorStyle = P0(0);
+            return;
+        }
+
+        if (_prefix == '>' && final == 'q' && _intermediate == '\0')
+        {
+            // XTVERSION — 이름을 xterm 으로 대지 않는다(tmux 가 이 터미널에 없는 xterm 기능을 켠다)
+            _responses.Append($"\x1bP>|ProxmoxClient({AppVersion})\x1b\\");
             return;
         }
 
@@ -605,10 +786,10 @@ public sealed class TerminalBuffer
                 MoveTo(Math.Min(_x, Columns - 1) - P(0, 1), _y);
                 break;
             case 'E':
-                MoveTo(0, Math.Min(_y + P(0, 1), _bottom));
+                MoveTo(0, Math.Min(_y + P(0, 1), _y <= _bottom ? _bottom : Rows - 1));
                 break;
             case 'F':
-                MoveTo(0, Math.Max(_y - P(0, 1), _top));
+                MoveTo(0, Math.Max(_y - P(0, 1), _y >= _top ? _top : 0));
                 break;
             case 'G':
             case '`':
@@ -649,11 +830,15 @@ public sealed class TerminalBuffer
                 BackTab(P(0, 1));
                 break;
             case 'b':
-                for (var i = Math.Min(P(0, 1), Columns * Rows); i > 0; i--) Print(_lastRune);
+                // 앞 글자 되풀이(REP) — 바로 앞이 글자가 아니면(제어 문자·제어열 뒤) 하지 않는다
+                if (_lastRune != 0)
+                    for (var i = Math.Min(P(0, 1), Columns * Rows); i > 0; i--) Print(_lastRune);
                 break;
             case 'c':
-                if (_prefix == '>') _responses.Append("\x1b[>0;276;0c");
-                else if (_prefix == '\0') _responses.Append("\x1b[?1;2c");
+                // DA2: 판 277 이상이어야 vim 이 SGR 마우스(넓은 화면 좌표)를 쓴다. DA3: 단말 번호
+                if (_prefix == '>') _responses.Append("\x1b[>1;277;0c");
+                else if (_prefix == '=') _responses.Append("\x1bP!|00000000\x1b\\");
+                else if (_prefix == '\0') _responses.Append(DeviceAttributes);
                 break;
             case 'd':
                 MoveAbsolute(_x, P(0, 1) - 1);
@@ -765,6 +950,7 @@ public sealed class TerminalBuffer
     {
         var cells = row.Cells;
         count = Math.Min(count, Columns - x);
+        ClearCell(row, x); // 넓은 글자의 오른쪽 반에 끼워 넣으면 반쪽이 남지 않게
         Array.Copy(cells, x, cells, x + count, Columns - x - count);
         for (var i = x; i < x + count; i++) cells[i] = TerminalCell.Blank(_bg);
         FixRightEdge(row);
@@ -879,6 +1065,7 @@ public sealed class TerminalBuffer
 
     private void EraseDisplay(int mode)
     {
+        if (mode != 3) _pendingWrap = false;
         var screen = Screen;
         switch (mode)
         {
@@ -906,6 +1093,7 @@ public sealed class TerminalBuffer
 
     private void EraseLine(int mode)
     {
+        _pendingWrap = false; // xterm 처럼 — 끝 칸에 쓴 뒤 줄을 지우고 쓰면 다음 줄로 넘어가지 않는다
         var row = Screen[_y];
         var x = Math.Min(_x, Columns - 1);
         var (from, to) = mode switch { 0 => (x, Columns - 1), 1 => (0, x), _ => (0, Columns - 1) };
@@ -915,6 +1103,7 @@ public sealed class TerminalBuffer
 
     private void EraseChars(int count)
     {
+        _pendingWrap = false;
         var row = Screen[_y];
         var x = Math.Min(_x, Columns - 1);
         for (var i = x; i < Math.Min(Columns, x + count); i++) ClearCell(row, i);
@@ -922,6 +1111,7 @@ public sealed class TerminalBuffer
 
     private void InsertChars(int count)
     {
+        _pendingWrap = false;
         ShiftRight(Screen[_y], Math.Min(_x, Columns - 1), count);
     }
 
@@ -1018,7 +1208,13 @@ public sealed class TerminalBuffer
                 CursorVisible = on;
                 break;
             case 47:
+                SwitchScreen(on, false);
+                break;
             case 1047:
+                // 1047 은 대체 화면에서 나올 때 그 화면을 지운다(47 은 지우지 않는다)
+                if (!on && IsAlternateScreen)
+                    foreach (var line in _alt)
+                        line.Reset(TerminalColor.Default);
                 SwitchScreen(on, false);
                 break;
             case 1048:
@@ -1052,6 +1248,15 @@ public sealed class TerminalBuffer
                 break;
             case 2004:
                 BracketedPaste = on;
+                break;
+            case 12:
+                CursorBlink = on;
+                break;
+            case 66:
+                ApplicationKeypad = on; // DECNKM
+                break;
+            case 2031:
+                ColorSchemeReports = on; // 밝은/어두운 테마가 바뀌면 알림 — 이 앱은 늘 어두운 터미널이라 바뀔 일이 없다
                 break;
             case 2026:
                 SynchronizedOutput = on;
@@ -1087,6 +1292,9 @@ public sealed class TerminalBuffer
             1006 => SgrMouse,
             2004 => BracketedPaste,
             2026 => SynchronizedOutput,
+            12 => CursorBlink,
+            66 => ApplicationKeypad,
+            2031 => ColorSchemeReports,
             _ => null
         };
         _responses.Append($"\x1b[?{mode};{(state is null ? 0 : state.Value ? 1 : 2)}$y");
@@ -1254,15 +1462,28 @@ public sealed class TerminalBuffer
     private void StatusReport()
     {
         var mode = P0(0);
-        if (mode == 5)
+        if (mode == 5 && _prefix == '\0')
         {
             _responses.Append("\x1b[0n");
         }
-        else if (mode == 6)
+        else if (mode == 6 && _prefix is '\0' or '?')
         {
             var row = _originMode ? _y - _top + 1 : _y + 1;
-            _responses.Append(_prefix == '?' ? "\x1b[?" : "\x1b[").Append(row).Append(';')
-                .Append(Math.Min(_x, Columns - 1) + 1).Append('R');
+            var col = Math.Min(_x, Columns - 1) + 1;
+            _responses.Append(_prefix == '?' ? $"\x1b[?{row};{col};1R" : $"\x1b[{row};{col}R"); // DECXCPR 은 쪽 번호까지
+        }
+        else if (_prefix == '?')
+        {
+            // 색 테마(?996 → 997;1 어두움) · 프린터 없음(?15) · 사용자 키 잠김 없음(?25) · 키보드 종류(?26)
+            var reply = mode switch
+            {
+                996 => "\x1b[?997;1n",
+                15 => "\x1b[?13n",
+                25 => "\x1b[?21n",
+                26 => "\x1b[?27;1;0;0n",
+                _ => null
+            };
+            if (reply is not null) _responses.Append(reply);
         }
     }
 
@@ -1296,9 +1517,11 @@ public sealed class TerminalBuffer
         _autoWrap = true;
         _insertMode = false;
         ApplicationCursorKeys = false;
+        ApplicationKeypad = false;
+        _pendingWrap = false;
         _top = 0;
         _bottom = Rows - 1;
-        _g[0] = _g[1] = false;
+        Array.Fill(_g, false);
         _gl = 0;
         ResetStyle();
         _savedMain = _savedAlt = default;
@@ -1308,6 +1531,8 @@ public sealed class TerminalBuffer
     {
         SoftReset();
         SynchronizedOutput = false;
+        CursorBlink = false;
+        ColorSchemeReports = false;
         if (IsAlternateScreen) SwitchScreen(false, false);
         foreach (var line in _main) line.Reset(TerminalColor.Default);
         _x = _y = 0;
