@@ -86,6 +86,11 @@ public class RfbClientTests
         _ = DrainAsync(pair.Server); // 클라이언트 요청(FramebufferUpdateRequest 등)은 읽어 버린다
         await pair.Server.GetStream().WriteAsync(message);
         await updated.Task.WaitAsync(Timeout);
+        // 한 메시지에 영역 여럿·커서·포인터·LED 가 함께 온다 — 첫 화면 알림은 첫 영역 뒤일 수 있으니 다 풀릴 때까지 기다린다
+        var deadline = DateTime.UtcNow + Timeout;
+        while (DateTime.UtcNow < deadline &&
+               !(client.Framebuffer.AsSpan().SequenceEqual(expected) && cursor is not null && pointer is not null && leds is not null))
+            await Task.Delay(10);
 
         Assert.Equal(expected, client.Framebuffer);
         Assert.NotEmpty(dirty);
