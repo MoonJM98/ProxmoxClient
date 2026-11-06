@@ -52,11 +52,14 @@ public sealed class TerminalView : Grid
     private double _pinchFont;
     private int _mouseButton = -1;
 
+    // 바탕(OSC 11·화면 반전을 따른다)
+    private readonly SolidColorBrush _background = new(Color.FromUInt32(0xFF000000 | TerminalRenderer.DefaultBackground));
+
     public TerminalView(double fontSize = 14)
     {
         Buffer = new TerminalBuffer(80, 24);
         _renderer = new TerminalRenderer(fontSize);
-        Background = new SolidColorBrush(Color.FromUInt32(0xFF000000 | TerminalRenderer.DefaultBackground));
+        Background = _background;
         ClipToBounds = true;
         Focusable = false;
 
@@ -150,8 +153,19 @@ public sealed class TerminalView : Grid
             if (Buffer.IsAlternateScreen) ScrollOffset = 0;
         }
 
+        UpdateBackground();
         PlaceInput();
         _surface.InvalidateVisual();
+    }
+
+    /// <summary>바탕 붓을 지금 기본 바탕색(OSC 11·화면 반전)에 맞춘다 — 칸 격자 밖 여백도 같은 색으로.</summary>
+    private void UpdateBackground()
+    {
+        uint rgb;
+        lock (Buffer.Gate)
+            rgb = Buffer.ReverseVideo ? Buffer.DefaultForeground : Buffer.DefaultBackground;
+        var color = Color.FromUInt32(0xFF000000 | rgb);
+        if (_background.Color != color) _background.Color = color;
     }
 
     // ------------------------------------------------------------ 크기
@@ -234,6 +248,7 @@ public sealed class TerminalView : Grid
             TerminalAssist.CommandFrom(TerminalAssist.CursorLine(Buffer).Text + text[..^1]) is { Length: > 0 } command)
             LineSubmitted?.Invoke(command);
         Input?.Invoke(text);
+        RestartBlink();
         _surface.InvalidateVisual();
     }
 
@@ -832,7 +847,7 @@ public sealed class TerminalView : Grid
         context.DrawRectangle(r.Brush(0x000000, 0x80), null, frame.Translate(new Vector(0, 2)).Inflate(1), 10, 10);
         using (context.PushClip(new RoundedRect(frame, 10)))
         {
-            context.FillRectangle(r.Brush(TerminalRenderer.DefaultBackground), frame);
+            context.FillRectangle(r.Brush(r.ScreenBackground), frame);
             var matrix = Matrix.CreateTranslation(-focus.X, -focus.Y) * Matrix.CreateScale(zoom, zoom) *
                          Matrix.CreateTranslation(frame.Center.X, frame.Center.Y);
             using (context.PushTransform(matrix))
@@ -866,10 +881,12 @@ public sealed class TerminalView : Grid
         FramesDrawn++;
         var r = _renderer;
         var bounds = _surface.Bounds;
-        context.FillRectangle(r.Brush(TerminalRenderer.DefaultBackground), new Rect(bounds.Size));
 
         lock (Buffer.Gate)
         {
+            r.BeginFrame(Buffer);
+            r.BlinkOff = !_blinkOn;
+            context.FillRectangle(r.Brush(r.ScreenBackground), new Rect(bounds.Size));
             var rows = Buffer.Rows;
             var columns = Buffer.Columns;
             var offset = Math.Min(ScrollOffset, Buffer.ScrollbackCount);
@@ -883,9 +900,56 @@ public sealed class TerminalView : Grid
             if (offset == 0) DrawCursor(context);
             DrawHandles(context);
             DrawLoupe(context, offset);
+            UpdateBlinkTimer(r.DrewBlink || offset == 0 && CursorBlinks);
         }
 
         if (ScrollOffset > 0) DrawScrollIndicator(context);
+    }
+
+    // ------------------------------------------------------------ 깜박임
+
+    /// <summary>깜박임 주기 — xterm·VTE 와 같은 값.</summary>
+    private const int BlinkMs = 530;
+
+    private DispatcherTimer? _blinkTimer;
+    private bool _blinkOn = true;
+
+    /// <summary>DECSCUSR 홀수(1 블록·3 밑줄·5 막대)는 깜박이는 커서 — 기본(0)은 깜박이지 않는다.</summary>
+    private bool CursorBlinks => Buffer.CursorStyle is 1 or 3 or 5 && Buffer.CursorVisible && _input.IsFocused;
+
+    /// <summary>깜박일 것(깜박이는 글자·커서)이 화면에 있을 때만 시계를 돌린다.</summary>
+    private void UpdateBlinkTimer(bool needed)
+    {
+        if (needed)
+        {
+            if (_blinkTimer is null)
+            {
+                _blinkTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(BlinkMs) };
+                _blinkTimer.Tick += (_, _) =>
+                {
+                    _blinkOn = !_blinkOn;
+                    _surface.InvalidateVisual();
+                };
+            }
+
+            if (!_blinkTimer.IsEnabled) _blinkTimer.Start();
+            return;
+        }
+
+        if (_blinkTimer is not { IsEnabled: true }) return;
+
+        _blinkTimer.Stop();
+        _blinkOn = true;
+    }
+
+    /// <summary>입력하면 깜박임을 켜진 때부터 다시 — 치는 동안 커서가 사라져 보이지 않게.</summary>
+    private void RestartBlink()
+    {
+        _blinkOn = true;
+        if (_blinkTimer is not { IsEnabled: true }) return;
+
+        _blinkTimer.Stop();
+        _blinkTimer.Start();
     }
 
     private void DrawSelection(DrawingContext context, int offset)
@@ -919,7 +983,7 @@ public sealed class TerminalView : Grid
         var width = Math.Max((int)cell.Width, 1);
         var span = Math.Round(r.CellWidth * width);
         var (fg, bg, _) = r.Colors(cell);
-        var cursorColor = fg == bg ? TerminalRenderer.DefaultForeground : fg;
+        var cursorColor = Buffer.CursorColor ?? (fg == bg ? r.ScreenForeground : fg);
 
         // 조합 중 글자(한글 IME)를 커서 자리에 밑줄과 함께
         if (!string.IsNullOrEmpty(_preedit))
@@ -939,6 +1003,7 @@ public sealed class TerminalView : Grid
         }
 
         if (!Buffer.CursorVisible) return;
+        if (CursorBlinks && !_blinkOn) return;
 
         var brush = r.Brush(cursorColor);
         if (!_input.IsFocused)
@@ -960,7 +1025,8 @@ public sealed class TerminalView : Grid
 
         context.FillRectangle(brush, new Rect(origin.X, origin.Y, span, r.CellHeight));
         if (cell.Rune is not (0 or ' ') && cell.Width > 0)
-            r.DrawSingle(context, cell.Rune, width, cell.Flags.HasFlag(CellFlags.Bold), r.Brush(bg), origin);
+            r.DrawSingle(context, cell.Rune, width, cell.Flags.HasFlag(CellFlags.Bold), r.Brush(bg), origin,
+                cell.Flags.HasFlag(CellFlags.Italic));
     }
 
     /// <summary>스크롤백을 보는 중 — 오른쪽에 위치 막대.</summary>

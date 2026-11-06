@@ -124,6 +124,30 @@ public sealed partial class TerminalBuffer
     /// <summary>창 제목(OSC 0·2).</summary>
     public string? Title { get; private set; }
 
+    // ------------------------------------------------------------ 색(OSC 4/10/11/12 로 바뀐다)
+
+    private readonly uint[] _palette = (uint[])TerminalColor.DefaultPalette.Clone();
+    private readonly uint[] _underlineColors = new uint[256];
+    private readonly Dictionary<uint, int> _underlineSlots = [];
+
+    /// <summary>팔레트 색(0~255) — 0xRRGGBB.</summary>
+    public uint PaletteColor(int index) => _palette[index & 0xFF];
+
+    /// <summary>기본 글자색(OSC 10).</summary>
+    public uint DefaultForeground { get; private set; } = TerminalColor.DefaultForegroundRgb;
+
+    /// <summary>기본 바탕색(OSC 11).</summary>
+    public uint DefaultBackground { get; private set; } = TerminalColor.DefaultBackgroundRgb;
+
+    /// <summary>커서 색(OSC 12) — null 이면 글자색.</summary>
+    public uint? CursorColor { get; private set; }
+
+    /// <summary>화면 반전(DECSCNM, ?5) — 기본 글자색과 바탕색을 맞바꿔 그린다.</summary>
+    public bool ReverseVideo { get; private set; }
+
+    /// <summary>칸의 밑줄 색(SGR 58) — <see cref="TerminalColor" /> 부호, 정하지 않았으면 Default(글자색).</summary>
+    public uint UnderlineColor(in TerminalCell cell) => _underlineColors[cell.UnderlineColorSlot];
+
     private Line[] Screen => IsAlternateScreen ? _alt : _main;
 
     /// <summary>
@@ -578,18 +602,131 @@ public sealed partial class TerminalBuffer
         _state = State.Ground;
         var text = _osc.ToString();
         var sep = text.IndexOf(';');
+        var code = sep < 0 ? text : text[..sep];
+        if (ColorOsc(code, sep < 0 ? "" : text[(sep + 1)..], bel)) return;
         if (sep <= 0) return;
 
-        var code = text[..sep];
         if (code is "0" or "2") Title = text[(sep + 1)..];
         if (code == "52") ClipboardOsc(text[(sep + 1)..]);
-        // 글자색·바탕색 질의(OSC 10/11 ;?) — systemd·vim·Claude Code 가 밝은/어두운 바탕을 고를 때 묻는다. 묻은 끝맺음으로 답한다
-        if (code is "10" or "11" && text[(sep + 1)..] == "?")
+    }
+
+    /// <summary>
+    ///     색 OSC — 4(팔레트)·10/11/12(글자·바탕·커서 색) 바꾸기와 질의(?), 104·110/111/112 되돌리기.
+    ///     질의에는 물은 끝맺음(BEL·ST)으로 답한다(systemd·vim·Claude Code 가 밝은/어두운 바탕을 고를 때 묻는다).
+    /// </summary>
+    private bool ColorOsc(string code, string value, bool bel)
+    {
+        var end = bel ? "\x07" : "\x1b\\";
+        switch (code)
         {
-            var rgb = code == "10" ? TerminalRenderer.DefaultForeground : TerminalRenderer.DefaultBackground;
-            string Channel(int shift) => $"{(rgb >> shift) & 0xFF:x2}{(rgb >> shift) & 0xFF:x2}";
-            _responses.Append($"\x1b]{code};rgb:{Channel(16)}/{Channel(8)}/{Channel(0)}{(bel ? "\x07" : "\x1b\\")}");
+            case "4":
+            {
+                var parts = value.Split(';');
+                for (var i = 0; i + 1 < parts.Length; i += 2)
+                {
+                    if (!int.TryParse(parts[i], out var index) || index is < 0 or > 255) continue;
+
+                    if (parts[i + 1] == "?") _responses.Append($"\x1b]4;{index};{ColorSpec(_palette[index])}{end}");
+                    else if (ParseColor(parts[i + 1]) is { } rgb) _palette[index] = rgb;
+                }
+
+                return true;
+            }
+            case "10" or "11" or "12":
+            {
+                // OSC 10;글자;바탕;커서 처럼 이어서 줄 수도 있다
+                var number = code[1] - '0';
+                foreach (var part in value.Split(';'))
+                {
+                    if (number > 2) break;
+
+                    if (part == "?")
+                    {
+                        var rgb = number switch
+                        {
+                            0 => DefaultForeground, 1 => DefaultBackground, _ => CursorColor ?? DefaultForeground
+                        };
+                        _responses.Append($"\x1b]1{number};{ColorSpec(rgb)}{end}");
+                    }
+                    else if (ParseColor(part) is { } rgb)
+                    {
+                        if (number == 0) DefaultForeground = rgb;
+                        else if (number == 1) DefaultBackground = rgb;
+                        else CursorColor = rgb;
+                    }
+
+                    number++;
+                }
+
+                return true;
+            }
+            case "104":
+                if (value.Length == 0) Array.Copy(TerminalColor.DefaultPalette, _palette, 256);
+                foreach (var part in value.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                    if (int.TryParse(part, out var index) && index is >= 0 and <= 255)
+                        _palette[index] = TerminalColor.DefaultPalette[index];
+                return true;
+            case "110":
+                DefaultForeground = TerminalColor.DefaultForegroundRgb;
+                return true;
+            case "111":
+                DefaultBackground = TerminalColor.DefaultBackgroundRgb;
+                return true;
+            case "112":
+                CursorColor = null;
+                return true;
         }
+
+        return false;
+    }
+
+    /// <summary>색 → xterm 질의 응답 형식(rgb:rrrr/gggg/bbbb).</summary>
+    private static string ColorSpec(uint rgb)
+    {
+        string Channel(int shift) => $"{(rgb >> shift) & 0xFF:x2}{(rgb >> shift) & 0xFF:x2}";
+        return $"rgb:{Channel(16)}/{Channel(8)}/{Channel(0)}";
+    }
+
+    /// <summary>xterm 색 지정 — rgb:r/g/b(칸마다 16진 1~4자리), #rgb·#rrggbb·#rrrgggbbb·#rrrrggggbbbb. 모르면 null.</summary>
+    public static uint? ParseColor(string spec)
+    {
+        spec = spec.Trim();
+        if (spec.StartsWith("rgb:", StringComparison.OrdinalIgnoreCase))
+        {
+            var parts = spec[4..].Split('/');
+            if (parts.Length != 3) return null;
+
+            uint rgb = 0;
+            foreach (var part in parts)
+            {
+                if (part.Length is < 1 or > 4 ||
+                    !uint.TryParse(part, System.Globalization.NumberStyles.HexNumber, null, out var v))
+                    return null;
+
+                var max = (1u << (part.Length * 4)) - 1;
+                rgb = rgb << 8 | (uint)Math.Round(v * 255.0 / max);
+            }
+
+            return rgb;
+        }
+
+        if (spec.Length > 1 && spec[0] == '#' && (spec.Length - 1) % 3 == 0 && spec.Length <= 13)
+        {
+            var n = (spec.Length - 1) / 3;
+            uint rgb = 0;
+            for (var i = 0; i < 3; i++)
+            {
+                if (!uint.TryParse(spec.AsSpan(1 + i * n, n), System.Globalization.NumberStyles.HexNumber, null,
+                        out var v))
+                    return null;
+
+                rgb = rgb << 8 | (n == 1 ? v * 17 : v >> (n * 4 - 8)); // #rgb 는 f → ff, 긴 형식은 윗자리 8비트
+            }
+
+            return rgb;
+        }
+
+        return null;
     }
 
     /// <summary>DA1 답 — VT220 급(62) · ANSI 색(22). 그림(sixel 4)·클립보드 읽기는 알리지 않는다.</summary>
@@ -1292,6 +1429,9 @@ public sealed partial class TerminalBuffer
             case 7:
                 _autoWrap = on;
                 break;
+            case 5:
+                ReverseVideo = on;
+                break;
             case 25:
                 CursorVisible = on;
                 break;
@@ -1370,6 +1510,7 @@ public sealed partial class TerminalBuffer
         bool? state = mode switch
         {
             1 => ApplicationCursorKeys,
+            5 => ReverseVideo,
             6 => _originMode,
             7 => _autoWrap,
             25 => CursorVisible,
@@ -1425,9 +1566,9 @@ public sealed partial class TerminalBuffer
                     _flags |= CellFlags.Italic;
                     break;
                 case 4:
-                    // 4:0 은 밑줄 끄기, 4:n 은 밑줄 모양 — 모양은 하나로 그린다
-                    var off = i + 1 < _paramCount && _subParam[i + 1] && _params[i + 1] == 0;
-                    _flags = off ? _flags & ~CellFlags.Underline : _flags | CellFlags.Underline;
+                    // 4:0 끄기 · 4:1 한 줄 · 4:2 두 줄 · 4:3 물결 · 4:4 점 · 4:5 끊은 줄
+                    var style = i + 1 < _paramCount && _subParam[i + 1] ? Math.Max(0, _params[i + 1]) : 1;
+                    SetUnderline(style <= 5 ? (UnderlineStyle)style : UnderlineStyle.Single);
                     while (i + 1 < _paramCount && _subParam[i + 1]) i++;
                     break;
                 case 5:
@@ -1444,7 +1585,7 @@ public sealed partial class TerminalBuffer
                     _flags |= CellFlags.Strike;
                     break;
                 case 21:
-                    _flags |= CellFlags.Underline;
+                    SetUnderline(UnderlineStyle.Double);
                     break;
                 case 22:
                     _flags &= ~(CellFlags.Bold | CellFlags.Faint);
@@ -1453,7 +1594,7 @@ public sealed partial class TerminalBuffer
                     _flags &= ~CellFlags.Italic;
                     break;
                 case 24:
-                    _flags &= ~CellFlags.Underline;
+                    SetUnderline(UnderlineStyle.None);
                     break;
                 case 25:
                     _flags &= ~CellFlags.Blink;
@@ -1469,12 +1610,15 @@ public sealed partial class TerminalBuffer
                     break;
                 case >= 30 and <= 37:
                     _fg = TerminalColor.Indexed(p - 30);
+                    _flags |= CellFlags.BasicColor;
                     break;
                 case 38:
                     _fg = ExtendedColor(ref i, _fg);
+                    _flags &= ~CellFlags.BasicColor;
                     break;
                 case 39:
                     _fg = TerminalColor.Default;
+                    _flags &= ~CellFlags.BasicColor;
                     break;
                 case >= 40 and <= 47:
                     _bg = TerminalColor.Indexed(p - 40);
@@ -1485,17 +1629,52 @@ public sealed partial class TerminalBuffer
                 case 49:
                     _bg = TerminalColor.Default;
                     break;
+                case 53:
+                    _flags |= CellFlags.Overline;
+                    break;
+                case 55:
+                    _flags &= ~CellFlags.Overline;
+                    break;
                 case 58:
-                    ExtendedColor(ref i, 0); // 밑줄 색 — 읽고 버린다
+                    SetUnderlineColor(ExtendedColor(ref i, TerminalColor.Default));
+                    break;
+                case 59:
+                    SetUnderlineColor(TerminalColor.Default);
                     break;
                 case >= 90 and <= 97:
                     _fg = TerminalColor.Indexed(p - 90 + 8);
+                    _flags &= ~CellFlags.BasicColor;
                     break;
                 case >= 100 and <= 107:
                     _bg = TerminalColor.Indexed(p - 100 + 8);
                     break;
             }
         }
+    }
+
+    private void SetUnderline(UnderlineStyle style)
+    {
+        _flags &= ~(CellFlags.Underline | CellFlags.UnderlineStyleMask);
+        if (style != UnderlineStyle.None)
+            _flags |= CellFlags.Underline | (CellFlags)((uint)(style - 1) << 8);
+    }
+
+    /// <summary>
+    ///     밑줄 색 — 칸에는 색 대신 표의 칸 번호(1~255)를 꾸밈 비트 위 8비트에 넣는다(칸 크기를 늘리지 않게). 표가 차면
+    ///     처음부터 다시 쓴다(오래된 칸의 밑줄 색이 바뀔 수 있다 — 서로 다른 밑줄 색이 255개를 넘는 일은 드물다).
+    /// </summary>
+    private void SetUnderlineColor(uint color)
+    {
+        var slot = 0;
+        if (color != TerminalColor.Default && !_underlineSlots.TryGetValue(color, out slot))
+        {
+            if (_underlineSlots.Count >= 255) _underlineSlots.Clear();
+            slot = _underlineSlots.Count + 1;
+            _underlineSlots[color] = slot;
+            _underlineColors[slot] = color;
+        }
+
+        _flags = (_flags & ~CellFlags.UnderlineColorMask) | (CellFlags)((uint)slot << 24);
     }
 
     /// <summary>38/48 뒤의 5;n · 2;r;g;b (쌍점 형식 38:2::r:g:b·38:2:r:g:b 포함).</summary>
@@ -1621,6 +1800,11 @@ public sealed partial class TerminalBuffer
         SynchronizedOutput = false;
         CursorBlink = false;
         ColorSchemeReports = false;
+        ReverseVideo = false;
+        Array.Copy(TerminalColor.DefaultPalette, _palette, 256);
+        DefaultForeground = TerminalColor.DefaultForegroundRgb;
+        DefaultBackground = TerminalColor.DefaultBackgroundRgb;
+        CursorColor = null;
         if (IsAlternateScreen) SwitchScreen(false, false);
         foreach (var line in _main) line.Reset(TerminalColor.Default);
         _x = _y = 0;
