@@ -16,6 +16,13 @@ public class MainApplication : AvaloniaAndroidApplication<App>
 
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
+        // 앱 기록(처리하지 못한 예외)은 앱 전용 폴더에 — 설정 > 일반 > 진단에서 보거나 저장한다
+        ProxmoxClient.UI.Platform.AppLog.Directory = Path.Combine(FilesDir!.AbsolutePath, "logs");
+        ProxmoxClient.UI.Platform.SessionKeepAlive.StatePath = Path.Combine(FilesDir!.AbsolutePath, "open-terminals.txt");
+        ProxmoxClient.UI.Platform.AppLog.InstallGlobalHandlers();
+        // Java 쪽으로 넘어간 .NET 예외(앱이 죽는다) — 기록만 하고 그대로 죽게 둔다
+        Android.Runtime.AndroidEnvironment.UnhandledExceptionRaiser += (_, e) =>
+            ProxmoxClient.UI.Platform.AppLog.Error("Android (fatal)", e.Exception);
         // 비밀번호·토큰은 Android 키스토어 키로 암호화해 앱 전용 저장소에 둔다
         // 짧은 변이 600dp 이상(7인치 이상 태블릿)이면 PC 와 같은 배치, 아니면 휴대폰 배치
         ProxmoxClient.UI.Platform.PlatformInfo.FormFactor =
@@ -27,6 +34,8 @@ public class MainApplication : AvaloniaAndroidApplication<App>
         ProxmoxClient.UI.Platform.SpiceLaunchers.Current = new AndroidSpiceLauncher(this);
         // 터미널 연결 유지 — 연결된 동안 포그라운드 서비스(알림)로 앱을 살려 두어 배경에서도 세션이 끊기지 않게
         ProxmoxClient.UI.Platform.SessionKeepAlive.Host = new AndroidSessionKeepAliveHost(this);
+        // 설정의 "화면 보호" — 액티비티 창에 FLAG_SECURE
+        ProxmoxClient.UI.Platform.ScreenSecurity.Host = new AndroidScreenSecurityHost();
         AppServices.ProfilesDirectory = Path.Combine(FilesDir!.AbsolutePath, "profiles");
         return base.CustomizeAppBuilder(builder)
             .UseAppFonts()

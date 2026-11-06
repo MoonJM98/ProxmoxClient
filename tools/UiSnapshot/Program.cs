@@ -55,6 +55,33 @@ Pump(600);
 var nav = window.GetVisualDescendants().OfType<NavigationPage>().First();
 var shot = 0;
 
+// 셸 다시 붙이기(Android 액티비티를 다시 만들 때) — 같은 셸을 새 창에 옮겨도 페이지 스택이 그대로이고
+// 대화상자 입력 칸 포커스(구독)가 새 창에서 한 번만 동작하며, 원래 창으로 돌아와도 같아야 한다
+{
+    var reShell = window.GetVisualDescendants().OfType<AppShell>().First();
+    var pageBefore = nav.CurrentPage;
+    window.Content = null;
+    Pump(100);
+    var other = new Window { Width = window.Width, Height = window.Height, Content = reShell };
+    other.Show();
+    Pump(400);
+    var samePage = ReferenceEquals(nav.CurrentPage, pageBefore);
+    var shown = ReferenceEquals(TopLevel.GetTopLevel(nav), other); // 페이지 스택이 새 창에 실제로 붙었다(빈 화면이 아니다)
+    var prompt = AppServices.Dialogs.PromptAsync("t", "m");
+    Pump(300);
+    var focused = other.FocusManager?.GetFocusedElement() is TextBox { Name: "DialogInput" };
+    AppServices.Dialogs.Current?.CancelCommand.Execute(null);
+    await Wait(prompt);
+    other.Content = null;
+    other.Close();
+    window.Content = reShell;
+    Pump(400);
+    var back = ReferenceEquals(nav.CurrentPage, pageBefore) && ReferenceEquals(TopLevel.GetTopLevel(nav), window);
+    var ok = samePage && shown && focused && back;
+    Console.WriteLine($"| 셸 다시 붙이기 | 페이지 유지·보임·입력 포커스·원래 창 복귀 | {samePage}/{shown}/{focused}/{back} | {(ok ? "통과" : "실패")} |");
+    if (!ok) failures++;
+}
+
 // 로그인(프로필 저장 → 연결 → 인증서 신뢰)
 // --vpn x.ovpn: 로그인 전에 실제 OpenVPN 터널을 연다(--host 는 터널 너머 주소)
 var vpnConfig = options.GetValueOrDefault("vpn");

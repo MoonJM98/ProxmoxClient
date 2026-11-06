@@ -43,9 +43,17 @@ internal sealed class KeystoreSecretStore(Context context) : ISecretStore
                 var plain = cipher.DoFinal(data, IvLength, data.Length - IvLength)!;
                 return System.Text.Encoding.UTF8.GetString(plain);
             }
-            catch (Exception)
+            catch (Exception ex) when (IsPermanentFailure(ex))
             {
+                // 키가 사라졌거나(앱 데이터 이전·잠금 방식 변경) 값이 깨졌다 — 다시는 풀 수 없으니 지우고 다시 묻는다
+                AppLog.Warn($"secret '{key}' could not be decrypted and was removed: {ex.GetType().Name}");
                 Remove(key);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                // 일시적 실패(키스토어 바쁨 등) — 저장값은 그대로 두고 이번만 없는 것으로
+                AppLog.Warn($"secret '{key}' could not be read: {ex.GetType().Name}: {ex.Message}");
                 return null;
             }
         }
@@ -72,6 +80,13 @@ internal sealed class KeystoreSecretStore(Context context) : ISecretStore
         {
             _prefs.Edit()!.Remove(key)!.Apply();
         }
+    }
+
+    /// <summary>다시 시도해도 풀 수 없는 실패 — 인증 태그 불일치(값 손상·다른 키), 키 영구 무효화, 키 복구 불가, 잘못된 저장 형식.</summary>
+    private static bool IsPermanentFailure(Exception ex)
+    {
+        return ex is AEADBadTagException or KeyPermanentlyInvalidatedException or UnrecoverableKeyException
+            or FormatException or ArgumentOutOfRangeException or Java.Lang.IllegalArgumentException;
     }
 
     private static IKey GetOrCreateKey()

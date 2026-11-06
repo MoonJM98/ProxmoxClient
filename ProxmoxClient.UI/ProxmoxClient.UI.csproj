@@ -14,7 +14,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <AvaloniaResource Include="Assets\**" />
+        <!-- 글꼴 라이선스 글(*.txt)은 실행 중에 쓰지 않는다 — 저장소(Assets 폴더)에만 두고 앱에는 넣지 않는다(THIRD-PARTY-NOTICES 참조) -->
+        <AvaloniaResource Include="Assets\**" Exclude="Assets\**\*.txt" />
     </ItemGroup>
 
     <ItemGroup>

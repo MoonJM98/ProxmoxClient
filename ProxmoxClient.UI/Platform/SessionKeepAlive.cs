@@ -62,6 +62,56 @@ public static class SessionKeepAlive
 
     private static void Notify()
     {
-        Host?.Update(Order.Select(owner => Sessions[owner]).ToList());
+        var titles = Order.Select(owner => Sessions[owner]).ToList();
+        Host?.Update(titles);
+        Persist(titles);
+    }
+
+    /// <summary>
+    ///     열린 터미널 제목을 남겨 두는 파일 — 휴대폰·태블릿에서 앱이 터미널을 연 채로 죽으면(최근 앱에서 밀어 닫기,
+    ///     메모리 부족 등) 다음 실행 때 무엇이 끊겼는지 알린다. 정상적으로 닫으면 지워진다.
+    /// </summary>
+    public static string StatePath { get; set; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ProxmoxClient", "open-terminals.txt");
+
+    /// <summary>
+    ///     지난 실행에서 열려 있던 터미널 제목(앱이 그대로 죽었을 때만 남는다). 읽고 나면 지운다.
+    ///     데스크톱은 창을 닫아 끝내는 것이 정상 종료라 남기지 않는다.
+    /// </summary>
+    public static IReadOnlyList<string> TakeOrphanedSessions()
+    {
+        try
+        {
+            if (!File.Exists(StatePath)) return [];
+
+            var titles = File.ReadAllLines(StatePath).Where(line => line.Length > 0).ToList();
+            File.Delete(StatePath);
+            return titles;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
+
+    private static void Persist(IReadOnlyList<string> titles)
+    {
+        if (!PlatformInfo.IsTouch) return;
+
+        try
+        {
+            if (titles.Count == 0)
+            {
+                if (File.Exists(StatePath)) File.Delete(StatePath);
+                return;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(StatePath)!);
+            File.WriteAllLines(StatePath, titles.Select(title => title.ReplaceLineEndings(" ")));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AppLog.Warn($"open terminal list not saved: {ex.Message}");
+        }
     }
 }

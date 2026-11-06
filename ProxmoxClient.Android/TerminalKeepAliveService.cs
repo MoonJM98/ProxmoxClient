@@ -24,8 +24,21 @@ internal sealed class TerminalKeepAliveService : Service
     private const string ActionDisconnect = "io.github.moonjm98.proxmoxclient.action.DISCONNECT_TERMINALS";
     private const string ExtraText = "text";
 
-    /// <summary>서비스가 떠 있다 — 알림만 바꿀 때 서비스를 다시 시작하지 않는다(배경에서는 시작이 막힌다).</summary>
+    /// <summary>
+    ///     서비스가 포그라운드로 떠 있다(StartForeground 를 마쳤다) — 알림만 바꿀 때 서비스를 다시 시작하지 않는다
+    ///     (배경에서는 시작이 막힌다). 이때만 StopService 로 멈춰도 된다.
+    /// </summary>
     public static bool IsRunning { get; private set; }
+
+    /// <summary>
+    ///     StartForegroundService 를 불렀지만 아직 OnStartCommand 가 오지 않았다. 이 사이에 StopService 하면
+    ///     "startForeground 를 부르지 않았다"로 앱이 죽는다 — 멈춤은 <see cref="DesiredText" /> 를 비워 두는 것으로 알리고,
+    ///     서비스가 시작하자마자 StartForeground 를 부른 뒤 스스로 멈춘다.
+    /// </summary>
+    public static bool StartPending { get; set; }
+
+    /// <summary>지금 보여야 할 알림 문구 — null 이면 세션이 없다(서비스는 멈춰야 한다). UI(메인) 스레드에서만 바꾼다.</summary>
+    public static string? DesiredText { get; set; }
 
     public override IBinder? OnBind(Intent? intent)
     {
@@ -40,11 +53,24 @@ internal sealed class TerminalKeepAliveService : Service
             return StartCommandResult.NotSticky;
         }
 
-        var notification = Build(this, intent?.GetStringExtra(ExtraText) ?? string.Empty);
+        // StartForegroundService 로 시작했으면 무슨 일이 있어도 먼저 StartForeground 를 불러야 한다
+        StartPending = false;
+        var text = DesiredText;
+        var notification = Build(this, text ?? intent?.GetStringExtra(ExtraText) ?? string.Empty);
         if (OperatingSystem.IsAndroidVersionAtLeast(34))
             StartForeground(NotificationId, notification, ForegroundService.TypeSpecialUse);
         else
             StartForeground(NotificationId, notification);
+
+        if (text is null)
+        {
+            // 시작을 기다리는 사이 터미널이 모두 끊겼다 — 바로 내려간다
+            IsRunning = false;
+            StopForegroundCompat();
+            StopSelf(startId);
+            return StartCommandResult.NotSticky;
+        }
+
         IsRunning = true;
         return StartCommandResult.NotSticky; // 앱이 죽으면 세션도 없다 — 다시 띄우지 않는다
     }
@@ -52,7 +78,18 @@ internal sealed class TerminalKeepAliveService : Service
     public override void OnDestroy()
     {
         IsRunning = false;
+        StartPending = false;
         base.OnDestroy();
+    }
+
+    private void StopForegroundCompat()
+    {
+        if (OperatingSystem.IsAndroidVersionAtLeast(24))
+            StopForeground(StopForegroundFlags.Remove);
+        else
+#pragma warning disable CA1422
+            StopForeground(true);
+#pragma warning restore CA1422
     }
 
     /// <summary>알림 문구 바꾸기(서비스가 떠 있을 때).</summary>
@@ -115,31 +152,44 @@ internal sealed class TerminalKeepAliveService : Service
 internal sealed class AndroidSessionKeepAliveHost(Context context) : ISessionKeepAliveHost
 {
     private bool _askedPermission;
+    private long _startRequestedAt;
 
     public void Update(IReadOnlyList<string> titles)
     {
         if (titles.Count == 0)
         {
-            context.StopService(new Intent(context, typeof(TerminalKeepAliveService)));
+            TerminalKeepAliveService.DesiredText = null;
+            // 시작 대기 중이면 멈추지 않는다 — 서비스가 시작하면 StartForeground 뒤 스스로 멈춘다(바로 멈추면 앱이 죽는다)
+            if (TerminalKeepAliveService.IsRunning)
+                context.StopService(new Intent(context, typeof(TerminalKeepAliveService)));
             return;
         }
 
         var text = titles.Count == 1 ? titles[0] : L.T("KeepAlive_Many", titles.Count, string.Join(", ", titles));
+        TerminalKeepAliveService.DesiredText = text;
         if (TerminalKeepAliveService.IsRunning)
         {
             TerminalKeepAliveService.UpdateText(context, text);
             return;
         }
 
+        // 시작하면 DesiredText 로 알림을 띄운다. 시작이 오래(10초) 오지 않으면 다시 시도한다
+        if (TerminalKeepAliveService.StartPending &&
+            global::Android.OS.SystemClock.UptimeMillis() - _startRequestedAt < 10_000) return;
+
         AskNotificationPermission();
         try
         {
+            TerminalKeepAliveService.StartPending = true;
+            _startRequestedAt = global::Android.OS.SystemClock.UptimeMillis();
             ContextCompat.StartForegroundService(context, TerminalKeepAliveService.StartIntent(context, text));
         }
         catch (Exception ex) when (ex is Java.Lang.IllegalStateException or Java.Lang.SecurityException)
         {
             // 배경에서 막혔다(Android 12 이상) — 이번에는 붙잡지 못한다. 연결은 그대로 두고 다음 연결 때 다시 시도
+            TerminalKeepAliveService.StartPending = false;
             Android.Util.Log.Warn("ProxmoxClient", $"keep-alive service not started: {ex.Message}");
+            AppLog.Warn($"keep-alive service not started: {ex.Message}");
         }
     }
 

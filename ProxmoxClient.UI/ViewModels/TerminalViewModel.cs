@@ -94,8 +94,17 @@ public sealed partial class TerminalViewModel : ViewModelBase
         if (!_paused) return;
 
         _paused = false;
+        // 배경에서 연결을 살려 둘 수 없는 플랫폼(iOS) — 새 셸로 다시 연결된다는 것을 한 번만 알린다
+        if (!_backgroundNoticeShown)
+        {
+            _backgroundNoticeShown = true;
+            AppServices.Dialogs.Toast(L.T("Terminal_ReconnectedAfterBackground"));
+        }
+
         await ConnectAsync();
     }
+
+    private static bool _backgroundNoticeShown;
 
     public override void OnDisappearing(bool removed)
     {

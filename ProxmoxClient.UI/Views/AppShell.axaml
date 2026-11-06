@@ -5,12 +5,13 @@
              x:DataType="s:DialogService">
     <!--
         최상위 셸 — 페이지 스택 위에 대화상자·진행 표시·알림을 겹쳐 그린다.
+        가림막(Scrim)은 화면 끝까지 덮고, 그 안의 카드·알림은 상태 표시줄·탐색 막대를 피한다(코드에서 안전 영역만큼 띄운다).
     -->
     <Grid>
         <PageNavigationHost x:Name="Host" />
 
         <!-- 진행 표시(화면 전체 차단) -->
-        <Border Background="{StaticResource ScrimBrush}" IsVisible="{Binding IsBusyVisible}">
+        <Border x:Name="BusyOverlay" Background="{StaticResource ScrimBrush}" IsVisible="{Binding IsBusyVisible}">
             <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="32"
                     Padding="24,20" MaxWidth="360">
                 <StackPanel Spacing="14">
@@ -25,14 +26,14 @@
         </Border>
 
         <!-- 직접 만든 내용의 대화상자(입력 폼 등) -->
-        <Border Background="{StaticResource ScrimBrush}" IsVisible="{Binding IsSheetOpen}">
+        <Border x:Name="SheetOverlay" Background="{StaticResource ScrimBrush}" IsVisible="{Binding IsSheetOpen}">
             <Border Classes="card" VerticalAlignment="Center" Margin="16,24" Padding="0" MaxWidth="560">
                 <ContentControl Content="{Binding Sheet}" />
             </Border>
         </Border>
 
         <!-- 대화상자 -->
-        <Border Background="{StaticResource ScrimBrush}" IsVisible="{Binding IsDialogOpen}">
+        <Border x:Name="DialogOverlay" Background="{StaticResource ScrimBrush}" IsVisible="{Binding IsDialogOpen}">
             <Border Classes="card" VerticalAlignment="Center" Margin="24" Padding="20" MaxWidth="480"
                     DataContext="{Binding Current}" x:DataType="s:DialogRequest">
                 <StackPanel Spacing="14">
@@ -60,7 +61,7 @@
         </Border>
 
         <!-- 알림(잠깐 보였다 사라짐) -->
-        <Border IsVisible="{Binding IsToastVisible}" IsHitTestVisible="False"
+        <Border x:Name="ToastBubble" IsVisible="{Binding IsToastVisible}" IsHitTestVisible="False"
                 VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="24,0,24,48"
                 CornerRadius="20" Padding="18,10" Background="#E6303030">
             <TextBlock Text="{Binding ToastText}" Foreground="White" TextWrapping="Wrap" TextAlignment="Center" />

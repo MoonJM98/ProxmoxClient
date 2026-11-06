@@ -49,6 +49,7 @@ public sealed class AppSettingsPage : UserControl
     private CheckBox _autoRefresh = null!;
     private ComboBox _language = null!;
     private ComboBox _byteUnit = null!;
+    private CheckBox? _secureScreen;
 
     /// <param name="current">지금 저장된 설정.</param>
     /// <param name="saved">저장을 마친 뒤 부를 것(메인 화면이 새 설정을 다시 읽는다). 없어도 된다.</param>
@@ -115,7 +116,75 @@ public sealed class AppSettingsPage : UserControl
         _byteUnit.Width = PlatformInfo.IsDesktop ? 200 : double.NaN;
         panel.Children.Add(HardwareInput.Form(Loc.T("AppSettingsWindow_07"), _byteUnit, Loc.T("AppSettingsWindow_08")));
 
+        // 화면 보호 — 지원하는 플랫폼(Android)에서만
+        if (ScreenSecurity.IsSupported)
+        {
+            panel.Children.Add(Section("Settings_Security"));
+            _secureScreen = new CheckBox
+            {
+                Content = Loc.T("Settings_SecureScreenCheck"), IsChecked = _current.SecureScreen,
+                Margin = new Thickness(0, 6, 0, 0)
+            };
+            panel.Children.Add(HardwareInput.Form(Loc.T("Settings_SecureScreen"), _secureScreen,
+                Loc.T("Settings_SecureScreenHint")));
+        }
+
+        // 진단 — 앱 기록(처리하지 못한 오류) 보기·저장
+        panel.Children.Add(Section("Settings_Diagnostics"));
+        var view = ActionBar.IconButton(Loc.T("Settings_LogView"), "IconFile", this);
+        view.Click += async (_, _) => await ShowLogAsync();
+        var save = ActionBar.IconButton(Loc.T("Settings_LogSave"), "IconSave", this);
+        save.Click += async (_, _) => await SaveLogAsync();
+        var logButtons = new WrapPanel { Orientation = Orientation.Horizontal, ItemSpacing = 8, LineSpacing = 8 };
+        logButtons.Children.Add(view);
+        logButtons.Children.Add(save);
+        panel.Children.Add(HardwareInput.Form(Loc.T("Settings_Log"), logButtons, Loc.T("Settings_LogHint")));
+
         return panel;
+    }
+
+    /// <summary>앱 기록 끝부분을 대화상자로(글은 선택·복사할 수 있다).</summary>
+    private static Task ShowLogAsync()
+    {
+        var text = AppLog.ReadTail(16_000);
+        return AppServices.Dialogs.AlertAsync(Loc.T("Settings_Log"), text.Length == 0 ? Loc.T("Settings_LogEmpty") : text);
+    }
+
+    /// <summary>앱 기록 전체(이전 파일 포함)를 고른 위치에 저장한다 — Android 는 시스템 파일 선택기(다운로드·드라이브 등).</summary>
+    private async Task SaveLogAsync()
+    {
+        var text = AppLog.ReadAll();
+        if (text.Length == 0)
+        {
+            AppServices.Dialogs.Toast(Loc.T("Settings_LogEmpty"));
+            return;
+        }
+
+        if (TopLevel.GetTopLevel(this)?.StorageProvider is not { CanSave: true } provider)
+        {
+            await ClipboardHelper.SetTextAsync(text); // 저장할 수 없으면 클립보드로
+            return;
+        }
+
+        try
+        {
+            var file = await provider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+            {
+                SuggestedFileName = $"proxmoxclient-log-{DateTime.Now:yyyyMMdd-HHmmss}.txt",
+                DefaultExtension = "txt",
+                FileTypeChoices = [Avalonia.Platform.Storage.FilePickerFileTypes.TextPlain]
+            });
+            if (file is null) return;
+
+            await using (var stream = await file.OpenWriteAsync())
+            await using (var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(false)))
+                await writer.WriteAsync(text);
+            AppServices.Dialogs.Toast(Loc.T("Settings_LogSaved"));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AppServices.Dialogs.Toast(Loc.T("Settings_LogSaveFailed", ex.Message));
+        }
     }
 
     private Control BuildConsole()
@@ -161,7 +230,8 @@ public sealed class AppSettingsPage : UserControl
             RefreshIntervalSeconds = seconds,
             AutoRefreshOnStart = _autoRefresh.IsChecked == true,
             ByteUnit = Enum.TryParse<ByteDisplayUnit>(ComboChoices.Selected(_byteUnit), out var unit) ? unit : ByteDisplayUnit.Auto,
-            Language = ComboChoices.Selected(_language) is { Length: > 0 } language ? language : AppSettings.AutoLanguage
+            Language = ComboChoices.Selected(_language) is { Length: > 0 } language ? language : AppSettings.AutoLanguage,
+            SecureScreen = _secureScreen?.IsChecked == true || (_secureScreen is null && _current.SecureScreen)
         }).Normalize();
 
         _save.IsEnabled = false;
@@ -170,6 +240,7 @@ public sealed class AppSettingsPage : UserControl
             await _store.SaveAsync(settings);
             _current = settings;
             ByteFormatter.DisplayUnit = settings.ByteUnit;
+            if (ScreenSecurity.IsSupported) ScreenSecurity.Set(settings.SecureScreen);
             if (_saved is not null) await _saved();
             Leave();
         }

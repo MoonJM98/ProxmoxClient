@@ -802,6 +802,17 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="KeepAlive_DisconnectAll" xml:space="preserve">
     <value>모두 끊기</value>
   </data>
+  <data name="KeepAlive_OrphanedTitle" xml:space="preserve">
+    <value>터미널 연결이 끊겼습니다</value>
+  </data>
+  <data name="KeepAlive_OrphanedMessage" xml:space="preserve">
+    <value>지난번에 앱이 터미널을 연 채로 종료되어 아래 연결이 끊겼습니다. 서버에 다시 로그인해 터미널을 열어 주세요.
+
+{0}</value>
+  </data>
+  <data name="Terminal_ReconnectedAfterBackground" xml:space="preserve">
+    <value>이 기기에서는 앱이 배경에 있는 동안 터미널 연결을 유지할 수 없어 새로 연결했습니다(이전 셸의 작업은 이어지지 않습니다).</value>
+  </data>
   <data name="Terminal_RemoteCopied" xml:space="preserve">
     <value>원격 프로그램이 복사한 글을 클립보드에 넣었습니다 ({0}자)</value>
   </data>
