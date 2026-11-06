@@ -181,14 +181,15 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      # .NET for iOS 는 정해진 Xcode 판을 요구한다 — 러너에 깔린 것 중 가장 새 Xcode 로
-      - name: 가장 새 Xcode 고르기
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: latest-stable
+      # .NET for iOS 는 정해진 Xcode 판을 요구한다. 최신 iOS 워크로드(27.x)는 러너에 아직 없는 Xcode 27 을 요구하므로
+      # 러너의 Xcode 26 에 맞는 워크로드 묶음(10.0.401 = iOS 26.5)으로 고정하고, 러너에 있으면 Xcode 26.5 를 고른다
+      - name: Xcode 26.5 고르기(있으면)
+        run: |
+          if [ -d /Applications/Xcode_26.5.app ]; then sudo xcode-select -s /Applications/Xcode_26.5.app; fi
+          xcodebuild -version | head -1
 
-      - name: ios 워크로드 설치
-        run: dotnet workload install ios
+      - name: ios 워크로드 설치(Xcode 26 용 묶음)
+        run: dotnet workload install ios --version 10.0.401
 
       - name: 빌드(Desktop — macOS)
         run: dotnet build ProxmoxClient.Desktop -c Release
