@@ -102,8 +102,12 @@ GPU 경로가 초기화는 되는데 창이 검게 나오면 `PROXMOXCLIENT_REND
 | 대상 | 방법 | 결과 |
 |---|---|---|
 | 화면 전체(데스크톱·태블릿·모바일 배치) | UiSnapshot + 가짜 PVE(`tools/FakePve`) | 모든 대상 통과 |
-| VNC 콘솔 조작(제스처·물리 키) | `--target console` | 26/26 |
-| 터미널 해석기 | `dotnet run --project tools/TerminalTests` (제어열·질의·유니코드·다시 감기·입력 부호) | 302/302 |
+| VNC 콘솔 조작(제스처·물리 키·화면 키보드 Shift/두벌식·클립보드) | `--target console` | 모바일·데스크톱 통과 |
+| 해석기·순수 논리 | `dotnet run --project tools/TerminalTests` (터미널 제어열·질의·유니코드·다시 감기·입력 부호, RDP 키, 2단계 인증·보안 키(CTAP2·PIN·U2F, 소프트웨어 키), 관리 입력 검사, 터미널 다시 열기 등) | 687/687 |
+| Core 단위 검사 | `dotnet test tests/ProxmoxClient.Core.Tests` (RFB 디코딩·VNC 인증·PVE 응답·저장소·UPID) | 60/60 |
+| RDP 실제 서버 | xrdp + 가짜 PVE rdpproxy(RDCleanPath) + `--target rdp` (IronRDP 2026.10.29, 고쳐 쓰기 없음) | 연결·로그인 화면·입력·한글 유니코드 키·해상도 맞춤·다시 연결 통과. CredSSP(NLA)는 xrdp 가 없어 미확인 |
+| 로그인 | `--target tfa`·`--target webauthn`(가짜 키)·`--target restore` | 통과 — 실제 보안 키는 미확인 |
+| CI | `.github/workflows/ci.yml` (Linux 빌드·검사·화면·RDP, Windows WPF, Android APK, macOS Desktop·iOS) | 모두 통과 |
 | 터미널 해석·입력 | `--target terminal` (가짜 셸: + 손잡이 선택·동기화 출력·마우스 보고 중 스크롤) | 모바일 20/20 |
 | 터미널 + 실제 프로그램 | `FAKEPVE_REAL_SHELL=1` + `--target realshell` (진짜 bash PTY: stty·vim·top·Ctrl+C·Tab 완성·Tab 후보 목록·최근 명령 기록·5만 줄 출력·크기·키보드로 줄 때 대체 화면 크기·종료) | 18/18 |
 | CT 파일(노드 셸 스크립트) | 진짜 bash + pct/lxc-info 심, `preview:files` | 목록·링크 정상 |
