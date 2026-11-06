@@ -20,7 +20,7 @@ public enum MouseTracking
 ///         스레드: <see cref="Feed" /> 는 수신 스레드에서, 그리기는 UI 스레드에서 부른다 — 둘 다 <see cref="Gate" /> 를 잡는다.
 ///     </para>
 /// </summary>
-public sealed class TerminalBuffer
+public sealed partial class TerminalBuffer
 {
     public const int DefaultScrollback = 3000;
     private const int MaxParams = 32;
@@ -144,38 +144,51 @@ public sealed class TerminalBuffer
     }
 
     /// <summary>
-    ///     화면 크기를 바꾼다. 줄이 줄면 커서가 보이도록 위 줄을 스크롤백으로 밀고, 늘면 스크롤백에서 다시 가져온다(xterm 과 같다).
+    ///     화면 크기를 바꾼다. 열 수가 바뀌면 주 화면·스크롤백의 줄을 다시 접는다(<see cref="Reflow" />). 줄이 줄면 커서가 보이도록
+    ///     위 줄을 스크롤백으로 밀고, 늘면 스크롤백에서 다시 가져온다(xterm 과 같다). 대체 화면은 자르기만 한다(프로그램이 다시 그린다).
     /// </summary>
-    public void Resize(int columns, int rows)
+    public void Resize(int columns, int rows) => Resize(columns, rows, 0);
+
+    /// <summary>
+    ///     <see cref="Resize(int,int)" /> — <paramref name="scrollOffset" />(위로 올려 보던 줄 수)를 같은 내용이 맨 위에 오도록
+    ///     고쳐 돌려준다.
+    /// </summary>
+    public int Resize(int columns, int rows, int scrollOffset)
     {
         columns = Math.Max(2, columns);
         rows = Math.Max(1, rows);
         lock (Gate)
         {
-            if (columns == Columns && rows == Rows) return;
+            if (columns == Columns && rows == Rows) return scrollOffset;
 
-            _main = ResizeScreen(_main, columns, rows, true);
-            _alt = ResizeScreen(_alt, columns, rows, false);
+            scrollOffset = Reflow(columns, rows, scrollOffset);
+            _alt = ResizeAlt(columns, rows);
             Columns = columns;
             Rows = rows;
-            _tabs = NewTabs(columns);
+            _tabs = ResizeTabs(_tabs, columns);
             _top = 0;
             _bottom = rows - 1;
-            _x = Math.Min(_x, columns - 1);
+            if (IsAlternateScreen)
+            {
+                _x = Math.Min(_x, columns - 1);
+                _pendingWrap = false;
+            }
+
             _y = Math.Clamp(_y, 0, rows - 1);
-            _pendingWrap = false;
             Version++;
+            return scrollOffset;
         }
     }
 
-    private Line[] ResizeScreen(Line[] screen, int columns, int rows, bool main)
+    /// <summary>대체 화면 — 줄 끝을 자르고, 줄이 줄면 커서 아래 빈 줄부터 버린 뒤 위 줄을 버린다(스크롤백 없음).</summary>
+    private Line[] ResizeAlt(int columns, int rows)
     {
-        var lines = new List<Line>(screen);
-        var cursorY = main == !IsAlternateScreen ? _y : -1;
+        var lines = new List<Line>(_alt);
+        // 대체 화면이 꺼져 있으면 저장해 둔 커서를 기준으로 같은 만큼 옮긴다
+        var cursorY = IsAlternateScreen ? _y : _savedAlt != default ? Math.Min(_savedAlt.Y, lines.Count - 1) : -1;
 
         if (rows < lines.Count)
         {
-            // 커서 아래 빈 줄부터 버리고, 그래도 많으면 위 줄을 스크롤백으로
             var excess = lines.Count - rows;
             for (var i = lines.Count - 1; i > cursorY && excess > 0; i--, excess--)
                 if (lines[i].IsBlank) lines.RemoveAt(i);
@@ -183,31 +196,27 @@ public sealed class TerminalBuffer
 
             while (lines.Count > rows)
             {
-                if (main) PushScrollback(lines[0]);
                 lines.RemoveAt(0);
                 if (cursorY >= 0) cursorY--;
             }
         }
-        else if (rows > lines.Count)
-        {
-            var add = rows - lines.Count;
-            if (main)
-                // 스크롤백에서 되가져온다(커서도 그만큼 내려간다)
-                while (add > 0 && _scrollback.Count > 0)
-                {
-                    lines.Insert(0, _scrollback[^1]);
-                    _scrollback.RemoveAt(_scrollback.Count - 1);
-                    ScrolledLines--;
-                    if (cursorY >= 0) cursorY++;
-                    add--;
-                }
 
-            while (add-- > 0) lines.Add(new Line(columns, TerminalColor.Default));
-        }
+        while (lines.Count < rows) lines.Add(new Line(columns, TerminalColor.Default));
 
         foreach (var line in lines) line.Resize(columns);
-        if (cursorY >= 0) _y = Math.Max(0, cursorY);
+        cursorY = Math.Max(0, cursorY);
+        if (IsAlternateScreen) _y = cursorY;
+        else if (_savedAlt != default)
+            _savedAlt = _savedAlt with { X = Math.Min(_savedAlt.X, columns - 1), Y = cursorY, PendingWrap = false };
         return [.. lines];
+    }
+
+    /// <summary>탭 위치 — 있던 열은 그대로, 새로 생긴 열은 8칸마다.</summary>
+    private static bool[] ResizeTabs(bool[] old, int columns)
+    {
+        var tabs = NewTabs(columns);
+        Array.Copy(old, tabs, Math.Min(old.Length, columns));
+        return tabs;
     }
 
     /// <summary>보이는 줄 — <paramref name="scrollOffset" /> 만큼 위(스크롤백)로 올려 본다.</summary>

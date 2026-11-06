@@ -171,8 +171,17 @@ public sealed class TerminalView : Grid
         var rows = Math.Max(2, (int)((size.Height - Pad.Top - Pad.Bottom) / _renderer.CellHeight));
         if (columns == Buffer.Columns && rows == Buffer.Rows) return;
 
-        Buffer.Resize(columns, rows);
-        ClearSelection();
+        lock (Buffer.Gate)
+        {
+            // 위로 올려 보던 중이면 같은 내용이 맨 위에 오게 — 아직 반영 못 한 새 줄을 먼저 더하고, 다시 접은 뒤 기준을 새로 잡는다
+            if (ScrollOffset > 0)
+                ScrollOffset = (int)Math.Clamp(ScrollOffset + Buffer.ScrolledLines - _seenScrolled, 0, Buffer.ScrollbackCount);
+            var offset = Buffer.Resize(columns, rows, ScrollOffset);
+            ScrollOffset = Buffer.IsAlternateScreen ? 0 : offset;
+            _seenScrolled = Buffer.ScrolledLines;
+        }
+
+        ClearSelection(); // 선택은 절대 줄 번호라 다시 접으면 어긋난다
         SizeChanged2?.Invoke(columns, rows);
         PlaceInput();
         _surface.InvalidateVisual();
