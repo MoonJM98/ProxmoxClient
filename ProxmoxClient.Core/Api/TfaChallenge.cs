@@ -45,6 +45,24 @@ public sealed record TfaChallenge
     /// <summary>WebAuthn 질문(navigator.credentials.get 에 넘길 publicKey 를 담은 JSON 원문).</summary>
     public string? WebAuthnChallengeJson { get; init; }
 
+    /// <summary>WebAuthn 질문을 읽은 값(challenge·rpId·자격 증명). 질문이 없거나 읽을 수 없으면 null.</summary>
+    public WebAuthnRequest? WebAuthn
+    {
+        get
+        {
+            if (WebAuthnChallengeJson is null) return null;
+
+            try
+            {
+                return WebAuthnRequest.Parse(WebAuthnChallengeJson);
+            }
+            catch (FormatException)
+            {
+                return null;
+            }
+        }
+    }
+
     public bool HasU2f { get; init; }
 
     /// <summary>
@@ -52,7 +70,7 @@ public sealed record TfaChallenge
     /// </summary>
     public bool IsLegacy { get; init; }
 
-    /// <summary>이 앱에서 입력할 수 있는 방식(TOTP → 복구 키 → Yubico 순). WebAuthn·U2F 는 기기 API 가 필요해 빠진다.</summary>
+    /// <summary>코드로 입력하는 방식(TOTP → 복구 키 → Yubico 순). 보안 키(WebAuthn·U2F)는 빠진다 — <see cref="AvailableKinds" />.</summary>
     public IReadOnlyList<TfaKind> SupportedKinds
     {
         get
@@ -63,6 +81,18 @@ public sealed record TfaChallenge
             if (HasYubico) kinds.Add(TfaKind.Yubico);
             return kinds;
         }
+    }
+
+    /// <summary>
+    ///     이 기기에서 쓸 수 있는 방식 — 보안 키를 쓸 수 있고(<paramref name="securityKey" />) 서버가 WebAuthn 을 물었으면
+    ///     WebAuthn 을 맨 앞에(PVE 웹 UI 와 같은 순서), 그다음 코드 방식.
+    /// </summary>
+    public IReadOnlyList<TfaKind> AvailableKinds(bool securityKey)
+    {
+        var kinds = new List<TfaKind>();
+        if (securityKey && !IsLegacy && WebAuthn is not null) kinds.Add(TfaKind.WebAuthn);
+        kinds.AddRange(SupportedKinds);
+        return kinds;
     }
 
     /// <summary>쓸 수 있는 방식이 보안 키(WebAuthn·U2F)뿐이다.</summary>

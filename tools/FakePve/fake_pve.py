@@ -1,5 +1,7 @@
 import json, ssl, time, sys, re, os, glob, importlib.util, urllib.parse, subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+# 보안 키(webauthn@pam) 질문의 challenge(base64url)
+WEBAUTHN_CHALLENGE='q83vEjRWeJA-_w'
 now=int(time.time())
 GUESTS=[
  dict(id='qemu/100',type='qemu',vmid=100,name='web-01',node='pve1',status='running',cpu=0.123,maxcpu=4,mem=2_400_000_000,maxmem=4_294_967_296,disk=0,maxdisk=34_359_738_368,netin=12_345_678_900,netout=2_345_678_900,uptime=86400*3+3600*5,template=0,tags='web;prod'),
@@ -121,6 +123,32 @@ class H(BaseHTTPRequestHandler):
             if STATE_FLAGS.get('ticket_delay_ms'): time.sleep(int(STATE_FLAGS['ticket_delay_ms'])/1000) # 연결 취소 검사
             # 2단계 인증 사용자 tfa@pam / secret — TOTP 123456, 복구 키 1234-5678-9abc-def0(PVE 7.2+ 새 형식)
             pw=flat.get('password','')
+            # 보안 키 사용자 webauthn@pam / secret — 질문에 webauthn(+totp). 응답은 서명 검증 없이 모양만 본다:
+            # webauthn:{id,type,challenge,rawId,response{authenticatorData,clientDataJSON,signature}},
+            # clientDataJSON 의 type·challenge·origin("https://"+Host 헤더)이 맞아야 통과
+            if flat.get('username')=='webauthn@pam':
+                if 'tfa-challenge' in flat:
+                    ok=False
+                    if pw.startswith('webauthn:'):
+                        try:
+                            import base64
+                            b64=lambda t: base64.urlsafe_b64decode(t+'='*(-len(t)%4))
+                            r=json.loads(pw[len('webauthn:'):]); cd=json.loads(b64(r['response']['clientDataJSON']))
+                            ok=(r.get('type')=='public-key' and r.get('challenge')==WEBAUTHN_CHALLENGE and r.get('id')==r.get('rawId')
+                                and b64(r['id'])==b'fake-credential' and len(b64(r['response']['authenticatorData']))>=37
+                                and len(b64(r['response']['signature']))>0 and cd.get('type')=='webauthn.get'
+                                and cd.get('challenge')==WEBAUTHN_CHALLENGE and cd.get('origin')=='https://'+self.headers.get('Host',''))
+                            sys.stderr.write("TFA webauthn clientData %s\n"%json.dumps(cd))
+                        except Exception as e: sys.stderr.write("TFA webauthn bad %r\n"%e)
+                    elif pw=='totp:123456': ok=True
+                    sys.stderr.write("TFA answer %s %s\n"%(pw.split(':')[0], 'ok' if ok else 'rejected'))
+                    if ok: return self.send(dict(ticket='PVE:webauthn@pam:0000::sig',CSRFPreventionToken='csrf',username='webauthn@pam'))
+                    return self.send(None,401)
+                if pw.startswith('PVE:webauthn@pam:'): return self.send(dict(ticket='PVE:webauthn@pam:0001::sig',CSRFPreventionToken='csrf',username='webauthn@pam'))
+                if pw!='secret': return self.send(None,401)
+                chal=json.dumps(dict(totp=True,webauthn=dict(publicKey=dict(challenge=WEBAUTHN_CHALLENGE,timeout=60000,rpId='pve.example',
+                    allowCredentials=[dict(type='public-key',id='ZmFrZS1jcmVkZW50aWFs')],userVerification='discouraged'))),separators=(',',':'))
+                return self.send(dict(ticket='PVE:!tfa!'+urllib.parse.quote(chal,safe="{}[],\"!'()*")+':%08X::sig'%int(time.time()),username='webauthn@pam',NeedTFA=1,CSRFPreventionToken='csrf'))
             if flat.get('username')=='tfa@pam' or 'tfa-challenge' in flat:
                 if 'tfa-challenge' in flat:
                     ok=flat['tfa-challenge'].startswith('PVE:!tfa!') and pw in ('totp:123456','recovery:1234-5678-9abc-def0')

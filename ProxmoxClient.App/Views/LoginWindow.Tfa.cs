@@ -6,7 +6,7 @@ using ProxmoxClient.Core.Profiles;
 
 namespace ProxmoxClient.App.Views;
 
-/// <summary>2단계 인증 — 비밀번호 로그인 뒤 코드(TOTP·복구 키·Yubico)를 받아 마저 로그인한다.</summary>
+/// <summary>2단계 인증 — 비밀번호 로그인 뒤 코드(TOTP·복구 키·Yubico)나 보안 키(WebAuthn, Windows 보안 창)로 마저 로그인한다.</summary>
 public partial class LoginWindow
 {
     /// <summary>
@@ -31,10 +31,13 @@ public partial class LoginWindow
 
     private async Task CompleteTfaAsync(ProxmoxApiClient client, TfaChallenge challenge)
     {
-        var kinds = challenge.SupportedKinds;
+        // 보안 키는 Windows WebAuthn API(webauthn.dll, Windows 10 1903+)가 있을 때만 — 방식 목록 맨 앞
+        var kinds = challenge.AvailableKinds(WindowsWebAuthn.IsAvailable);
         if (kinds.Count == 0) throw new InvalidOperationException(Loc.T("LoginWindow_TfaUnsupported"));
 
-        string? error = challenge.HasWebAuthn || challenge.HasU2f ? Loc.T("LoginWindow_TfaUnsupported") : null;
+        var hasKey = kinds.Contains(TfaKind.WebAuthn);
+        string? error = hasKey ? Loc.T("LoginWindow_TfaWebAuthnHint")
+            : challenge.HasWebAuthn || challenge.HasU2f ? Loc.T("LoginWindow_TfaUnsupported") : null;
         var lastKind = TfaChallenge.WireName(kinds[0]);
         while (true)
         {
@@ -46,7 +49,8 @@ public partial class LoginWindow
                     Initial = lastKind,
                     Choices = kinds.Select(k => (TfaChallenge.WireName(k), KindLabelKey(k))).ToList()
                 },
-                new() { Key = "code", LabelKey = "LoginWindow_TfaCode", Required = true, Hint = error }
+                // 보안 키는 코드가 없다 — 코드 방식이면 아래에서 비었는지 본다
+                new() { Key = "code", LabelKey = "LoginWindow_TfaCode", Required = !hasKey, Hint = error }
             ]) { Owner = this };
             if (dialog.ShowDialog() != true || dialog.Result is not { } result) throw new OperationCanceledException();
 
@@ -54,12 +58,33 @@ public partial class LoginWindow
             var kind = kinds.First(k => TfaChallenge.WireName(k) == lastKind);
             try
             {
+                if (kind == TfaKind.WebAuthn)
+                {
+                    var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                    var response = await WindowsWebAuthn.GetAssertionAsync(hwnd, client.ServerOrigin,
+                        challenge.WebAuthnChallengeJson!, CancellationToken.None);
+                    if (response is null)
+                    {
+                        error = Loc.T("LoginWindow_TfaWebAuthnCancelled");
+                        continue;
+                    }
+
+                    await client.CompleteWebAuthnAsync(challenge, response);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(result["code"]))
+                {
+                    error = Loc.T("FormDialog_Required", Loc.T("LoginWindow_TfaCode"));
+                    continue;
+                }
+
                 await client.CompleteTfaAsync(challenge, kind, result["code"]);
                 return;
             }
-            catch (ProxmoxApiException ex)
+            catch (Exception ex) when (ex is ProxmoxApiException or WebAuthnException)
             {
-                error = ex.Message; // 틀린 코드 — 다시 묻는다
+                error = ex.Message; // 틀린 코드·보안 키 오류 — 다시 묻는다
             }
         }
     }
@@ -70,6 +95,7 @@ public partial class LoginWindow
         {
             TfaKind.Totp => "LoginWindow_TfaTotp",
             TfaKind.Recovery => "LoginWindow_TfaRecovery",
+            TfaKind.WebAuthn => "LoginWindow_TfaWebAuthn",
             _ => "LoginWindow_TfaYubico"
         };
     }

@@ -58,6 +58,24 @@ public sealed partial class ProxmoxApiClient
         await AcquireTicketAsync(form, TicketStep.SecondFactor, ct).ConfigureAwait(false);
     }
 
+    /// <summary>
+    ///     WebAuthn 의 origin — "https://" + 요청 Host 헤더(호스트[:포트]). PVE 는 datacenter.cfg 에 webauthn origin 이
+    ///     없으면 이 값과 clientDataJSON 의 origin 을 비교한다(PVE::AccessControl 의 get_origin).
+    /// </summary>
+    public Uri ServerOrigin => new(WebAuthnRequest.OriginString(_http.BaseAddress!));
+
+    /// <summary>
+    ///     보안 키 서명으로 로그인을 마친다 — <paramref name="assertionJson" /> 은
+    ///     <see cref="WebAuthnAssertion.ToPveResponse" /> 모양(웹 UI 와 같은 JSON). password=webauthn:{JSON}.
+    /// </summary>
+    public Task CompleteWebAuthnAsync(TfaChallenge challenge, string assertionJson, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(challenge);
+        if (challenge.IsLegacy || !challenge.HasWebAuthn) throw new ProxmoxApiException(0, null, Res.T("Tfa_BadChallenge"));
+
+        return CompleteTfaAsync(challenge, TfaKind.WebAuthn, assertionJson, ct);
+    }
+
     /// <summary>입력값 정리 — TOTP 는 사이 공백("123 456")을 빼고, 복구 키는 소문자로(웹 UI 형식 xxxx-xxxx-xxxx-xxxx).</summary>
     public static string NormalizeTfaResponse(TfaKind kind, string? response)
     {

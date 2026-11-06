@@ -367,6 +367,24 @@
   <data name="Tfa_EmptyCode" xml:space="preserve">
     <value>Enter the verification code.</value>
   </data>
+  <data name="WebAuthn_NoCredential" xml:space="preserve">
+    <value>This security key has no credential registered for this server. Check that it is the key you registered.</value>
+  </data>
+  <data name="WebAuthn_Denied" xml:space="preserve">
+    <value>The security key refused the request.</value>
+  </data>
+  <data name="WebAuthn_Timeout" xml:space="preserve">
+    <value>The security key check timed out. Try again.</value>
+  </data>
+  <data name="WebAuthn_PinRequired" xml:space="preserve">
+    <value>This security key requires a PIN, which is not supported on this device. Use TOTP or a recovery key.</value>
+  </data>
+  <data name="WebAuthn_NotFidoKey" xml:space="preserve">
+    <value>This is not a FIDO security key.</value>
+  </data>
+  <data name="WebAuthn_DeviceError" xml:space="preserve">
+    <value>Could not communicate with the security key: {0}</value>
+  </data>
   <data name="ProxmoxApiClient_SessionExpired" xml:space="preserve">
     <value>The session expired and could not be renewed. Disconnect and connect again.</value>
   </data>

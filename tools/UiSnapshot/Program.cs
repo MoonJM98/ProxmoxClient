@@ -288,6 +288,53 @@ if (target == "restore")
         $"안내 {profiles.PendingRestores.Count}개, 파일 {(File.Exists(statePath) ? "있음" : "없음")}",
         profiles.PendingRestores.Count == 0 && SessionKeepAlive.Pending.Count == 0 && !File.Exists(statePath));
 
+
+// ---- 보안 키 2단계 인증(--target webauthn): 가짜 키로 창(보안 키 기본) → 취소는 창 유지 → 서명은 webauthn:{JSON} 으로 로그인 ----
+if (target == "webauthn")
+{
+    var fakeKey = new UiSnapshot.FakeWebAuthnProvider { CancelFirst = 1 };
+    WebAuthnProviders.Current = fakeKey;
+    var waProfile = new ConnectionProfile
+    {
+        Name = "webauthn", Host = options.GetValueOrDefault("host", "127.0.0.1"), Port = port, UserName = "webauthn@pam"
+    };
+    await AppServices.Profiles.SaveAsync(waProfile);
+    AppServices.SecretStore.Set($"profile.{waProfile.Id:N}.password", "secret");
+    await Wait(profiles.LoadAsync());
+    profiles.ConnectCommand.Execute(profiles.Profiles.First(p => p.Profile.Name == "webauthn"));
+    ProxmoxClient.UI.Views.Login.TfaDialog? waDialog = null;
+    var waDeadline = DateTime.UtcNow.AddSeconds(15);
+    while (DateTime.UtcNow < waDeadline
+           && (waDialog = AppServices.Dialogs.Sheet as ProxmoxClient.UI.Views.Login.TfaDialog) is null)
+    {
+        if (AppServices.Dialogs.Current is { } waTrust) waTrust.ConfirmCommand.Execute(null); // 처음 보는 인증서 — 신뢰
+        Pump(150);
+    }
+
+    Check0("보안 키 2단계 인증 창", "보안 키(WebAuthn) 기본",
+        waDialog is null ? "창 없음: " + AppServices.Dialogs.Current?.Message : $"{waDialog.Kind}",
+        waDialog is { Kind: ProxmoxClient.Core.Api.TfaKind.WebAuthn });
+    if (waDialog is not null)
+    {
+        Shot("webauthn-dialog");
+        await Wait(waDialog.UseSecurityKeyAsync());
+        Pump(200);
+        Check0("보안 키 취소", "취소 안내 · 창 유지", waDialog.CurrentError,
+            ReferenceEquals(AppServices.Dialogs.Sheet, waDialog) && !waDialog.Completed
+            && waDialog.CurrentError == L.T("Tfa_WebAuthnCancelled"));
+        await Wait(waDialog.UseSecurityKeyAsync());
+        WaitFor(() => nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel, 15000);
+        var waSession = nav.CurrentPage?.DataContext switch
+        {
+            ClusterViewModel c => c.Session, MainViewModel m => m.Session, _ => null
+        };
+        Check0("보안 키 서명으로 로그인", $"webauthn@pam 세션 · origin https://{waProfile.Host}:{port}",
+            $"{waSession?.UserDisplay ?? "(로그인 안 됨: " + waDialog.CurrentError + ")"} · {waSession?.Api.AuthTicket} · {fakeKey.LastOrigin}",
+            waSession is { UserDisplay: "webauthn@pam" } && waSession.Api.AuthTicket == "PVE:webauthn@pam:0000::sig"
+            && fakeKey.LastOrigin?.ToString().TrimEnd('/') == $"https://{waProfile.Host}:{port}" && AppServices.Dialogs.Sheet is null);
+        Shot("webauthn-done");
+    }
+
     Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
     Directory.Delete(profileDir, true);
     return failures == 0 ? 0 : 2;

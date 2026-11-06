@@ -41,7 +41,52 @@
     <value>Verifying…</value>
   </data>
   <data name="Tfa_SecurityKeyUnsupported" xml:space="preserve">
-    <value>Security keys (WebAuthn) are not supported in this app — use TOTP or a recovery key, or an API token.</value>
+    <value>Legacy U2F security key requests are not supported in this app — use TOTP or a recovery key, or an API token.</value>
+  </data>
+  <data name="Tfa_KindWebAuthn" xml:space="preserve">
+    <value>Security key</value>
+  </data>
+  <data name="Tfa_WebAuthnStart" xml:space="preserve">
+    <value>Use security key</value>
+  </data>
+  <data name="Tfa_WebAuthnHint" xml:space="preserve">
+    <value>Verify with your registered security key (WebAuthn). Press the button, then tap or touch the key when asked.</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptWindows" xml:space="preserve">
+    <value>Follow the Windows Security prompt to verify your security key…</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptUsb" xml:space="preserve">
+    <value>Insert your USB security key and touch its button…</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptNfc" xml:space="preserve">
+    <value>Hold your security key against the back of the phone (NFC)…</value>
+  </data>
+  <data name="Tfa_WebAuthnCancelled" xml:space="preserve">
+    <value>Security key verification was cancelled. Try again or choose another method.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoKey" xml:space="preserve">
+    <value>No USB security key found. Insert the key and try again.</value>
+  </data>
+  <data name="Tfa_WebAuthnHidPermission" xml:space="preserve">
+    <value>No permission to open the security key device ({0}). Install the libfido2 udev rules (your distribution's libfido2 package) or check the device permissions.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoWindows" xml:space="preserve">
+    <value>Security keys (WebAuthn) require Windows 10 1903 or later — use TOTP or a recovery key.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoLinux" xml:space="preserve">
+    <value>Security keys (WebAuthn) need a USB security key (/dev/hidraw) — use TOTP or a recovery key.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoMac" xml:space="preserve">
+    <value>The macOS version of this app does not support security keys (WebAuthn) yet — use TOTP or a recovery key.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoIos" xml:space="preserve">
+    <value>Security keys (WebAuthn) are not supported on iOS yet — use TOTP or a recovery key.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoNfc" xml:space="preserve">
+    <value>This device has no NFC, so security keys (WebAuthn) cannot be used — use TOTP or a recovery key.</value>
+  </data>
+  <data name="Tfa_WebAuthnNfcOff" xml:space="preserve">
+    <value>NFC is turned off. Turn on NFC in Settings and try again.</value>
   </data>
   <data name="Tfa_NoMethod" xml:space="preserve">
     <value>No two-factor method usable for this account. Check its two-factor settings in the web UI or use an API token.</value>

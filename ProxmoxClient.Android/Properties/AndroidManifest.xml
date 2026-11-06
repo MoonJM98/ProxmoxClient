@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 2단계 인증 보안 키(WebAuthn) — NFC 보안 키에 서명을 받는다. NFC 가 없는 기기에도 설치되게 required=false -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
     <!-- Android 11 이상: SPICE 앱(.vv 를 여는 앱)이 보이게 — 없으면 설치 여부를 알 수 없다 -->
     <queries>
         <intent>
