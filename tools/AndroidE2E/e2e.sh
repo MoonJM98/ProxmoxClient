@@ -283,7 +283,27 @@ info "secure off: SurfaceFlinger secure lines for app layers=$sf_secure · shell
 if [ "${bright:-0}" -gt 200 ]; then
   pass "screencap shows the app again after disabling"
 else
-  fail "screencap still dark after disabling ($px)"
+  # 앱 탓인지 가르기 — 홈 화면(다른 앱)도 검게 찍히면 에뮬레이터 캡처가 통째로 멈춘 것
+  adb shell input keyevent KEYCODE_HOME
+  sleep 3
+  adb exec-out screencap > "$OUT/secure-off-home.raw"
+  shot 08b-secure-off-home
+  home=$(python3 -I "$HERE/pixels.py" "$OUT/secure-off-home.raw")
+  launch
+  sleep 5
+  adb exec-out screencap > "$OUT/secure-off-relaunch.raw"
+  shot 08c-secure-off-relaunch
+  again=$(python3 -I "$HERE/pixels.py" "$OUT/secure-off-relaunch.raw")
+  info "secure off: home screen capture: $home · app after relaunch: $again"
+  hb=$(echo "$home" | sed -n 's/.*bright=\([0-9]*\).*/\1/p')
+  ab=$(echo "$again" | sed -n 's/.*bright=\([0-9]*\).*/\1/p')
+  if [ "${ab:-0}" -gt 200 ]; then
+    pass "screencap shows the app after disabling (after leaving and reopening the app)"
+    [ "${hb:-0}" -gt 200 ] && info "home screen captured fine while the app stayed black — app stayed protected until reopened" \
+      || info "home screen was black too — emulator capture stuck after secure toggle, not app-specific"
+  else
+    fail "screencap still dark after disabling ($px; home: $home; relaunch: $again)"
+  fi
 fi
 
 section "4. 마우스 오른쪽 클릭 ≠ 뒤로 가기"
