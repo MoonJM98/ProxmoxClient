@@ -19,6 +19,9 @@ dir: local
 	shared 0
 EOF
 
+# 노드 네트워크 화면에 다리가 보이게(실제 설치처럼) — 이미 만들어 둔 vmbr0 를 설정 파일에도
+grep -q vmbr0 /etc/network/interfaces 2>/dev/null || printf '\nauto vmbr0\niface vmbr0 inet manual\n\tbridge-ports none\n\tbridge-stp off\n\tbridge-fd 0\n' >> /etc/network/interfaces
+
 # VM 100: 작은 디스크 + Alpine virt ISO 로 부팅(VGA 콘솔에 로그인 프롬프트). 시작은 앱이 한다
 kvm=1
 [ -w /dev/kvm ] || { kvm=0; log "WARNING: /dev/kvm 없음 — TCG(느림)"; }

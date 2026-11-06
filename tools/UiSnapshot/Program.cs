@@ -1435,6 +1435,44 @@ async Task RealPveCheck()
             $"작업 {task.Status} · 백업 [{string.Join(", ", mine.Select(f => $"{f.Volid} {f.SizeBytes}B"))}]");
     });
 
+    // 복제(복제 창과 같은 요청: 새 번호·이름·전체 복제) → 목록에 보임 → 지우기. CT 는 끈 채로(디렉터리 저장소는 스냅숏이 없다)
+    async Task CloneAndDestroy(ProxmoxClient.Core.Models.ResourceKind kind, int source, int newId)
+    {
+        var tag = kind == Qemu ? "vm" : "ct";
+        await Step($"clone-{tag}", async () =>
+        {
+            var task = Do(() => api.WaitTaskAsync(Do(() => api.CloneGuestAsync(nodeName, kind, source, newId, $"e2e-clone-{tag}", true))), 300000);
+            await Wait(cluster.RefreshAsync(false));
+            var clone = cluster.Guests.FirstOrDefault(g => g.VmId == newId);
+            var config = Do(() => api.GetGuestConfigAsync(nodeName, kind, newId));
+            var name = config.GetValueOrDefault(kind == Qemu ? "name" : "hostname");
+            Result($"clone-{tag}", task.IsOk && clone is not null && name == $"e2e-clone-{tag}",
+                $"작업 {task.Status} · 목록 {(clone is null ? "없음" : clone.Name)} · 설정 이름 '{name}'");
+            if (clone is null) return;
+            var destroy = Do(() => api.WaitTaskAsync(Do(() => api.Guests.DestroyAsync(clone, true, true))), 120000);
+            await Wait(cluster.RefreshAsync(false));
+            Result($"destroy-{tag}", destroy.IsOk && cluster.Guests.All(g => g.VmId != newId), $"작업 {destroy.Status}");
+        });
+    }
+
+    await CloneAndDestroy(Qemu, 100, 901);
+    if (hasCt)
+    {
+        await Step("ct-power", async () =>
+        {
+            var stop = Do(() => api.WaitTaskAsync(Do(() => api.ShutdownGuestAsync(nodeName, Lxc, 200))), 120000);
+            var stopped = Do(() => api.GetGuestCurrentStatusAsync(nodeName, Lxc, 200));
+            Result("ct-shutdown", stop.IsOk && stopped == "stopped", $"작업 {stop.Status} · 상태 {stopped}");
+        });
+        await CloneAndDestroy(Lxc, 200, 902);
+        await Step("ct-start", async () =>
+        {
+            var start = Do(() => api.WaitTaskAsync(Do(() => api.StartGuestAsync(nodeName, Lxc, 200))), 120000);
+            var running = Do(() => api.GetGuestCurrentStatusAsync(nodeName, Lxc, 200));
+            Result("ct-start", start.IsOk && running == "running", $"작업 {start.Status} · 상태 {running}");
+        });
+    }
+
     // 10) TOTP 로그인(tfa@pve) · 11) API 토큰 로그인 — 서버 목록으로 돌아가 새 프로필로 연결
     async Task<ServerSession?> ConnectProfile(ConnectionProfile profile, string secretKind, string secret, Func<ProxmoxClient.UI.Views.Login.TfaDialog, Task>? tfa)
     {
