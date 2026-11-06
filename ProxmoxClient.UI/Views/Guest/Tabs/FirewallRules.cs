@@ -65,13 +65,15 @@ internal static class FirewallRules
             new TableAction
             {
                 LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                Run = (row, owner) => IsGroup(row!)
+                Run = (row, owner) => DigestGuard.RunAsync(() => IsGroup(row!)
                     ? EditGroupAsync(api, scope, row!, owner)
-                    : EditAsync(api, scope, row, owner, copy: false)
+                    : EditAsync(api, scope, row, owner, copy: false))
             },
-            DeleteAction(row => Loc.T("FirewallWindow_M07", Value(row, "pos"), Value(row, "action"),
+            // 규칙은 자리 번호로 가리킨다 — 목록을 읽을 때 받은 digest 를 보내, 그 사이 목록이 바뀌었으면 서버가 거절하게 한다
+            DigestGuard.Wrap(DeleteAction(row => Loc.T("FirewallWindow_M07", Value(row, "pos"), Value(row, "action"),
                     Value(row, "type"), Value(row, "dport")),
-                row => api.Firewall.DeleteRuleAsync(scope, Value(row, "pos")), "FirewallWindow_M09"),
+                row => api.Firewall.DeleteRuleAsync(scope, Value(row, "pos"), DigestGuard.Of(row)),
+                "FirewallWindow_M09")),
             new TableAction
             {
                 LabelKey = "FwRule_Copy", IconKey = "IconCopy", NeedsSelection = true, MenuKey = More,
@@ -101,7 +103,7 @@ internal static class FirewallRules
         return new TableAction
         {
             LabelKey = labelKey, IconKey = iconKey, NeedsSelection = true, IconOnly = true,
-            Run = async (row, _) =>
+            Run = (row, _) => DigestGuard.RunAsync(async () =>
             {
                 if (!int.TryParse(Value(row!, "pos"), out var pos)) return null;
                 var target = pos + delta;
@@ -109,9 +111,9 @@ internal static class FirewallRules
                 // 아래로 옮길 때 moveto 는 "그 자리 앞" 이라 한 칸 더 준다(웹 UI 와 같다)
                 var moveto = delta > 0 ? target + 1 : target;
                 await api.Firewall.UpdateRuleAsync(scope, pos.ToString(),
-                    new Dictionary<string, string> { ["moveto"] = moveto.ToString() });
+                    new Dictionary<string, string> { ["moveto"] = moveto.ToString() }, DigestGuard.Of(row));
                 return Loc.T("FwRule_Moved", pos, target);
-            }
+            })
         };
     }
 
@@ -173,7 +175,7 @@ internal static class FirewallRules
             var form = RuleForm(values);
             return isNew
                 ? api.Firewall.CreateRuleAsync(scope, NonEmpty(form))
-                : api.Firewall.UpdateRuleAsync(scope, V("pos"), UpdateForm(form));
+                : api.Firewall.UpdateRuleAsync(scope, V("pos"), UpdateForm(form), DigestGuard.Of(row));
         }, isNew ? "FirewallWindow_M05" : "FwRule_Updated", titleIsKey: false, validate: Validate);
     }
 
@@ -251,7 +253,8 @@ internal static class FirewallRules
         var groups = await GroupChoicesAsync(api);
         return await SubmitAsync(owner, Loc.T("FwRule_EditTitle", Value(row, "pos")),
             GroupFields(groups, key => Value(row, key), false),
-            values => api.Firewall.UpdateRuleAsync(scope, Value(row, "pos"), UpdateForm(GroupForm(values))),
+            values => api.Firewall.UpdateRuleAsync(scope, Value(row, "pos"), UpdateForm(GroupForm(values)),
+                DigestGuard.Of(row)),
             "FwRule_Updated", titleIsKey: false);
     }
 

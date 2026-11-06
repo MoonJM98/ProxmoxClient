@@ -35,6 +35,9 @@ STATE_FLAGS={}
 class Status(tuple):
     """경로 처리기가 오류 상태로 답할 때: return STATE.Status(403, None)"""
     def __new__(cls, code, data=None): return tuple.__new__(cls, (code, data))
+# 경로 처리기가 raise STATE.PveError(500, '...') 하면 실서버처럼 {"data":null,"message":...} 로 거절한다(digest 불일치 등)
+class PveError(Exception):
+    def __init__(self, code, message): super().__init__(message); self.code=code; self.message=message
 class H(BaseHTTPRequestHandler):
     def ext(self, method, path, body=None):
         for m, rx, fn in ROUTES:
@@ -42,7 +45,8 @@ class H(BaseHTTPRequestHandler):
                 mm=rx.fullmatch(path)
                 if mm:
                     q={k:v[0] for k,v in urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).items()}
-                    r=fn(mm, q, body or {})
+                    try: r=fn(mm, q, body or {})
+                    except PveError as e: self.send_error_json(e.code, e.message); return True
                     if isinstance(r, Status): self.send(r[1], r[0])
                     else: self.send(r)
                     return True
@@ -50,6 +54,8 @@ class H(BaseHTTPRequestHandler):
     def log_message(self, fmt, *a): sys.stderr.write("REQ %.3f %s\n"%(time.time()%1000, fmt%a))
     def send(self, data, code=200):
         b=json.dumps({'data':data}).encode(); self.send_response(code); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
+    def send_error_json(self, code, message):
+        b=json.dumps({'data':None,'message':message}).encode(); self.send_response(code, message.strip()); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
     def expired(self, path):
         # /__fake/expire 뒤로는 티켓 갱신까지 모두 거부 — 세션 만료 처리 검사용
         if path=='/__fake/expire':

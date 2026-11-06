@@ -395,6 +395,110 @@ async Task MainScreensCheck()
         cancellable && handled && !AppServices.Dialogs.IsBusyVisible && took.TotalSeconds < 3 && AppServices.Dialogs.Current is null &&
         ReferenceEquals(nav.CurrentPage, before));
     FakeSet("ticket_delay_ms=0");
+// ---- 관리 기능 검사(한 덩어리): 방화벽 규칙 지우기에 digest · digest 불일치면 다시 읽고 알림 · 백업 "압축 없음" = compress=0 ·
+// CT 스냅숏에는 RAM 칸이 없다. 서버가 받은 값은 로그의 'MANAGE ...' 줄로 비교한다
+if (target == "manage")
+{
+    var manageLog = options.GetValueOrDefault("serverlog", "");
+    var manageOffset = File.Exists(manageLog) ? new FileInfo(manageLog).Length : 0L;
+    List<string> ManageLines()
+    {
+        Pump(800);
+        if (manageLog.Length == 0 || !File.Exists(manageLog)) return [];
+        using var fs = new FileStream(manageLog, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        fs.Seek(manageOffset, SeekOrigin.Begin);
+        using var reader = new StreamReader(fs);
+        var text = reader.ReadToEnd();
+        manageOffset = fs.Position;
+        return text.Split('\n').Where(l => l.StartsWith("MANAGE ", StringComparison.Ordinal)).Select(l => l[7..].Trim()).ToList();
+    }
+    void ManageCheck(string name, bool pass, string got)
+    {
+        Console.WriteLine($"{(pass ? "OK" : "FAIL")} manage/{name}: {got}");
+        if (!pass) failures++;
+    }
+    Button ToolButton(Control root, string labelKey) => root.GetVisualDescendants().OfType<Button>()
+        .First(b => ToolTip.GetTip(b) as string == L.T(labelKey) || b.Content as string == L.T(labelKey));
+    void Press(Button b) => b.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    void ConfirmDialogs()
+    {
+        // 표 단추의 확인 문구 · 쓰기 확인 창을 모두 확인으로
+        for (var i = 0; i < 3; i++)
+        {
+            WaitFor(() => AppServices.Dialogs.Current is not null, 1500);
+            if (AppServices.Dialogs.Current is not { } dialog) break;
+            dialog.ConfirmCommand.Execute(null);
+            Pump(400);
+        }
+    }
+
+    var mapi = cluster.Session.Api;
+    var vm100 = cluster.Guests.First(g => g.VmId == 100);
+    var ct200 = cluster.Guests.First(g => g.VmId == 200);
+
+    // 방화벽: 지우기는 목록의 digest 를 쿼리로 보낸다(가짜 서버의 digest 를 처음 값으로)
+    await Wait(mapi.GetObjectAsync("__fake/fw-digest"));
+    var fw = new ProxmoxClient.UI.Views.Guest.Tabs.FirewallTab(mapi,
+        ProxmoxClient.Core.Models.FirewallScope.ForGuest(vm100.Node, vm100.Kind, vm100.VmId));
+    await Wait(AppServices.Navigator.PushViewAsync("fw", fw));
+    Pump(1500);
+    var fwTable = fw.GetVisualDescendants().OfType<TableTab>().First();
+    void DeleteFirstRule()
+    {
+        // 모바일은 카드 목록(ListBox), 데스크톱은 표(DataGrid)
+        if (fwTable.GetVisualDescendants().OfType<ListBox>().FirstOrDefault() is { } cards) cards.SelectedIndex = 0;
+        else if (fwTable.GetVisualDescendants().OfType<DataGrid>().FirstOrDefault() is { } grid) grid.SelectedIndex = 0;
+        Pump(200);
+        Press(ToolButton(fwTable, "Action_Delete"));
+        ConfirmDialogs();
+        Pump(800);
+    }
+    DeleteFirstRule();
+    var fwLines = ManageLines();
+    ManageCheck("fw-delete-digest", fwLines.Contains("fw DELETE pos=0 digest=fwdigest1"), string.Join(" | ", fwLines));
+
+    // 다른 사용자가 규칙을 바꿨다 → 예전 digest 로 지우면 서버가 거절하고, 화면은 다시 읽어 알린다
+    await Wait(mapi.GetObjectAsync("__fake/fw-digest?value=fwdigest2"));
+    DeleteFirstRule();
+    var mismatchShown = fwTable.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == L.T("Digest_Changed"));
+    ManageCheck("fw-digest-mismatch-message", mismatchShown, string.Join(" | ", ManageLines()));
+    Shot("manage-fw-digest-mismatch");
+    // 다시 읽었으므로 새 digest 로 지우면 통과한다
+    DeleteFirstRule();
+    fwLines = ManageLines();
+    ManageCheck("fw-delete-after-reload", fwLines.Contains("fw DELETE pos=0 digest=fwdigest2"), string.Join(" | ", fwLines));
+    await Wait(AppServices.Navigator.PopAsync());
+
+    // 백업 "압축 없음" → compress=0 (빼면 서버 기본값 zstd 로 압축된다)
+    var backup = new ProxmoxClient.UI.Views.Guest.Tabs.BackupTab(mapi, vm100);
+    await Wait(AppServices.Navigator.PushViewAsync("backup", backup));
+    Pump(1500);
+    var compressBox = backup.GetVisualDescendants().OfType<ComboBox>()
+        .First(c => c.Items.OfType<object>().Any(i => (i as ContentControl)?.Content as string == L.T("BackupWindow_10")
+                                                      || i?.ToString() == L.T("BackupWindow_10")));
+    ComboChoices.Select(compressBox, "0");
+    Pump(200);
+    Press(ToolButton(backup, "BackupWindow_12"));
+    ConfirmDialogs();
+    var backupLines = ManageLines();
+    ManageCheck("backup-none-compress0", backupLines.Contains("vzdump compress=0"), string.Join(" | ", backupLines));
+    await Wait(AppServices.Navigator.PopAsync());
+
+    // 스냅숏: CT 에는 RAM 포함 칸이 없고, 실행 중인 VM 에는 있다
+    bool RamOption(ProxmoxClient.Core.Models.PveResource guest, out bool enabled)
+    {
+        var tab = new ProxmoxClient.UI.Views.Guest.Tabs.SnapshotsTab(mapi, guest);
+        Wait(AppServices.Navigator.PushViewAsync("snap", tab)).GetAwaiter().GetResult();
+        Pump(1200);
+        var box = tab.GetVisualDescendants().OfType<CheckBox>().FirstOrDefault(c => c.Content as string == L.T("SnapshotDialog_09"));
+        enabled = box?.IsEnabled == true;
+        var visible = box?.IsVisible == true;
+        Wait(AppServices.Navigator.PopAsync()).GetAwaiter().GetResult();
+        return visible;
+    }
+    ManageCheck("ct-snapshot-no-ram", !RamOption(ct200, out _), "CT 200 RAM 칸 숨김");
+    var vmRam = RamOption(vm100, out var vmRamEnabled);
+    ManageCheck("vm-snapshot-ram", vmRam && vmRamEnabled, $"VM 100 RAM 칸 보임={vmRam} 켜짐={vmRamEnabled}");
 }
 VpnReport();
 

@@ -927,6 +927,18 @@
     <value>메모리(RAM) 상태 포함</value>
         <comment>SnapshotDialog.xaml · Content</comment>
   </data>
+    <data name="Snapshot_NameRules" xml:space="preserve">
+      <value>스냅샷 이름은 영문자로 시작하고 영문자·숫자·_·- 만 쓸 수 있습니다(2~{0}자).</value>
+      <comment>Views/Guest/Tabs/SnapshotsTab</comment>
+    </data>
+    <data name="Snapshot_RollbackStart" xml:space="preserve">
+      <value>되돌린 뒤 시작</value>
+      <comment>Views/Guest/Tabs/SnapshotsTab</comment>
+    </data>
+    <data name="Snapshot_RamNeedsRunning" xml:space="preserve">
+      <value>VM 이 실행 중일 때만 메모리 상태를 저장할 수 있습니다.</value>
+      <comment>Views/Guest/Tabs/SnapshotsTab</comment>
+    </data>
     <data name="TerminalWindow_01" xml:space="preserve">
     <value>터미널</value>
         <comment>TerminalWindow.xaml · Title</comment>
@@ -1875,6 +1887,18 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>VLAN 태그는 1–4094 범위여야 합니다.</value>
         <comment>GuestSettingsWindow.xaml.cs</comment>
   </data>
+    <data name="GuestSettings_CtIpInvalid" xml:space="preserve">
+      <value>IP 는 비우거나 dhcp, manual, 또는 주소/접두 길이(예: 192.168.1.10/24)여야 합니다.</value>
+      <comment>Views/Guest/Tabs/HardwareTab</comment>
+    </data>
+    <data name="GuestSettings_BalloonTooLarge" xml:space="preserve">
+      <value>최소 메모리(벌룬)는 메모리보다 클 수 없습니다(0 은 끄기).</value>
+      <comment>Views/Guest/Tabs/HardwareTab</comment>
+    </data>
+    <data name="Digest_Changed" xml:space="preserve">
+      <value>그 사이 다른 곳에서 설정이 바뀌어 저장하지 않았습니다. 최신 내용을 다시 불러왔으니 확인한 뒤 다시 하세요.</value>
+      <comment>Views/Guest/Tabs/GuestTabHelpers</comment>
+    </data>
     <data name="ProfileRegister_AuthUnknown" xml:space="preserve">
     <value>확인 불가 (기본값: Linux PAM, Proxmox VE 인증)</value>
         <comment>ProfileRegisterWindow.xaml.cs</comment>
@@ -2022,6 +2046,10 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   <data name="GuestOptions_EditTitle" xml:space="preserve">
     <value>편집: {0}</value>
     <comment>OptionEditDialog.xaml.cs</comment>
+  </data>
+  <data name="GuestOptions_DescriptionTooLong" xml:space="preserve">
+    <value>설명은 {0} KiB 를 넘을 수 없습니다.</value>
+    <comment>Views/Guest/Tabs/OptionEditors.Text</comment>
   </data>
   <data name="GuestOptions_EmptyHint" xml:space="preserve">
     <value>비워 두면 {0} 상태가 됩니다.</value>
@@ -2910,6 +2938,52 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   <data name="NodeNetwork_AddBond" xml:space="preserve">
     <value>본드 추가</value>
     <comment>NodeDatacenterEdit</comment>
+  </data>
+  <data name="NodeNetwork_ApplyFailed" xml:space="preserve">
+    <value>네트워크 적용이 실패했습니다: {0}</value>
+    <comment>Views/Node/NetworkActions</comment>
+  </data>
+  <data name="NodeNetwork_ApplyDiff" xml:space="preserve">
+    <value>다음 변경을 적용할까요? 잘못되면 접속이 끊길 수 있습니다.
+
+{0}</value>
+    <comment>Views/Node/NetworkActions</comment>
+  </data>
+  <data name="NodeNetwork_NoChanges" xml:space="preserve">
+    <value>적용할 변경이 없습니다.</value>
+    <comment>Views/Node/NetworkActions</comment>
+  </data>
+  <data name="NodeNetwork_BadGateway" xml:space="preserve">
+    <value>게이트웨이 주소가 올바르지 않습니다: {0}</value>
+    <comment>Views/Node/NetworkActions</comment>
+  </data>
+  <data name="NodeNetwork_BadCidr" xml:space="preserve">
+    <value>주소/접두 길이 형식이 아닙니다: {0}</value>
+    <comment>Views/Node/NetworkActions</comment>
+  </data>
+  <data name="NodeNetwork_Gateway6" xml:space="preserve">
+    <value>IPv6 게이트웨이</value>
+    <comment>Views/Node/NetworkActions</comment>
+  </data>
+  <data name="NodeNetwork_Cidr6" xml:space="preserve">
+    <value>IPv6/CIDR</value>
+    <comment>Views/Node/NetworkActions</comment>
+  </data>
+  <data name="NodeNetwork_VlanId" xml:space="preserve">
+    <value>VLAN 번호</value>
+    <comment>Views/Node/NetworkActions</comment>
+  </data>
+  <data name="NodeNetwork_VlanRawDevice" xml:space="preserve">
+    <value>VLAN 원본 장치</value>
+    <comment>Views/Node/NetworkActions</comment>
+  </data>
+  <data name="NodeNetwork_VlanNameHint" xml:space="preserve">
+    <value>예: vmbr0.10 · eno1.20(장치.번호) 또는 vlan10(아래 두 칸을 채움)</value>
+    <comment>Views/Node/NetworkActions</comment>
+  </data>
+  <data name="NodeNetwork_AddVlan" xml:space="preserve">
+    <value>VLAN 추가</value>
+    <comment>Views/Node/NetworkActions</comment>
   </data>
   <data name="NodeNetwork_EditTitle" xml:space="preserve">
     <value>인터페이스 편집: {0}</value>
@@ -4631,6 +4705,38 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>복원 후 시작</value>
     <comment>BackupList</comment>
   </data>
+  <data name="BackupList_Unprivileged0" xml:space="preserve">
+    <value>아니요(privileged)</value>
+    <comment>Views/Guest/Tabs/BackupList</comment>
+  </data>
+  <data name="BackupList_Unprivileged1" xml:space="preserve">
+    <value>예(unprivileged)</value>
+    <comment>Views/Guest/Tabs/BackupList</comment>
+  </data>
+  <data name="BackupList_FromBackup" xml:space="preserve">
+    <value>백업 설정대로</value>
+    <comment>Views/Guest/Tabs/BackupList</comment>
+  </data>
+  <data name="BackupList_Unprivileged" xml:space="preserve">
+    <value>권한 없는 컨테이너</value>
+    <comment>Views/Guest/Tabs/BackupList</comment>
+  </data>
+  <data name="BackupList_LiveRestoreHint" xml:space="preserve">
+    <value>복원하는 동안 VM 을 바로 켭니다(Proxmox Backup Server 백업만).</value>
+    <comment>Views/Guest/Tabs/BackupList</comment>
+  </data>
+  <data name="BackupList_LiveRestore" xml:space="preserve">
+    <value>실시간 복원</value>
+    <comment>Views/Guest/Tabs/BackupList</comment>
+  </data>
+  <data name="BackupList_BwLimitHint" xml:space="preserve">
+    <value>숫자(KiB/s)만. 비우면 데이터센터·저장소 설정을 따르고, 0 은 제한 없음.</value>
+    <comment>Views/Guest/Tabs/BackupList</comment>
+  </data>
+  <data name="BackupList_BwLimit" xml:space="preserve">
+    <value>대역폭 제한(KiB/s)</value>
+    <comment>Views/Guest/Tabs/BackupList</comment>
+  </data>
   <data name="BackupList_OverwriteConfirm" xml:space="preserve">
     <value>같은 번호로 덮어쓸 때 번호 다시 입력</value>
     <comment>BackupList</comment>
@@ -4702,6 +4808,34 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   <data name="StorageUpload_Button" xml:space="preserve">
     <value>올리기</value>
     <comment>Storage</comment>
+  </data>
+  <data name="StorageUpload_ChecksumBoth" xml:space="preserve">
+    <value>체크섬과 알고리즘을 함께 넣어야 합니다.</value>
+    <comment>Views/Storage/StorageNavigator</comment>
+  </data>
+  <data name="StorageUpload_NoChecksum" xml:space="preserve">
+    <value>검사 안 함</value>
+    <comment>Views/Storage/StorageNavigator</comment>
+  </data>
+  <data name="StorageUpload_ChecksumHint" xml:space="preserve">
+    <value>16진수 값 — 받은 뒤 서버가 검사하고, 다르면 올린 파일을 버립니다.</value>
+    <comment>Views/Storage/StorageNavigator</comment>
+  </data>
+  <data name="StorageUpload_Checksum" xml:space="preserve">
+    <value>체크섬</value>
+    <comment>Views/Storage/StorageNavigator</comment>
+  </data>
+  <data name="StorageUpload_ChecksumAlgorithm" xml:space="preserve">
+    <value>체크섬 알고리즘</value>
+    <comment>Views/Storage/StorageNavigator</comment>
+  </data>
+  <data name="StorageUpload_BadTemplateExt" xml:space="preserve">
+    <value>CT 템플릿은 .tar · .tar.gz · .tar.xz · .tar.zst · .tar.bz2 파일만 올릴 수 있습니다: {0}</value>
+    <comment>Views/Storage/StorageNavigator</comment>
+  </data>
+  <data name="StorageUpload_BadIsoExt" xml:space="preserve">
+    <value>ISO 이미지는 .iso 또는 .img 파일만 올릴 수 있습니다: {0}</value>
+    <comment>Views/Storage/StorageNavigator</comment>
   </data>
   <data name="StorageUpload_Title" xml:space="preserve">
     <value>올리는 중</value>
@@ -8129,6 +8263,10 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   <data name="Ct_MountPathInvalid" xml:space="preserve">
     <value>경로는 / 로 시작해야 합니다.</value>
     <comment>Views/Guest/Hardware</comment>
+  </data>
+  <data name="Ct_MountPathRules" xml:space="preserve">
+    <value>컨테이너 안의 절대 경로를 입력하세요(/ 제외). 쉼표·줄바꿈과 /./ · /../ 는 쓸 수 없습니다.</value>
+    <comment>Views/Guest/Hardware, Views/Create</comment>
   </data>
   <data name="Ct_Quota" xml:space="preserve">
     <value>쿼터 사용</value>

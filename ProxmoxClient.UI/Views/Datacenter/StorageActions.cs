@@ -35,7 +35,7 @@ internal static partial class StorageActions
             new TableAction
             {
                 LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                Run = (row, owner) => EditAsync(api, row!["storage"], owner)
+                Run = (row, owner) => Guest.Tabs.DigestGuard.RunAsync(() => EditAsync(api, row!["storage"], owner))
             },
             DeleteAction(row => Loc.T("DcStorage_DeleteConfirm", row["storage"]),
                 row => api.Storage.DeleteAsync(row["storage"]), "DcStorage_Deleted")
@@ -74,8 +74,20 @@ internal static partial class StorageActions
         var nodes = await NodeChoicesAsync(api);
         return await SubmitAsync(owner, Loc.T("DcStorage_EditTitle", storage),
             Fields(type, config, nodes),
-            values => api.Storage.UpdateAsync(storage, EditForm(type, values)), "DcStorage_Updated",
+            values => api.Storage.UpdateAsync(storage, WithDigest(EditForm(type, values), config)),
+            "DcStorage_Updated",
             titleIsKey: false, validate: values => Validate(type, values, isCreate: false));
+    }
+
+    /// <summary>
+    ///     읽을 때 받은 digest 를 함께 보낸다 — 창을 연 사이 다른 사람이 storage.cfg 를 바꿨으면 서버가 거절한다
+    ///     (덮어쓰지 않는다). 거절 문구는 표의 실패 줄에 그대로 보인다.
+    /// </summary>
+    private static Dictionary<string, string> WithDigest(Dictionary<string, string> form,
+        IReadOnlyDictionary<string, string> config)
+    {
+        if (config.TryGetValue("digest", out var digest) && digest.Length > 0) form["digest"] = digest;
+        return form;
     }
 
     private static async Task<IReadOnlyList<(string, string)>> NodeChoicesAsync(ProxmoxApiClient api)

@@ -94,8 +94,8 @@ internal static class DiskEditors
 
     private static bool ValidSize(string text)
     {
-        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var gib)
-               && gib is >= 0.001 and <= 131072;
+        // 소수점만 — 값이 "저장소:크기" 로 그대로 가므로 1e3 같은 지수 표기는 막는다
+        return Tabs.GuestInputChecks.TryParseGiB(text, out var gib) && gib is >= 0.001m and <= 131072m;
     }
 
     /// <summary>기존 디스크 편집 — 볼륨·크기 등 원래 키는 그대로 두고 옵션만 바꾼다.</summary>

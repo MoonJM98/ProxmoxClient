@@ -67,6 +67,10 @@ def guest_config(m, query, body):
 
 @route('PUT', r'/nodes/([^/]+)/(qemu|lxc)/(\d+)/config')
 def guest_config_put(m, query, body):
+    # 실서버처럼 보낸 digest 가 지금 설정과 다르면 거절한다(PVE::Tools::assert_if_modified)
+    current = _config_for(int(m.group(3))).get('digest')
+    if body.get('digest') and current and body['digest'] != current:
+        raise STATE.PveError(500, 'detected modified configuration - file changed by other user? Try again.\n')
     return None
 
 

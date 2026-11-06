@@ -21,9 +21,6 @@ internal static partial class DeviceEditors
         ("rtl8139", "Realtek RTL8139"), ("vmxnet3", "VMware vmxnet3")
     ];
 
-    [GeneratedRegex("^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$")]
-    private static partial Regex MacPattern();
-
     private static string V(IReadOnlyDictionary<string, string> values, string key)
     {
         return values.TryGetValue(key, out var v) ? v.Trim() : string.Empty;
@@ -89,7 +86,7 @@ internal static partial class DeviceEditors
 
     private static string? ValidateNetwork(IReadOnlyDictionary<string, string> values)
     {
-        if (V(values, "mac") is { Length: > 0 } mac && !MacPattern().IsMatch(mac)) return Loc.T("HwEd_MacInvalid");
+        if (!Tabs.GuestInputChecks.IsMacOrEmpty(V(values, "mac"))) return Loc.T("HwEd_MacInvalid");
         if (V(values, "tag") is { Length: > 0 } tag && !(int.TryParse(tag, out var t) && t is >= 1 and <= 4094))
             return Loc.T("GuestSettings_VlanRange");
         if (V(values, "mtu") is { Length: > 0 } mtu

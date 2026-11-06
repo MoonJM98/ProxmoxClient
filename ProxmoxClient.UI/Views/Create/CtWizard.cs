@@ -204,7 +204,8 @@ internal sealed class CtWizard
         {
             if (m.Storage.Length == 0) return Loc.T("Wz_PickStorage", m.Id);
             if (!IsSize(m.SizeGib)) return Loc.T("HwEd_DiskSizeRange");
-            if (!m.Path.Trim().StartsWith('/') || m.Path.Trim() == "/") return Loc.T("Wz_MountPathHint");
+            // 값은 property string(mp=…)에 그대로 들어간다 — 쉼표 등 서버가 받지 않는 경로는 미리 막는다
+            if (!Guest.Tabs.GuestInputChecks.IsMountPath(m.Path.Trim())) return Loc.T("Ct_MountPathRules");
         }
 
         return _d.Mounts.Select(m => m.Path.Trim()).Distinct().Count() == _d.Mounts.Count
@@ -214,8 +215,8 @@ internal sealed class CtWizard
 
     private static bool IsSize(string text)
     {
-        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var gib)
-               && gib is >= 0.001 and <= 131072;
+        // 소수점만 — 1e3 같은 값은 그대로 서버에 가서 거절된다
+        return Guest.Tabs.GuestInputChecks.TryParseGiB(text, out var gib) && gib is >= 0.001m and <= 131072m;
     }
 
     // ------------------------------------------------------------ CPU · 메모리

@@ -187,6 +187,10 @@ internal static partial class OptionEditors
                     Initial = raw, CanLoadFile = false }
             ],
             Build = (values, _) => One(key, V(values, "text")),
+            // 서버는 8 KiB 넘는 설명을 거절한다(VM·CT description maxLength)
+            Validate = values => GuestInputChecks.IsDescriptionLengthOk(V(values, "text"))
+                ? null
+                : Loc.T("GuestOptions_DescriptionTooLong", GuestInputChecks.DescriptionMaxBytes / 1024),
             Display = raw => raw.Replace("\r", "").Replace('\n', ' ')
         };
     }

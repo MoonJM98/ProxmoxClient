@@ -174,6 +174,13 @@ public sealed class NodesApi(ProxmoxApiClient api) : PveDomainApi(api)
         return Api.GetTableAsync($"{N(node)}/network", ct);
     }
 
+    /// <summary>적용 전 바뀐 내용(interfaces.new 와의 diff) — 응답의 "changes". 없으면 빈 문자열.</summary>
+    [PveApi("GET", "/nodes/{node}/network")]
+    public Task<string> PendingNetworkChangesAsync(string node, CancellationToken ct = default)
+    {
+        return Api.GetEnvelopeTextAsync($"{N(node)}/network", "changes", ct);
+    }
+
     [PveApi("POST", "/nodes/{node}/network")]
     [PveParam("bridge_vids", "8.2")]
     public Task<string> CreateInterfaceAsync(string node, IReadOnlyDictionary<string, string> form,

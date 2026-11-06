@@ -262,8 +262,7 @@ internal sealed class VmWizard
         foreach (var d in _d.Disks)
         {
             if (d.Storage.Length == 0) return Loc.T("Wz_PickStorage", d.Slot);
-            if (!double.TryParse(d.SizeGib, NumberStyles.Float, CultureInfo.InvariantCulture, out var gib)
-                || gib is < 0.001 or > 131072)
+            if (!Guest.Tabs.GuestInputChecks.TryParseGiB(d.SizeGib, out var gib) || gib is < 0.001m or > 131072m)
                 return Loc.T("HwEd_DiskSizeRange");
         }
 
@@ -282,10 +281,13 @@ internal sealed class VmWizard
 
     private string? ValidateCpu()
     {
-        return int.TryParse(_d.Sockets, out var s) && s >= 1
-               && int.TryParse(_d.Cores, out var c) && c is >= 1 and <= 256
-            ? null
-            : Loc.T("GuestSettings_CoresMin");
+        if (!(int.TryParse(_d.Sockets, out var s) && s >= 1 && int.TryParse(_d.Cores, out var c) && c is >= 1 and <= 256))
+            return Loc.T("GuestSettings_CoresMin");
+
+        // 소켓 × 코어가 노드의 논리 CPU 수를 넘으면 Proxmox 가 VM 시작을 거부한다(간편 하드웨어 탭과 같은 검사)
+        return _data.HostCpus > 0 && (long)s * c > _data.HostCpus
+            ? Loc.T("HostLimit_TooManyCores", (long)s * c, _data.HostCpus)
+            : null;
     }
 
     private void Memory(WizardPage page)

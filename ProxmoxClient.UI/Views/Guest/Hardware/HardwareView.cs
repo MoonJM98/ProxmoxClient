@@ -377,6 +377,8 @@ public partial class HardwareView : UserControl
         string flowName, bool confirmed = false)
     {
         var form = ActionHelpers.UpdateForm(changes);
+        // 읽을 때 받은 digest — 편집 창을 연 사이 다른 곳에서 설정이 바뀌었으면 서버가 거절한다(덮어쓰지 않음)
+        _ctx?.Config.AddDigest(form);
         return RunAsync(async () =>
         {
             using var flow = WriteConfirmation.Begin(flowName, confirmed);
@@ -406,6 +408,10 @@ public partial class HardwareView : UserControl
         catch (WriteCancelledException)
         {
             _status.Text = string.Empty; // 확인 창에서 취소 — 아무 일도 없었다
+        }
+        catch (ProxmoxApiException ex) when (ex.IsDigestMismatch)
+        {
+            _status.Text = Loc.T("Digest_Changed"); // 아래에서 다시 읽는다
         }
         catch (Exception ex)
         {

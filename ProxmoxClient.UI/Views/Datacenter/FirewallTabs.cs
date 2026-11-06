@@ -215,8 +215,8 @@ internal static class FirewallTabs
                 new TableAction
                 {
                     LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                    Run = (row, owner) => EditOptionAsync(api, scope, shown.First(o => o.Key == row!["key"]),
-                        target, owner)
+                    Run = (row, owner) => Guest.Tabs.DigestGuard.RunAsync(() => EditOptionAsync(api, scope,
+                        shown.First(o => o.Key == row!["key"]), target, owner))
                 }
             ]);
     }
@@ -249,7 +249,8 @@ internal static class FirewallTabs
     private static async Task<string?> EditOptionAsync(ProxmoxApiClient api, FirewallScope scope,
         FirewallOption option, ApiFeature? target, Control? owner)
     {
-        var current = Value(await api.Firewall.GetOptionsAsync(scope), option.Key);
+        var all = await api.Firewall.GetOptionsAsync(scope);
+        var current = Value(all, option.Key);
         var field = new FormField
         {
             Key = option.Key, LabelKey = option.LabelKey,
@@ -264,7 +265,13 @@ internal static class FirewallTabs
             Hint = option.EmptyLabelKey is null ? null : Loc.T(option.EmptyLabelKey)
         };
         return await SubmitAsync(owner, Loc.T(option.LabelKey), [field],
-            values => api.Firewall.UpdateOptionsAsync(scope, UpdateForm(values)), "DcFirewall_Updated",
+            values =>
+            {
+                // 읽을 때 받은 digest 로 그 사이 다른 곳에서 바뀐 옵션을 덮어쓰지 않게 한다
+                var form = UpdateForm(values);
+                if (Value(all, "digest") is { Length: > 0 } digest) form["digest"] = digest;
+                return api.Firewall.UpdateOptionsAsync(scope, form);
+            }, "DcFirewall_Updated",
             titleIsKey: false, target: target);
     }
 

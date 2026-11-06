@@ -44,7 +44,8 @@ public sealed partial class ProxmoxApiClient
             ["name"] = name
         };
         if (!string.IsNullOrEmpty(description)) form["description"] = description;
-        if (includeRam) form["vmstate"] = "1";
+        // RAM 상태 저장은 VM 만 — 컨테이너 스냅숏 API 에는 vmstate 가 없어 보내면 요청 전체가 거절된다
+        if (includeRam && kind == ResourceKind.Qemu) form["vmstate"] = "1";
 
         return PostWriteAsync($"nodes/{Escape(node)}/{kind.ApiSegment()}/{vmid}/snapshot", form, ct);
     }
@@ -54,11 +55,30 @@ public sealed partial class ProxmoxApiClient
     public Task<string> RollbackSnapshotAsync(string node, ResourceKind kind, int vmid, string name,
         CancellationToken ct = default)
     {
+        return RollbackSnapshotAsync(node, kind, vmid, name, false, ct);
+    }
+
+    /// <summary>
+    ///     스냅숏으로 되돌리고, <paramref name="start" /> 면 끝난 뒤 게스트를 켠다(start=1, VM·CT 모두 7.2+).
+    ///     RAM 을 담은 VM 스냅숏은 서버가 알아서 켜므로 start 가 필요 없다.
+    /// </summary>
+    [Versioning.PveApi("POST", "/nodes/{node}/qemu/{vmid}/snapshot/{snapname}/rollback")]
+    [Versioning.PveApi("POST", "/nodes/{node}/lxc/{vmid}/snapshot/{snapname}/rollback")]
+    [Versioning.PveParam("start", RollbackStartSince)]
+    public Task<string> RollbackSnapshotAsync(string node, ResourceKind kind, int vmid, string name, bool start,
+        CancellationToken ct = default)
+    {
+        var form = start && Supports(Versioning.PveApiVersion.Parse(RollbackStartSince))
+            ? new Dictionary<string, string> { ["start"] = "1" }
+            : null;
         return PostWriteAsync(
             $"nodes/{Escape(node)}/{kind.ApiSegment()}/{vmid}/snapshot/{Escape(name)}/rollback",
-            null,
+            form,
             ct);
     }
+
+    /// <summary>되돌린 뒤 켜기(start)를 아는 서버 버전.</summary>
+    public const string RollbackStartSince = "7.2";
     /// <summary>Deletes a snapshot (DELETE .../snapshot/{name}). Returns the task UPID.</summary>
     [Versioning.PveApi("DELETE", "/nodes/{node}/qemu/{vmid}/snapshot/{snapname}")]
     [Versioning.PveApi("DELETE", "/nodes/{node}/lxc/{vmid}/snapshot/{snapname}")]

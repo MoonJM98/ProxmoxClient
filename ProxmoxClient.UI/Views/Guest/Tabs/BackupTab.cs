@@ -52,7 +52,7 @@ public sealed class BackupTab : UserControl
             [("snapshot", "BackupWindow_06"), ("suspend", "BackupWindow_07"), ("stop", "BackupWindow_08")]);
         ComboChoices.Fill(_compress,
         [
-            ("", "BackupWindow_10"), ("zstd", "BackupTab_CompressZstd"), ("lzo", "BackupTab_CompressLzo"),
+            ("0", "BackupWindow_10"), ("zstd", "BackupTab_CompressZstd"), ("lzo", "BackupTab_CompressLzo"),
             ("gzip", "BackupTab_CompressGzip")
         ]);
         ComboChoices.Fill(_notify,

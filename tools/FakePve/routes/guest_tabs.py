@@ -217,6 +217,8 @@ def extract_config(m, query, body):
 
 @route('POST', r'/nodes/([^/]+)/vzdump')
 def backup_now(m, query, body):
+    import sys
+    sys.stderr.write("MANAGE vzdump compress=%s\n" % body.get('compress', '(none)'))
     return _upid(m.group(1), 'vzdump', body.get('vmid', ''))
 
 

@@ -144,13 +144,13 @@ internal static partial class CtEditors
 
     private static string? ValidatePath(IReadOnlyDictionary<string, string> values)
     {
-        return V(values, "mp").StartsWith('/') ? null : Loc.T("Ct_MountPathInvalid");
+        return Tabs.GuestInputChecks.IsMountPath(V(values, "mp")) ? null : Loc.T("Ct_MountPathRules");
     }
 
     private static bool ValidSize(string text)
     {
-        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var gib)
-               && gib is >= 0.001 and <= 131072;
+        // 소수점만 — 값이 "저장소:크기" 로 그대로 가므로 1e3 같은 지수 표기는 막는다
+        return Tabs.GuestInputChecks.TryParseGiB(text, out var gib) && gib is >= 0.001m and <= 131072m;
     }
 
     private static IReadOnlyDictionary<string, string> One(string key, string value)

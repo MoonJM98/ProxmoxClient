@@ -12,7 +12,7 @@ namespace ProxmoxClient.UI.Views.Guest.Hardware;
 /// </summary>
 internal static class DiskActions
 {
-    private const double MaxResizeGib = 131072;
+    private const decimal MaxResizeGib = 131072;
     private static readonly string[] Buses = ["ide", "sata", "scsi", "virtio"];
 
     /// <summary>디스크 작업 요청 — 설정 변경이 아니라 별도 요청(move_disk·resize)으로 보낸다(작업 UPID).</summary>
@@ -120,14 +120,22 @@ internal static class DiskActions
                 new FormField { Key = "size", LabelKey = "HwDisk_SizeIncrement", Initial = "0", Required = true,
                     Hint = Loc.T("HwDisk_SizeIncrementHint") }
             ],
-            Validate = values => double.TryParse(V(values, "size"), NumberStyles.Float, CultureInfo.InvariantCulture,
-                out var gib) && gib is > 0 and <= MaxResizeGib
+            // 소수점만 받는다 — 1e3·1,5 같은 값은 서버 형식(+숫자[.숫자]G)이 아니다
+            Validate = values => Tabs.GuestInputChecks.TryParseGiB(V(values, "size"), out var gib)
+                                 && gib <= MaxResizeGib
                 ? null
                 : Loc.T("DeviceTable_SizeInvalid"),
             Build = _ => new Dictionary<string, string>()
         };
         return new DiskDialog(edit, values => new DiskRequest(api =>
-            api.Guests.ResizeDiskAsync(ctx.Guest, key, $"+{V(values, "size")}G")));
+            api.Guests.ResizeDiskAsync(ctx.Guest, key, ResizeSize(V(values, "size")))));
+    }
+
+    /// <summary>늘릴 크기 → 서버 형식 "+N[.N]G"(문화권과 무관하게 점).</summary>
+    public static string ResizeSize(string text)
+    {
+        Tabs.GuestInputChecks.TryParseGiB(text, out var gib);
+        return $"+{gib.ToString(CultureInfo.InvariantCulture)}G";
     }
 
     /// <summary>EFI 디스크에 새 인증서(Microsoft 2023)를 넣을 수 있는가 — 미리 등록된 키가 있고 아직 2023k 가 아닐 때(PVE 9).</summary>

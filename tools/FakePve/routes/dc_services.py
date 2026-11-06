@@ -139,11 +139,13 @@ def fw_cluster_rules(m, query, body):
 
 @route('GET', r'/nodes/([^/]+)/(qemu|lxc)/(\d+)/firewall/rules')
 def fw_guest_rules(m, query, body):
+    # 실서버처럼 행마다 규칙 파일의 digest 를 붙인다(routes/manage.py 가 바꾸고 검사한다)
+    digest = getattr(STATE, 'FW_GUEST_DIGEST', 'fwdigest1')
     return [
         dict(pos=0, enable=1, type='in', action='ACCEPT', macro='SSH', iface='', proto='tcp', source='',
-             sport='', dest='', dport='22', log='nolog', comment='관리자 SSH'),
+             sport='', dest='', dport='22', log='nolog', comment='관리자 SSH', digest=digest),
         dict(pos=1, enable=1, type='in', action='ACCEPT', macro='HTTPS', iface='', proto='tcp', source='',
-             sport='', dest='', dport='443', log='nolog', comment='웹 서비스'),
+             sport='', dest='', dport='443', log='nolog', comment='웹 서비스', digest=digest),
     ]
 
 

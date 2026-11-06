@@ -104,7 +104,7 @@ public sealed partial class ProxmoxApiClient
     }
     /// <summary>
     ///     Starts a vzdump backup of one guest (POST nodes/{node}/vzdump, vmid=…). mode: snapshot|suspend|stop.
-    ///     compress: "" (none)|zstd|lzo|gzip. Returns the task UPID.
+    ///     compress: "0" 또는 "" (압축 안 함 — 늘 compress=0 으로 보낸다)|zstd|lzo|gzip. Returns the task UPID.
     ///     options: 웹 UI 백업 창의 추가 칸(protected·notes-template·notification-mode) — 비었으면 보내지 않는다.
     /// </summary>
     [Versioning.PveApi("POST", "/nodes/{node}/vzdump")]
@@ -122,7 +122,8 @@ public sealed partial class ProxmoxApiClient
             ["storage"] = storage,
             ["mode"] = mode
         };
-        if (!string.IsNullOrEmpty(compress)) form["compress"] = compress;
+        // 압축 안 함은 compress=0 으로 보내야 한다 — 빼면 서버가 노드 기본값(vzdump.conf, 보통 zstd)으로 압축한다
+        form["compress"] = string.IsNullOrEmpty(compress) ? "0" : compress;
         foreach (var (key, value) in options ?? new Dictionary<string, string>())
             if (value.Length > 0 && VzdumpOptions.Contains(key)) form[key] = value;
 
