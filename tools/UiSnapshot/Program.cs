@@ -488,15 +488,80 @@ async Task RdpCheck()
     }
 
     // 가짜 PVE 설정: 대상 서버·rdpproxy 가 줄 계정, VM 101 디스플레이를 rdp 로
-    using (var http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true }))
+    void Configure(string password)
     {
+        using var http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true });
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["target"] = rdpTarget, ["user"] = rdpUser, ["password"] = rdpPassword, ["vmid"] = "101"
+            ["target"] = rdpTarget, ["user"] = rdpUser, ["password"] = password, ["vmid"] = "101"
         });
         http.Send(new HttpRequestMessage(HttpMethod.Post, $"https://127.0.0.1:{port}/__fake/rdp") { Content = form })
             .EnsureSuccessStatusCode();
     }
+
+    var serverLog = options.GetValueOrDefault("serverlog", "");
+    long LogSize() => File.Exists(serverLog) ? new FileInfo(serverLog).Length : 0;
+    List<string> LogSince(long offset, string prefix)
+    {
+        if (!File.Exists(serverLog)) return [];
+        using var fs = new FileStream(serverLog, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        fs.Seek(offset, SeekOrigin.Begin);
+        return new StreamReader(fs).ReadToEnd().Split('\n').Where(l => l.StartsWith(prefix)).Select(l => l[prefix.Length..].Trim()).ToList();
+    }
+
+    int ColorsOf(byte[]? fb)
+    {
+        if (fb is null || fb.Length < 4) return 0;
+        var set = new HashSet<int>();
+        for (var i = 0; i + 3 < fb.Length; i += 4 * 97) set.Add(BitConverter.ToInt32(fb, i) & 0xFFFFFF);
+        return set.Count;
+    }
+
+    var guest = cluster.Guests.First(g => g.VmId == 101);
+
+    // xrdp 로그인 화면(틀린 비밀번호 → 자동 로그온 실패): xrdp 는 이 화면을 느린 경로 비트맵(폭을 4 의 배수로 채운 것)으로
+    // 그린다. 세션이 끊기지 않고(옛 IronRDP 는 "unhandled PDU"), 대화상자 왼쪽 테두리가 곧아야 한다(행 간격을 잘못 읽으면
+    // 줄마다 밀려 비스듬히 그려진다). 프록시 고쳐 쓰기 없이(FAKEPVE_RDP_COMPAT 꺼짐)
+    {
+        Configure("wrong-" + rdpPassword);
+        var logFrom = LogSize();
+        await Wait(ConsoleLauncher.OpenGuestAsync(cluster.Session, guest));
+        var loginPage = nav.CurrentPage as ConsolePage;
+        var loginVm = loginPage?.DataContext as ConsoleViewModel;
+        if (loginVm is not null)
+        {
+            WaitFor(() => loginVm.IsConnected || loginVm.CanReconnect, 30000);
+            WaitFor(() => ColorsOf(loginVm.Vnc.Framebuffer) > 8, 15000);
+            Pump(3000);
+            Shot("rdp-login-screen");
+            var fb = loginVm.Vnc.Framebuffer;
+            int w = loginVm.Vnc.Width, h = loginVm.Vnc.Height;
+            // 대화상자 높이의 가운데 줄들에서, 왼쪽 바탕색이 처음 끊기는 x
+            var edges = new List<int>();
+            if (fb is not null && fb.Length >= w * h * 4)
+                for (var y = h * 2 / 5; y < h * 3 / 5; y++)
+                {
+                    var bg = BitConverter.ToInt32(fb, y * w * 4) & 0xFFFFFF;
+                    for (var x = 1; x < w / 2; x++)
+                        if ((BitConverter.ToInt32(fb, (y * w + x) * 4) & 0xFFFFFF) != bg)
+                        {
+                            edges.Add(x);
+                            break;
+                        }
+                }
+
+            var spread = edges.Count > 0 ? edges.Max() - edges.Min() : -1;
+            var quirks = LogSince(logFrom, "RDP server sent");
+            Check0("RDP xrdp 로그인 화면(느린 경로·채운 폭 비트맵)", "연결 유지 · 서버가 느린 경로로 보냄 · 왼쪽 테두리 곧음(±1)",
+                $"{(loginVm.IsConnected ? "연결됨" : loginVm.Status)} · {(quirks.Count > 0 ? "느린 경로 받음" : "느린 경로 없음")} · 테두리 {edges.Count}줄 x {(edges.Count > 0 ? $"{edges.Min()}~{edges.Max()}" : "-")}",
+                loginVm.IsConnected && quirks.Count > 0 && edges.Count > 20 && spread is >= 0 and <= 1);
+            await Wait(AppServices.Navigator.PopAsync());
+            Pump(500);
+        }
+
+        Configure(rdpPassword);
+    }
+
 
     void Drop()
     {
@@ -507,7 +572,6 @@ async Task RdpCheck()
         });
     }
 
-    var guest = cluster.Guests.First(g => g.VmId == 101);
     await Wait(ConsoleLauncher.OpenGuestAsync(cluster.Session, guest)); // 디스플레이 rdp → RDP 콘솔
     var page = nav.CurrentPage as ConsolePage;
     var vm = page?.DataContext as ConsoleViewModel;
@@ -582,21 +646,11 @@ async Task RdpCheck()
     // 한글: RDP 는 두벌식 키(영문 입력기에서 'gksrmf')가 아니라 유니코드 키 입력으로 보낸다 — 프록시가 본 빠른 경로 입력
     // (서버 로그 'RDP unicode U+XXXX')으로 확인한다. xrdp 는 ibus 없이 빌드되면 유니코드 키를 버린다(글자가 안 들어감,
     // Windows 는 그대로 넣는다) — 그래서 게스트가 받은 글은 참고로만 적는다
-    var serverLog = options.GetValueOrDefault("serverlog", "");
-    long LogSize() => File.Exists(serverLog) ? new FileInfo(serverLog).Length : 0;
-    List<string> LogSince(long offset)
-    {
-        if (!File.Exists(serverLog)) return [];
-        using var fs = new FileStream(serverLog, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        fs.Seek(offset, SeekOrigin.Begin);
-        return new StreamReader(fs).ReadToEnd().Split('\n').Where(l => l.StartsWith("RDP unicode")).Select(l => l[12..].Trim()).ToList();
-    }
-
     var koreanPath = $"/tmp/rdp-korean-{Environment.ProcessId}.txt";
     var unicodeFrom = LogSize();
     Type($"echo 한글 > {koreanPath}\n");
     var korean = ReadTyped(koreanPath);
-    var unicodeKeys = LogSince(unicodeFrom);
+    var unicodeKeys = LogSince(unicodeFrom, "RDP unicode");
     Shot("rdp-korean");
     Check0("RDP 화면 키보드 한글", "유니코드 키 한·글(누름·뗌)이 서버로, 두벌식 키(gksrmf) 아님",
         $"{string.Join(", ", unicodeKeys)} · 게스트가 적은 글 '{korean}'",

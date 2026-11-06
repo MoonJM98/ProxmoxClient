@@ -2,14 +2,16 @@
 실제 RDP 서버(이 PC 의 xrdp 등, CONFIG['target'])에 TCP 로 붙어 X.224 연결 요청을 넘기고 확인을 받은 뒤 TLS 를 맺고,
 RDCleanPath 응답(X.224 확인 + 서버 인증서 + 서버 주소)을 돌려준다. 그 뒤로는 웹소켓 ↔ TLS 바이트를 그대로 잇는다.
 PDU 모양은 IronRDP ironrdp-rdcleanpath(RDCleanPathPdu, 모든 필드 EXPLICIT 문맥 태그)와 같다.
-xrdp 와 이 앱의 IronRDP(2025.12.4) 사이에 안 맞는 세 가지는 프록시가 메운다(아래 DownFixer·UpFixer — 실제 PVE 프록시는
-하지 않는다): 느린 경로 화면 갱신, 머리만 있는 Deactivate All, drdynvc 능력 버전.
+xrdp 와 옛 IronRDP(2025.12.4) 사이에 안 맞던 세 가지(느린 경로 화면 갱신, 머리만 있는 Deactivate All, drdynvc 능력
+버전)를 메우는 고쳐 쓰기는 FAKEPVE_RDP_COMPAT=1 일 때만 한다(기본 꺼짐 — 2026.10.29 는 셋 다 스스로 처리한다. 실제 PVE
+프록시도 하지 않는다). 클라이언트가 보낸 빠른 경로 유니코드 키는 늘 로그로 남긴다.
 로그: 'RDP ...' 줄(연결·요청·응답·유니코드 키·바이트 수·끊김)."""
 import base64, hashlib, os, select, socket, ssl, struct, sys, threading
 
 GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 VERSION_1 = 3390
 DEBUG = os.environ.get('FAKEPVE_RDP_DEBUG') == '1'  # 오가는 덩어리마다 로그
+COMPAT = os.environ.get('FAKEPVE_RDP_COMPAT') == '1'  # 옛 IronRDP 용 xrdp 호환 고쳐 쓰기(위 설명)
 
 # 대상 RDP 서버와 rdpproxy 가 돌려줄 일회성 계정 — POST /__fake/rdp 로 바꾼다(기본: 환경 변수)
 CONFIG = {
@@ -276,6 +278,7 @@ class DownFixer:
     def __init__(self):
         self.buf = b''
         self.converted = 0
+        self.seen = 0
         self.off = False
 
     def feed(self, data):
@@ -299,8 +302,13 @@ class DownFixer:
             pdu, self.buf = b[:n], b[n:]
             fixed = _slow_update(pdu) if pdu[0] == 3 else None
             if fixed is not None:
-                self.converted += 1
-            out += fixed if fixed is not None else pdu
+                self.seen += 1
+                if self.seen == 1:
+                    log('server sent slow-path update / short deactivate-all (compat rewrite %s)' % ('on' if COMPAT else 'off'))
+                if COMPAT:
+                    self.converted += 1
+                    pdu = fixed
+            out += pdu
         return out
 
 
@@ -353,7 +361,7 @@ class UpFixer(DownFixer):
             if pdu[0] != 3:
                 log_fastpath_input(pdu)
             # TPKT·X.224·MCS SendDataRequest(0x64) … CHANNEL_PDU_HEADER(8) + DYNVC_CAPS_RSP(50 00 01 00)
-            if pdu[0] == 3 and pdu[7:8] == b'\x64' and pdu.endswith(b'\x04\x00\x00\x00\x03\x00\x00\x00\x50\x00\x01\x00'):
+            if COMPAT and pdu[0] == 3 and pdu[7:8] == b'\x64' and pdu.endswith(b'\x04\x00\x00\x00\x03\x00\x00\x00\x50\x00\x01\x00'):
                 pdu = pdu[:-2] + b'\x02\x00'
                 self.converted += 1
             out += pdu
@@ -459,10 +467,10 @@ def serve(handler, vmid, token):
                         if payload:
                             sendall(server, payload)
     except (EOFError, ConnectionError, OSError, ssl.SSLError, AssertionError) as e:
-        log('end %s: %s · up %d down %d slow-path→fast-path %d dvc-caps %d' % (
+        fx, ufx = locals().get('fixer'), locals().get('up_fixer')
+        log('end %s: %s · up %d down %d · slow-path seen %d rewritten %d · dvc-caps rewritten %d' % (
             type(e).__name__, e, locals().get('up', 0), locals().get('down', 0),
-            locals()['fixer'].converted if 'fixer' in locals() else 0,
-            locals()['up_fixer'].converted if 'up_fixer' in locals() else 0))
+            fx.seen if fx else 0, fx.converted if fx else 0, ufx.converted if ufx else 0))
     finally:
         with ACTIVE_LOCK:
             if conn in ACTIVE:

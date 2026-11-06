@@ -1,7 +1,7 @@
 using ProxmoxClient.Core.Rdp;
 using ProxmoxClient.UI.Views.Console;
 
-/// <summary>RDP 키 변환(keysym → 스캔코드·유니코드)과 디코딩 버퍼 부분 복사.</summary>
+/// <summary>RDP 키 변환(keysym → 스캔코드·유니코드)·클립보드 없는 연결.</summary>
 public static class RdpTests
 {
     public static void SpecialKeysToScancodes(Checker c)
@@ -97,11 +97,5 @@ public static class RdpTests
 
         c.Is(error is not (DllNotFoundException or EntryPointNotFoundException), "user32 를 찾지 않는다", error?.GetType());
         c.Is(!session.ClipboardActive && !ProxmoxRdpSession.ClipboardSupported, "클립보드 없이 연결");
-    }
-
-    /// <summary>IronRDP 버퍼 조각 모양(포인터·길이)을 알아본다 — 모르면 전체 복사로 돌아가지만 그러면 느려진다.</summary>
-    public static void PartialFramebufferCopy(Checker c)
-    {
-        c.Is(ProxmoxRdpSession.SupportsPartialCopy(), "디코딩 버퍼에서 바뀐 영역만 읽을 수 있다");
     }
 }

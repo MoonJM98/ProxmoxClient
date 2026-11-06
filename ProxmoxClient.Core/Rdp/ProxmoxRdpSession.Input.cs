@@ -78,8 +78,8 @@ public sealed partial class ProxmoxRdpSession
                 QueueScancode(key.Code, down);
                 break;
             case RdpKeyRoute.Unicode:
-                using (var ch = Devolutions.IronRdp.Char.New((uint)key.Code))
-                    Queue(down ? ch.AsOperationUnicodeKeyPressed() : ch.AsOperationUnicodeKeyReleased());
+                var ch = Devolutions.IronRdp.Char.New((uint)key.Code);
+                Queue(down ? ch.AsOperationUnicodeKeyPressed() : ch.AsOperationUnicodeKeyReleased());
                 break;
         }
 
@@ -152,7 +152,6 @@ public sealed partial class ProxmoxRdpSession
         _ = Task.Run(() =>
         {
             TryApplyPendingResize();
-            ResignalIfOwed();
         });
     }
 
@@ -191,6 +190,8 @@ public sealed partial class ProxmoxRdpSession
         lock (_gate)
         {
             if (!CanSend() || Environment.TickCount64 < _resizeRetryAt) return; // 수신 처리에서 다시 시도한다
+            // 디스플레이 제어 채널이 아직 열리지 않았다(서버가 능력을 보내기 전) — 요청은 두고 다음 수신 처리에서 다시
+            if (_stage!.DisplayControlState != DisplayControlState.Ready) return;
 
             var (width, height) = UnpackSize(packed);
             if (width == _width && height == _height)
@@ -202,7 +203,7 @@ public sealed partial class ProxmoxRdpSession
             try
             {
                 using var outputs = _stage!.EncodedResize((uint)width, (uint)height);
-                if (outputs is null) return; // 디스플레이 제어 채널이 아직 열리지 않았다
+                if (outputs is null) return; // 채널이 막 닫혔다 — 다시 열리면 다시 시도한다
                 Interlocked.CompareExchange(ref _pendingSize, 0, packed); // 그사이 새 요청이 왔으면 그것은 남긴다
                 _resizeFailures = 0;
                 Collect(outputs);
@@ -242,17 +243,16 @@ public sealed partial class ProxmoxRdpSession
         _buttons = now ? _buttons | bit : _buttons & ~bit;
     }
 
-    /// <summary>(잠금 안에서) 재활성화 중이면 붙잡아 두고 true(해제는 보낼 때), 아니면 보내고 false.</summary>
-    private bool ApplyOrHold(Operation operation)
+    /// <summary>(잠금 안에서) 재활성화 중이면 붙잡아 두고, 아니면 보낸다.</summary>
+    private void ApplyOrHold(Operation operation)
     {
         if (_reactivating && IsConnected && _heldInputs.Count < MaxHeldInputs)
         {
             _heldInputs.Add(operation);
-            return true;
+            return;
         }
 
         ApplyInput(operation);
-        return false;
     }
 
     /// <summary>(잠금 안에서) 재활성화가 끝났다 — 붙잡아 둔 입력을 순서대로 보낸다. 닫는 중이면 버리기만 한다.</summary>
@@ -264,7 +264,6 @@ public sealed partial class ProxmoxRdpSession
         }
         finally
         {
-            foreach (var operation in _heldInputs) operation.Dispose();
             _heldInputs.Clear();
         }
     }
@@ -274,7 +273,7 @@ public sealed partial class ProxmoxRdpSession
     {
         if (!CanSend()) return;
 
-        using var events = _input!.Apply(operation);
+        var events = _input!.Apply(operation);
         using var outputs = _stage!.ProcessFastpathInput(_image!, events);
         Collect(outputs);
     }
@@ -285,20 +284,8 @@ public sealed partial class ProxmoxRdpSession
         try
         {
             await foreach (var operation in _inputs.Reader.ReadAllAsync(token).ConfigureAwait(false))
-            {
-                var held = false;
-                try
-                {
-                    lock (_gate)
-                        held = ApplyOrHold(operation);
-                }
-                finally
-                {
-                    if (!held) operation.Dispose();
-                }
-
-                ResignalIfOwed(); // 입력을 처리하는 동안 창이 옛 화면을 가져갔을 수 있다
-            }
+                lock (_gate)
+                    ApplyOrHold(operation);
         }
         catch (OperationCanceledException)
         {

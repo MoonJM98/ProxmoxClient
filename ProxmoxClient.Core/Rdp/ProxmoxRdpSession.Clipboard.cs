@@ -75,7 +75,6 @@ public sealed partial class ProxmoxRdpSession
                 while (clipboard.NextClipboardMessage() is { } message)
                     using (message)
                         SubmitClipboard(message);
-                ResignalIfOwed();
 
                 await Task.Delay(ClipboardPollInterval, token).ConfigureAwait(false);
             }
@@ -104,7 +103,7 @@ public sealed partial class ProxmoxRdpSession
             try
             {
                 using var frame = ToClipboardFrame(_stage, message);
-                if (frame is null || (int)frame.GetSize() == 0) return;
+                if (frame is null || (int)frame.Size == 0) return;
 
                 var bytes = Utils.VecU8ToByte(frame);
                 if (_reactivating) _heldClipboardFrames.Add(bytes);
@@ -112,7 +111,7 @@ public sealed partial class ProxmoxRdpSession
             }
             catch (IronRdpException ex)
             {
-                Trace.TraceWarning($"[RDP 클립보드] {message.GetMessageType()} 처리 실패: {ex.Inner.ToDisplay()}");
+                Trace.TraceWarning($"[RDP 클립보드] {message.MessageType} 처리 실패: {ex.Inner.ToDisplay()}");
             }
         }
     }
@@ -120,16 +119,14 @@ public sealed partial class ProxmoxRdpSession
     /// <summary>종류별 내용은 그 종류일 때만 있다 — 꺼낸 내용 객체도 바로 해제한다.</summary>
     private static VecU8? ToClipboardFrame(ActiveStage stage, ClipboardMessage message)
     {
-        switch (message.GetMessageType())
+        switch (message.MessageType)
         {
             case ClipboardMessageType.SendInitiateCopy:
-                using (var formats = message.GetSendInitiateCopy()!)
-                    return stage.InitiateClipboardCopy(formats);
+                return stage.InitiateClipboardCopy(message.SendInitiateCopy!);
             case ClipboardMessageType.SendInitiatePaste:
-                using (var format = message.GetSendInitiatePaste()!)
-                    return stage.InitiateClipboardPaste(format);
+                return stage.InitiateClipboardPaste(message.SendInitiatePaste!);
             case ClipboardMessageType.SendFormatData:
-                using (var data = message.GetSendFormatData()!)
+                using (var data = message.SendFormatData!)
                     return stage.SubmitClipboardFormatData(data);
             default:
                 return null;

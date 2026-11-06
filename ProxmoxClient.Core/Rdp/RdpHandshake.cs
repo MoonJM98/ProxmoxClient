@@ -28,13 +28,13 @@ internal static class RdpHandshake
         if (connector.ShouldPerformCredssp())
             await CredsspAsync(channel, connector, destination, serverPublicKey, writeBuf).ConfigureAwait(false);
 
-        while (!connector.GetDynState().IsTerminal())
+        while (!connector.DynState.IsTerminal())
             await channel.StepAsync(connector, writeBuf).ConfigureAwait(false);
 
         var state = connector.ConsumeAndCastToClientConnectorState();
-        if (state.GetEnumType() != ClientConnectorStateType.Connected)
+        if (state.EnumType != ClientConnectorStateType.Connected)
             throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed,
-                Res.T("Rdp_NotConnected", state.GetEnumType()));
+                Res.T("Rdp_NotConnected", state.EnumType));
 
         return state.GetConnectedResult();
     }
@@ -45,7 +45,7 @@ internal static class RdpHandshake
     {
         var writeBuf = WriteBuf.New();
         var written = connector.StepNoInput(writeBuf);
-        var x224Request = new byte[(int)written.GetSize().Get()];
+        var x224Request = new byte[(int)written.Size.Get()];
         writeBuf.ReadIntoBuf(x224Request);
 
         var request = RDCleanPathPdu.NewRequest(x224Request, destination, token, string.Empty);
@@ -59,15 +59,15 @@ internal static class RdpHandshake
                 break;
             case RDCleanPathResultType.GeneralError:
                 throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed,
-                    Res.T("Rdp_GatewayError", response.GetErrorCode(), response.GetErrorMessage()));
+                    Res.T("Rdp_GatewayError", response.ErrorCode, response.ErrorMessage));
             default:
                 throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed, Res.T("Rdp_Negotiation"));
         }
 
         writeBuf.Clear();
-        connector.Step(Utils.VecU8ToByte(response.GetX224Response()), writeBuf);
+        connector.Step(Utils.VecU8ToByte(response.X224Response), writeBuf);
 
-        var chain = response.GetServerCertChain();
+        var chain = response.ServerCertChain;
         if (chain.IsEmpty() || chain.Next() is not { } first)
             throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed, Res.T("Rdp_NoCertificate"));
 
@@ -86,15 +86,22 @@ internal static class RdpHandshake
 
         while (true)
         {
-            var state = sequence.ProcessTsRequest(tsRequest).Start();
-            if (!state.IsCompleted())
-                throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed, Res.T("Rdp_NeedsNetworkAuth"));
+            ClientState clientState;
+            using (var generator = sequence.ProcessTsRequest(tsRequest))
+            {
+                var state = generator.Start();
+                if (!state.IsCompleted())
+                    throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed,
+                        Res.T("Rdp_NeedsNetworkAuth"));
+
+                clientState = state.ClientStateIfCompleted;
+            }
 
             writeBuf.Clear();
-            var written = sequence.HandleProcessResult(state.GetClientStateIfCompleted(), writeBuf);
-            if (written.GetSize().IsSome())
+            var written = sequence.HandleProcessResult(clientState, writeBuf);
+            if (written.Size.IsSome())
             {
-                var reply = new byte[(int)written.GetSize().Get()];
+                var reply = new byte[(int)written.Size.Get()];
                 writeBuf.ReadIntoBuf(reply);
                 await channel.WriteAsync(reply).ConfigureAwait(false);
             }
