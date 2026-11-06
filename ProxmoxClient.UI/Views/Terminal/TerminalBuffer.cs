@@ -1713,6 +1713,13 @@ public sealed partial class TerminalBuffer
             Cells[column].Flags |= CellFlags.Combined;
         }
 
+        /// <summary>결합 문자를 통째로 넣는다(줄 다시 감기에서 칸을 옮길 때) — 칸의 Combined 표시는 칸과 함께 이미 옮겨졌다.</summary>
+        public void SetExtra(int column, string extra)
+        {
+            Extra ??= [];
+            Extra[column] = extra;
+        }
+
         public void ClearExtra(int column)
         {
             if (Extra is null) return;

@@ -249,3 +249,23 @@ public static class ReflowTests
         c.Equal(new string('x', 190), Checker.Line(t, 0, 1), "글자 그대로");
     }
 }
+
+/// <summary>다시 감기 + 결합 문자 — 두 기능이 만나는 곳.</summary>
+public static class ReflowUnicodeTests
+{
+    public static void CombiningSurvivesReflow(Checker c)
+    {
+        var t = Checker.Term(10, 4);
+        // NFD 한(ᄒ+ᅡ+ᆫ)과 é(e+U+0301)를 둘째 조각에 둔 긴 줄 → 좁혔다 넓혀도 묶음이 남아야 한다
+        Checker.Feed(t, "abcdefgh한xéz");
+        t.Resize(5, 6);
+        t.Resize(10, 4);
+        string Text()
+        {
+            lock (t.Gate) return t.GetText(t.AbsoluteRow(0, 0), 0, t.AbsoluteRow(3, 0), 9);
+        }
+
+        var text = Text();
+        c.Is(text.Contains("한") && text.Contains("é"), "다시 감은 뒤 결합 문자", text);
+    }
+}

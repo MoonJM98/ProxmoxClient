@@ -262,6 +262,12 @@ public sealed partial class TerminalBuffer
     private static void CopyCells(Line src, int srcCol, Line dst, int dstCol, int count)
     {
         Array.Copy(src.Cells, srcCol, dst.Cells, dstCol, count);
+        // 결합 문자(자소·악센트·이모지 묶음)도 같이 옮긴다
+        if (src.Extra is null) return;
+
+        for (var i = 0; i < count; i++)
+            if (src.GetExtra(srcCol + i) is { } extra)
+                dst.SetExtra(dstCol + i, extra);
     }
 
     /// <summary>넓은 글자를 다음 줄로 넘기며 비운 칸(지운 칸과 같다 — 직접 친 공백은 ' ').</summary>
