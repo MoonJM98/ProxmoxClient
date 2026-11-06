@@ -69,6 +69,18 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Cluster_NoGuests" xml:space="preserve">
     <value>No guests to show</value>
   </data>
+  <data name="Cluster_NoNodes" xml:space="preserve">
+    <value>No nodes to show</value>
+  </data>
+  <data name="Cluster_NoStorage" xml:space="preserve">
+    <value>No storage to show</value>
+  </data>
+  <data name="Cluster_NoTasks" xml:space="preserve">
+    <value>No recent tasks</value>
+  </data>
+  <data name="Cluster_TasksFailed" xml:space="preserve">
+    <value>Couldn't load the task list: {0}</value>
+  </data>
   <data name="Cluster_NodeSummary" xml:space="preserve">
     <value>{0} of {1} nodes online</value>
   </data>
@@ -185,6 +197,12 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Console_Open" xml:space="preserve">
     <value>Console</value>
   </data>
+  <data name="Console_SerialTitle" xml:space="preserve">
+    <value>{0} · serial</value>
+  </data>
+  <data name="Console_NodeShellTitle" xml:space="preserve">
+    <value>{0} · Shell</value>
+  </data>
   <data name="Desktop_SelectItem" xml:space="preserve">
     <value>Select an item from the list</value>
   </data>
@@ -221,6 +239,9 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   </data>
   <data name="Guest_Config" xml:space="preserve">
     <value>Configuration</value>
+  </data>
+  <data name="Guest_LoadFailed" xml:space="preserve">
+    <value>Couldn't load: {0}</value>
   </data>
   <data name="Guest_KindCt" xml:space="preserve">
     <value>CT</value>
@@ -612,6 +633,9 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Task_LogEmpty" xml:space="preserve">
     <value>(no log)</value>
   </data>
+  <data name="Task_LogCopyAll" xml:space="preserve">
+    <value>Copy all</value>
+  </data>
   <data name="Write_Apply" xml:space="preserve">
     <value>Apply</value>
   </data>
@@ -647,7 +671,7 @@ Trust this certificate and continue? You will be warned again if the fingerprint
     <value>The login session for {0} expired and could not be renewed. Please log in again.</value>
   </data>
   <data name="Session_TokenRejectedText" xml:space="preserve">
-    <value>The server {0} rejected the API token (it was deleted, expired or its secret changed). Please log in again.</value>
+    <value>{0} rejected the API token (it was deleted or expired, or its permissions changed). Check the token in the server settings and connect again.</value>
   </data>
   <data name="Console_Reconnect" xml:space="preserve">
     <value>Reconnect</value>

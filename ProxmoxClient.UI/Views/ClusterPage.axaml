@@ -58,7 +58,7 @@
                         <TextBlock Classes="subtle" Margin="0,40,0,0" HorizontalAlignment="Center"
                                    Text="{l:Tr Cluster_NoGuests}" IsVisible="{Binding IsGuestListEmpty}" />
                         <ProgressBar IsIndeterminate="True" Margin="40,40,40,0"
-                                     IsVisible="{Binding !IsLoaded}" />
+                                     IsVisible="{Binding IsLoading}" />
                     </StackPanel>
                 </ScrollViewer>
             </RefreshContainer>
@@ -67,41 +67,67 @@
 
     <!-- 노드 -->
     <ContentPage Header="{l:Tr Cluster_TabNodes}">
-        <RefreshContainer RefreshRequested="OnRefreshRequested">
-            <ScrollViewer>
-                <StackPanel Margin="16,12,16,24" Spacing="10">
-                    <TextBlock Classes="subtle" Text="{Binding NodeSummary}" Margin="4,0" />
-                    <ItemsControl ItemsSource="{Binding Nodes}" ItemTemplate="{StaticResource NodeRowTemplate}" Tag="{Binding OpenNodeCommand}" ItemsPanel="{StaticResource CardListPanel}">
-                    </ItemsControl>
-                </StackPanel>
-            </ScrollViewer>
-        </RefreshContainer>
+        <Grid RowDefinitions="Auto,*">
+            <Border Classes="banner" Margin="16,10,16,0" IsVisible="{Binding HasError}">
+                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+            </Border>
+            <RefreshContainer Grid.Row="1" RefreshRequested="OnRefreshRequested">
+                <ScrollViewer>
+                    <StackPanel Margin="16,12,16,24" Spacing="10">
+                        <TextBlock Classes="subtle" Text="{Binding NodeSummary}" Margin="4,0" />
+                        <ItemsControl ItemsSource="{Binding Nodes}" ItemTemplate="{StaticResource NodeRowTemplate}"
+                                      Tag="{Binding OpenNodeCommand}" ItemsPanel="{StaticResource CardListPanel}" />
+                        <TextBlock Classes="subtle" Margin="0,30,0,0" HorizontalAlignment="Center"
+                                   Text="{l:Tr Cluster_NoNodes}" IsVisible="{Binding IsNodeListEmpty}" />
+                        <ProgressBar IsIndeterminate="True" Margin="40,30,40,0" IsVisible="{Binding IsLoading}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </RefreshContainer>
+        </Grid>
     </ContentPage>
 
     <!-- 스토리지 -->
     <ContentPage Header="{l:Tr Cluster_TabStorage}">
-        <RefreshContainer RefreshRequested="OnRefreshRequested">
-            <ScrollViewer>
-                <ItemsControl Margin="16,12,16,24" ItemsSource="{Binding Storages}" ItemTemplate="{StaticResource StorageRowTemplate}" Tag="{Binding OpenStorageCommand}"
-                              ItemsPanel="{StaticResource CardListPanel}">
-                </ItemsControl>
-            </ScrollViewer>
-        </RefreshContainer>
+        <Grid RowDefinitions="Auto,*">
+            <Border Classes="banner" Margin="16,10,16,0" IsVisible="{Binding HasError}">
+                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+            </Border>
+            <RefreshContainer Grid.Row="1" RefreshRequested="OnRefreshRequested">
+                <ScrollViewer>
+                    <StackPanel Margin="16,12,16,24">
+                        <ItemsControl ItemsSource="{Binding Storages}" ItemTemplate="{StaticResource StorageRowTemplate}"
+                                      Tag="{Binding OpenStorageCommand}" ItemsPanel="{StaticResource CardListPanel}" />
+                        <TextBlock Classes="subtle" Margin="0,40,0,0" HorizontalAlignment="Center"
+                                   Text="{l:Tr Cluster_NoStorage}" IsVisible="{Binding IsStorageListEmpty}" />
+                        <ProgressBar IsIndeterminate="True" Margin="40,40,40,0" IsVisible="{Binding IsLoading}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </RefreshContainer>
+        </Grid>
     </ContentPage>
 
     <!-- 작업 -->
     <ContentPage Header="{l:Tr Cluster_TabTasks}">
-        <RefreshContainer RefreshRequested="OnRefreshRequested">
-            <ScrollViewer>
-                <ItemsControl Margin="16,12,16,24" ItemsSource="{Binding Tasks}" ItemTemplate="{StaticResource TaskRowTemplate}" Tag="{Binding OpenTaskCommand}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Spacing="8" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
-            </ScrollViewer>
-        </RefreshContainer>
+        <Grid RowDefinitions="Auto,Auto,*">
+            <Border Classes="banner" Margin="16,10,16,0" IsVisible="{Binding HasError}">
+                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+            </Border>
+            <!-- 작업 목록만 못 읽음(권한 없음 등) — 나머지 탭은 정상 -->
+            <Border Grid.Row="1" Classes="banner" Margin="16,10,16,0" IsVisible="{Binding HasTasksError}">
+                <TextBlock Text="{Binding TasksErrorMessage}" TextWrapping="Wrap" />
+            </Border>
+            <RefreshContainer Grid.Row="2" RefreshRequested="OnRefreshRequested">
+                <ScrollViewer>
+                    <StackPanel Margin="16,12,16,24">
+                        <ItemsControl ItemsSource="{Binding Tasks}" ItemTemplate="{StaticResource TaskRowTemplate}"
+                                      Tag="{Binding OpenTaskCommand}" ItemsPanel="{StaticResource CardListPanel}" />
+                        <TextBlock Classes="subtle" Margin="0,40,0,0" HorizontalAlignment="Center"
+                                   Text="{l:Tr Cluster_NoTasks}" IsVisible="{Binding IsTaskListEmpty}" />
+                        <ProgressBar IsIndeterminate="True" Margin="40,40,40,0" IsVisible="{Binding IsLoading}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </RefreshContainer>
+        </Grid>
     </ContentPage>
     <!-- 관리(데이터센터·만들기) -->
     <ContentPage Header="{l:Tr Cluster_TabManage}">

@@ -59,12 +59,13 @@
                                TextAlignment="Center" TextTrimming="None" />
                 </StackPanel>
 
-                <!-- 렌더링 방식(Vulkan·EGL·소프트웨어 등)과 버전 — 기기에서 바로 확인 -->
-                <p:RenderInfoText Margin="0,24,0,0" />
+                <!-- 렌더링 방식(Vulkan·EGL·소프트웨어 등)과 버전 — 디버그 빌드에서만(사용자 화면에는 내부 정보를 두지 않는다) -->
+                <p:RenderInfoText x:Name="RenderInfoLine" Margin="0,24,0,0" IsVisible="False" />
             </StackPanel>
         </ScrollViewer>
 
-        <Button Classes="fab accent" Command="{Binding AddCommand}">
+        <Button Classes="fab accent" Command="{Binding AddCommand}" ToolTip.Tip="{l:Tr Profile_AddTitle}"
+                AutomationProperties.Name="{l:Tr Profile_AddTitle}">
             <Path Classes="icon" Width="22" Height="22" Data="{StaticResource IconPlus}" />
         </Button>
     </Grid>

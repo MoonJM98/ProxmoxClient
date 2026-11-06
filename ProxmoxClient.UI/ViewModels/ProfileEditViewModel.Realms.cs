@@ -17,7 +17,19 @@ namespace ProxmoxClient.UI.ViewModels;
 /// </summary>
 public sealed partial class ProfileEditViewModel
 {
+    /// <summary>영역 가져오기 제한 시간 — 닿지 않는 주소에서 오래 돌지 않게.</summary>
+    private static readonly TimeSpan RealmFetchTimeout = TimeSpan.FromSeconds(10);
+
     private (string Host, int Port, string Thumbprint)? _trusted;
+
+    /// <summary>진행 중인 영역 가져오기 — 화면을 떠나면 취소한다.</summary>
+    private CancellationTokenSource? _realmFetch;
+
+    public override void OnDisappearing(bool removed)
+    {
+        base.OnDisappearing(removed);
+        if (removed) _realmFetch?.Cancel();
+    }
 
     public ObservableCollection<PveAuthDomain> Realms { get; } = [];
 
@@ -96,13 +108,22 @@ public sealed partial class ProfileEditViewModel
 
         IsFetchingRealms = true;
         RealmStatus = L.T("Realm_Fetching");
+        using var fetch = new CancellationTokenSource();
+        _realmFetch = fetch;
         try
         {
             using var client = new ProxmoxApiClient(probe);
             IReadOnlyList<PveAuthDomain> domains = [];
             await LoginTrust.RunAsync(
-                async () => domains = await client.GetAuthDomainsAsync(),
+                async () =>
+                {
+                    // 제한 시간은 요청마다(인증서 확인 대화상자를 기다린 시간은 빼고)
+                    using var attempt = CancellationTokenSource.CreateLinkedTokenSource(fetch.Token);
+                    attempt.CancelAfter(RealmFetchTimeout);
+                    domains = await client.GetAuthDomainsAsync(attempt.Token);
+                },
                 rejection => LoginTrust.ConfirmAsync(rejection, probe));
+            if (IsRemoved) return;
             if (probe.CertificateThumbprint is { } thumb)
             {
                 _trusted = (host, port, thumb);
@@ -113,6 +134,10 @@ public sealed partial class ProfileEditViewModel
 
             if (domains.Count > 0) ApplyRealms(domains, SelectedRealm?.Realm);
             RealmStatus = domains.Count > 0 ? string.Empty : L.T("Realm_None"); // 성공은 목록이 말해 준다
+        }
+        catch (Exception) when (IsRemoved)
+        {
+            // 화면을 떠나 취소함 — 알릴 곳이 없다
         }
         catch (CertificateTrustException)
         {
@@ -125,6 +150,7 @@ public sealed partial class ProfileEditViewModel
         }
         finally
         {
+            if (ReferenceEquals(_realmFetch, fetch)) _realmFetch = null;
             IsFetchingRealms = false;
         }
     }

@@ -37,20 +37,29 @@ public sealed class ServerSession(ProxmoxApiClient api, ConnectionProfile profil
 
     /// <summary>
     ///     세션 만료(갱신 거부)를 지켜보다가 한 번 알리고 로그인 화면으로 돌아간다 — 그대로 두면 화면마다 같은 오류가 쌓인다.
+    ///     API 토큰 로그인은 갱신할 티켓이 없다 — 서버가 토큰을 거부하면(삭제·만료·권한 변경) 그 내용으로 알린다.
     /// </summary>
     internal void WatchExpiry()
     {
         Api.SessionExpiredDetected += () => Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
         {
-            if (_disposed) return;
+            if (_disposed || _expiryShown) return;
 
-            // API 토큰은 갱신할 수 없다 — 401 이면 토큰이 철회된 것
-            var text = Profile.AuthMode == AuthMode.ApiToken ? "Session_TokenRejectedText" : "Session_ExpiredText";
-            await AppServices.Dialogs.AlertAsync(Localization.L.T("Session_ExpiredTitle"),
-                Localization.L.T(text, DisplayName));
+            _expiryShown = true; // 여러 요청이 한꺼번에 거부돼도 한 번만
+            await AppServices.Dialogs.AlertAsync(Localization.L.T("Session_ExpiredTitle"), ExpiryText());
             if (!_disposed) await AppServices.Navigator.PopToRootAsync();
         });
     }
+
+    /// <summary>만료 알림 문구 — 로그인 방식에 맞게.</summary>
+    public string ExpiryText()
+    {
+        return Profile.AuthMode == AuthMode.ApiToken
+            ? Localization.L.T("Session_TokenRejectedText", DisplayName)
+            : Localization.L.T("Session_ExpiredText", DisplayName);
+    }
+
+    private bool _expiryShown;
 
     private bool _disposed;
 

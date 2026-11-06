@@ -87,9 +87,9 @@ public partial class AppShell : UserControl
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
-    /// <summary>뒤로 가기 — 대화상자가 열려 있으면 닫기만 한다. 진행 중에는 무시.</summary>
+    /// <summary>뒤로 가기 — 대화상자가 열려 있으면 닫기만 한다. 진행 중이면 취소할 수 있을 때 취소(화면은 그대로).</summary>
     private void OnBackRequested(object? sender, RoutedEventArgs e)
     {
-        if (AppServices.Dialogs.IsBusyVisible || AppServices.Dialogs.TryCancelCurrent()) e.Handled = true;
+        if (AppServices.Dialogs.HandleBack()) e.Handled = true;
     }
 }

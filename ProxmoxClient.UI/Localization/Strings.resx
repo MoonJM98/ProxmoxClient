@@ -69,6 +69,18 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Cluster_NoGuests" xml:space="preserve">
     <value>표시할 게스트가 없습니다</value>
   </data>
+  <data name="Cluster_NoNodes" xml:space="preserve">
+    <value>표시할 노드가 없습니다</value>
+  </data>
+  <data name="Cluster_NoStorage" xml:space="preserve">
+    <value>표시할 스토리지가 없습니다</value>
+  </data>
+  <data name="Cluster_NoTasks" xml:space="preserve">
+    <value>최근 작업이 없습니다</value>
+  </data>
+  <data name="Cluster_TasksFailed" xml:space="preserve">
+    <value>작업 목록을 불러오지 못했습니다: {0}</value>
+  </data>
   <data name="Cluster_NodeSummary" xml:space="preserve">
     <value>온라인 노드 {0} / {1}</value>
   </data>
@@ -185,6 +197,12 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Console_Open" xml:space="preserve">
     <value>콘솔</value>
   </data>
+  <data name="Console_SerialTitle" xml:space="preserve">
+    <value>{0} · 직렬 터미널</value>
+  </data>
+  <data name="Console_NodeShellTitle" xml:space="preserve">
+    <value>{0} · 셸</value>
+  </data>
   <data name="Desktop_SelectItem" xml:space="preserve">
     <value>왼쪽 목록에서 항목을 고르세요</value>
   </data>
@@ -221,6 +239,9 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   </data>
   <data name="Guest_Config" xml:space="preserve">
     <value>설정</value>
+  </data>
+  <data name="Guest_LoadFailed" xml:space="preserve">
+    <value>불러오지 못했습니다: {0}</value>
   </data>
   <data name="Guest_KindCt" xml:space="preserve">
     <value>CT</value>
@@ -612,6 +633,9 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Task_LogEmpty" xml:space="preserve">
     <value>(로그 없음)</value>
   </data>
+  <data name="Task_LogCopyAll" xml:space="preserve">
+    <value>전체 복사</value>
+  </data>
   <data name="Write_Apply" xml:space="preserve">
     <value>적용</value>
   </data>
@@ -647,7 +671,7 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
     <value>{0} 의 로그인 세션이 만료되어 갱신할 수 없습니다. 다시 로그인하세요.</value>
   </data>
   <data name="Session_TokenRejectedText" xml:space="preserve">
-    <value>{0} 서버가 API 토큰을 거부했습니다(삭제·만료되었거나 비밀값이 바뀜). 다시 로그인하세요.</value>
+    <value>{0} 이(가) API 토큰을 거부했습니다(토큰이 삭제·만료되었거나 권한이 바뀌었습니다). 서버 설정에서 토큰을 확인한 뒤 다시 연결하세요.</value>
   </data>
   <data name="Console_Reconnect" xml:space="preserve">
     <value>다시 연결</value>

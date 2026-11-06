@@ -32,6 +32,9 @@ def load_routes():
         spec=importlib.util.spec_from_file_location('route_'+os.path.basename(path)[:-3], path)
         mod=importlib.util.module_from_spec(spec); mod.route=route; mod.STATE=sys.modules[__name__]; spec.loader.exec_module(mod)
 STATE_FLAGS={}
+class Status(tuple):
+    """경로 처리기가 오류 상태로 답할 때: return STATE.Status(403, None)"""
+    def __new__(cls, code, data=None): return tuple.__new__(cls, (code, data))
 class H(BaseHTTPRequestHandler):
     def ext(self, method, path, body=None):
         for m, rx, fn in ROUTES:
@@ -39,7 +42,10 @@ class H(BaseHTTPRequestHandler):
                 mm=rx.fullmatch(path)
                 if mm:
                     q={k:v[0] for k,v in urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).items()}
-                    self.send(fn(mm, q, body or {})); return True
+                    r=fn(mm, q, body or {})
+                    if isinstance(r, Status): self.send(r[1], r[0])
+                    else: self.send(r)
+                    return True
         return False
     def log_message(self, fmt, *a): sys.stderr.write("REQ %.3f %s\n"%(time.time()%1000, fmt%a))
     def send(self, data, code=200):
@@ -106,6 +112,7 @@ class H(BaseHTTPRequestHandler):
             return self.send(dict(port=5900, ticket='PVEVNC:FAKE', user='root@pam', cert='', upid=upid('pve1','vncproxy','100')))
         if path!='/access/ticket' and self.ext('POST', urllib.parse.unquote(path), flat): return
         if path=='/access/ticket':
+            if STATE_FLAGS.get('ticket_delay_ms'): time.sleep(int(STATE_FLAGS['ticket_delay_ms'])/1000) # 연결 취소 검사
             # 2단계 인증 사용자 tfa@pam / secret — TOTP 123456, 복구 키 1234-5678-9abc-def0(PVE 7.2+ 새 형식)
             pw=flat.get('password','')
             if flat.get('username')=='tfa@pam' or 'tfa-challenge' in flat:

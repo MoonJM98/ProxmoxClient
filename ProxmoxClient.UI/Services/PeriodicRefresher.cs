@@ -10,7 +10,7 @@ public sealed class PeriodicRefresher : IDisposable
 {
     private readonly Func<Task> _refresh;
     private readonly DispatcherTimer _timer;
-    private bool _running;
+    private Task? _current;
 
     public PeriodicRefresher(TimeSpan interval, Func<Task> refresh)
     {
@@ -57,20 +57,52 @@ public sealed class PeriodicRefresher : IDisposable
 
     private async void OnTick(object? sender, EventArgs e)
     {
-        if (_running) return;
+        if (_current is not null) return; // 이전 새로 고침이 아직 도는 중
 
-        _running = true;
         try
         {
-            await _refresh();
+            await RefreshNowAsync();
         }
         catch
         {
             // 주기 새로 고침 실패는 호출자가 화면에 표시한다 — 타이머는 계속 돈다
         }
+    }
+
+    /// <summary>
+    ///     지금 바로 새로 고친다(화면 진입·당겨서 새로 고침 등). 타이머와 같은 잠금을 써서 겹쳐 돌지 않는다 —
+    ///     이미 도는 중이면 끝나기를 기다린 뒤 한 번 더 돈다(요청 뒤의 최신 상태 보장).
+    /// </summary>
+    public async Task RefreshNowAsync()
+    {
+        if (_current is { } running)
+        {
+            try
+            {
+                await running;
+            }
+            catch
+            {
+                // 앞선 새로 고침의 실패는 그쪽 호출자가 처리한다
+            }
+
+            // 기다리는 사이 다른 호출이 이미 새로 시작했으면 그것을 같이 기다린다
+            if (_current is { } next)
+            {
+                await next;
+                return;
+            }
+        }
+
+        var task = _refresh();
+        _current = task;
+        try
+        {
+            await task;
+        }
         finally
         {
-            _running = false;
+            if (ReferenceEquals(_current, task)) _current = null;
         }
     }
 }

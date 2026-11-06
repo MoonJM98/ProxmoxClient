@@ -280,6 +280,122 @@ if (target == "compact") await CompactButtonCheck();
 if (target == "terminal") await TerminalCheck();
 if (target == "expiry") await ExpiryCheck();
 if (target == "realshell") await RealShellCheck();
+// ---- 메인 화면 검사(--target mainscreens, 휴대폰) — 느린 서버의 작업 로그 줄 중복·긴 목록 가상화·탭별 오류/빈 상태·연결 취소
+if (target == "mainscreens") await MainScreensCheck();
+async Task MainScreensCheck()
+{
+    if (desktop)
+    {
+        Console.WriteLine("SKIP mainscreens: 휴대폰 화면 검사(--mode mobile)");
+        return;
+    }
+
+    using var http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true });
+    void FakeSet(string query)
+    {
+        var set = Task.Run(() => http.GetAsync($"https://127.0.0.1:{port}/api2/json/__fake/set?{query}"));
+        WaitFor(() => set.IsCompleted, 5000);
+    }
+
+    T? Find<T>(Func<T, bool> where) where T : Control =>
+        nav.CurrentPage!.GetVisualDescendants().OfType<T>().FirstOrDefault(c => c.IsEffectivelyVisible && where(c));
+
+    // 1) 작업 로그 — 응답이 2초 새로 고침 주기보다 느려도(첫 읽기 중 타이머가 돌아도) 줄이 겹치지 않는다
+    FakeSet("tasklog_delay_ms=2600&tasklog_lines=1200");
+    var logVm = new TaskLogViewModel(cluster.Session, cluster.Tasks[0]);
+    await Wait(AppServices.Navigator.PushAsync(logVm));
+    Pump(400);
+    var spinner = Find<ProgressBar>(p => p.IsIndeterminate) is not null;
+    Shot("tasklog-loading");
+    Check0("작업 로그 첫 읽기", "읽는 동안 진행 표시", spinner ? "진행 표시" : "없음", spinner && !logVm.IsLoaded);
+    WaitFor(() => logVm.IsLoaded && logVm.Lines.Count >= 1200, 20000);
+    Pump(3000); // 겹친 새로 고침이 있었다면 이 사이에 줄이 더 붙는다
+    var distinct = logVm.Lines.Distinct().Count();
+    Check0("작업 로그 줄 중복(느린 서버)", "1200줄, 겹침 없음", $"{logVm.Lines.Count}줄, 서로 다른 줄 {distinct}",
+        logVm.Lines.Count == 1200 && distinct == 1200);
+    var realized = nav.CurrentPage!.GetVisualDescendants().OfType<SelectableTextBlock>().Count();
+    var logScroll = nav.CurrentPage!.GetVisualDescendants().OfType<ScrollViewer>().First(v => v.Name == "LogScroll");
+    var atBottom = logScroll.Offset.Y + logScroll.Viewport.Height >= logScroll.Extent.Height - 30;
+    Shot("tasklog-long");
+    Check0("긴 작업 로그", "보이는 줄만 그림(가상화)·맨 아래로 따라감", $"그린 줄 {realized}, {(atBottom ? "맨 아래" : $"위치 {logScroll.Offset.Y:F0}/{logScroll.Extent.Height:F0}")}",
+        realized < 300 && atBottom);
+    Check0("작업 로그 전체 복사", "모든 줄", $"{logVm.LogText.Split('\n').Length}줄", logVm.LogText.Split('\n').Length == 1200);
+    FakeSet("tasklog_delay_ms=0&tasklog_lines=3");
+    await Wait(AppServices.Navigator.PopAsync());
+
+    // 2) 작업 목록 권한 없음 — 작업 탭에 알리고 나머지는 그대로
+    var page = (TabbedPage)nav.CurrentPage!;
+    FakeSet("tasks_forbidden=1");
+    await Wait(cluster.RefreshAsync(false));
+    page.SelectedIndex = 3;
+    Pump(500);
+    var tasksBanner = Find<TextBlock>(t => t.Text == cluster.TasksErrorMessage && t.Text is not null) is not null;
+    Shot("cluster-tasks-forbidden");
+    Check0("작업 목록 권한 없음", "작업 탭에 안내, 다른 오류 배너 없음", $"{cluster.TasksErrorMessage ?? "(없음)"}, 배너 {(tasksBanner ? "보임" : "안 보임")}",
+        cluster.HasTasksError && tasksBanner && !cluster.HasError && cluster.Guests.Count > 0);
+    FakeSet("tasks_forbidden=0");
+    await Wait(cluster.RefreshAsync(false));
+    Check0("작업 목록 권한 회복", "안내 사라짐", cluster.HasTasksError ? "남음" : "사라짐", !cluster.HasTasksError && cluster.Tasks.Count > 0);
+
+    // 3) 게스트가 많아도 보이는 카드만 만든다(가상화) — 당겨서 새로 고침 칸 안에서도
+    FakeSet("extra_guests=300");
+    await Wait(cluster.RefreshAsync(false));
+    page.SelectedIndex = 0;
+    Pump(800);
+    int GuestCards() => nav.CurrentPage!.GetVisualDescendants().OfType<Button>()
+        .Count(b => b.Classes.Contains("row") && b.DataContext is ProxmoxClient.Core.Models.PveResource);
+    var cards = GuestCards();
+    var refreshHost = nav.CurrentPage!.GetVisualDescendants().OfType<RefreshContainer>().First(r => r.IsEffectivelyVisible);
+    var guestScroll = refreshHost.GetVisualDescendants().OfType<ScrollViewer>().First();
+    guestScroll.ScrollToEnd();
+    Pump(600);
+    guestScroll.ScrollToEnd();
+    Pump(600);
+    var lastShown = nav.CurrentPage!.GetVisualDescendants().OfType<Button>()
+        .Any(b => b.IsEffectivelyVisible && b.DataContext == cluster.Guests[^1]);
+    Shot("cluster-many-guests-end");
+    Check0("긴 게스트 목록", "보이는 카드만(가상화), 끝까지 스크롤하면 마지막 게스트", $"게스트 {cluster.Guests.Count}개 중 카드 {cards}·{GuestCards()}개, 마지막 {(lastShown ? "보임" : "안 보임")}",
+        cluster.Guests.Count > 300 && cards < 60 && GuestCards() < 60 && lastShown);
+    guestScroll.Offset = default;
+    Pump(300);
+
+    // 4) 서버에 닿지 않는 세션 — 모든 탭에 오류 배너, 진행 표시는 멈춘다
+    var deadProfile = new ConnectionProfile { Name = "dead", Host = "127.0.0.1", Port = 19619 };
+    var dead = new ClusterViewModel(new ServerSession(new ProxmoxClient.Core.Api.ProxmoxApiClient(deadProfile), deadProfile, "9.0"));
+    await Wait(AppServices.Navigator.PushAsync(dead));
+    WaitFor(() => dead.HasError, 10000);
+    var deadPage = (TabbedPage)nav.CurrentPage!;
+    var banners = new List<bool>();
+    for (var i = 0; i < 4; i++)
+    {
+        deadPage.SelectedIndex = i;
+        Pump(300);
+        banners.Add(Find<TextBlock>(t => t.Text == dead.ErrorMessage) is not null);
+        if (i == 0) Shot("cluster-error");
+    }
+    var stillSpinning = Find<ProgressBar>(p => p.IsIndeterminate) is not null;
+    Check0("연결 실패 상태", "탭마다 오류 배너, 진행 표시 멈춤", $"배너 [{string.Join(",", banners.Select(b => b ? "O" : "X"))}], 진행 표시 {(stillSpinning ? "돎" : "멈춤")}",
+        banners.All(b => b) && !stillSpinning && !dead.IsLoading);
+    await Wait(AppServices.Navigator.PopAsync());
+
+    // 5) 오래 걸리는 연결 — 진행 표시의 취소(뒤로 가기)로 바로 멈추고 오류 창을 띄우지 않는다
+    FakeSet("ticket_delay_ms=6000");
+    var before = nav.CurrentPage;
+    profiles.ConnectCommand.Execute(profiles.Profiles[0]);
+    WaitFor(() => AppServices.Dialogs.IsBusyVisible, 3000);
+    var cancellable = AppServices.Dialogs.CanCancelBusy;
+    Shot("connect-busy-cancel");
+    var started = DateTime.UtcNow;
+    var handled = AppServices.Dialogs.HandleBack();
+    WaitFor(() => !AppServices.Dialogs.IsBusyVisible, 4000);
+    var took = DateTime.UtcNow - started;
+    Pump(500);
+    Check0("연결 취소", "취소 단추, 뒤로 가기로 바로 멈춤·오류 창 없음·화면 그대로",
+        $"단추 {(cancellable ? "있음" : "없음")}, {took.TotalMilliseconds:F0}ms, 대화상자 {(AppServices.Dialogs.Current is null ? "없음" : AppServices.Dialogs.Current.Title)}",
+        cancellable && handled && !AppServices.Dialogs.IsBusyVisible && took.TotalSeconds < 3 && AppServices.Dialogs.Current is null &&
+        ReferenceEquals(nav.CurrentPage, before));
+    FakeSet("ticket_delay_ms=0");
+}
 VpnReport();
 
 foreach (var (prefix, vmid) in new[] { ("guest", 100), ("lxc", 200) })

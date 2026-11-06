@@ -94,13 +94,15 @@ public sealed partial class ProfilesViewModel : ViewModelBase
             profile.Password = SecureStringHelper.FromString(secret);
 
         ServerSession? session = null;
+        using var connecting = new CancellationTokenSource(); // 진행 표시의 취소·뒤로 가기
         var ok = await TryAsync(async () =>
             {
-                await VpnTunnel.EnsureAsync(profile); // VPN 을 쓰는 서버는 터널부터(지원 안 하는 기기면 안내 오류)
-                session = await LoginAsync(profile, item);
+                await VpnTunnel.EnsureAsync(profile, ct: connecting.Token); // VPN 을 쓰는 서버는 터널부터(지원 안 하는 기기면 안내 오류)
+                session = await LoginAsync(profile, item, connecting.Token);
             },
-            L.T("Connect_Busy", item.DisplayName));
-        if (!ok || session is null) return;
+            L.T("Connect_Busy", item.DisplayName), connecting);
+        if (connecting.IsCancellationRequested) session?.Dispose(); // 끝나는 순간 취소함 — 미리 받던 요청도 취소됐다
+        if (!ok || session is null || connecting.IsCancellationRequested) return;
 
         if (remember)
             try
@@ -119,7 +121,8 @@ public sealed partial class ProfilesViewModel : ViewModelBase
     ///     로그인하고 버전을 읽어 연결을 확인한다. 서버 인증서를 아직 신뢰하지 않았으면 지문을 보여 주고,
     ///     사용자가 신뢰하면 프로필에 지문을 저장한 뒤 다시 시도한다.
     /// </summary>
-    private static async Task<ServerSession> LoginAsync(ConnectionProfile profile, ProfileItem item)
+    private static async Task<ServerSession> LoginAsync(ConnectionProfile profile, ProfileItem item,
+        CancellationToken ct = default)
     {
         for (var prompt = 0;; prompt++)
         {
@@ -129,7 +132,7 @@ public sealed partial class ProfilesViewModel : ViewModelBase
             {
                 try
                 {
-                    await api.LoginAsync();
+                    await api.LoginAsync(ct);
                 }
                 catch (TfaRequiredException tfa)
                 {
@@ -138,17 +141,17 @@ public sealed partial class ProfilesViewModel : ViewModelBase
                         throw new WriteCancelledException("POST", "/access/ticket");
                 }
                 // 버전 확인과 첫 화면 데이터를 동시에 요청한다(화면 전환을 기다리지 않고 미리 받기 시작)
-                var overview = api.GetClusterOverviewAsync();
+                var overview = api.GetClusterOverviewAsync(ct);
                 _ = overview.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
-                var permissionsTask = api.GetPermissionsSummaryAsync();
-                var version = await api.GetVersionAsync();
+                var permissionsTask = api.GetPermissionsSummaryAsync(ct);
+                var version = await api.GetVersionAsync(ct);
                 var session = new ServerSession(api, profile, version.Version);
                 session.WatchExpiry();
                 try
                 {
                     session.Permissions = await permissionsTask;
                 }
-                catch (Exception)
+                catch (Exception) when (!ct.IsCancellationRequested)
                 {
                     // 권한 요약을 못 읽어도 로그인은 진행 — 서버가 요청마다 권한을 다시 확인한다
                 }

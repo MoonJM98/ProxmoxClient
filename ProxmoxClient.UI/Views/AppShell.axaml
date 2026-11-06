@@ -17,6 +17,9 @@
                     <ProgressBar IsIndeterminate="True" MinWidth="220" />
                     <TextBlock Text="{Binding BusyText}" TextWrapping="Wrap" HorizontalAlignment="Center"
                                TextAlignment="Center" />
+                    <!-- 오래 걸리는 작업(연결 등)은 취소할 수 있다 — 뒤로 가기도 같다 -->
+                    <Button Content="{Binding BusyCancelText}" HorizontalAlignment="Center" MinWidth="120"
+                            Command="{Binding CancelBusyCommand}" IsVisible="{Binding CanCancelBusy}" />
                 </StackPanel>
             </Border>
         </Border>

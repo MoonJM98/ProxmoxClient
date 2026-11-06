@@ -66,6 +66,10 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private bool _disposed;
     private bool _refreshing;
     private bool _tickBusy;
+    /// <summary>화면이 보이는 중(OnAppearing~OnDisappearing) — 앱이 배경에서 돌아올 때 타이머를 다시 켤지.</summary>
+    private bool _visible;
+    /// <summary>인증서가 바뀌어 자동 새로고침을 멈췄다 — 배경에서 돌아와도 다시 켜지 않는다.</summary>
+    private bool _haltedByCertificate;
     /// <summary>설정을 화면에 옮기는 중 — 그때의 템플릿 표시 변화는 저장하지 않는다(사용자가 바꾼 것만 저장).</summary>
     private bool _applyingSettings;
 
@@ -74,6 +78,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         Session = session;
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(AppSettings.DefaultRefreshIntervalSeconds) };
         _timer.Tick += async (_, _) => await OnTimerTickAsync();
+        AppLifecycle.ForegroundChanged += OnForegroundChanged;
 
         var profile = session.Profile;
         ConnectionStatus = L.T("Main_ConnectedTo", profile.Name);
@@ -174,14 +179,31 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     {
         if (_disposed) return;
 
-        _timer.Start();
+        _visible = true;
+        if (AppLifecycle.IsForeground && !_haltedByCertificate) _timer.Start();
         _ = InitializeAsync();
     }
 
     public override void OnDisappearing(bool removed)
     {
+        _visible = false;
         _timer.Stop();
         if (removed) Dispose();
+    }
+
+    /// <summary>앱이 배경으로 가면 주기 새로고침을 멈추고(배터리·데이터), 돌아오면 바로 한 번 새로 고친 뒤 다시 돈다.</summary>
+    private void OnForegroundChanged(bool foreground)
+    {
+        if (_disposed || !_visible || _haltedByCertificate) return;
+
+        if (!foreground)
+        {
+            _timer.Stop();
+            return;
+        }
+
+        _timer.Start();
+        _ = OnTimerTickAsync();
     }
 
     public void Dispose()
@@ -190,6 +212,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         _disposed = true;
         _timer.Stop();
+        AppLifecycle.ForegroundChanged -= OnForegroundChanged;
         DetachGuest();
         DetachNode();
         Session.Dispose();
@@ -333,6 +356,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         {
             // 연결 중 서버 인증서가 바뀜 — 중간자 가능성이 있으므로 조용히 재시도하지 않고 자동 새로고침을 멈춘다
             StatusMessage = L.T("MainViewModel_M06", ex.Message);
+            _haltedByCertificate = true;
             _timer.Stop();
         }
         catch (Exception ex) when (IsTransientError(ex))

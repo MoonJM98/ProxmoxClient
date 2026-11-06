@@ -25,7 +25,8 @@ public sealed partial class ClusterViewModel : ViewModelBase, IDisposable
     public ClusterViewModel(ServerSession session)
     {
         Session = session;
-        _refresher = new PeriodicRefresher(RefreshInterval, () => RefreshAsync(false));
+        // 주기·화면 진입·당겨서 새로 고침이 모두 이 하나를 거친다 — 겹쳐 돌아 늦게 온 옛 응답이 새 값을 덮지 않게
+        _refresher = new PeriodicRefresher(RefreshInterval, LoadAsync);
     }
 
     public ServerSession Session { get; }
@@ -146,14 +147,32 @@ public sealed partial class ClusterViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty] public partial bool IsGuestListEmpty { get; private set; }
 
+    [ObservableProperty] public partial bool IsNodeListEmpty { get; private set; }
+
+    [ObservableProperty] public partial bool IsStorageListEmpty { get; private set; }
+
+    [ObservableProperty] public partial bool IsTaskListEmpty { get; private set; }
+
+    /// <summary>작업 목록만 못 읽었을 때(권한 없음 등) — 작업 탭에 알린다. 나머지 탭은 그대로 보인다.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTasksError))]
+    public partial string? TasksErrorMessage { get; private set; }
+
+    public bool HasTasksError => TasksErrorMessage is not null;
+
     /// <summary>마지막 새로 고침 오류(주기 새로 고침은 대화상자 대신 배너로 알린다). 성공하면 비워진다.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasError))]
+    [NotifyPropertyChangedFor(nameof(HasError), nameof(IsLoading))]
     public partial string? ErrorMessage { get; private set; }
 
     public bool HasError => ErrorMessage is not null;
 
-    [ObservableProperty] public partial bool IsLoaded { get; private set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLoading))]
+    public partial bool IsLoaded { get; private set; }
+
+    /// <summary>첫 읽기를 기다리는 중(실패하면 진행 표시 대신 오류 배너).</summary>
+    public bool IsLoading => !IsLoaded && !HasError;
 
     partial void OnSearchTextChanged(string value)
     {
@@ -168,7 +187,7 @@ public sealed partial class ClusterViewModel : ViewModelBase, IDisposable
     public override void OnAppearing()
     {
         _refresher.Start();
-        _ = RefreshAsync(false);
+        _ = _refresher.RefreshNowAsync();
     }
 
     public override void OnDisappearing(bool removed)
@@ -203,6 +222,16 @@ public sealed partial class ClusterViewModel : ViewModelBase, IDisposable
     {
         if (IsRemoved) return;
 
+        await _refresher.RefreshNowAsync();
+        if (userInitiated && !IsRemoved && ErrorMessage is { } error)
+            await AppServices.Dialogs.AlertAsync(L.T("Error_Title"), error);
+    }
+
+    /// <summary>한 번 읽기 — <see cref="PeriodicRefresher" /> 가 겹치지 않게 부른다.</summary>
+    private async Task LoadAsync()
+    {
+        if (IsRemoved) return;
+
         IsBusy = true;
         try
         {
@@ -210,13 +239,15 @@ public sealed partial class ClusterViewModel : ViewModelBase, IDisposable
             var tasksTask = Session.Api.GetClusterTasksAsync();
             var overview = await overviewTask;
             IReadOnlyList<PveTask> tasks;
+            string? tasksError = null;
             try
             {
                 tasks = await tasksTask;
             }
-            catch
+            catch (Exception ex)
             {
                 tasks = Tasks.ToList(); // 작업 목록 권한이 없어도 나머지는 보여 준다
+                tasksError = L.T("Cluster_TasksFailed", ErrorText.Describe(ex));
             }
 
             if (IsRemoved) return;
@@ -226,12 +257,13 @@ public sealed partial class ClusterViewModel : ViewModelBase, IDisposable
             CollectionSync.Sync(Tasks,
                 tasks.OrderByDescending(t => t.StartTimeUtc).Take(MaxTasks).ToList(),
                 t => t.Upid, (current, incoming) => current.CopyFrom(incoming));
+            TasksErrorMessage = tasksError;
+            IsTaskListEmpty = Tasks.Count == 0 && tasksError is null;
             ErrorMessage = null;
         }
         catch (Exception ex)
         {
-            ErrorMessage = ErrorText.Describe(ex);
-            if (userInitiated) await AppServices.Dialogs.AlertAsync(L.T("Error_Title"), ErrorMessage);
+            if (!IsRemoved) ErrorMessage = ErrorText.Describe(ex);
         }
         finally
         {
@@ -262,6 +294,9 @@ public sealed partial class ClusterViewModel : ViewModelBase, IDisposable
             overview.Storages.OrderBy(s => s.Storage, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(s => s.Node, StringComparer.OrdinalIgnoreCase).ToList(),
             s => s.Id, (current, incoming) => current.CopyFrom(incoming));
+
+        IsNodeListEmpty = Nodes.Count == 0;
+        IsStorageListEmpty = Storages.Count == 0;
 
         var running = _allGuests.Count(g => g.IsRunning);
         GuestSummary = L.T("Cluster_GuestSummary", running, _allGuests.Count);
