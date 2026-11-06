@@ -65,7 +65,7 @@ public abstract class JsonSettingsStore<T> where T : class, new()
     {
         try
         {
-            return JsonSerializer.Deserialize<T>(raw, SerializerOptions) ?? new T();
+            return JsonSerializer.Deserialize(raw, CoreJson.Settings<T>(SerializerOptions)) ?? new T();
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException)
         {
@@ -76,7 +76,7 @@ public abstract class JsonSettingsStore<T> where T : class, new()
     public Task SaveAsync(T settings, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        var json = JsonSerializer.Serialize(_normalize(settings), SerializerOptions);
+        var json = JsonSerializer.Serialize(_normalize(settings), CoreJson.Settings<T>(SerializerOptions));
         return AtomicFile.WriteAllTextAsync(_path, json, ct: ct);
     }
 }

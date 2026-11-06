@@ -3,4 +3,5 @@
     <Project Path="ProxmoxClient.UI/ProxmoxClient.UI.csproj"/>
     <Project Path="ProxmoxClient.Desktop/ProxmoxClient.Desktop.csproj"/>
     <Project Path="ProxmoxClient.Android/ProxmoxClient.Android.csproj"/>
+    <Project Path="tests/ProxmoxClient.Core.Tests/ProxmoxClient.Core.Tests.csproj"/>
 </Solution>

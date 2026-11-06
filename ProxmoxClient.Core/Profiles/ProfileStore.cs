@@ -86,7 +86,7 @@ public sealed class ProfileStore
 
     private Task SaveCoreAsync(ConnectionProfile profile, bool keepBackup, CancellationToken ct)
     {
-        return AtomicFile.WriteAllTextAsync(PathFor(profile.Id), JsonSerializer.Serialize(profile, SerializerOptions),
+        return AtomicFile.WriteAllTextAsync(PathFor(profile.Id), JsonSerializer.Serialize(profile, ProfileJsonContext.Default.ConnectionProfile),
             keepBackup, ct);
     }
 
@@ -137,7 +137,7 @@ public sealed class ProfileStore
     {
         try
         {
-            return JsonSerializer.Deserialize<ConnectionProfile>(raw, SerializerOptions);
+            return JsonSerializer.Deserialize(raw, ProfileJsonContext.Default.ConnectionProfile);
         }
         catch (Exception ex) when (ex is JsonException or NotSupportedException or ArgumentException
                                        or InvalidOperationException)
@@ -166,7 +166,7 @@ public sealed class ProfileStore
         ConnectionProfile? old;
         try
         {
-            old = JsonSerializer.Deserialize<ConnectionProfile>(raw, SerializerOptions);
+            old = JsonSerializer.Deserialize(raw, ProfileJsonContext.Default.ConnectionProfile);
         }
         catch (JsonException)
         {
@@ -174,7 +174,7 @@ public sealed class ProfileStore
         }
 
         if (old is not null)
-            await AtomicFile.WriteAllTextAsync(backup, JsonSerializer.Serialize(old, SerializerOptions), false, ct)
+            await AtomicFile.WriteAllTextAsync(backup, JsonSerializer.Serialize(old, ProfileJsonContext.Default.ConnectionProfile), false, ct)
                 .ConfigureAwait(false);
     }
 }

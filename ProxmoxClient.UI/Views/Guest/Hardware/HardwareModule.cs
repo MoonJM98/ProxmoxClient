@@ -12,6 +12,8 @@ namespace ProxmoxClient.UI.Views.Guest.Hardware;
 internal static class HardwareModule
 {
     [ModuleInitializer]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2255",
+        Justification = "검증 등록은 모듈 초기화에서 하도록 정해진 방식(porting-guide 5항)")]
     internal static void Register()
     {
         PreviewRegistry.Add("guest-hardware", new PreviewTab("vm", "GuestHardware_All", "IconBox",

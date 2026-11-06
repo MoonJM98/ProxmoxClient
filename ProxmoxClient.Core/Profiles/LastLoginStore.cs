@@ -40,7 +40,7 @@ public sealed class LastLoginStore
 
         try
         {
-            return JsonSerializer.Deserialize<LastLogin>(raw);
+            return JsonSerializer.Deserialize(raw, LastLoginJsonContext.Default.LastLogin);
         }
         catch (JsonException)
         {
@@ -52,6 +52,6 @@ public sealed class LastLoginStore
     public Task SaveAsync(LastLogin value, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(value);
-        return AtomicFile.WriteAllTextAsync(_path, JsonSerializer.Serialize(value), ct: ct);
+        return AtomicFile.WriteAllTextAsync(_path, JsonSerializer.Serialize(value, LastLoginJsonContext.Default.LastLogin), ct: ct);
     }
 }

@@ -2369,7 +2369,7 @@ void Shot(string name)
 {
     Pump(250);
     var file = Path.Combine(outDir, $"{++shot:000}-{name}.png");
-    window.CaptureRenderedFrame()!.Save(file);
+    window.CaptureRenderedFrame()!.Save(file, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
     Console.WriteLine("shot " + file);
     if (Environment.GetEnvironmentVariable("AUDIT") == "1") AuditButtons(name);
 }
