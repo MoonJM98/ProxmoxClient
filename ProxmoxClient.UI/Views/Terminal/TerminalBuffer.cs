@@ -35,6 +35,7 @@ public sealed class TerminalBuffer
     private readonly int[] _params = new int[MaxParams];
     private readonly bool[] _subParam = new bool[MaxParams];
     private readonly StringBuilder _osc = new();
+    private readonly StringBuilder _dcs = new();
     private readonly StringBuilder _responses = new();
 
     private Line[] _main;
@@ -273,8 +274,10 @@ public sealed class TerminalBuffer
         Csi,
         Osc,
         OscEscape,
-        Ignore, // DCS·APC·PM — ST 까지 버린다
+        Ignore, // APC·PM·SOS — ST 까지 버린다
         IgnoreEscape,
+        Dcs, // DCS — ST 까지 모은다(XTGETTCAP 질의에 답한다)
+        DcsEscape,
         Hash,
         SkipOne
     }
@@ -297,7 +300,7 @@ public sealed class TerminalBuffer
             _pendingHigh = '\0';
         }
 
-        if (_state is State.Osc or State.OscEscape or State.Ignore or State.IgnoreEscape)
+        if (_state is State.Osc or State.OscEscape or State.Ignore or State.IgnoreEscape or State.Dcs or State.DcsEscape)
         {
             String(cp);
             return;
@@ -391,7 +394,11 @@ public sealed class TerminalBuffer
                 _state = State.Osc;
                 _osc.Clear();
                 break;
-            case 'P' or '_' or '^' or 'X':
+            case 'P':
+                _state = State.Dcs;
+                _dcs.Clear();
+                break;
+            case '_' or '^' or 'X':
                 _state = State.Ignore;
                 break;
             case '(' or ')' or '*' or '+':
@@ -440,13 +447,22 @@ public sealed class TerminalBuffer
         switch (_state)
         {
             case State.Osc:
-                if (c == 0x07) EndOsc();
+                if (c == 0x07) EndOsc(true);
                 else if (c == 0x1B) _state = State.OscEscape;
                 else if (_osc.Length < 4096) _osc.Append(char.ConvertFromUtf32(c));
                 break;
             case State.OscEscape:
-                if (c == '\\') EndOsc();
+                if (c == '\\') EndOsc(false);
                 else _state = State.Osc;
+                break;
+            case State.Dcs:
+                if (c == 0x1B) _state = State.DcsEscape;
+                else if (c is 0x07 or 0x18 or 0x1A) _state = State.Ground;
+                else if (_dcs.Length < 1024) _dcs.Append(char.ConvertFromUtf32(c));
+                break;
+            case State.DcsEscape:
+                if (c == '\\') EndDcs();
+                else _state = State.Dcs;
                 break;
             case State.Ignore:
                 if (c == 0x1B) _state = State.IgnoreEscape;
@@ -458,14 +474,42 @@ public sealed class TerminalBuffer
         }
     }
 
-    private void EndOsc()
+    private void EndOsc(bool bel)
     {
         _state = State.Ground;
         var text = _osc.ToString();
         var sep = text.IndexOf(';');
         if (sep <= 0) return;
 
-        if (text[..sep] is "0" or "2") Title = text[(sep + 1)..];
+        var code = text[..sep];
+        if (code is "0" or "2") Title = text[(sep + 1)..];
+        // 글자색·바탕색 질의(OSC 10/11 ;?) — systemd·vim·Claude Code 가 밝은/어두운 바탕을 고를 때 묻는다. 묻은 끝맺음으로 답한다
+        if (code is "10" or "11" && text[(sep + 1)..] == "?")
+        {
+            var rgb = code == "10" ? TerminalRenderer.DefaultForeground : TerminalRenderer.DefaultBackground;
+            string Channel(int shift) => $"{(rgb >> shift) & 0xFF:x2}{(rgb >> shift) & 0xFF:x2}";
+            _responses.Append($"\x1b]{code};rgb:{Channel(16)}/{Channel(8)}/{Channel(0)}{(bel ? "\x07" : "\x1b\\")}");
+        }
+    }
+
+    /// <summary>터미널이 알려 주는 이름(XTGETTCAP name) — 서버의 TERM 과 같게.</summary>
+    private const string TerminalName = "xterm-256color";
+
+    /// <summary>
+    ///     DCS 끝 — XTGETTCAP(DCS + q 이름16진 ST) 질의에 답한다. 'name'(터미널 이름)만 알려 주고 나머지는 모른다고 답한다
+    ///     (답이 없으면 묻는 쪽이 시간 초과까지 기다린다).
+    /// </summary>
+    private void EndDcs()
+    {
+        _state = State.Ground;
+        var text = _dcs.ToString();
+        if (!text.StartsWith("+q", StringComparison.Ordinal)) return;
+
+        foreach (var hex in text[2..].Split(';', StringSplitOptions.RemoveEmptyEntries))
+            if (hex.Equals("6E616D65", StringComparison.OrdinalIgnoreCase))
+                _responses.Append($"\x1bP1+r{hex}={Convert.ToHexString(Encoding.ASCII.GetBytes(TerminalName))}\x1b\\");
+            else
+                _responses.Append($"\x1bP0+r{hex}\x1b\\");
     }
 
     private void Csi(int c)
@@ -638,6 +682,12 @@ public sealed class TerminalBuffer
                 break;
             case 'u':
                 if (_prefix == '\0') RestoreCursor();
+                break;
+            case 't':
+                // 창 크기 질의(글자 칸) — systemd 는 콘솔을 열 때 이걸 먼저 묻고(0.33초), 답이 없으면 커서를 끝으로 보내 위치를
+                // 묻는다. 늦게 온 답은 로그인 칸에 '^[[24;80R' 로 찍히므로 첫 질문에 바로 답한다
+                if (_prefix == '\0' && P0(0) is 18 or 19)
+                    _responses.Append($"\x1b[{(P0(0) == 18 ? 8 : 9)};{Rows};{Columns}t");
                 break;
         }
     }

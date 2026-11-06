@@ -55,6 +55,7 @@ WPF 앱은 기능이 모두 옮겨질 때까지 그대로 유지한다.
 | 터미널 출력 | 수신 스레드에서 VT 해석(화면 스레드 막지 않음) → 다시 그리기는 한 프레임에 한 번으로 모은다 | `Views/Terminal/TerminalView.cs` `Write` |
 | 터미널 그리기 | 같은 모양이 이어지는 글자를 GlyphRun 한 번으로, 바탕은 같은 색 구간을 사각형 하나로. 대체 글꼴(한글) 글리프는 캐시. 선·블록 문자는 도형 | `Views/Terminal/TerminalRenderer.cs`, `BoxDrawing.cs` |
 | 터미널 크기 | 창 크기를 바꾸는 동안 바뀐 크기를 모아 한 번만 PTY 에 보낸다(같은 크기는 세션이 거른다) | `Views/Terminal/TerminalPage.cs` |
+| 터미널 질의 응답 | 창 크기(CSI 18t)·배경색(OSC 10/11)·터미널 이름(XTGETTCAP)·모드(DECRQM)·커서 위치에 바로 답한다 — systemd 는 콘솔을 열 때 0.33초씩만 기다려, 답이 없거나 늦으면 로그인 칸에 `^[[24;80R` 이 찍힌다 | `Views/Terminal/TerminalBuffer.cs` |
 | 터미널 동기화 출력 | DEC 2026(Claude Code·neovim 등이 다시 그릴 때 켜고 끈다) 동안 그리지 않고, 끄는 신호가 0.2초 안에 안 오면 그냥 그린다. 모드 질의(DECRQM)에 답한다 | `Views/Terminal/TerminalView.cs` `Redraw`, `TerminalBuffer.cs` `ReportMode` |
 | 터미널 손가락 선택 | 길게 눌러 단어 선택 → 양 끝 손잡이(맨 아랫줄이면 위로)를 끌어 넓히기·줄이기, 끄는 동안 손가락 위 확대경. 프로그램이 마우스를 받으면(Claude Code 전체 화면·htop) 손가락 끌기는 휠로 보낸다 | `Views/Terminal/TerminalView.cs` |
 | 목록 새로 고침 | 로그인 직후 첫 화면 데이터 미리 요청, gzip 응답, 같은 요청은 동시에 | `ViewModels/ProfilesViewModel.cs`, `Core/Api` |

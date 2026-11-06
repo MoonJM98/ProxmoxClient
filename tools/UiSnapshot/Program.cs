@@ -467,6 +467,15 @@ async Task RealShellCheck()
     var big = Screen().Contains("50000") && Screen().Contains("END-OF-SEQ");
     Check("대량 출력(seq 50000)", "끝까지·프롬프트 복귀", $"{sw.ElapsedMilliseconds} ms, 스크롤백 {buffer.ScrollbackCount}줄", big);
 
+    // systemd 처럼 묻기 — 에코·줄 단위 끄고 창 크기(CSI 18t)를 묻고 0.33초만 기다린 뒤 원래대로. 답이 제때 와야 하고,
+    // 늦은 답이 화면(로그인 칸)에 찍히면 안 된다
+    Run("clear; stty -echo -icanon min 0 time 3; printf '\\e[18t'; r=$(dd bs=1 count=32 2>/dev/null | tr -d '\\033'); stty sane; echo \"CSI18=[$r]\"; sleep 0.5");
+    WaitFor(() => Screen().Contains("CSI18=["), 4000);
+    Pump(800);
+    var csi18 = Screen().Split('\n').FirstOrDefault(l => l.Contains("CSI18=")) ?? "";
+    Check("systemd 식 크기 질의(0.33초)", $"CSI18=[[8;{buffer.Rows};{buffer.Columns}t], 화면에 ^[ 없음", csi18,
+        csi18.Contains($"[8;{buffer.Rows};{buffer.Columns}t]") && !Screen().Contains("^["));
+
     var oldColumns = buffer.Columns;
     window.Width -= 160;
     Pump(800);
@@ -817,6 +826,19 @@ async Task TerminalCheck()
     Check("동기화 출력(2026)", "질의 답 '?2026;2$y', 켜진 동안 안 그림 → 끄면 그림, 안 끄면 0.2초 뒤 그림",
         $"답 {string.Join(" ", rqm)}, 켜짐 {heldFrames}번 → 끈 뒤 {shownFrames}번, 시간 초과 {timeoutFrames}번",
         rqm.SequenceEqual(["input '\\x1b[?2026;2$y'"]) && heldFlag && heldFrames == 0 && shownFrames > 0 && timeoutFrames > 0);
+    // systemd 가 콘솔을 열 때 묻는 것들(창 크기 CSI 18t·배경색 OSC 11·터미널 이름 XTGETTCAP) — 답이 없으면 0.33초씩 기다리다
+    // 커서 위치 질문으로 넘어가고, 늦게 온 답이 로그인 칸에 '^[[24;80R' 로 찍힌다(사용자 보고). 바로 답해야 한다
+    Log("input");
+    term.Write("\x1b[18t\x1b]11;?\x1b\\\x1bP+q6E616D65;636F6C73\x1b\\");
+    var answers = Log("input");
+    var expectSize = $"input '\\x1b[8;{buffer.Rows};{buffer.Columns}t'";
+    Check("systemd 질의 응답", "크기 8;행;열 t · 배경 rgb · 이름 xterm-256color · 모르는 이름은 0+r",
+        string.Join(" ", answers),
+        answers.Count == 1 && answers[0].StartsWith(expectSize[..^1], StringComparison.Ordinal) &&
+        answers[0].Contains("\\x1b]11;rgb:0c0c/0c0c/0c0c\\x1b\\\\") &&
+        answers[0].Contains("\\x1bP1+r6E616D65=787465726D2D323536636F6C6F72\\x1b\\\\") &&
+        answers[0].Contains("\\x1bP0+r636F6C73\\x1b\\\\"));
+
     Type("clear");
     Key(Avalonia.Input.Key.Enter);
     Pump(300);
