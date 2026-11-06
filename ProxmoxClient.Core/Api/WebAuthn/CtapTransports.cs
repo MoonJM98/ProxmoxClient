@@ -197,6 +197,8 @@ public sealed class HidCtapTransport(
                 seq++;
             }
 
+            // 취소해 CANCEL 을 보냈으면 키는 KEEPALIVE_CANCEL(0x2D)로 끝낸다 — 오류가 아니라 취소로 알린다
+            ct.ThrowIfCancellationRequested();
             return (rcmd, payload);
         }
     }
