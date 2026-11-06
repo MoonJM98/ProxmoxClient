@@ -52,14 +52,14 @@ internal static partial class CtNetwork
             Columns, "CtNet_Hint",
         [
             new TableAction { LabelKey = "Action_Add", IconKey = "IconPlus",
-                Run = (_, _) => Tabs.DigestGuard.RunAsync(() => EditAsync(api, guest, null)) },
+                Run = (_, _) => DigestGuard.RunAsync(() => EditAsync(api, guest, null)) },
             new TableAction { LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                Run = (row, _) => Tabs.DigestGuard.RunAsync(() => EditAsync(api, guest, row!["id"])) },
+                Run = (row, _) => DigestGuard.RunAsync(() => EditAsync(api, guest, row!["id"])) },
             new TableAction
             {
                 LabelKey = "Hw_Remove", IconKey = "IconTrash", NeedsSelection = true,
                 Confirm = row => Loc.T("Hw_RemoveConfirm", row!["id"]),
-                Run = (row, _) => Tabs.DigestGuard.RunAsync(async () =>
+                Run = (row, _) => DigestGuard.RunAsync(async () =>
                 {
                     await api.UpdateGuestConfigAsync(guest.Node, guest.Kind, guest.VmId,
                         loaded.AddDigest(new Dictionary<string, string> { ["delete"] = row!["id"] }));

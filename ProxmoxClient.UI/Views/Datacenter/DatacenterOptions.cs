@@ -5,7 +5,7 @@ using ProxmoxClient.Core.Models;
 using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Services;
 using ProxmoxClient.UI.Views.Shared;
-using static ProxmoxClient.UI.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.ActionHelpers;
 using static ProxmoxClient.Presentation.Shared.FormHelpers;
 
 namespace ProxmoxClient.UI.Views.Datacenter;
@@ -35,33 +35,10 @@ internal sealed class DcOption
     /// <summary>비었을 때 보여 줄 설명 리소스 키.</summary>
     public string? EmptyLabelKey { get; init; }
 
-    /// <summary>여러 칸으로 나눠 고치는 항목 — 있으면 Kind 대신 이 편집기를 쓴다.</summary>
-    public DcOptionEditor? Editor { get; init; }
+    /// <summary>여러 칸으로 나눠 고치는 항목 — 있으면 Kind 대신 이 편집기(게스트 옵션과 같은 공용 형식)를 쓴다.</summary>
+    public OptionEditor? Editor { get; init; }
 
     public string Label => Loc.T(LabelKey);
-}
-
-/// <summary>
-///     여러 칸 편집기(웹 UI dc/OptionView.js) — 값을 칸으로 나눠 보여 주고 다시 모은다.
-///     <see cref="Build" /> 는 바꿀 키들을 돌려주며, 빈 값은 그 키를 서버 설정에서 지운다(기본값).
-/// </summary>
-internal sealed class DcOptionEditor
-{
-    /// <summary>현재 값·설정 전체로 입력 칸을 만든다.</summary>
-    public required Func<string, IReadOnlyDictionary<string, string>, IReadOnlyList<FormField>> Fields { get; init; }
-
-    /// <summary>입력 결과와 원래 값 → 바꿀 설정들.</summary>
-    public required Func<IReadOnlyDictionary<string, string>, string, IReadOnlyDictionary<string, string>> Build
-    {
-        get;
-        init;
-    }
-
-    /// <summary>입력 검사 — 문제가 있으면 보여 줄 문구, 없으면 null.</summary>
-    public Func<IReadOnlyDictionary<string, string>, string?>? Validate { get; init; }
-
-    /// <summary>목록에 보일 문구(없으면 원래 값 그대로).</summary>
-    public Func<string, string>? Display { get; init; }
 }
 
 /// <summary>
@@ -141,7 +118,7 @@ internal static class DatacenterOptions
             [EditAction(api, options)], filterable: true);
     }
 
-    private static DcOption Row(string key, string labelKey, DcOptionEditor? editor,
+    private static DcOption Row(string key, string labelKey, OptionEditor? editor,
         string emptyKey = "DcOptions_Default")
     {
         return new DcOption { Key = key, LabelKey = labelKey, Editor = editor, EmptyLabelKey = emptyKey };
@@ -169,7 +146,7 @@ internal static class DatacenterOptions
     }
 
     /// <summary>현재 값으로 편집 창을 띄워 바뀐 키만 저장한다(취소면 null, 바뀐 것이 없으면 안내 문구).</summary>
-    private static async Task<string?> EditAsync(ProxmoxApiClient api, DcOption option, Control? owner)
+    private static async Task<string?> EditAsync(ProxmoxApiClient api, DcOption option, object? owner)
     {
         var config = FromServer(await api.Cluster.GetOptionsAsync());
         var raw = config.GetValueOrDefault(option.Key, string.Empty);

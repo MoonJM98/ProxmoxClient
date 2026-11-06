@@ -138,7 +138,7 @@ public sealed class SnapshotsTab : UserControl
     ///     스냅숏으로 되돌린다 — 경고와 함께 "되돌린 뒤 시작" 을 고르게 한다(start=1, 7.2+).
     ///     RAM 을 담은 VM 스냅숏은 서버가 알아서 켜므로 그 칸을 두지 않는다.
     /// </summary>
-    private async Task<string?> RollbackAsync(IReadOnlyDictionary<string, string>? row, Control? owner)
+    private async Task<string?> RollbackAsync(IReadOnlyDictionary<string, string>? row, object? owner)
     {
         if (row is null) return null;
 
@@ -171,7 +171,7 @@ public sealed class SnapshotsTab : UserControl
     }
 
     /// <summary>설명(메모)만 바꾼다 — 스냅숏 내용은 그대로라 작업 없이 바로 끝난다.</summary>
-    private async Task<string?> EditNoteAsync(IReadOnlyDictionary<string, string>? row, Control? owner)
+    private async Task<string?> EditNoteAsync(IReadOnlyDictionary<string, string>? row, object? owner)
     {
         if (row is null) return null;
 

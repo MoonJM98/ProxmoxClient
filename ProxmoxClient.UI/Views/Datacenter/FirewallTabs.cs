@@ -4,7 +4,7 @@ using ProxmoxClient.UI.Views.Shared;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Api.Domains;
 using ProxmoxClient.Core.Models;
-using static ProxmoxClient.UI.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.ActionHelpers;
 using static ProxmoxClient.Presentation.Shared.FormHelpers;
 using ProxmoxClient.Core.Api.Versioning;
 using Avalonia.Controls;
@@ -216,7 +216,7 @@ internal static class FirewallTabs
                 new TableAction
                 {
                     LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                    Run = (row, owner) => Guest.Tabs.DigestGuard.RunAsync(() => EditOptionAsync(api, scope,
+                    Run = (row, owner) => DigestGuard.RunAsync(() => EditOptionAsync(api, scope,
                         shown.First(o => o.Key == row!["key"]), target, owner))
                 }
             ]);
@@ -248,7 +248,7 @@ internal static class FirewallTabs
 
     /// <summary>한 옵션의 편집 칸 하나 — 확인하면 그 옵션만 서버로 보낸다(비우면 서버 기본값으로 되돌린다).</summary>
     private static async Task<string?> EditOptionAsync(ProxmoxApiClient api, FirewallScope scope,
-        FirewallOption option, ApiFeature? target, Control? owner)
+        FirewallOption option, ApiFeature? target, object? owner)
     {
         var all = await api.Firewall.GetOptionsAsync(scope);
         var current = Value(all, option.Key);
@@ -366,7 +366,7 @@ internal static class FirewallTabs
 
     /// <summary>IP 집합의 주소 목록 창 — 목록에서 집합을 두 번 누르면 연다(웹 UI 오른쪽 IP/CIDR 표).</summary>
     private static void ShowIpSetEntries(ProxmoxApiClient api, FirewallScope scope, bool canEdit, string name,
-        Control? owner)
+        object? owner)
     {
         TableWindow.ShowModal(owner, Loc.T("DcFirewall_EntriesTitle", name),
             new TableTab(() => api.Firewall.ListIpSetEntriesAsync(scope, name), IpSetEntryColumns,

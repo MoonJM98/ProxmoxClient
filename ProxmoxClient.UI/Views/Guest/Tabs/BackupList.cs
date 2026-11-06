@@ -4,7 +4,7 @@ using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
 using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Views.Shared;
-using static ProxmoxClient.UI.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.ActionHelpers;
 using static ProxmoxClient.Presentation.Shared.FormHelpers;
 
 namespace ProxmoxClient.UI.Views.Guest.Tabs;
@@ -86,7 +86,7 @@ internal static class BackupList
 
     /// <summary>메모·보호 설정만 바꾼다(볼륨 내용은 그대로).</summary>
     private static Task<string?> EditNotesAsync(ProxmoxApiClient api, PveResource guest,
-        IReadOnlyDictionary<string, string> row, Control? owner)
+        IReadOnlyDictionary<string, string> row, object? owner)
     {
         return SubmitAsync(owner, Loc.T("BackupList_NotesTitle", row["volid"]),
         [
@@ -104,7 +104,7 @@ internal static class BackupList
     ///     복원 — 같은 번호면 지금 게스트를 덮어쓰고(번호 입력 확인), 다른 번호면 새 게스트로 만든다.
     /// </summary>
     private static async Task<string?> RestoreAsync(ProxmoxApiClient api, PveResource guest,
-        IReadOnlyDictionary<string, string> row, Control? owner)
+        IReadOnlyDictionary<string, string> row, object? owner)
     {
         var isVm = guest.Kind == ResourceKind.Qemu;
         var current = guest.VmId.ToString(CultureInfo.InvariantCulture);

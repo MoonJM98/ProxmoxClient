@@ -12,9 +12,9 @@ namespace ProxmoxClient.UI.Views.Storage;
 internal static class StorageFiles
 {
     /// <summary>WPF 의 OpenFileDialog 필터 문자열("이름|*.a;*.b|...")을 선택기 형식으로 바꾼다.</summary>
-    public static async Task<IStorageFile?> PickUploadAsync(Control? owner, string filter, string title)
+    public static async Task<IStorageFile?> PickUploadAsync(object? owner, string filter, string title)
     {
-        if (TopLevel.GetTopLevel(owner)?.StorageProvider is not { CanOpen: true } provider) return null;
+        if (TopLevel.GetTopLevel(owner as Visual)?.StorageProvider is not { CanOpen: true } provider) return null;
 
         var files = await provider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
@@ -24,9 +24,9 @@ internal static class StorageFiles
     }
 
     /// <summary>받을 위치를 고른다. 파일은 모든 형식, 폴더는 zip 으로 받는다(WPF 와 같은 제안 이름).</summary>
-    public static async Task<IStorageFile?> PickSaveAsync(Control? owner, string suggestedName, bool zip)
+    public static async Task<IStorageFile?> PickSaveAsync(object? owner, string suggestedName, bool zip)
     {
-        if (TopLevel.GetTopLevel(owner)?.StorageProvider is not { CanSave: true } provider) return null;
+        if (TopLevel.GetTopLevel(owner as Visual)?.StorageProvider is not { CanSave: true } provider) return null;
 
         return await provider.SaveFilePickerAsync(new FilePickerSaveOptions
         {

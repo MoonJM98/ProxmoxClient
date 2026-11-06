@@ -100,7 +100,7 @@ internal static class FileRestoreBrowser
 
     /// <summary>파일은 그대로, 폴더(또는 디스크·파티션)는 zip 으로 받는다 — 저장할 곳은 사용자가 고른다.</summary>
     private static async Task<string?> DownloadAsync(ProxmoxApiClient api, string node, string storage,
-        string volume, IReadOnlyDictionary<string, string> row, Window? owner)
+        string volume, IReadOnlyDictionary<string, string> row, object? owner)
     {
         var isFile = IsLeaf(row);
         var name = Value(row, "text").Trim('/');
@@ -110,7 +110,7 @@ internal static class FileRestoreBrowser
             FileName = SafeFileName(isFile ? name : name + ".zip"),
             Filter = isFile ? "*.*|*.*" : "Zip (*.zip)|*.zip", OverwritePrompt = true
         };
-        if (dialog.ShowDialog(owner) != true) return null;
+        if (dialog.ShowDialog(owner as Window) != true) return null;
 
         // 같은 폴더의 임시 파일로 받고 다 받은 뒤에만 바꾼다 — 실패해도 덮어쓰려던 원래 파일은 그대로 남는다
         var partial = dialog.FileName + ".part";

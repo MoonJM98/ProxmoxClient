@@ -5,7 +5,7 @@ using System.Windows;
 using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
-using static ProxmoxClient.App.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.ActionHelpers;
 using static ProxmoxClient.Presentation.Shared.FormHelpers;
 
 namespace ProxmoxClient.App.Views.Datacenter;
@@ -44,7 +44,7 @@ internal static class TfaRegistration
         ];
     }
 
-    private static async Task<string?> AddTotpAsync(ProxmoxApiClient api, Window? owner)
+    private static async Task<string?> AddTotpAsync(ProxmoxApiClient api, object? owner)
     {
         var users = await UserChoicesAsync(api);
         var first = new FormDialog(Loc.T("DcTfa_AddTotp"),
@@ -54,7 +54,7 @@ internal static class TfaRegistration
                 Key = "userid", LabelKey = "Table_UserId", Kind = FormFieldKind.Choice, Choices = users, Required = true
             },
             new FormField { Key = "description", LabelKey = "Table_Description", Initial = "TOTP" }
-        ]) { Owner = owner };
+        ]) { Owner = owner as Window };
         if (first.ShowDialog() != true || first.Result is not { } target) return null;
 
         var userId = target["userid"];
@@ -87,7 +87,7 @@ internal static class TfaRegistration
     /// <summary>
     ///     Yubico OTP — 키를 눌러 나온 OTP 를 넣으면 서버가 키 ID 를 등록한다. 영역에 Yubico 설정(API ID·키)이 있어야 한다.
     /// </summary>
-    private static async Task<string?> AddYubicoAsync(ProxmoxApiClient api, Window? owner)
+    private static async Task<string?> AddYubicoAsync(ProxmoxApiClient api, object? owner)
     {
         var users = await UserChoicesAsync(api);
         return await SubmitAsync(owner, "DcTfa_AddYubico",
@@ -111,7 +111,7 @@ internal static class TfaRegistration
     }
 
     /// <summary>복구 코드 — 서버가 만든 일회용 코드를 지금 한 번만 보여 준다.</summary>
-    private static async Task<string?> AddRecoveryAsync(ProxmoxApiClient api, Window? owner)
+    private static async Task<string?> AddRecoveryAsync(ProxmoxApiClient api, object? owner)
     {
         var users = await UserChoicesAsync(api);
         var dialog = new FormDialog(Loc.T("DcTfa_AddRecovery"),
@@ -121,7 +121,7 @@ internal static class TfaRegistration
                 Key = "userid", LabelKey = "Table_UserId", Kind = FormFieldKind.Choice, Choices = users, Required = true
             },
             new FormField { Key = "password", LabelKey = "DcUsers_MyPassword", Kind = FormFieldKind.Password }
-        ]) { Owner = owner };
+        ]) { Owner = owner as Window };
         if (dialog.ShowDialog() != true || dialog.Result is not { } values) return null;
 
         var form = new Dictionary<string, string>(StringComparer.Ordinal) { ["type"] = "recovery" };

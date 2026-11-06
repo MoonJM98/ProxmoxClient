@@ -8,4 +8,6 @@ global using ProxmoxClient.Presentation.Files;
 global using ProxmoxClient.Presentation.Guest;
 global using ProxmoxClient.Presentation.Guest.Hardware;
 global using ProxmoxClient.Presentation.Guest.Tabs;
+global using ProxmoxClient.Presentation.Node;
 global using ProxmoxClient.Presentation.Shared;
+global using ProxmoxClient.Presentation.Storage;

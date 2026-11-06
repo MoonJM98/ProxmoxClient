@@ -6,7 +6,7 @@ using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Services;
 using ProxmoxClient.UI.Views.Guest.Tabs;
 using ProxmoxClient.UI.Views.Shared;
-using static ProxmoxClient.UI.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.ActionHelpers;
 using static ProxmoxClient.Presentation.Shared.FormHelpers;
 
 namespace ProxmoxClient.UI.Views.Node;
@@ -104,7 +104,7 @@ internal static class NetworkActions
 
     /// <summary>row 가 null 이면 새 인터페이스. 유형마다 필요한 칸만 보인다.</summary>
     private static Task<string?> EditAsync(ProxmoxApiClient api, string node, string type,
-        IReadOnlyDictionary<string, string>? row, Control? owner)
+        IReadOnlyDictionary<string, string>? row, object? owner)
     {
         string Initial(string key, string fallback = "") => row is null ? fallback : Value(row, key);
 

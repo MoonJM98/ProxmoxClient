@@ -44,9 +44,9 @@ internal sealed class TotpQrWindow : Window
         Loaded += (_, _) => WindowTheme.ApplyDarkTitleBar(this);
     }
 
-    public static void ShowModal(Window? owner, string secret, string uri)
+    public static void ShowModal(object? owner, string secret, string uri)
     {
-        new TotpQrWindow(secret, uri) { Owner = owner }.ShowDialog();
+        new TotpQrWindow(secret, uri) { Owner = owner as Window }.ShowDialog();
     }
 
     /// <summary>QR 모듈을 흰 여백과 함께 검은 점으로 그린 흑백 비트맵(화면 배율과 무관하게 또렷하게 정수 배).</summary>

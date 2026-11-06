@@ -60,7 +60,7 @@ public static class GuestNavigator
             "snapshots" => new Tabs.SnapshotsTab(api, guest),
             "firewall" => Datacenter.FirewallTabs.ForGuest(api, guest, permissions.CanConfigure),
             "monitor" => new Tabs.MonitorTab(api, guest),
-            "replication" => Node.NodeSystemTabs.Replication(api, guest.Node, guest.VmId, canEdit: true),
+            "replication" => ViewSpecs.Build(NodeSystemTabs.Replication(api, guest.Node, guest.VmId, canEdit: true)),
             "permissions" => CreatePermissionsTab(api, guest, permissions),
             _ => throw new ArgumentOutOfRangeException(nameof(tabId), tabId, "알 수 없는 게스트 탭")
         };
@@ -75,9 +75,9 @@ public static class GuestNavigator
             async () => (await api.Access.ListAclAsync())
                 .Where(entry => entry.TryGetValue("path", out var p) && p == path)
                 .ToList(),
-            Datacenter.DatacenterTables.AclColumns,
+            DatacenterTables.AclColumns,
             "GuestPermissions_Hint",
-            permissions.Has("Permissions.Modify") ? Datacenter.AccessActions.Acl(api, path) : null);
+            permissions.Has("Permissions.Modify") ? AccessActions.Acl(api, path) : null);
     }
 
     /// <summary>
@@ -85,7 +85,7 @@ public static class GuestNavigator
     ///     웹 UI 처럼 …/pending 으로 읽어 재시작 후 적용될 값을 따로 보여 주고, 되돌리기(revert)를 할 수 있다.
     /// </summary>
     private static Tabs.OptionsTab CreateOptionsTab(ProxmoxApiClient api, PveResource guest,
-        IReadOnlyList<GuestOption> options, IReadOnlyList<Shared.TableAction>? extraActions = null)
+        IReadOnlyList<GuestOption> options, IReadOnlyList<TableAction>? extraActions = null)
     {
         // 서버 버전이 모르는 설정(예: 8.0 전의 ciupgrade)은 옵션 목록이 저장 요청(target)을 보고 뺀다
         return new Tabs.OptionsTab(
@@ -116,9 +116,9 @@ public static class GuestNavigator
     }
 
     /// <summary>Cloud-Init 이미지 다시 만들기(PUT …/cloudinit) — 바꾼 설정을 드라이브에 바로 반영한다.</summary>
-    private static Shared.TableAction RegenerateCloudInit(ProxmoxApiClient api, PveResource guest)
+    private static TableAction RegenerateCloudInit(ProxmoxApiClient api, PveResource guest)
     {
-        return new Shared.TableAction
+        return new TableAction
         {
             LabelKey = "CloudInit_Regenerate", IconKey = "IconRotate",
             Run = async (_, _) =>

@@ -10,6 +10,7 @@ using ProxmoxClient.UI.Platform;
 using ProxmoxClient.UI.Views.Controls;
 using ProxmoxClient.UI.Views.Shared;
 using ProxmoxClient.UI.Views.Storage;
+using static ProxmoxClient.Presentation.Files.SftpProfileRules;
 
 namespace ProxmoxClient.UI.Views.Files;
 
@@ -435,19 +436,6 @@ internal sealed class SftpProfilesEditor : UserControl
         _privateKeyBox.Text = result.GeneratedPrivateKeyPath;
         if (result.GeneratedPassphrase is { } generatedPassphrase) _passwordBox.Text = generatedPassphrase;
     }
-
-    private static string LocalKeyPath(string input)
-    {
-        var path = Environment.ExpandEnvironmentVariables(input.Trim());
-        if (path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~\\", StringComparison.Ordinal))
-            path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), path[2..]);
-        return Path.GetFullPath(path);
-    }
-
-    private static bool SameAuthentication(SftpAccountProfile old, SftpAccountProfile current) =>
-        old.UserName == current.UserName && old.AuthenticationMode == current.AuthenticationMode &&
-        old.PrivateKeyPath == current.PrivateKeyPath && old.CertificatePath == current.CertificatePath &&
-        old.CredentialRevision == current.CredentialRevision;
 
     private async Task SaveConnectionAsync()
     {

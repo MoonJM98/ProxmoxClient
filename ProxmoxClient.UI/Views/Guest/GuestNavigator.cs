@@ -67,7 +67,7 @@ public static class GuestNavigator
                 "TasksTab_Hint", "TasksTab_Empty", api),
             "monitor" => new MonitorTab(api, guest),
             "backup" => BackupTabs(api, guest, permissions),
-            "replication" => NodeSystemTabs.Replication(api, guest.Node, guest.VmId, canEdit: true),
+            "replication" => ViewSpecs.Build(NodeSystemTabs.Replication(api, guest.Node, guest.VmId, canEdit: true)),
             "snapshots" => new SnapshotsTab(api, guest),
             "firewall" => FirewallTabs.ForGuest(api, guest, permissions.CanConfigure),
             "permissions" => PermissionsTab(api, guest, permissions),

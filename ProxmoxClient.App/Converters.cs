@@ -79,7 +79,7 @@ public sealed class UptimeConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        return value is long seconds and > 0 ? Views.Shared.TableFormats.FormatUptime(seconds) : "-";
+        return value is long seconds and > 0 ? TableFormats.FormatUptime(seconds) : "-";
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
