@@ -10669,4 +10669,10 @@ SHA-256: {5}</value>
   <data name="NodeSubscription_Status_suspended" xml:space="preserve">
     <value>정지됨</value>
   </data>
+  <data name="TableTab_Open" xml:space="preserve">
+    <value>열기</value>
+  </data>
+  <data name="TableTab_RawFields" xml:space="preserve">
+    <value>서버 원본 필드 {0}개</value>
+  </data>
 </root>

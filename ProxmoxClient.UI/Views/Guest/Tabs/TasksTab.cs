@@ -16,10 +16,10 @@ public sealed class TasksTab : UserControl
     private static readonly IReadOnlyList<TableColumn> Columns =
     [
         new() { Key = "status", HeaderKey = "MainWindow_42", Width = 110 },
-        new() { Key = "type", HeaderKey = "MainWindow_54", Width = 200 },
-        new() { Key = "start", HeaderKey = "MainWindow_TaskStart", Width = 150 },
+        new() { Key = "type", HeaderKey = "MainWindow_54", Width = 200, Mobile = MobileColumn.Title },
+        new() { Key = "start", HeaderKey = "MainWindow_TaskStart", Width = 150, Mobile = MobileColumn.Summary },
         new() { Key = "end", HeaderKey = "MainWindow_TaskEnd", Width = 150 },
-        new() { Key = "user", HeaderKey = "MainWindow_60", Width = 0 }
+        new() { Key = "user", HeaderKey = "MainWindow_60", Width = 0, Mobile = MobileColumn.Summary }
     ];
 
     private readonly Func<Task<IReadOnlyList<PveTask>>> _load;

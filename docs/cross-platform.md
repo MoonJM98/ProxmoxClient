@@ -29,6 +29,12 @@ WPF 앱은 기능이 모두 옮겨질 때까지 그대로 유지한다.
   메모리에만 두고 "저장" 선택지를 숨긴다.
 - 화면 배치: 같은 뷰모델을 `PageFactory` 가 형태(`PlatformInfo.FormFactor`)에 따라 다른 페이지로 보여 준다.
   상세 화면(게스트·노드·작업 로그)은 UserControl 하나를 모바일 페이지와 데스크톱 상세 창이 함께 쓴다.
+- 휴대폰 목록(`TableTab`): 카드에는 한눈에 볼 것만(제목 · 상태 칩 · 요약 한 줄 · ›). 카드를 누르면 아래에서 상세 시트
+  (`RowDetailSheet`)가 올라와 표의 모든 열(빈 값은 —)과 표에 없는 서버 필드까지 보이고, 항목 작업(편집·지우기 등)은
+  시트의 큰 단추로 한다(지우기는 빨간 글자로 맨 아래). 위 단추 줄에는 항목을 고르지 않는 작업(추가 등)만, 둘을 넘으면
+  "더 보기" 메뉴. 열마다 `TableColumn.Mobile`(Title·Status·Summary·Detail)로 카드 자리를 정하고, 정하지 않으면
+  첫 열 = 제목, status·state 열 = 상태 칩, 다음 두 열 = 요약. 설정 목록·파일 목록처럼 여는 것이 곧 할 일이면
+  `TapOpens`(누르면 바로 열고, 길게 누르면 시트).
 - 새 OS 전용 기능은 `Platform/` 에 인터페이스 + OS 별 구현으로 넣고, 화면 코드에서 `OperatingSystem.IsXxx()` 를 직접 쓰지 않는다.
 
 ## 지연 최소화
@@ -103,7 +109,7 @@ GPU 경로가 초기화는 되는데 창이 검게 나오면 `PROXMOXCLIENT_REND
 |---|---|---|
 | 화면 전체(데스크톱·태블릿·모바일 배치) | UiSnapshot + 가짜 PVE(`tools/FakePve`) | 모든 대상 통과 |
 | VNC 콘솔 조작(제스처·물리 키·화면 키보드 Shift/두벌식·클립보드) | `--target console` | 모바일·데스크톱 통과 |
-| 해석기·순수 논리 | `dotnet run --project tools/TerminalTests` (터미널 제어열·질의·유니코드·다시 감기·입력 부호, RDP 키, 2단계 인증·보안 키(CTAP2·PIN·U2F, 소프트웨어 키), 관리 입력 검사, 터미널 다시 열기 등) | 694/694 |
+| 해석기·순수 논리 | `dotnet run --project tools/TerminalTests` (터미널 제어열·질의·유니코드·다시 감기·입력 부호, RDP 키, 2단계 인증·보안 키(CTAP2·PIN·U2F, 소프트웨어 키), 관리 입력 검사, 터미널 다시 열기 등) | 708/708 |
 | Core 단위 검사 | `dotnet test tests/ProxmoxClient.Core.Tests` (RFB 디코딩·VNC 인증·PVE 응답·저장소·UPID) | 60/60 |
 | RDP 실제 서버 | xrdp·FreeRDP(NLA) + 가짜 PVE rdpproxy(RDCleanPath) + `--target rdp` (IronRDP 2026.10.29), Windows Server 2025(러너 자신, NLA 필수) + `tools/WinRdpE2E` | 연결·CredSSP/NTLM(HYBRID·HYBRID_EX)·로그인 실패 안내·화면·입력·한글 유니코드 키·해상도 맞춤·다시 연결·Windows 클립보드 양방향 통과 |
 | 보안 키(USB, Linux) | GitHub 러너의 `/dev/uhid` 가상 FIDO 키(`tools/VirtualFido`) + 실제 `LinuxHidWebAuthnProvider` | CTAP2·PIN v1/v2·U2F·취소·뽑기·로그인 12개 통과. 실제 키·NFC·Windows/macOS 경로는 실물 확인 필요 |

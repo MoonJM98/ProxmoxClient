@@ -5,6 +5,7 @@ using Avalonia.Media;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
 using ProxmoxClient.UI.Localization;
+using ProxmoxClient.UI.Platform;
 using ProxmoxClient.UI.Services;
 using ProxmoxClient.UI.Views.Shared;
 
@@ -37,8 +38,15 @@ public sealed class SnapshotsTab : UserControl
         _api = api;
         _guest = guest;
 
+        // 휴대폰: 아래에 늘 펼친 입력 칸 대신 위 단추로 입력 창을 띄운다(목록이 화면을 다 쓰게)
+        var mobile = !PlatformInfo.IsDesktop;
+        var createAction = new TableAction
+        {
+            LabelKey = "SnapshotDialog_06", IconKey = "IconCamera", Run = (_, _) => CreateFromFormAsync()
+        };
         _table = new TableTab(LoadAsync, Columns, "SnapshotsTab_Hint",
         [
+            ..(mobile ? [createAction] : Array.Empty<TableAction>()),
             new TableAction
             {
                 LabelKey = "SnapshotDialog_EditNote", IconKey = "IconPencil", NeedsSelection = true,
@@ -87,7 +95,7 @@ public sealed class SnapshotsTab : UserControl
             }
         };
 
-        var card = new Border { Classes = { "card" }, Margin = new Thickness(12, 0, 12, 0), Child = form };
+        var card = new Border { Classes = { "card" }, Margin = new Thickness(12, 0, 12, 0), Child = form, IsVisible = !mobile };
         var grid = new Grid { RowDefinitions = new RowDefinitions("*,Auto,Auto") };
         Grid.SetRow(_table, 0);
         Grid.SetRow(card, 1);
@@ -199,6 +207,30 @@ public sealed class SnapshotsTab : UserControl
 
         var task = await _api.WaitTaskAsync(upid);
         return task.IsOk ? Loc.T("SnapshotDialog_Done", label) : Loc.T("SnapshotDialog_Failed", label, task.Status);
+    }
+
+    /// <summary>휴대폰: 이름·설명·RAM 을 입력 창으로 받아 만든다(데스크톱의 아래 입력 칸과 같은 검사·같은 흐름).</summary>
+    private async Task<string?> CreateFromFormAsync()
+    {
+        await UpdateRamOptionAsync();
+        var fields = new List<FormField>
+        {
+            new() { Key = "name", LabelKey = "MainWindow_40", Required = true, Trim = true },
+            new() { Key = "description", LabelKey = "FirewallWindow_13" }
+        };
+        if (_includeRam.IsVisible && _includeRam.IsEnabled)
+            fields.Add(new FormField { Key = "ram", LabelKey = "SnapshotDialog_09", Kind = FormFieldKind.Bool, Initial = "0" });
+        var values = await FormDialog.ShowAsync(Loc.T("SnapshotDialog_06"), fields,
+            v => GuestInputChecks.IsSnapshotName(v.GetValueOrDefault("name") ?? string.Empty)
+                ? null
+                : Loc.T("Snapshot_NameRules", GuestInputChecks.SnapshotNameMax));
+        if (values is null) return null;
+
+        _newName.Text = values.GetValueOrDefault("name");
+        _newDescription.Text = values.GetValueOrDefault("description");
+        _includeRam.IsChecked = values.GetValueOrDefault("ram") == "1";
+        await CreateAsync();
+        return null; // 결과는 CreateAsync 가 아래 상태 줄에 쓰고 목록을 다시 읽는다
     }
 
     private async Task CreateAsync()

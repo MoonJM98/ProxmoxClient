@@ -244,6 +244,9 @@ public interface IDismissible
     void Dismiss();
 }
 
+/// <summary>화면 아래에서 올라오는 시트(휴대폰) — 바깥을 누르거나 뒤로 가기로 닫힌다.</summary>
+public interface IBottomSheet : IDismissible;
+
 /// <summary>대화상자 하나 — 확인/취소를 누르면 <see cref="Result" /> 가 끝난다.</summary>
 public sealed partial class DialogRequest(string title, string message) : ObservableObject
 {

@@ -27,7 +27,7 @@
 
         <!-- 직접 만든 내용의 대화상자(입력 폼 등) -->
         <Border x:Name="SheetOverlay" Background="{StaticResource ScrimBrush}" IsVisible="{Binding IsSheetOpen}">
-            <Border Classes="card" VerticalAlignment="Center" Margin="16,24" Padding="0" MaxWidth="560">
+            <Border x:Name="SheetCard" Classes="card" VerticalAlignment="Center" Margin="16,24" Padding="0" MaxWidth="560">
                 <ContentControl Content="{Binding Sheet}" />
             </Border>
         </Border>

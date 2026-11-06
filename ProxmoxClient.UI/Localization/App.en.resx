@@ -8458,4 +8458,10 @@ Previous SHA-256: {6}</value>
   <data name="NodeSubscription_Status_suspended" xml:space="preserve">
     <value>Suspended</value>
   </data>
+  <data name="TableTab_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="TableTab_RawFields" xml:space="preserve">
+    <value>Raw server fields ({0})</value>
+  </data>
 </root>

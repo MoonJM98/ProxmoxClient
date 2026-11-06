@@ -16,6 +16,25 @@ public sealed class TableColumn
 
     /// <summary>원래 문자열을 화면용으로 바꾼다. 없으면 그대로 보인다.</summary>
     public Func<string, string>? Format { get; init; }
+
+    /// <summary>휴대폰 카드 목록에서 이 열이 맡는 자리 — 정하지 않으면 자동(상세 시트에는 늘 모든 열이 나온다).</summary>
+    public MobileColumn Mobile { get; init; } = MobileColumn.Auto;
+}
+
+/// <summary>
+///     휴대폰 카드 목록에서 열이 맡는 자리. 목록은 한눈에 볼 것만(제목·상태·요약 한 줄),
+///     카드를 누르면 뜨는 상세 시트에는 모든 열이 나온다.
+/// </summary>
+public enum MobileColumn
+{
+    /// <summary>자동: 첫 열(상태 열 제외)이 제목, status/state 열은 상태 칩, 다음 두 열이 요약.</summary>
+    Auto,
+    Title,
+    Status,
+    Summary,
+
+    /// <summary>목록에는 안 보이고 상세 시트에만.</summary>
+    Detail
 }
 
 /// <summary>표 위에 놓이는 작업 버튼.</summary>

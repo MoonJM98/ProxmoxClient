@@ -10,4 +10,7 @@
   <data name="SnapshotsTab_Hint" xml:space="preserve">
     <value>Snapshots of this guest. Rollback and delete run as tasks after confirmation; notes can be edited at any time.</value>
   </data>
+  <data name="OptionsTab_Hint_Mobile" xml:space="preserve">
+    <value>Tap an item to edit it. Long-press for the full value and other actions such as revert. Only changed items are saved to the server.</value>
+  </data>
 </root>

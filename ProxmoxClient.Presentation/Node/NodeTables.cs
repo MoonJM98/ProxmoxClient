@@ -9,11 +9,11 @@ internal static class NodeTables
     private static readonly IReadOnlyList<TableColumn> NetworkColumns =
     [
         new() { Key = "iface", HeaderKey = "Table_Name", Width = 110 },
-        new() { Key = "type", HeaderKey = "Table_Type", Width = 90 },
-        new() { Key = "active", HeaderKey = "Table_Active", Width = 60, Format = TableFormats.Flag },
+        new() { Key = "type", HeaderKey = "Table_Type", Width = 90, Mobile = MobileColumn.Summary },
+        new() { Key = "active", HeaderKey = "Table_Active", Width = 60, Format = TableFormats.Flag, Mobile = MobileColumn.Status },
         new() { Key = "autostart", HeaderKey = "Table_Autostart", Width = 70, Format = TableFormats.Flag },
-        new() { Key = "bridge_ports", HeaderKey = "Table_Ports", Width = 110 },
-        new() { Key = "cidr", HeaderKey = "Table_Cidr", Width = 140 },
+        new() { Key = "bridge_ports", HeaderKey = "Table_Ports", Width = 110, Mobile = MobileColumn.Summary },
+        new() { Key = "cidr", HeaderKey = "Table_Cidr", Width = 140, Mobile = MobileColumn.Summary },
         new() { Key = "gateway", HeaderKey = "Table_Gateway", Width = 120 },
         new() { Key = "comments", HeaderKey = "Table_Comment", Width = 0 }
     ];

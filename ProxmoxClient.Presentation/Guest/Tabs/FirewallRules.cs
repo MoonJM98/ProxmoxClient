@@ -28,19 +28,19 @@ internal static class FirewallRules
 
     private static readonly IReadOnlyList<TableColumn> Columns =
     [
-        new() { Key = "pos", HeaderKey = "FirewallWindow_06", Width = 44 },
-        new() { Key = "enable", HeaderKey = "FirewallWindow_05", Width = 50, Format = TableFormats.Flag },
-        new() { Key = "type", HeaderKey = "FirewallWindow_07", Width = 64 },
-        new() { Key = "action", HeaderKey = "FirewallWindow_08", Width = 90 },
-        new() { Key = "macro", HeaderKey = "FirewallWindow_09", Width = 80 },
+        new() { Key = "pos", HeaderKey = "FirewallWindow_06", Width = 44, Mobile = MobileColumn.Detail },
+        new() { Key = "enable", HeaderKey = "FirewallWindow_05", Width = 50, Format = TableFormats.Flag, Mobile = MobileColumn.Status },
+        new() { Key = "type", HeaderKey = "FirewallWindow_07", Width = 64, Mobile = MobileColumn.Summary },
+        new() { Key = "action", HeaderKey = "FirewallWindow_08", Width = 90, Mobile = MobileColumn.Title },
+        new() { Key = "macro", HeaderKey = "FirewallWindow_09", Width = 80, Mobile = MobileColumn.Summary },
         new() { Key = "iface", HeaderKey = "FwRule_Iface", Width = 70 },
-        new() { Key = "proto", HeaderKey = "FirewallWindow_10", Width = 60 },
-        new() { Key = "source", HeaderKey = "FirewallWindow_12", Width = 120 },
+        new() { Key = "proto", HeaderKey = "FirewallWindow_10", Width = 60, Mobile = MobileColumn.Summary },
+        new() { Key = "source", HeaderKey = "FirewallWindow_12", Width = 120, Mobile = MobileColumn.Summary },
         new() { Key = "sport", HeaderKey = "FwRule_SourcePort", Width = 70 },
-        new() { Key = "dest", HeaderKey = "FwRule_Dest", Width = 120 },
-        new() { Key = "dport", HeaderKey = "FirewallWindow_11", Width = 80 },
+        new() { Key = "dest", HeaderKey = "FwRule_Dest", Width = 120, Mobile = MobileColumn.Summary },
+        new() { Key = "dport", HeaderKey = "FirewallWindow_11", Width = 80, Mobile = MobileColumn.Summary },
         new() { Key = "log", HeaderKey = "FwRule_Log", Width = 60 },
-        new() { Key = "comment", HeaderKey = "FirewallWindow_13", Width = 0 }
+        new() { Key = "comment", HeaderKey = "FirewallWindow_13", Width = 0, Mobile = MobileColumn.Summary }
     ];
 
     public static TableSpec Create(ProxmoxApiClient api, FirewallScope scope, bool canEdit = true)

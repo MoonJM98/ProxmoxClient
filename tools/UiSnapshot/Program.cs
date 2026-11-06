@@ -909,8 +909,20 @@ if (target == "manage")
         // 모바일은 카드 목록(ListBox), 데스크톱은 표(DataGrid)
         if (fwTable.GetVisualDescendants().OfType<ListBox>().FirstOrDefault() is { } cards) cards.SelectedIndex = 0;
         else if (fwTable.GetVisualDescendants().OfType<DataGrid>().FirstOrDefault() is { } grid) grid.SelectedIndex = 0;
-        Pump(200);
-        Press(ToolButton(fwTable, "Action_Delete"));
+        Pump(400);
+        if (AppServices.Dialogs.Sheet is ProxmoxClient.UI.Views.Shared.RowDetailSheet rowSheet)
+        {
+            Shot("row-detail-sheet");
+            // 목록 카드는 요약만 — 상세 시트에는 표의 모든 열이 빠짐없이 나와야 한다
+            var texts = rowSheet.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToHashSet();
+            string[] headers = ["FirewallWindow_06", "FirewallWindow_05", "FirewallWindow_07", "FirewallWindow_08",
+                "FirewallWindow_09", "FwRule_Iface", "FirewallWindow_10", "FirewallWindow_12", "FwRule_SourcePort",
+                "FwRule_Dest", "FirewallWindow_11", "FwRule_Log", "FirewallWindow_13"];
+            var missing = headers.Where(h => !texts.Contains(L.T(h))).ToList();
+            ManageCheck("row-sheet-all-columns", missing.Count == 0, "빠진 열: " + string.Join(",", missing));
+        }
+        // 휴대폰은 카드를 누르면 상세 시트가 뜨고, 항목 작업은 그 시트에 있다
+        Press(ToolButton(RowActions(fwTable), "Action_Delete"));
         ConfirmDialogs();
         Pump(800);
     }
@@ -1373,7 +1385,7 @@ async Task RealPveCheck()
             if (fwTable.GetVisualDescendants().OfType<ListBox>().FirstOrDefault() is { } cards) cards.SelectedIndex = 0;
             else if (fwTable.GetVisualDescendants().OfType<DataGrid>().FirstOrDefault() is { } grid) grid.SelectedIndex = 0;
             Pump(300);
-            var delete = fwTable.GetVisualDescendants().OfType<Button>()
+            var delete = RowActions(fwTable).GetVisualDescendants().OfType<Button>()
                 .First(b => ToolTip.GetTip(b) as string == L.T("Action_Delete") || b.Content as string == L.T("Action_Delete"));
             delete.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
             for (var i = 0; i < 3; i++)
@@ -3252,6 +3264,10 @@ async Task ConsoleUsabilityCheck()
     await Wait(AppServices.Navigator.PopAsync());
 }
 
+// 항목 작업 단추가 있는 곳 — 휴대폰은 카드를 눌러 뜬 상세 시트, 데스크톱은 표 위 단추 줄
+Control RowActions(Control table) =>
+    AppServices.Dialogs.Sheet is ProxmoxClient.UI.Views.Shared.RowDetailSheet sheet ? sheet : table;
+
 void SetForeground(bool foreground) =>
     typeof(AppServices).Assembly.GetType("ProxmoxClient.UI.Services.AppLifecycle")!
         .GetMethod("SetForeground", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
@@ -3281,7 +3297,8 @@ void SelfTestWrites()
     var list = table.GetVisualDescendants().OfType<ListBox>().First();
     list.SelectedIndex = 0;
     Pump(200);
-    ButtonOf("Action_Delete").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    RowActions(table).GetVisualDescendants().OfType<Button>()
+        .First(b => ToolTip.GetTip(b) as string == L.T("Action_Delete")).RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
     WaitFor(() => AppServices.Dialogs.Current is not null);
     Console.WriteLine("DELETE confirm: " + (AppServices.Dialogs.Current?.Message ?? "NO DIALOG (BUG)"));
     AppServices.Dialogs.Current?.ConfirmCommand.Execute(null); // 확인 → 같은 흐름이라 다시 묻지 않고 DELETE

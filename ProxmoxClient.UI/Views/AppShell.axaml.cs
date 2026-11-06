@@ -67,6 +67,8 @@ public partial class AppShell : UserControl
         }
 
         AppServices.Dialogs.PropertyChanged += OnDialogsChanged;
+        SheetOverlay.PointerPressed += OnSheetScrimPressed;
+        PlaceSheet();
         ClipboardHelper.TopLevel = _topLevel;
 
         if (_navigation.CurrentPage is null) await AppServices.Navigator.PushAsync(new ProfilesViewModel());
@@ -78,6 +80,7 @@ public partial class AppShell : UserControl
         if (_topLevel?.InputPane is { } pane) pane.StateChanged -= OnInputPaneChanged;
         if (_topLevel?.InsetsManager is { } insets) insets.SafeAreaChanged -= OnSafeAreaChanged;
         AppServices.Dialogs.PropertyChanged -= OnDialogsChanged;
+        SheetOverlay.PointerPressed -= OnSheetScrimPressed;
         if (ReferenceEquals(ClipboardHelper.TopLevel, _topLevel)) ClipboardHelper.TopLevel = null;
         _topLevel = null;
         ApplyKeyboardInset(0); // 새 화면에 붙을 때 이전 키보드 여백이 남지 않게
@@ -90,6 +93,7 @@ public partial class AppShell : UserControl
     /// <summary>입력 대화상자가 열리면 입력란에 바로 포커스(키보드가 올라온다).</summary>
     private void OnDialogsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(DialogService.Sheet)) PlaceSheet();
         if (e.PropertyName == nameof(DialogService.Current) && AppServices.Dialogs.Current is { HasInput: true })
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
@@ -108,13 +112,50 @@ public partial class AppShell : UserControl
     {
         _safeArea = safe;
         BusyOverlay.Padding = safe;
-        SheetOverlay.Padding = safe;
         DialogOverlay.Padding = safe;
+        PlaceSheet();
         ToastBubble.Margin = new Thickness(24 + safe.Left, 0, 24 + safe.Right, 48 + safe.Bottom);
         if (KeyboardInset > 0) ApplyKeyboardInset(KeyboardInset);
     }
 
     private Thickness _safeArea;
+
+    /// <summary>
+    ///     시트 자리 — 바텀 시트(<see cref="IBottomSheet" />)는 화면 아래 끝에 붙여 위 모서리만 둥글게(탐색 막대 몫은 안쪽 여백),
+    ///     나머지는 가운데 카드.
+    /// </summary>
+    private void PlaceSheet()
+    {
+        var safe = _safeArea;
+        if (AppServices.Dialogs.Sheet is IBottomSheet)
+        {
+            SheetOverlay.Padding = new Thickness(safe.Left, safe.Top + 24, safe.Right, 0);
+            SheetCard.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom;
+            SheetCard.Margin = new Thickness(0);
+            SheetCard.MaxWidth = 640;
+            SheetCard.CornerRadius = new CornerRadius(16, 16, 0, 0);
+            SheetCard.Padding = new Thickness(0, 0, 0, safe.Bottom);
+        }
+        else
+        {
+            SheetOverlay.Padding = safe;
+            SheetCard.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
+            SheetCard.Margin = new Thickness(16, 24);
+            SheetCard.MaxWidth = 560;
+            SheetCard.ClearValue(Border.CornerRadiusProperty);
+            SheetCard.Padding = new Thickness(0);
+        }
+    }
+
+    /// <summary>바텀 시트 바깥(어두운 곳)을 누르면 닫는다 — 휴대폰 관례.</summary>
+    private void OnSheetScrimPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        if (ReferenceEquals(e.Source, SheetOverlay) && AppServices.Dialogs.Sheet is IBottomSheet sheet)
+        {
+            sheet.Dismiss();
+            e.Handled = true;
+        }
+    }
 
     /// <summary>
     ///     화면 키보드가 올라오거나 내려갔다. 앱은 화면 끝까지 그리므로(edge-to-edge) Android 가 창을 줄여 주지 않는다 —

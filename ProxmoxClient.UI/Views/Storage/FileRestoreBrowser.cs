@@ -97,7 +97,10 @@ internal static class FileRestoreBrowser
                 LabelKey = "FileRestore_Download", IconKey = "IconDownload", NeedsSelection = true,
                 Run = (row, owner) => DownloadAsync(api, node, storage, volume, row!, owner)
             }
-        ], open: (row, _) => Open(row));
+        ], open: (row, _) => Open(row))
+        {
+            TapOpens = true, OpenableIf = row => !IsLeaf(row) // 폴더는 누르면 들어가고, 파일은 누르면 내려받기 시트
+        };
         return tab;
     }
 

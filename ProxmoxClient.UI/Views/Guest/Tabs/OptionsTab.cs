@@ -68,7 +68,7 @@ public partial class OptionsTab : UserControl
         actions.AddRange((extraActions ?? []).Where(a => a.Requires is not { IsAvailable: false }));
 
         _table = new TableTab(LoadRowsAsync, Columns, "OptionsTab_Hint", actions,
-            open: (row, owner) => _ = OpenAsync(row));
+            open: (row, owner) => _ = OpenAsync(row)) { TapOpens = true };
 
         _lockText = new TextBlock { TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center };
         _lockPanel = new Border
