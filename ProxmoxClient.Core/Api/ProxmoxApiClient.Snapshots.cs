@@ -41,7 +41,8 @@ public sealed partial class ProxmoxApiClient
         var form = new Dictionary<string, string>
         {
             ["vmid"] = vmid.ToString(),
-            ["name"] = name
+            // 서버의 매개변수 이름은 snapname — name 을 보내면 400 "name: property is not defined in schema"(실제 PVE 9 로 확인)
+            ["snapname"] = name
         };
         if (!string.IsNullOrEmpty(description)) form["description"] = description;
         // RAM 상태 저장은 VM 만 — 컨테이너 스냅숏 API 에는 vmstate 가 없어 보내면 요청 전체가 거절된다

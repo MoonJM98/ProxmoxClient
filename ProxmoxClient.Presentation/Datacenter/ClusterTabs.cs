@@ -157,6 +157,41 @@ internal static class ClusterTabs
 
     // ------------------------------------------------------------ SDN
 
+    /// <summary>
+    ///     노드별 SDN 영역 상태. PVE 8 까지는 자원 type=sdn(이름은 sdn), PVE 9 부터는 type=network ·
+    ///     network-type=zone(이름은 network)으로 온다 — 실제 PVE 9.2 는 ?type=sdn 에 빈 목록을 준다.
+    ///     그래서 전체 자원을 읽어 두 모양을 모두 골라 이름을 sdn 칸으로 맞춘다.
+    /// </summary>
+    internal static async Task<IReadOnlyList<IReadOnlyDictionary<string, string>>> SdnStatusAsync(ProxmoxApiClient api)
+    {
+        var rows = await api.Cluster.ResourcesAsync();
+        return rows.Where(IsSdnZone).Select(row =>
+        {
+            var copy = new Dictionary<string, string>(row, StringComparer.Ordinal);
+            if (Value(row, "sdn").Length == 0) copy["sdn"] = SdnName(row);
+            return (IReadOnlyDictionary<string, string>)copy;
+        }).ToList();
+    }
+
+    internal static bool IsSdnZone(IReadOnlyDictionary<string, string> row)
+    {
+        return Value(row, "type") switch
+        {
+            "sdn" => true,
+            "network" => Value(row, "network-type") is "" or "zone",
+            _ => false
+        };
+    }
+
+    /// <summary>영역 이름 — sdn(PVE 8)·network(PVE 9), 없으면 id 의 마지막 조각(network/노드/zone/이름).</summary>
+    internal static string SdnName(IReadOnlyDictionary<string, string> row)
+    {
+        if (Value(row, "sdn") is { Length: > 0 } sdn) return sdn;
+        if (Value(row, "network") is { Length: > 0 } network) return network;
+        var id = Value(row, "id");
+        return id[(id.LastIndexOf('/') + 1)..];
+    }
+
     public static SubTabsSpec Sdn(ProxmoxApiClient api, bool canEdit)
     {
         var apply = new TableAction
@@ -171,8 +206,7 @@ internal static class ClusterTabs
         return new SubTabsSpec(new List<SubTabSpec>
         {
             // 노드마다 영역이 제대로 적용됐는지(웹 UI 의 SDN 상태) — 적용 뒤 확인용
-            new("DcSdn_Status", () => new TableSpec(() => api.Cluster.ResourcesAsync("sdn"),
-                SdnStatusColumns, "DcSdn_StatusHint")),
+            new("DcSdn_Status", () => new TableSpec(() => SdnStatusAsync(api), SdnStatusColumns, "DcSdn_StatusHint")),
             new("DcSdn_Zones", () => new TableSpec(() => api.Sdn.ListAsync("zones", pending: true), ZoneColumns,
                 "DcSdn_ZonesHint", canEdit ? [..SdnActions.Zones(api), ..pending] : null)),
             new("DcSdn_Vnets", () => new TableSpec(() => api.Sdn.ListAsync("vnets", pending: true), VnetColumns,

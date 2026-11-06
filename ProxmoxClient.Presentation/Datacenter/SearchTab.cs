@@ -55,7 +55,7 @@ internal static class SearchTab
         {
             "qemu" or "lxc" => Value("name"),
             "storage" => WithNode(Value("storage"), node),
-            "sdn" => WithNode(Value("sdn"), node),
+            "sdn" or "network" => WithNode(ClusterTabs.SdnName(row), node), // PVE 9 는 SDN 영역이 type=network
             "pool" => Value("pool"),
             _ => node
         };

@@ -1,10 +1,12 @@
 # 데이터센터 "서비스" 화면(HA·SDN·ACME·방화벽·지표·매핑·알림·클러스터 설정, 게스트 방화벽)의 예시 응답.
 # route, STATE 는 fake_pve.py 가 넣어 준다. 값은 PVE 9 의 응답 모양을 따른다(숫자는 정수, 불리언은 1/0).
 
+# PVE 9 는 SDN 영역을 type=network · network-type=zone 으로 준다(이름은 network) — 실제 PVE 9.2 로 확인.
+# ?type=sdn 은 빈 목록이다(PVE 8 까지의 type=sdn·이름 sdn 모양은 더 이상 오지 않는다)
 _SDN_STATUS = [
-    dict(sdn='prod', node='pve1', status='ok'),
-    dict(sdn='prod', node='pve2', status='ok'),
-    dict(sdn='dev', node='pve1', status='pending'),
+    {'id': f'network/{node}/zone/{zone}', 'type': 'network', 'network-type': 'zone', 'network': zone,
+     'node': node, 'status': status}
+    for zone, node, status in [('prod', 'pve1', 'ok'), ('prod', 'pve2', 'ok'), ('dev', 'pve1', 'pending')]
 ]
 
 
@@ -16,18 +18,20 @@ def config_nodes(m, query, body):
     ]
 
 
-# 클러스터 화면의 SDN 상태 표는 /cluster/resources?type=sdn 을 쓴다. 이 경로는 core 가 이미 처리하므로
-# 여기서는 같은 규칙으로 되돌려 준다: type=sdn 이면 SDN 상태, 그 밖에는 core 와 같은 응답(vm·storage·전체).
+# /cluster/resources 는 core 가 이미 처리하지만 SDN 영역까지 실서버처럼: 전체 목록과 type=network 에 영역 줄,
+# type=sdn 은 빈 목록(PVE 9), 그 밖에는 core 와 같은 응답(vm·storage·전체).
 @route('GET', r'/cluster/resources')
 def cluster_resources(m, query, body):
     kind = query.get('type', '')
     if kind == 'sdn':
+        return []
+    if kind == 'network':
         return _SDN_STATUS
     if kind == 'vm':
         return STATE.GUESTS
     if kind == 'storage':
         return STATE.STOR
-    return STATE.GUESTS + STATE.NODES + STATE.STOR
+    return STATE.GUESTS + STATE.NODES + STATE.STOR + _SDN_STATUS
 
 
 # ---------------------------------------------------------------- HA
@@ -183,8 +187,8 @@ def fw_cluster_options(m, query, body):
 
 @route('GET', r'/nodes/([^/]+)/(qemu|lxc)/(\d+)/firewall/options')
 def fw_guest_options(m, query, body):
-    return dict(enable=1, policy_in='DROP', policy_out='ACCEPT', dhcp=1, ndp=1, radv=0, macfilter=1, ipfilter=0,
-                log_level_in='info', log_level_out='nolog')
+    # 실서버는 설정한 키만 준다(아무것도 안 바꾸면 digest 뿐) — 빠진 키는 화면이 기본값으로 보여야 한다
+    return dict(enable=1, policy_in='DROP', ipfilter=1, log_level_in='info', digest='fwopt1')
 
 
 # ---------------------------------------------------------------- ACME

@@ -152,9 +152,20 @@ def snapshots(m, query, body):
     return _SNAPSHOTS.get(int(m.group(2)), [dict(name='current', description='You are here!')])
 
 
-@route('POST', r'/nodes/([^/]+)/qemu/(\d+)/snapshot')
+@route('POST', r'/nodes/([^/]+)/(qemu|lxc)/(\d+)/snapshot')
 def create_snapshot(m, query, body):
-    return _upid(m.group(1), 'qmsnapshot', m.group(2))
+    # 실서버처럼 매개변수를 검사한다 — 이름은 snapname(name 은 스키마에 없어 400)
+    errors = {}
+    if not body.get('snapname'):
+        errors['snapname'] = 'property is missing and it is not optional'
+    for key in body:
+        if key not in ('snapname', 'vmid', 'description', 'vmstate', 'node'):
+            errors[key] = 'property is not defined in schema and the schema does not allow additional properties'
+    if 'vmstate' in body and m.group(2) == 'lxc':
+        errors['vmstate'] = 'property is not defined in schema and the schema does not allow additional properties'
+    if errors:
+        raise STATE.PveError(400, 'Parameter verification failed.\n' + ''.join(f'{k}: {v}\n' for k, v in errors.items()))
+    return _upid(m.group(1), 'qmsnapshot' if m.group(2) == 'qemu' else 'vzsnapshot', m.group(3))
 
 
 @route('POST', r'/nodes/([^/]+)/qemu/(\d+)/snapshot/([^/]+)/rollback')
