@@ -3298,6 +3298,9 @@ Paste the join information below into 'Join cluster' on the new node (same forma
   <data name="DcCeph_Hint" xml:space="preserve">
     <value>Ceph status (read-only). Use pveceph in the node shell for installation, OSDs and pools.</value>
   </data>
+  <data name="DcCeph_NotInstalled" xml:space="preserve">
+    <value>Ceph is not installed in this cluster. Install it from a node's Ceph screen (requires root).</value>
+  </data>
   <data name="DcSdn_Zones" xml:space="preserve">
     <value>Zones</value>
   </data>

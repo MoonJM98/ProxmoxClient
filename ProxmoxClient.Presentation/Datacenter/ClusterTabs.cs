@@ -274,7 +274,18 @@ internal static class ClusterTabs
     /// <summary>Ceph 상태(읽기 전용) — 설치·OSD·풀 관리는 노드 셸의 pveceph 나 웹 UI 에서 한다.</summary>
     public static TextSpec CephStatus(ProxmoxApiClient api)
     {
-        return new TextSpec(async () => (await api.Cluster.CephStatusJsonAsync(), string.Empty), null,
-            "DcCeph_Hint");
+        // Ceph 가 없는 클러스터(대부분)는 서버가 HTTP 500 "binary not installed: /usr/bin/ceph-mon" 을 준다(실제 PVE 9 로 확인) —
+        // 오류 대신 설치 안내를 본문으로
+        return new TextSpec(async () =>
+        {
+            try
+            {
+                return (await api.Cluster.CephStatusJsonAsync(), string.Empty);
+            }
+            catch (ProxmoxApiException ex) when (Node.CephTabs.IsNotInstalled(ex))
+            {
+                return (UiText.T("DcCeph_NotInstalled"), string.Empty);
+            }
+        }, null, "DcCeph_Hint");
     }
 }

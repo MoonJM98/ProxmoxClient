@@ -123,13 +123,14 @@ public sealed class ProxmoxApiException : Exception
     /// <summary>
     ///     digest 가 달라 서버가 거절했다 — 읽은 뒤 다른 사람(또는 다른 창)이 설정 파일을 바꿨다
     ///     (PVE::Tools::assert_if_modified: "detected modified configuration - file changed by other user? Try again.").
-    ///     다시 읽고 사용자에게 알린 뒤 다시 하게 해야 한다.
+    ///     VM 설정(qemu-server 의 PUT/POST config)은 문구가 다르다: "checksum mismatch (file change by other user?)" —
+    ///     실제 PVE 9 로 확인. 다시 읽고 사용자에게 알린 뒤 다시 하게 해야 한다.
     /// </summary>
-    public bool IsDigestMismatch =>
-        (ResponseExcerpt ?? string.Empty).Contains(DigestMismatchText, StringComparison.OrdinalIgnoreCase)
-        || Message.Contains(DigestMismatchText, StringComparison.OrdinalIgnoreCase);
+    public bool IsDigestMismatch => DigestMismatchTexts.Any(text =>
+        (ResponseExcerpt ?? string.Empty).Contains(text, StringComparison.OrdinalIgnoreCase)
+        || Message.Contains(text, StringComparison.OrdinalIgnoreCase));
 
-    private const string DigestMismatchText = "detected modified configuration";
+    private static readonly string[] DigestMismatchTexts = ["detected modified configuration", "checksum mismatch"];
 
     private static string BuildMessage(int statusCode, string? bodyExcerpt)
     {

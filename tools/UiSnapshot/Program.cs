@@ -1276,14 +1276,19 @@ async Task RealPveCheck()
                 Pump(300);
             }
 
+            // 콘솔(tty)은 앞선 실행에서 이미 로그인돼 있을 수 있다 — 로그인 프롬프트일 때만 로그인
+            string LastLine() => TermScreen(page).Split('\n').LastOrDefault(l => l.Length > 0) ?? "";
             Pump(1500);
             Line("");
-            WaitFor(() => TermScreen(page).Contains("login:"), 10000);
+            WaitFor(() => LastLine().EndsWith("login:") || LastLine().EndsWith('#'), 10000);
             Shot("real-ct-login");
-            Line("root");
-            WaitFor(() => TermScreen(page).Contains("Password:"), 8000);
-            Line(pvePassword);
-            Pump(2500);
+            if (LastLine().EndsWith("login:"))
+            {
+                Line("root");
+                WaitFor(() => LastLine().StartsWith("Password:"), 8000);
+                Line(pvePassword);
+                WaitFor(() => LastLine().EndsWith('#'), 8000);
+            }
             Line("echo ct-$((6*7))");
             WaitFor(() => TermScreen(page).Contains("\nct-42"), 8000);
             Shot("real-ct-console");
@@ -1322,6 +1327,26 @@ async Task RealPveCheck()
         }
 
         Result("config-stale-digest", mismatch, outcome);
+
+        // CT 설정은 다른 문구(assert_if_modified)로 거절한다
+        if (!hasCt) return;
+        var ctPending = Do(() => api.GetGuestPendingAsync(nodeName, Lxc, 200));
+        Do(() => api.UpdateGuestConfigAsync(nodeName, Lxc, 200,
+            ProxmoxClient.Presentation.Shared.FormHelpers.UpdateForm(ctPending.AddDigest(new Dictionary<string, string> { ["description"] = text }))));
+        var ctMismatch = false;
+        try
+        {
+            Do(() => api.UpdateGuestConfigAsync(nodeName, Lxc, 200,
+                ProxmoxClient.Presentation.Shared.FormHelpers.UpdateForm(ctPending.AddDigest(new Dictionary<string, string> { ["description"] = "stale" }))));
+            outcome = "받아들임(거절해야 함)";
+        }
+        catch (ProxmoxClient.Core.Api.ProxmoxApiException ex)
+        {
+            ctMismatch = ex.IsDigestMismatch;
+            outcome = $"{ex.StatusCode}: {ex.Message}";
+        }
+
+        Result("ct-config-stale-digest", ctMismatch, outcome);
     });
 
     // 9) 방화벽 규칙 추가·지우기 + digest(화면의 지우기 단추, 목록의 digest 를 쿼리로). 그 사이 서버에서 바뀌면 거절 → 알림
@@ -3323,7 +3348,9 @@ void CheckStatus(string name)
         .Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
     var page = nav.CurrentPage as Control;
     foreach (var text in page?.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text ?? "") ?? [])
-        if (failPrefixes.Any(p => text.StartsWith(p, StringComparison.Ordinal)))
+        if (real && text.Contains("zfsutils-linux not installed"))
+            Console.WriteLine($"KNOWN {name}: {text} (Docker 안 시험 PVE 에는 ZFS 가 없다)");
+        else if (failPrefixes.Any(p => text.StartsWith(p, StringComparison.Ordinal)))
         {
             failures++;
             Console.WriteLine($"FAIL {name}: {text}");
