@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using ProxmoxClient.Core.Api;
+using ProxmoxClient.Tools.Fido;
 
 /// <summary>
 ///     보안 키(WebAuthn) 2단계 인증 — 질문 읽기, clientDataJSON, PVE 응답 모양(proxmox-widget-toolkit TfaWindow.js
@@ -95,7 +96,7 @@ public static class WebAuthnTests
     /// <summary>NFC CTAP2 — 긴 허용 목록(이어 보내기)·긴 응답(61xx)·처리 중(9100)을 거쳐 서명이 맞는지.</summary>
     public static void NfcCtap2Assertion(Checker c)
     {
-        var key = new SoftKey(ctap2: true);
+        var key = new SoftAuthenticator(ctap2: true);
         var ids = Enumerable.Range(0, 6).Select(i => Enumerable.Repeat((byte)(0x40 + i), 64).ToArray()).ToList();
         key.CredentialId = ids[4];
         var r = WebAuthnRequest.Parse(Challenge) with { AllowCredentials = ids, AppId = null };
@@ -110,7 +111,7 @@ public static class WebAuthnTests
     /// <summary>U2F 시절 등록(appid) — CTAP2 는 "자격 증명 없음"을 주고, U2F authenticate 를 appid 해시로 다시 한다.</summary>
     public static void NfcU2fFallbackWithAppId(Checker c)
     {
-        var key = new SoftKey(ctap2: false) { U2fAppId = "https://pve.example.com:8006" };
+        var key = new SoftAuthenticator(ctap2: false) { U2fAppId = "https://pve.example.com:8006" };
         key.CredentialId = [0x05, 0x06, 0x07, 0x08];
         var r = WebAuthnRequest.Parse(Challenge);
         var transport = new NfcCtapTransport((apdu, _) => Task.FromResult(key.Nfc(apdu)));
@@ -124,7 +125,7 @@ public static class WebAuthnTests
     /// <summary>USB HID — INIT 로 채널을 열고, 64바이트 틀로 나눠 보내고, KEEPALIVE 를 건너뛰고 응답을 합친다.</summary>
     public static void HidCtap2Assertion(Checker c)
     {
-        var key = new SoftKey(ctap2: true);
+        var key = new SoftAuthenticator(ctap2: true);
         var ids = Enumerable.Range(0, 3).Select(i => Enumerable.Repeat((byte)(0x10 + i), 48).ToArray()).ToList();
         key.CredentialId = ids[1];
         var r = WebAuthnRequest.Parse(Challenge) with { AllowCredentials = ids };
@@ -143,7 +144,7 @@ public static class WebAuthnTests
     /// <summary>PIN 프로토콜 2 + CTAP 2.1 토큰(권한 ga) — 서버가 사용자 확인 required, 첫 PIN 은 틀리고 다시 묻는다.</summary>
     public static void PinProtocol2WithRetry(Checker c)
     {
-        var key = new SoftKey(ctap2: true) { Pin = "1234", CredentialId = [0x01, 0x02, 0x03, 0x04] };
+        var key = new SoftAuthenticator(ctap2: true) { Pin = "1234", CredentialId = [0x01, 0x02, 0x03, 0x04] };
         var r = WebAuthnRequest.Parse(Challenge) with { UserVerification = "required", AppId = null };
         var asked = new List<PinPromptInfo>();
         var answers = new Queue<string>(["0000", "1234"]);
@@ -166,7 +167,7 @@ public static class WebAuthnTests
     /// <summary>PIN 프로토콜 1 + getPinToken(CTAP 2.0 키) — 항상 사용자 확인을 요구하는 키는 PIN_REQUIRED 뒤 PIN 을 묻는다.</summary>
     public static void PinProtocol1OnPinRequired(Checker c)
     {
-        var key = new SoftKey(ctap2: true)
+        var key = new SoftAuthenticator(ctap2: true)
         {
             Pin = "4321", AlwaysUv = true, Protocols = [1], TokenWithPermissions = false,
             CredentialId = [0x01, 0x02, 0x03, 0x04]
@@ -194,19 +195,19 @@ public static class WebAuthnTests
     {
         var r = WebAuthnRequest.Parse(Challenge) with { UserVerification = "required", AppId = null };
 
-        NfcCtapTransport Open(SoftKey key)
+        NfcCtapTransport Open(SoftAuthenticator key)
         {
             var t = new NfcCtapTransport((apdu, _) => Task.FromResult(key.Nfc(apdu)));
             t.SelectAsync(CancellationToken.None).GetAwaiter().GetResult();
             return t;
         }
 
-        var cancelKey = new SoftKey(ctap2: true) { Pin = "1234", CredentialId = [0x01, 0x02, 0x03, 0x04] };
+        var cancelKey = new SoftAuthenticator(ctap2: true) { Pin = "1234", CredentialId = [0x01, 0x02, 0x03, 0x04] };
         var cancelled = FidoClient.GetPveResponseAsync(Open(cancelKey), r, Origin,
             (_, _) => Task.FromResult<string?>(null), CancellationToken.None).GetAwaiter().GetResult();
         c.Is(cancelled is null, "PIN 입력 취소 → null(취소)");
 
-        string? Error(SoftKey key, PinPrompt? prompt)
+        string? Error(SoftAuthenticator key, PinPrompt? prompt)
         {
             try
             {
@@ -221,10 +222,10 @@ public static class WebAuthnTests
         }
 
         PinPrompt any = (_, _) => Task.FromResult<string?>("1234");
-        var blocked = Error(new SoftKey(ctap2: true) { Pin = "1234", PinRetries = 0, CredentialId = [0x01, 0x02, 0x03, 0x04] },
+        var blocked = Error(new SoftAuthenticator(ctap2: true) { Pin = "1234", PinRetries = 0, CredentialId = [0x01, 0x02, 0x03, 0x04] },
             any);
-        var notSet = Error(new SoftKey(ctap2: true) { Pin = null, CredentialId = [0x01, 0x02, 0x03, 0x04] }, any);
-        var noPrompt = Error(new SoftKey(ctap2: true) { Pin = "1234", CredentialId = [0x01, 0x02, 0x03, 0x04] }, null);
+        var notSet = Error(new SoftAuthenticator(ctap2: true) { Pin = null, CredentialId = [0x01, 0x02, 0x03, 0x04] }, any);
+        var noPrompt = Error(new SoftAuthenticator(ctap2: true) { Pin = "1234", CredentialId = [0x01, 0x02, 0x03, 0x04] }, null);
         c.Is(blocked is not null && notSet is not null && noPrompt is not null && blocked != notSet && notSet != noPrompt,
             "PIN 잠김 · PIN 미설정 · PIN 못 물음은 각각 다른 오류", $"{blocked} | {notSet} | {noPrompt}");
     }
@@ -243,7 +244,7 @@ public static class WebAuthnTests
         var r = WebAuthnRequest.Parse(ch.SecurityKeyJson(TfaKind.U2f)!);
         c.Is(r is { U2f: true, AppId: "https://pve.example.com:8006", RpId: "pve.example.com" }, "appid 확장 WebAuthn 질문",
             r);
-        var key = new SoftKey(ctap2: true)
+        var key = new SoftAuthenticator(ctap2: true)
         {
             U2fAppId = "https://pve.example.com:8006", CredentialId = [0x05, 0x06, 0x07, 0x08]
         };
@@ -271,7 +272,7 @@ public static class WebAuthnTests
 
     public static void NoMatchingCredential(Checker c)
     {
-        var key = new SoftKey(ctap2: true) { CredentialId = [0x99] };
+        var key = new SoftAuthenticator(ctap2: true) { CredentialId = [0x99] };
         var r = WebAuthnRequest.Parse(Challenge) with { AppId = null };
         var transport = new NfcCtapTransport((apdu, _) => Task.FromResult(key.Nfc(apdu)));
         transport.SelectAsync(CancellationToken.None).GetAwaiter().GetResult();
@@ -289,7 +290,7 @@ public static class WebAuthnTests
     }
 
     /// <summary>서명이 인증기 데이터 ‖ SHA-256(clientDataJSON) 에 대해 맞고, rpIdHash·origin·challenge 가 맞는지.</summary>
-    private static void Verify(Checker c, SoftKey key, WebAuthnAssertion a, string rpHashSource, WebAuthnRequest r)
+    private static void Verify(Checker c, SoftAuthenticator key, WebAuthnAssertion a, string rpHashSource, WebAuthnRequest r)
     {
         c.Equal(Convert.ToHexString(key.CredentialId), Convert.ToHexString(a.CredentialId), "자격 증명 ID");
         c.Equal(Convert.ToHexString(WebAuthnRequest.RpIdHash(rpHashSource)),
@@ -305,235 +306,8 @@ public static class WebAuthnTests
         c.Equal(r.Challenge, pve.RootElement.GetProperty("challenge").GetString(), "PVE 응답 challenge");
     }
 
-    /// <summary>소프트웨어 보안 키 — NFC APDU(ISO 7816 짧은 APDU, 이어 보내기·61xx·9100)로 CTAP2·U2F 에 답한다.</summary>
-    private sealed class SoftKey(bool ctap2)
-    {
-        public ECDsa Ecdsa { get; } = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        public byte[] CredentialId { get; set; } = [];
-        public string? U2fAppId { get; init; }
-        public int ChainedCommands { get; private set; }
-        public int GetResponses { get; private set; }
-        private uint _counter = 4;
-        private readonly List<byte> _chain = [];
-        private byte[] _pending = [];
-        private bool _busyOnce = true;
-
-        /// <summary>설정한 PIN(null 이면 PIN 없음).</summary>
-        public string? Pin { get; init; }
-
-        /// <summary>PIN 을 지원하는가(설정 안 됐어도 clientPin=false 로 알린다).</summary>
-        public bool PinSupported { get; init; } = true;
-
-        /// <summary>항상 사용자 확인을 요구한다(alwaysUv) — PIN 없이 서명을 청하면 PIN_REQUIRED(0x36).</summary>
-        public bool AlwaysUv { get; init; }
-
-        /// <summary>지원하는 PIN 프로토콜.</summary>
-        public int[] Protocols { get; init; } = [2, 1];
-
-        /// <summary>CTAP 2.1 토큰 명령(0x09, 권한 지정)을 지원한다.</summary>
-        public bool TokenWithPermissions { get; init; } = true;
-
-        public int PinRetries { get; set; } = 8;
-        public int LastProtocol { get; private set; }
-        private readonly ECDiffieHellman _agreement = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
-        private readonly byte[] _token = RandomNumberGenerator.GetBytes(32);
-
-        /// <summary>CTAP2 명령(명령 바이트 + CBOR) → 상태 + CBOR. CTAP2 를 모르면 null.</summary>
-        public byte[]? Ctap2(byte[] request)
-        {
-            if (!ctap2) return null;
-
-            switch (request[0])
-            {
-                case 0x04:
-                    return GetInfo();
-                case 0x06:
-                    return ClientPinCommand((Dictionary<object, object?>)Cbor.Decode(request.AsSpan(1))!);
-                case 0x02:
-                    break;
-                default:
-                    return [0x01];
-            }
-
-            var m = (Dictionary<object, object?>)Cbor.Decode(request.AsSpan(1))!;
-            var rpId = (string)m[1L]!;
-            var hash = (byte[])m[2L]!;
-            var allow = m.TryGetValue(3L, out var l) ? ((List<object?>)l!).Cast<Dictionary<object, object?>>() : [];
-            if (!allow.Any(x => ((byte[])x["id"]!).SequenceEqual(CredentialId))) return [0x2E];
-
-            byte flags = 0x01;
-            if (m.TryGetValue(6L, out var param))
-            {
-                var protocol = (int)(long)m[7L]!;
-                LastProtocol = protocol;
-                if (!((byte[])param!).SequenceEqual(ClientPin.Authenticate(protocol, _token, hash))) return [0x33];
-
-                flags |= 0x04; // UV
-            }
-            else if (AlwaysUv)
-            {
-                return [0x36];
-            }
-
-            if (m.TryGetValue(5L, out var o) && o is Dictionary<object, object?> opts && opts.ContainsKey("uv"))
-                return [0x2C]; // 내장 생체 인증 없음 — uv 옵션은 받지 않는다
-
-            var authData = AuthData(rpId, flags);
-            var sig = Ecdsa.SignData(authData.Concat(hash).ToArray(), HashAlgorithmName.SHA256,
-                DSASignatureFormat.Rfc3279DerSequence);
-            var body = new Cbor.Writer().Map(3)
-                .Int(1).Map(2).Text("id").Bytes(CredentialId).Text("type").Text("public-key")
-                .Int(2).Bytes(authData).Int(3).Bytes(sig).ToArray();
-            return [0x00, .. body];
-        }
-
-        private byte[] GetInfo()
-        {
-            var w = new Cbor.Writer().Map(4);
-            w.Int(1).Array(2).Text("FIDO_2_0").Text("FIDO_2_1");
-            w.Int(3).Bytes(new byte[16]);
-            var options = (PinSupported ? 1 : 0) + (TokenWithPermissions ? 1 : 0);
-            w.Int(4).Map(options);
-            if (PinSupported) w.Text("clientPin").Bool(Pin is not null);
-            if (TokenWithPermissions) w.Text("pinUvAuthToken").Bool(true);
-            w.Int(6).Array(Protocols.Length);
-            foreach (var p in Protocols) w.Int(p);
-            return [0x00, .. w.ToArray()];
-        }
-
-        private byte[] ClientPinCommand(Dictionary<object, object?> m)
-        {
-            var protocol = (int)(long)m[1L]!;
-            if (!Protocols.Contains(protocol)) return [0x02];
-
-            var sub = (long)m[2L]!;
-            switch (sub)
-            {
-                case 0x01:
-                    return [0x00, .. new Cbor.Writer().Map(1).Int(3).Int(PinRetries).ToArray()];
-                case 0x02:
-                {
-                    var w = new Cbor.Writer().Map(1).Int(1);
-                    ClientPin.WriteCoseKey(w, _agreement.ExportParameters(false));
-                    return [0x00, .. w.ToArray()];
-                }
-                case 0x05 or 0x09:
-                {
-                    if (sub == 0x09 && (!TokenWithPermissions || (long)m[9L]! != 0x02 || m[10L] is not string))
-                        return [0x02];
-                    if (Pin is null) return [0x35];
-                    if (PinRetries == 0) return [0x32];
-
-                    var cose = (Dictionary<object, object?>)m[3L]!;
-                    using var peer = ECDiffieHellman.Create(new ECParameters
-                    {
-                        Curve = ECCurve.NamedCurves.nistP256,
-                        Q = new ECPoint { X = (byte[])cose[-2L]!, Y = (byte[])cose[-3L]! }
-                    });
-                    var shared = ClientPin.Kdf(protocol, _agreement.DeriveRawSecretAgreement(peer.PublicKey));
-                    var pinHash = ClientPin.Decrypt(protocol, shared, (byte[])m[6L]!);
-                    if (!pinHash.SequenceEqual(SHA256.HashData(Encoding.UTF8.GetBytes(Pin))[..16]))
-                    {
-                        PinRetries--;
-                        return [PinRetries == 0 ? (byte)0x32 : (byte)0x31];
-                    }
-
-                    PinRetries = 8;
-                    var enc = ClientPin.Encrypt(protocol, shared, _token);
-                    return [0x00, .. new Cbor.Writer().Map(1).Int(2).Bytes(enc).ToArray()];
-                }
-                default:
-                    return [0x01];
-            }
-        }
-
-        /// <summary>U2F authenticate → 데이터 + SW.</summary>
-        public byte[] U2f(byte ins, byte p1, byte[] data)
-        {
-            if (ins != 0x02) return [0x6D, 0x00];
-
-            var clientHash = data[..32];
-            var appHash = data[32..64];
-            var kh = data[65..(65 + data[64])];
-            var app = U2fAppId ?? "pve.example.com";
-            if (!kh.SequenceEqual(CredentialId) || !appHash.SequenceEqual(WebAuthnRequest.RpIdHash(app)))
-                return [0x6A, 0x80];
-            if (p1 == 0x07) return [0x69, 0x85];
-
-            _counter++;
-            var counter = new[] { (byte)(_counter >> 24), (byte)(_counter >> 16), (byte)(_counter >> 8), (byte)_counter };
-            // U2F 서명 대상: appHash ‖ UP ‖ counter ‖ clientHash — WebAuthn 의 authData ‖ clientHash 와 같다
-            var sig = Ecdsa.SignData(appHash.Concat(new byte[] { 0x01 }).Concat(counter).Concat(clientHash).ToArray(),
-                HashAlgorithmName.SHA256, DSASignatureFormat.Rfc3279DerSequence);
-            return [0x01, .. counter, .. sig, 0x90, 0x00];
-        }
-
-        public byte[] Nfc(byte[] apdu)
-        {
-            var (cla, ins, p1) = (apdu[0], apdu[1], apdu[2]);
-            var data = apdu.Length > 5 ? apdu[5..(5 + apdu[4])] : [];
-            if (ins == 0xA4) return [.. Encoding.ASCII.GetBytes(ctap2 ? "FIDO_2_0" : "U2F_V2"), 0x90, 0x00];
-            if (ins == 0xC0) return Next();
-
-            if ((cla & 0x10) != 0)
-            {
-                ChainedCommands++;
-                _chain.AddRange(data);
-                return [0x90, 0x00];
-            }
-
-            var full = _chain.Concat(data).ToArray();
-            _chain.Clear();
-            if (cla == 0x80 && ins == 0x10)
-            {
-                if (Ctap2(full) is not { } r) return [0x6D, 0x00];
-
-                _pending = r;
-                if (_busyOnce)
-                {
-                    _busyOnce = false;
-                    return [0x91, 0x00]; // 처리 중 — 다음 GETRESPONSE 에 답한다
-                }
-
-                return Next();
-            }
-
-            if (cla == 0x80 && ins == 0x11) return Next();
-
-            var u = U2f(ins, p1, full);
-            _pending = u[..^2];
-            return u.Length > 2 && u[^2] == 0x90 ? Next() : u;
-        }
-
-        /// <summary>64바이트씩 61xx 로 나눠 보낸다.</summary>
-        private byte[] Next()
-        {
-            if (_pending.Length > 64)
-            {
-                GetResponses++;
-                var head = _pending[..64];
-                _pending = _pending[64..];
-                return [.. head, 0x61, (byte)Math.Min(_pending.Length, 255)];
-            }
-
-            var last = _pending;
-            _pending = [];
-            return [.. last, 0x90, 0x00];
-        }
-
-        private byte[] AuthData(string rpId, byte flags)
-        {
-            _counter++;
-            return
-            [
-                .. WebAuthnRequest.RpIdHash(rpId), flags, (byte)(_counter >> 24), (byte)(_counter >> 16),
-                (byte)(_counter >> 8), (byte)_counter
-            ];
-        }
-    }
-
-    /// <summary>소프트웨어 USB 키 — CTAPHID 틀을 받아 <see cref="SoftKey" /> 로 넘기고 답을 틀로 나눠 돌려준다.</summary>
-    private sealed class SoftHid(SoftKey key)
+    /// <summary>소프트웨어 USB 키 — CTAPHID 틀을 받아 <see cref="SoftAuthenticator" /> 로 넘기고 답을 틀로 나눠 돌려준다.</summary>
+    private sealed class SoftHid(SoftAuthenticator key)
     {
         private readonly Queue<byte[]> _out = new();
         private readonly List<byte> _in = [];
