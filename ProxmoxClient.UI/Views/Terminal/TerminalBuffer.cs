@@ -1024,7 +1024,7 @@ public sealed class TerminalBuffer
     {
         var cells = row.Cells;
         count = Math.Min(count, Columns - x);
-        ClearCell(row, x); // 넓은 글자의 오른쪽 반에 끼워 넣으면 반쪽이 남지 않게
+        if (cells[x].Width == 0 && x > 0) ClearCell(row, x - 1); // 넓은 글자의 오른쪽 반에 끼워 넣으면 그 글자를 지운다(반쪽이 남지 않게)
         Array.Copy(cells, x, cells, x + count, Columns - x - count);
         for (var i = x; i < x + count; i++) cells[i] = TerminalCell.Blank(_bg);
         row.ShiftExtras(x, count);
