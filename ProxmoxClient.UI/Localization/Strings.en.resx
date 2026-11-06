@@ -706,6 +706,45 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Console_ViewModeTip" xml:space="preserve">
     <value>View mode — fit (all) · fill (no bars) · actual size (1:1). When zoomed in, drag with two fingers to move the view.</value>
   </data>
+  <data name="Console_HangulKey" xml:space="preserve">
+    <value>Han/Eng</value>
+  </data>
+  <data name="Console_HangulTip" xml:space="preserve">
+    <value>Hangul/English key — switch the guest IME to Hangul, then Korean typed on the on-screen keyboard arrives as Dubeolsik keys.</value>
+  </data>
+  <data name="Console_RightAltTip" xml:space="preserve">
+    <value>Right Alt — many Korean Windows setups use it as the Hangul/English key.</value>
+  </data>
+  <data name="Console_PasteToGuest" xml:space="preserve">
+    <value>Paste to guest</value>
+  </data>
+  <data name="Console_PasteToGuestTip" xml:space="preserve">
+    <value>Send the device clipboard to the guest clipboard (needs VM display clipboard = VNC and a guest agent).</value>
+  </data>
+  <data name="Console_TypeClipboard" xml:space="preserve">
+    <value>Type clipboard</value>
+  </data>
+  <data name="Console_TypeClipboardTip" xml:space="preserve">
+    <value>Type the device clipboard text as key presses (works without a guest clipboard).</value>
+  </data>
+  <data name="Console_CopyFromGuest" xml:space="preserve">
+    <value>Copy from guest</value>
+  </data>
+  <data name="Console_CopyFromGuestTip" xml:space="preserve">
+    <value>Copy the guest clipboard to the device clipboard.</value>
+  </data>
+  <data name="Console_ClipboardEmpty" xml:space="preserve">
+    <value>The device clipboard has no text.</value>
+  </data>
+  <data name="Console_PastedToGuest" xml:space="preserve">
+    <value>Sent to the guest clipboard. Paste it in the guest (Ctrl+V).</value>
+  </data>
+  <data name="Console_GuestClipboardEmpty" xml:space="preserve">
+    <value>Could not get the guest clipboard. Check that the VM display clipboard is set to VNC.</value>
+  </data>
+  <data name="Console_CharNotSent" xml:space="preserve">
+    <value>Cannot send these characters as keys: {0} — use [Paste to guest] in the menu.</value>
+  </data>
   <data name="Realm_Fetch" xml:space="preserve">
     <value>Fetch realms</value>
   </data>

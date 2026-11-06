@@ -1263,7 +1263,7 @@ async Task ConsoleUsabilityCheck()
         using var reader = new StreamReader(fs);
         var text = reader.ReadToEnd();
         logOffset = fs.Position;
-        return text.Split('\n').Where(l => l.StartsWith("RFB pointer") || l.StartsWith("RFB key") || l.StartsWith("RFB qkey"))
+        return text.Split('\n').Where(l => l.StartsWith("RFB pointer") || l.StartsWith("RFB key") || l.StartsWith("RFB qkey") || l.StartsWith("RFB cut"))
             .Select(l => l[4..].Trim()).ToList();
     }
 
@@ -1595,8 +1595,8 @@ async Task ConsoleUsabilityCheck()
     var buttons = page.GetVisualDescendants().OfType<Button>().ToList();
     buttons.First(b => b.Content as string == "Esc").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
     ev = Events();
-    Check("특수키 Esc", "key 0xff1b 누름·뗌", string.Join(", ", ev),
-        ev.Count == 2 && ev.All(e => e.EndsWith("0xff1b")));
+    Check("특수키 Esc", "Esc(스캔코드 0x1, keysym 0xff1b) 누름·뗌", string.Join(", ", ev),
+        ev.Count == 2 && ev.All(e => e.Contains("keysym=0xff1b") && e.EndsWith("keycode=0x1")));
 
     page.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>()
         .First(b => b.Content as string == "Ctrl").IsChecked = true;
@@ -1604,13 +1604,140 @@ async Task ConsoleUsabilityCheck()
     input.Text = "c";
     ev = Events();
     Check("Ctrl 고정 + 키보드 c", "Ctrl↓ c↓ c↑ Ctrl↑", string.Join(", ", ev.Select(e => e.Replace("key ", ""))),
-        ev.Count == 4 && ev[0].EndsWith("0xffe3") && ev[1].EndsWith("0x63") && ev[3].EndsWith("0xffe3") &&
+        ev.Count == 4 && ev[0].Contains("keysym=0xffe3 ") && ev[1].Contains("keysym=0x63 ") && ev[3].Contains("keysym=0xffe3 ") &&
         ev[3].Contains("down=0"));
 
     input.Text = "안";
     ev = Events();
-    Check("한글 입력 '안'", "유니코드 keysym 0x100c548", string.Join(", ", ev),
-        ev.Count == 2 && ev[0].EndsWith("0x100c548"));
+    string SoftCodes(List<string> list) => string.Join(" ", list.Select(e => (e.Contains("down=1") ? "↓" : "↑") + e.Split("keycode=").Last()));
+    Check("한글 입력 '안'", "두벌식 키 d k s(↓20 ↑20 ↓25 ↑25 ↓1f ↑1f)", SoftCodes(ev),
+        SoftCodes(ev) == "↓0x20 ↑0x20 ↓0x25 ↑0x25 ↓0x1f ↑0x1f");
+
+    // ---- 화면 키보드 Shift·한/영·클립보드·벨·화면 배치·가려진 동안 갱신 멈춤·제자리 다시 연결
+    {
+        List<string> RfbLines()
+        {
+            Pump(300);
+            if (logPath.Length == 0 || !File.Exists(logPath)) return [];
+            using var fs = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            fs.Seek(logOffset, SeekOrigin.Begin);
+            using var reader = new StreamReader(fs);
+            var text = reader.ReadToEnd();
+            logOffset = fs.Position;
+            return text.Split('\n').Where(l => l.StartsWith("RFB ")).Select(l => l[4..].Trim()).ToList();
+        }
+        Button Tip(string key) => page.GetVisualDescendants().OfType<Button>().First(b => ToolTip.GetTip(b) as string == L.T(key));
+        void Click(Button b) => b.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        input.Text = "Hi!";
+        var soft = Events();
+        Check("화면 키보드 'Hi!'", "Shift 로 감쌈(↓2a ↓23 ↑23 ↑2a ↓17 ↑17 ↓2a ↓2 ↑2 ↑2a)", SoftCodes(soft),
+            SoftCodes(soft) == "↓0x2a ↓0x23 ↑0x23 ↑0x2a ↓0x17 ↑0x17 ↓0x2a ↓0x2 ↑0x2 ↑0x2a");
+
+        Click(Tip("Console_HangulTip"));
+        soft = Events();
+        Check("특수키 한/영", "스캔코드 ↓f2 ↑f2", SoftCodes(soft), SoftCodes(soft) == "↓0xf2 ↑0xf2");
+
+        // ⋯ 줄을 펼쳐 클립보드 단추를 쓴다
+        var moreKeys = page.GetVisualDescendants().OfType<Button>().First(b => b.Content as string == "⋯");
+        if (!page.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == "F1" && b.IsEffectivelyVisible)) Click(moreKeys);
+        Pump(200);
+        var deviceClipboard = TopLevel.GetTopLevel(page)!.Clipboard!;
+        await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(deviceClipboard, "ping-42");
+        var bellsBefore = page.BellCount;
+        Click(Tip("Console_PasteToGuestTip"));
+        Pump(300);
+        soft = Events();
+        Pump(300); // 가짜 게스트가 같은 글을 클립보드로 돌려주고 벨을 울린다
+        Check("붙여넣기(게스트로)", "기기 클립보드 'ping-42' 를 게스트 클립보드로, 게스트 벨 → 화면 테두리 깜빡임",
+            $"{string.Join(", ", soft)}, 벨 {page.BellCount - bellsBefore}번",
+            soft.Any(e => e.Contains("cut b'ping-42'")) && page.BellCount > bellsBefore);
+
+        await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(deviceClipboard, "other");
+        Click(Tip("Console_CopyFromGuestTip"));
+        Pump(1200);
+        var copied = await Avalonia.Input.Platform.ClipboardExtensions.TryGetTextAsync(deviceClipboard);
+        Check("복사(게스트에서)", "게스트 클립보드 'ping-42' → 기기 클립보드", copied ?? "(없음)", copied == "ping-42");
+
+        await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(deviceClipboard, "aB\r\n");
+        Events();
+        Click(Tip("Console_TypeClipboardTip"));
+        soft = Events();
+        Check("클립보드 입력(키로)", "a ↓1e ↑1e, B = Shift+b, 줄바꿈 = Enter 한 번", SoftCodes(soft),
+            SoftCodes(soft) == "↓0x1e ↑0x1e ↓0x2a ↓0x30 ↑0x30 ↑0x2a ↓0x1c ↑0x1c");
+
+        // 떨어진 두 영역은 하나로 감싸지 않고 따로 올린다
+        surface.MarkDirty(0, 0, 8, 8);
+        surface.MarkDirty(700, 500, 8, 8);
+        Pump(100);
+        Check("바뀐 영역 따로 올리기", "떨어진 두 영역 = 2개", $"{surface.LastCopiedRects}개", surface.LastCopiedRects == 2);
+
+        // 휠: 움직인 만큼 — 반 칸 두 번 = 한 번, 세 칸 = 세 번
+        var halfA = surface.WheelClicks(new Avalonia.Vector(0, 0.5)).Count;
+        var halfB = surface.WheelClicks(new Avalonia.Vector(0, 0.5));
+        var three = surface.WheelClicks(new Avalonia.Vector(0, -3));
+        Check("휠 크기 반영", "0.5+0.5 → 위 1번, -3 → 아래 3번", $"{halfA}+{string.Join(",", halfB)} / {string.Join(",", three)}",
+            halfA == 0 && halfB.SequenceEqual([8]) && three.SequenceEqual([16, 16, 16]));
+
+        // 1:1 = 원격 1픽셀이 화면 물리 1픽셀(화면 배율 반영, 원격이 작으면 맞춤)
+        vp.SetMode(ViewMode.Actual);
+        var physical = vp.Scale * surface.RenderScaling;
+        Check("1:1 보기", "원격 1px = 물리 1px(작으면 맞춤)", $"{physical:0.00}", Math.Abs(physical - 1) < 0.01 || vp.Zoom <= 1);
+
+        // 화면 크기가 바뀌어도(회전) 채우기 유지
+        vp.SetMode(ViewMode.Fill);
+        var (winW, winH) = (window.Width, window.Height);
+        window.Width = winH;
+        window.Height = winW;
+        Pump(300);
+        var fillAfter = vp.Mode == ViewMode.Fill && Math.Abs(vp.Scale - Math.Max(vp.View.Width / vp.Remote.Width, vp.View.Height / vp.Remote.Height)) < 0.01;
+        window.Width = winW;
+        window.Height = winH;
+        Pump(300);
+        Check("회전 뒤 채우기", "채우기 그대로, 새 크기에 빈 곳 없이", $"{vp.Mode} {vp.Scale:0.00}", fillAfter && vp.Mode == ViewMode.Fill);
+
+        // 확대한 채 끌면 손짓 타이머가 화면 갱신 주기(16ms)로 — 가장자리 이동이 부드럽게
+        vp.ZoomAt(2, center);
+        g.Mode = TouchInputMode.Touch;
+        var edgeDragAt = surface.TranslatePoint(center, window)!.Value;
+        var edgeTouch = window.TouchBegin(edgeDragAt, Avalonia.Input.RawInputModifiers.None);
+        Pump(30);
+        for (var i = 1; i <= 5; i++)
+        {
+            window.TouchMove(edgeTouch, edgeDragAt + new Avalonia.Vector(i * 10, 0), Avalonia.Input.RawInputModifiers.None);
+            Pump(16);
+        }
+        var fastTicks = g.IsEdgeDragging ? surface.TickIntervalMs : -1;
+        window.TouchEnd(edgeTouch, edgeDragAt + new Avalonia.Vector(50, 0), Avalonia.Input.RawInputModifiers.None);
+        Pump(200);
+        Events();
+        Check("확대 중 끌기 타이머", $"{VncSurface.FastTickMs}ms", $"{fastTicks}ms", fastTicks == VncSurface.FastTickMs);
+
+        // 다른 화면이 위를 덮은 동안은 화면 갱신을 요청하지 않는다
+        vp.Fit();
+        await Wait(AppServices.Navigator.PushViewAsync("cover", new TextBlock { Text = "cover" }));
+        Pump(400);
+        RfbLines();
+        Pump(1000);
+        var hiddenUpdates = RfbLines().Count(l => l.StartsWith("update"));
+        await Wait(AppServices.Navigator.PopAsync());
+        Pump(1000);
+        var shownLines = RfbLines();
+        var shownUpdates = shownLines.Count(l => l.StartsWith("update"));
+        Check("가려진 동안 갱신 멈춤", "가려진 1초 요청 ≤ 1, 돌아오면 다시(≥ 3)", $"가려짐 {hiddenUpdates}, 돌아옴 {shownUpdates}",
+            hiddenUpdates <= 1 && shownUpdates >= 3 && nav.CurrentPage == page);
+
+        // 다시 연결은 이 화면에서 — 화면 모드·확대가 그대로
+        vp.SetMode(ViewMode.Fill);
+        var sessionBefore = vm.Vnc;
+        await Wait(vm.ReconnectAsync());
+        WaitFor(() => vm.IsConnected && vm.Vnc != sessionBefore, 10000);
+        Pump(300);
+        Check("제자리 다시 연결", "같은 화면·새 세션, 채우기 유지", $"{(nav.CurrentPage == page ? "같은 화면" : "바뀜")}, {(vm.Vnc != sessionBefore && vm.IsConnected ? "새 세션 연결" : "연결 안 됨")}, {vp.Mode}",
+            nav.CurrentPage == page && vm.Vnc != sessionBefore && vm.IsConnected && vp.Mode == ViewMode.Fill);
+        vp.Fit();
+        Events();
+    }
 
     // ---- 탭 뒤 이어진 터치(마우스 모드): 끌기 = 왼쪽 끌기, 가만히 길게 = 오른쪽 버튼. 첫 탭은 빼고 그 사이 탭만큼 먼저 클릭
     vp.Fit();
@@ -1967,9 +2094,10 @@ async Task ConsoleUsabilityCheck()
     Shot("console-settings");
     var save = nav.CurrentPage?.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => ToolTip.GetTip(b) as string == L.T("AppSettingsWindow_12")
                                                                                             || b.Content as string == L.T("AppSettingsWindow_12"));
+    var settingsSession = vm.Vnc;
     save?.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-    WaitFor(() => nav.CurrentPage?.DataContext is ConsoleViewModel cv && cv != vm && cv.IsConnected, 10000);
-    var again = nav.CurrentPage?.DataContext is ConsoleViewModel cv2 && cv2 != vm && cv2.IsConnected;
+    WaitFor(() => nav.CurrentPage == page && vm.Vnc != settingsSession && vm.IsConnected, 10000);
+    var again = nav.CurrentPage == page && vm.Vnc != settingsSession && vm.IsConnected;
     Check0("콘솔 설정(콘솔 화면에서)", "⋯ 줄의 [콘솔 설정] → 저장 → 다시 연결", $"{(settingsButton is null ? "단추 없음" : "단추 있음")}, {(opened ? "설정 열림" : "안 열림")}, {(again ? "다시 연결됨" : "연결 안 됨")}",
         settingsButton is not null && opened && again);
 
@@ -1977,12 +2105,13 @@ async Task ConsoleUsabilityCheck()
     if (!desktop || tablet)
     {
         var bgVm = (ConsoleViewModel)nav.CurrentPage!.DataContext!;
+        var bgSession = bgVm.Vnc;
         SetForeground(false);
         Pump(500);
         var paused = !bgVm.IsConnected && bgVm.Status == L.T("Console_PausedBackground");
         SetForeground(true);
-        WaitFor(() => nav.CurrentPage?.DataContext is ConsoleViewModel c && c != bgVm && c.IsConnected, 10000);
-        var back = nav.CurrentPage?.DataContext is ConsoleViewModel c2 && c2 != bgVm && c2.IsConnected;
+        WaitFor(() => nav.CurrentPage == page && bgVm.Vnc != bgSession && bgVm.IsConnected, 10000);
+        var back = nav.CurrentPage == page && bgVm.Vnc != bgSession && bgVm.IsConnected;
         Check0("콘솔 배경 → 복귀", "배경에서 끊김 → 돌아오면 다시 연결", $"{(paused ? "끊김" : "그대로")} → {(back ? "다시 연결" : "연결 안 됨")}", paused && back);
     }
 

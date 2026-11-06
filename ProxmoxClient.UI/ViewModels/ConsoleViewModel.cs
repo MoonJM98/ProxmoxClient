@@ -21,7 +21,8 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         SessionInfo = session;
         Guest = guest;
         Protocol = protocol;
-        Vnc = protocol == ConsoleProtocol.Rdp
+        // 다시 연결할 때도 같은 방법으로 새 세션을 만든다(세션은 1회용)
+        _createSession = () => protocol == ConsoleProtocol.Rdp
             ? new Core.Rdp.ProxmoxRdpSession(session.Api) { ShareClipboard = false } // 설정을 읽은 뒤 정한다
             : new ProxmoxVncSession(session.Api)
             {
@@ -29,20 +30,49 @@ public sealed partial class ConsoleViewModel : ViewModelBase
                 ImageDecoder = SkiaImageDecoder.Decode,
                 Settings = new ConsoleSettings()
             };
-        Vnc.StatusChanged += text => Avalonia.Threading.Dispatcher.UIThread.Post(() => Status = text);
-        Vnc.Closed += ex => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        Vnc = _createSession();
+        HookSession(Vnc);
+    }
+
+    private readonly Func<IConsoleSession> _createSession;
+
+    /// <summary>세션 이벤트 — 다시 연결로 바뀐 옛 세션의 늦은 이벤트(끊김 등)는 무시한다.</summary>
+    private void HookSession(IConsoleSession session)
+    {
+        session.StatusChanged += text => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
+            if (session == Vnc && !_paused) Status = text;
+        });
+        session.Closed += ex => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (session != Vnc) return;
+
             IsConnected = false;
             if (_paused) return; // 배경으로 가며 일부러 끊었다 — 돌아오면 다시 연결
             CanReconnect = true;
-            Status = ex is null ? L.T("Console_Closed") : L.T("Console_ClosedError", ex.Message);
+            Status = ex is null ? L.T("Console_Closed") : L.T("Console_ClosedError", ErrorText.Describe(ex));
         });
-        Vnc.Connected += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        session.Connected += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
+            if (session != Vnc) return;
+
             IsConnected = true;
             Status = null;
         });
+        session.LedState += leds => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (session == Vnc) GuestCapsLock = leds.CapsLock;
+        });
     }
+
+    /// <summary>게스트 CapsLock 이 켜져 있다(VNC — 서버가 LED 상태를 알릴 때) — 화면 키보드 글자의 Shift 를 맞춘다.</summary>
+    public bool GuestCapsLock { get; private set; }
+
+    /// <summary>다시 연결로 세션이 바뀌었다(UI 스레드) — 화면이 새 세션의 이벤트를 받도록 다시 잇는다.</summary>
+    public event Action<IConsoleSession>? SessionChanged;
+
+    /// <summary>연결 직전(UI 스레드) — 화면이 RDP 처음 해상도 등을 정한다.</summary>
+    public Action<IConsoleSession>? BeforeConnect { get; set; }
 
     public ServerSession SessionInfo { get; }
 
@@ -56,8 +86,8 @@ public sealed partial class ConsoleViewModel : ViewModelBase
     /// </summary>
     public ConsoleSettings Settings { get; private set; } = new();
 
-    /// <summary>원격 화면 세션(VNC 또는 RDP).</summary>
-    public IConsoleSession Vnc { get; }
+    /// <summary>원격 화면 세션(VNC 또는 RDP) — 다시 연결하면 새 세션으로 바뀐다(<see cref="SessionChanged" />).</summary>
+    public IConsoleSession Vnc { get; private set; }
 
     public override string Title => $"{Guest.VmId} · {Guest.Name}";
 
@@ -73,13 +103,23 @@ public sealed partial class ConsoleViewModel : ViewModelBase
     [ObservableProperty] public partial bool CanReconnect { get; private set; }
 
     /// <summary>
-    ///     다시 연결 — 원격 화면 세션은 1회용이라 같은 게스트의 새 콘솔 화면으로 바꾼다(티켓도 새로 받는다).
+    ///     다시 연결 — 원격 화면 세션은 1회용이라 새 세션을 만들어(티켓도 새로 받는다) 이 화면에서 그대로 잇는다.
+    ///     화면을 새로 만들지 않으므로 확대·이동·화면 모드·메뉴가 그대로 남는다.
     /// </summary>
     public async Task ReconnectAsync()
     {
+        if (IsRemoved) return;
+
         CanReconnect = false;
-        await AppServices.Navigator.PopAsync();
-        await AppServices.Navigator.PushAsync(new ConsoleViewModel(SessionInfo, Guest, Protocol));
+        IsConnected = false;
+        GuestCapsLock = false;
+        var old = Vnc;
+        Vnc = _createSession();
+        HookSession(Vnc);
+        old.Dispose();
+        Status = L.T("Console_Connecting");
+        SessionChanged?.Invoke(Vnc);
+        await ConnectSessionAsync();
     }
 
     /// <summary>콘솔 설정을 저장하고 돌아왔다 — 화질·압축 등은 새 연결에서 적용되므로 돌아오면 다시 연결한다.</summary>
@@ -87,6 +127,9 @@ public sealed partial class ConsoleViewModel : ViewModelBase
 
     private bool _visible;
     private bool _paused;
+
+    /// <summary>연결하는 중(웹소켓·핸드셰이크) — 이때 배경으로 가도 끊는다.</summary>
+    private bool _connecting;
 
     /// <summary>
     ///     휴대폰·태블릿에서 앱이 배경으로 가면 원격 화면 연결을 끊고(배경에서는 OS 가 어차피 소켓을 끊고 배터리·데이터만 쓴다),
@@ -98,7 +141,7 @@ public sealed partial class ConsoleViewModel : ViewModelBase
 
         if (!foreground)
         {
-            if (!IsConnected) return;
+            if (!IsConnected && !_connecting) return;
 
             _paused = true;
             IsConnected = false;
@@ -119,7 +162,11 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         _visible = true;
         if (_started)
         {
-            if (!ReconnectWhenBack) return;
+            if (!ReconnectWhenBack)
+            {
+                (Vnc as ProxmoxVncSession)?.SetUpdatesPaused(false); // 가려진 동안 멈춘 화면 갱신을 다시
+                return;
+            }
 
             ReconnectWhenBack = false;
             Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = ReconnectAsync()); // 돌아오는 화면 전환이 끝난 뒤
@@ -128,6 +175,14 @@ public sealed partial class ConsoleViewModel : ViewModelBase
 
         _started = true;
         AppLifecycle.ForegroundChanged += OnForegroundChanged;
+        await ConnectSessionAsync();
+    }
+
+    private async Task ConnectSessionAsync()
+    {
+        var session = Vnc;
+        BeforeConnect?.Invoke(session);
+        _connecting = true;
         try
         {
             // 설정 화면에서 저장한 콘솔 설정(화질·압축·키보드 등)을 연결 전에 읽는다 — 읽기 실패는 기본값
@@ -140,15 +195,25 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            if (session != Vnc || _paused || IsRemoved) return; // 배경·다시 연결·화면 닫기로 일부러 끊었다
             Status = L.T("Console_ConnectFailed", ErrorText.Describe(ex));
             CanReconnect = true;
+        }
+        finally
+        {
+            if (session == Vnc) _connecting = false;
         }
     }
 
     public override void OnDisappearing(bool removed)
     {
         _visible = false;
-        if (!removed) return;
+        if (!removed)
+        {
+            // 다른 화면(설정 등)이 위를 덮었다 — 보이지 않는 화면의 갱신은 받지 않는다(데이터·배터리)
+            (Vnc as ProxmoxVncSession)?.SetUpdatesPaused(true);
+            return;
+        }
 
         AppLifecycle.ForegroundChanged -= OnForegroundChanged;
         Vnc.Dispose();

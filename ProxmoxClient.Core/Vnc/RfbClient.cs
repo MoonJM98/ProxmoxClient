@@ -434,7 +434,9 @@ public sealed partial class RfbClient
 
         // 파이프라인: rect 수 확인 직후 요청 → 서버는 다음 프레임 준비 시작
         // 클라이언트는 현재 프레임 rect들을 읽으면서 동시에 처리 (스레드 분리)
-        await RequestFramebufferUpdateAsync(true, ct).ConfigureAwait(false);
+        // 화면을 안 보는 동안(일시 정지)은 요청을 미뤄 둔다 — RfbClient.Updates.cs
+        _resizedInUpdate = false;
+        await RequestNextUpdateAsync(true, ct).ConfigureAwait(false);
 
         try
         {
@@ -454,6 +456,8 @@ public sealed partial class RfbClient
             FrameUpdated?.Invoke(rect.X1, rect.Y1, rect.Width, rect.Height);
         }
 
+        // 앞서 보낸 요청은 옛 크기였다 — 크기가 바뀌었으면 새 크기로 전체 화면을 다시 요청한다
+        if (_resizedInUpdate) await RequestNextUpdateAsync(false, ct).ConfigureAwait(false);
         Interlocked.Increment(ref _frames);
     }
     private async Task ReadRectsAsync(int rectCount, CancellationToken ct)
@@ -591,6 +595,7 @@ public sealed partial class RfbClient
                     FramebufferHeight = h;
                     EnsureFramebuffer(w, h, true);
                     MarkDirty(0, 0, w, h);
+                    _resizedInUpdate = true;
                     break;
                 case < 0 when w == 0 && h == 0:
                     // 페이로드 없는 알 수 없는 의사 rect(서버 확장 알림 등)는 무시 — 스트림 동기에 영향 없음

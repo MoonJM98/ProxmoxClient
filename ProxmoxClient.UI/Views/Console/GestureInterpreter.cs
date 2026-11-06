@@ -288,6 +288,9 @@ public sealed class GestureInterpreter(Viewport viewport, IRemotePointer remote)
     /// <summary>손가락이 닿아 있거나 클릭을 기다리는 중 — 화면이 <see cref="Tick" /> 을 계속 불러야 한다.</summary>
     public bool NeedsTicks => _fingers.Count > 0 || _tapCount > 0;
 
+    /// <summary>확대한 채 한 손가락으로 끄는 중(버튼 누름) — 가장자리 이동이 일어날 수 있어 타이머를 빠르게 돌린다.</summary>
+    public bool IsEdgeDragging => _gesture == Gesture.Drag && _buttons != 0 && _fingers.Count == 1 && viewport.IsZoomed;
+
     /// <summary>
     ///     한 손가락 첫 탭 — 클릭을 바로 보내지 않고 <see cref="MultiTapMs" /> 동안 다음 터치를 기다린다.
     ///     오지 않으면 <see cref="Tick" /> 이 클릭, 같은 자리 근처에 오면 이어진 터치로 받는다(<see cref="Down" />).
