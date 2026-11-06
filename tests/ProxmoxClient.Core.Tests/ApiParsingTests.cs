@@ -25,7 +25,7 @@ public sealed class ApiParsingTests : IAsyncLifetime
         ["/api2/json/version"] = """{"data":{"version":"9.0.10","release":"9.0","repoid":"abcdef"}}""",
         ["/api2/json/cluster/resources"] = $$"""
             {"data":[
-             {"id":"qemu/100","type":"qemu","vmid":100,"name":"web-01","node":"pve1","status":"running","cpu":0.123,"maxcpu":4,"mem":2400000000,"maxmem":4294967296,"disk":0,"maxdisk":34359738368,"netin":12345678900,"netout":2345678900,"uptime":277200,"template":0,"tags":"web"},
+             {"id":"qemu/100","type":"qemu","vmid":100,"name":"web-01","node":"pve1","status":"running","cpu":0.123,"maxcpu":4,"mem":2400000000,"maxmem":4294967296,"disk":0,"maxdisk":34359738368,"netin":12345678900,"netout":2345678900,"uptime":277200,"template":0,"tags":"web;prod"},
              {"id":"lxc/200","type":"lxc","vmid":200,"name":"dns","node":"pve2","status":"running","cpu":0.01,"maxcpu":1,"mem":60000000,"maxmem":536870912,"disk":1200000000,"maxdisk":8589934592,"netin":100000,"netout":200000,"uptime":108000,"template":0,"pool":"infra"},
              {"id":"qemu/9000","type":"qemu","vmid":9000,"name":"","node":"pve1","status":"stopped","cpu":0,"maxcpu":2,"mem":0,"maxmem":2147483648,"template":1},
              {"id":"node/pve1","type":"node","node":"pve1","status":"online","cpu":0.18,"maxcpu":16,"mem":40000000000,"maxmem":68719476736,"disk":20000000000,"maxdisk":100000000000,"uptime":1036800,"level":""},
@@ -105,7 +105,7 @@ public sealed class ApiParsingTests : IAsyncLifetime
         Assert.Equal(12_345_678_900, vm.NetInBytes);
         Assert.Equal(277_200, vm.UptimeSeconds);
         Assert.False(vm.IsTemplate);
-        Assert.Equal(["web"], vm.Tags);
+        Assert.Equal(["web", "prod"], vm.Tags); // PVE 는 ; 로 잇는다
         Assert.Null(vm.Pool);
 
         var ct = overview.Guests.Single(g => g.VmId == 200);

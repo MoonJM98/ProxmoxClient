@@ -754,10 +754,9 @@ public sealed partial class ProxmoxApiClient : IDisposable
             NetOutBytes = dto.NetOut ?? 0,
             UptimeSeconds = dto.Uptime ?? 0,
             IsTemplate = (dto.Template ?? 0) != 0,
+            // PVE 는 태그를 ';' 로 잇는다(설정 파일에는 ',' · 공백도 쓰인다) — 모두 나눈다
             Tags = (dto.Tags ?? string.Empty)
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(t => t.TrimStart(';'))
-                .ToArray(),
+                .Split([';', ',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
             Pool = string.IsNullOrEmpty(dto.Pool) ? null : dto.Pool
         };
     }
