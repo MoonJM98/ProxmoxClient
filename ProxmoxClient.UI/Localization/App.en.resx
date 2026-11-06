@@ -454,7 +454,7 @@
     <value>Apply options</value>
   </data>
     <data name="FirewallWindow_03" xml:space="preserve">
-    <value>Enable guest firewall</value>
+    <value>Enable firewall</value>
   </data>
     <data name="FirewallWindow_04" xml:space="preserve">
     <value>Delete</value>
@@ -8439,5 +8439,23 @@ Previous SHA-256: {6}</value>
   </data>
   <data name="FormDialog_Refresh" xml:space="preserve">
     <value>Search again with the values entered</value>
+  </data>
+  <data name="NodeSubscription_Status_new" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="NodeSubscription_Status_notfound" xml:space="preserve">
+    <value>No subscription</value>
+  </data>
+  <data name="NodeSubscription_Status_active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="NodeSubscription_Status_invalid" xml:space="preserve">
+    <value>Invalid key</value>
+  </data>
+  <data name="NodeSubscription_Status_expired" xml:space="preserve">
+    <value>Expired</value>
+  </data>
+  <data name="NodeSubscription_Status_suspended" xml:space="preserve">
+    <value>Suspended</value>
   </data>
 </root>

@@ -100,7 +100,7 @@ class H(BaseHTTPRequestHandler):
         m=re.match(r'/nodes/(\w+)/(qemu|lxc)/(\d+)/snapshot$',path)
         if m: return self.send(SNAPS.get(int(m.group(3)),[dict(name='current',description='You are here!')]))
         m=re.match(r'/nodes/(\w+)/(qemu|lxc)/(\d+)/config',path)
-        if m: return self.send(dict(name='web-01',cores=4,sockets=1,memory=4096,ostype='l26',net0='virtio=BC:24:11:AA:BB:CC,bridge=vmbr0,firewall=1',scsi0='local-lvm:vm-100-disk-0,iothread=1,size=32G',boot='order=scsi0;net0',agent='1',digest='abc',description='웹 서버%20(프로덕션)'))
+        if m: return self.send(dict(name='web-01',cores=4,sockets=1,memory=4096,ostype='l26',net0='virtio=BC:24:11:AA:BB:CC,bridge=vmbr0,firewall=1',scsi0='local-lvm:vm-100-disk-0,iothread=1,size=32G',boot='order=scsi0;net0',agent='1',digest='abc',description='웹 서버 (프로덕션)'))
         m=re.match(r'/nodes/(\w+)/qemu/(\d+)/agent/network-get-interfaces',path)
         if m: return self.send(dict(result=[{'name':'lo','ip-addresses':[{'ip-address':'127.0.0.1','ip-address-type':'ipv4','prefix':8}]},{'name':'eth0','ip-addresses':[{'ip-address':'192.168.10.21','ip-address-type':'ipv4','prefix':24},{'ip-address':'fe80::1','ip-address-type':'ipv6','prefix':64},{'ip-address':'2001:db8::21','ip-address-type':'ipv6','prefix':64}]}]))
         m=re.match(r'/nodes/(\w+)/lxc/(\d+)/interfaces',path)

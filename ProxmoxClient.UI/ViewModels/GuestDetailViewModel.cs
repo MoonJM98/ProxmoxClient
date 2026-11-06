@@ -253,7 +253,7 @@ public sealed partial class GuestDetailViewModel : ViewModelBase, IReloadable
                          .Where(pair => pair.Key is not "digest")
                          .OrderBy(pair => ConfigOrder(pair.Key))
                          .ThenBy(pair => pair.Key, StringComparer.Ordinal))
-                Config.Add(new ConfigEntry(key, Uri.UnescapeDataString(value)));
+                Config.Add(new ConfigEntry(key, key == "sshkeys" ? Uri.UnescapeDataString(value) : value)); // PVE 는 sshkeys 만 URL 인코딩해 준다
             ConfigError = null;
         }
         catch (Exception) when (Lifetime.IsCancellationRequested)

@@ -61,6 +61,15 @@ internal static class NodeSystemTabs
         ("message", "NodeSubscription_Message")
     ];
 
+    /// <summary>구독 상태(notfound·active 등)는 사람이 읽는 말로 — 모르는 값은 그대로.</summary>
+    private static string SubscriptionValue(string key, string value)
+    {
+        var status = value.ToLowerInvariant();
+        return key == "status" && status is "new" or "notfound" or "active" or "invalid" or "expired" or "suspended"
+            ? UiText.T("NodeSubscription_Status_" + status)
+            : value;
+    }
+
     public static OptionsSpec NodeOptions(ProxmoxApiClient api, string node)
     {
         // 서버가 모르는 설정(예: 8.3 전의 ballooning-target)은 옵션 목록이 저장 요청(target)을 보고 뺀다
@@ -123,7 +132,7 @@ internal static class NodeSystemTabs
                 .Where(f => Value(info, f.Key).Length > 0)
                 .Select(f => (IReadOnlyDictionary<string, string>)new Dictionary<string, string>
                 {
-                    ["name"] = UiText.T(f.LabelKey), ["value"] = Value(info, f.Key)
+                    ["name"] = UiText.T(f.LabelKey), ["value"] = SubscriptionValue(f.Key, Value(info, f.Key))
                 })
                 .ToList();
         }, KeyValueColumns, "NodeSubscription_Hint", actions);

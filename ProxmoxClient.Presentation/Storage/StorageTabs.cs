@@ -47,8 +47,8 @@ public static class StorageTabs
 
     private static readonly (string Key, string LabelKey, Func<string, string>? Format)[] StatusFields =
     [
-        ("type", "Table_Type", null), ("active", "StorageSummary_Active", TableFormats.Flag),
-        ("enabled", "Table_Enabled", TableFormats.Flag), ("shared", "Table_Shared", TableFormats.Flag),
+        ("type", "Table_Type", null), ("active", "StorageSummary_Active", YesNo),
+        ("enabled", "Table_Enabled", YesNo), ("shared", "Table_Shared", YesNo),
         ("content", "Table_Content", null), ("total", "StorageSummary_Total", TableFormats.Bytes),
         ("used", "NodeDisks_Used", TableFormats.Bytes), ("avail", "NodeDisks_Free", TableFormats.Bytes)
     ];
@@ -93,6 +93,12 @@ public static class StorageTabs
                     : null));
 
         return tabs;
+    }
+
+    /// <summary>요약은 글자 칸이라 체크 표시 대신 예/아니요로.</summary>
+    private static string YesNo(string raw)
+    {
+        return UiText.T(raw is "1" or "true" ? "GuestOptions_Yes" : "GuestOptions_No");
     }
 
     private static TableSpec Summary(ProxmoxApiClient api, string node, string storage)

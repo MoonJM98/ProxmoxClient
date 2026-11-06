@@ -584,7 +584,7 @@
         <comment>FirewallWindow.xaml · Content</comment>
   </data>
     <data name="FirewallWindow_03" xml:space="preserve">
-    <value>게스트 방화벽 사용</value>
+    <value>방화벽 사용</value>
         <comment>FirewallWindow.xaml · Content</comment>
   </data>
     <data name="FirewallWindow_04" xml:space="preserve">
@@ -10650,5 +10650,23 @@ SHA-256: {5}</value>
   </data>
   <data name="FormDialog_Refresh" xml:space="preserve">
     <value>지금 입력한 값으로 다시 찾기</value>
+  </data>
+  <data name="NodeSubscription_Status_new" xml:space="preserve">
+    <value>새로 등록</value>
+  </data>
+  <data name="NodeSubscription_Status_notfound" xml:space="preserve">
+    <value>구독 없음</value>
+  </data>
+  <data name="NodeSubscription_Status_active" xml:space="preserve">
+    <value>활성</value>
+  </data>
+  <data name="NodeSubscription_Status_invalid" xml:space="preserve">
+    <value>잘못된 키</value>
+  </data>
+  <data name="NodeSubscription_Status_expired" xml:space="preserve">
+    <value>만료됨</value>
+  </data>
+  <data name="NodeSubscription_Status_suspended" xml:space="preserve">
+    <value>정지됨</value>
   </data>
 </root>
