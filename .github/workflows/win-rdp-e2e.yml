@@ -3,8 +3,11 @@
 name: Windows RDP E2E
 
 on:
+  # 실제 Windows RDP 서버(러너 자신, NLA 필수)로 끝까지 — RDP 코드나 가짜 프록시가 바뀔 때와 수동 실행
   push:
-    branches: ["claude/win-rdp-e2e"]
+    paths: ["ProxmoxClient.Core/Rdp/**", "tools/FakePve/rdp.py", "tools/WinRdpE2E/**", ".github/workflows/win-rdp-e2e.yml"]
+  pull_request:
+    paths: ["ProxmoxClient.Core/Rdp/**", "tools/FakePve/rdp.py", "tools/WinRdpE2E/**", ".github/workflows/win-rdp-e2e.yml"]
   workflow_dispatch:
 
 permissions:
