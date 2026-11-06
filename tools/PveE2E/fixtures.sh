@@ -31,13 +31,13 @@ qm config 100
 # CT 200: Alpine 템플릿을 받아(되면) 특권 컨테이너로. Docker 안이라 AppArmor 는 끈다
 ct=0
 pveam update >/dev/null 2>&1 || log "WARNING: pveam update 실패"
-tmpl=$(pveam available --section system 2>/dev/null | awk '{print $2}' | grep '^alpine-' | sort -V | tail -1)
+tmpl=$(pveam available --section system 2>/dev/null | awk '{print $2}' | grep '^alpine-.*_amd64' | sort -V | tail -1)
 if [ -n "$tmpl" ] && pveam download local "$tmpl"; then
     if pct create 200 "local:vztmpl/$tmpl" --hostname e2e-ct --memory 128 --swap 0 --cores 1 \
         --rootfs local:1 --net0 name=eth0,bridge=vmbr0,ip=dhcp,type=veth --ostype alpine \
         --unprivileged 0 --features nesting=1 --password "$PASS"; then
         echo 'lxc.apparmor.profile: unconfined' >> /etc/pve/lxc/200.conf
-        if pct start 200; then ct=1; else log "WARNING: pct start 200 실패"; fi
+        if pct start 200; then ct=1; else log "WARNING: pct start 200 실패"; pct start 200 --debug 2>&1 | tail -60; fi
         pct status 200 || true
     else
         log "WARNING: pct create 200 실패"

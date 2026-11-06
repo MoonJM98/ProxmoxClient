@@ -72,10 +72,34 @@ jobs:
           docker exec pve cat /root/e2e.env >> $GITHUB_ENV
           docker exec pve pvesh get /cluster/resources --output-format json-pretty | head -80
 
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: 빌드(tools/UiSnapshot)
+        run: dotnet build tools/UiSnapshot -c Release
+
+      # 앱(헤드리스)을 실제 PVE 에 붙인다 — PASS/FAIL 줄과 화면 캡처. 데스크톱·휴대폰 배치 둘 다
+      - name: 실제 PVE 검사(tools/UiSnapshot --real)
+        run: |
+          mkdir -p shots
+          failed=0
+          for mode in desktop mobile; do
+            echo "::group::UiSnapshot real $mode"
+            dotnet run --project tools/UiSnapshot -c Release --no-build -- \
+              --real 1 --host "$PVE_IP" --port 8006 --out "shots/real-$mode" --mode "$mode" --target real \
+              --exec "docker exec pve" --ct "$PVE_CT" > "shots/real-$mode.log" 2>&1 || true
+            echo "::endgroup::"
+            grep -E "^(PASS|FAIL|DIALOG|EXCEPTION|DONE)|실패 \|" "shots/real-$mode.log" || tail -n 60 "shots/real-$mode.log"
+            grep -q "^DONE ok" "shots/real-$mode.log" || failed=1
+          done
+          exit "$failed"
+
       - name: 진단
         if: always()
         run: |
           mkdir -p shots
+          docker exec pve pvesh get /nodes/pve/tasks --limit 30 --output-format json-pretty > shots/tasks.json 2>&1 || true
           cp fixtures.log shots/ 2>/dev/null || true
           docker exec pve journalctl --no-pager -b > shots/journal.txt 2>&1 || true
           docker exec pve tar -C /var/log -czf - pveproxy pve 2>/dev/null > shots/pvelogs.tgz || true

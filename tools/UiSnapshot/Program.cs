@@ -90,7 +90,10 @@ await AppServices.Profiles.SaveAsync(new ConnectionProfile
     Name = "fake", Host = options.GetValueOrDefault("host", "127.0.0.1"), Port = port,
     UseVpn = vpnConfig is not null, VpnConfigPath = vpnConfig
 });
-AppServices.SecretStore.Set(SecretKey(), "secret");
+// --real 1: 실제 PVE(가짜 전용 단계는 건너뛴다) — 비밀번호는 --password 또는 PVE_PASSWORD
+var real = options.GetValueOrDefault("real", "0") == "1";
+AppServices.SecretStore.Set(SecretKey(),
+    options.GetValueOrDefault("password", Environment.GetEnvironmentVariable("PVE_PASSWORD") ?? "secret"));
 var profiles = (ProfilesViewModel)nav.CurrentPage!.DataContext!;
 await Wait(profiles.LoadAsync());
 // 연결 전 화면 캡처: 데스크톱은 로그인 화면(인증 영역을 가져오며 처음 보는 인증서를 묻는다), 두 형태 모두 서버 설정 화면
@@ -141,7 +144,7 @@ if (!desktop)
     var realmNames = string.Join(",", edit.Realms.Select(r => r.Realm));
     Check0("사용자·영역 따로(PC 와 같이)", "사용자 칸 root + 영역 목록, 저장값 root@영역",
         $"사용자 '{edit.UserOnly}', 영역 [{realmNames}] → {edit.ComposedUser}",
-        edit.UserOnly == "root" && edit.Realms.Count > 2 && other is not null && edit.ComposedUser == $"root@{other.Realm}");
+        edit.UserOnly == "root" && edit.Realms.Count > (real ? 1 : 2) && other is not null && edit.ComposedUser == $"root@{other.Realm}");
     edit.SelectedRealm = edit.Realms.FirstOrDefault(r => r.Realm == "pam");
 }
 if (AppServices.Dialogs.Current is { } editorDialog) editorDialog.CancelCommand.Execute(null);
@@ -470,6 +473,7 @@ if (target == "compact") await CompactButtonCheck();
 if (target == "terminal") await TerminalCheck();
 if (target == "expiry") await ExpiryCheck();
 if (target == "realshell") await RealShellCheck();
+if (target == "real") await RealPveCheck();
 // ---- RDP 콘솔 끝까지(--target rdp, 휴대폰): 가짜 PVE 의 RDCleanPath 프록시(tools/FakePve/rdp.py)가 이 PC 의 실제 RDP 서버
 // (xrdp, --rdp 호스트:포트)로 잇는다. 연결·화면 내용·화면 키보드 글자/특수키(게스트 셸이 파일로 적은 글로 확인)·
 // 창 크기에 맞춘 해상도 변경·웹소켓 끊김 뒤 다시 연결. RDP 서버가 없으면 SKIP(CI 에 xrdp 가 없을 때)
@@ -985,6 +989,472 @@ foreach (var (prefix, vmid) in new[] { ("guest", 100), ("lxc", 200) })
 Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
 Directory.Delete(profileDir, true);
 return failures == 0 ? 0 : 2;
+
+// ---- 실제 PVE(--real 1 --target real): tools/PveE2E 가 띄운 Proxmox VE 9 에 붙어 가짜 서버로는 못 보는 것을 확인한다.
+// 시험 대상: 노드 pve, VM 100(Alpine ISO, VGA std, 꺼진 채), CT 200(--ct 1 이면 켜짐), TOTP 사용자 tfa@pve(--totp 비밀),
+// API 토큰(--token-id·--token-secret). 서버 쪽 확인은 --exec(기본 "docker exec pve") 로 pvesh 를 부른다.
+// 줄마다 "PASS real/이름: …" 또는 "FAIL real/이름: …" 를 찍는다
+async Task RealPveCheck()
+{
+    var session = cluster.Session;
+    var api = session.Api;
+    var execPrefix = options.GetValueOrDefault("exec", "docker exec pve");
+    var pvePassword = options.GetValueOrDefault("password", Environment.GetEnvironmentVariable("PVE_PASSWORD") ?? "");
+    var hasCt = options.GetValueOrDefault("ct", Environment.GetEnvironmentVariable("PVE_CT") ?? "0") == "1";
+    var nodeName = options.GetValueOrDefault("node", "pve");
+    const ProxmoxClient.Core.Models.ResourceKind Qemu = ProxmoxClient.Core.Models.ResourceKind.Qemu;
+    const ProxmoxClient.Core.Models.ResourceKind Lxc = ProxmoxClient.Core.Models.ResourceKind.Lxc;
+
+    void Result(string name, bool pass, string got)
+    {
+        Console.WriteLine($"{(pass ? "PASS" : "FAIL")} real/{name}: {got.Replace('\n', ' ')}");
+        if (!pass) failures++;
+    }
+
+    // 한 단계가 예외로 끝나도 다음 단계는 한다
+    async Task Step(string name, Func<Task> body)
+    {
+        try
+        {
+            await body();
+        }
+        catch (Exception ex)
+        {
+            Result(name, false, $"{ex.GetType().Name}: {ex.Message}");
+            if (AppServices.Dialogs.Current is { } d) d.CancelCommand.Execute(null);
+        }
+    }
+
+    // 쓰기 요청은 확인 창을 거친다 — 기다리는 동안 뜨는 확인 창은 모두 확인으로
+    T Do<T>(Func<Task<T>> start, int ms = 30000)
+    {
+        var task = start();
+        var end = DateTime.UtcNow.AddMilliseconds(ms);
+        while (!task.IsCompleted && DateTime.UtcNow < end)
+        {
+            if (AppServices.Dialogs.Current is { } d) d.ConfirmCommand.Execute(null);
+            Pump(50);
+        }
+
+        if (!task.IsCompleted) throw new TimeoutException($"{ms} ms 안에 끝나지 않음");
+        return task.GetAwaiter().GetResult();
+    }
+
+    string Exec(string command)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo("bash", ["-c", $"{execPrefix} {command}"])
+        {
+            RedirectStandardOutput = true, RedirectStandardError = true
+        };
+        using var p = System.Diagnostics.Process.Start(psi)!;
+        var stdout = p.StandardOutput.ReadToEndAsync();
+        var stderr = p.StandardError.ReadToEndAsync();
+        p.WaitForExit(60000);
+        return stdout.Result + (p.ExitCode != 0 ? "\nSTDERR " + stderr.Result : "");
+    }
+
+    System.Text.Json.JsonElement Pvesh(string path) =>
+        System.Text.Json.JsonDocument.Parse(Exec($"pvesh get {path} --output-format json").Split("\nSTDERR")[0]).RootElement;
+
+    string Totp(string base32)
+    {
+        var clean = base32.TrimEnd('=').ToUpperInvariant();
+        var bytes = new List<byte>();
+        int buffer = 0, bits = 0;
+        foreach (var ch in clean)
+        {
+            buffer = (buffer << 5) | "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".IndexOf(ch);
+            bits += 5;
+            if (bits < 8) continue;
+            bytes.Add((byte)(buffer >> (bits - 8)));
+            bits -= 8;
+        }
+
+        var counter = BitConverter.GetBytes(DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30);
+        if (BitConverter.IsLittleEndian) Array.Reverse(counter);
+        var mac = System.Security.Cryptography.HMACSHA1.HashData(bytes.ToArray(), counter);
+        var o = mac[^1] & 15;
+        var value = ((mac[o] & 0x7f) << 24) | (mac[o + 1] << 16) | (mac[o + 2] << 8) | mac[o + 3];
+        return (value % 1_000_000).ToString("D6", CultureInfo.InvariantCulture);
+    }
+
+    string TermScreen(ProxmoxClient.UI.Views.Terminal.TerminalPage tp)
+    {
+        var buf = tp.Terminal.Buffer;
+        lock (buf.Gate)
+            return string.Join("\n", Enumerable.Range(0, buf.Rows).Select(r =>
+                new string(buf.GetVisibleLine(r, 0).Cells.Where(c => c.Width != 0)
+                    .SelectMany(c => char.ConvertFromUtf32(c.Rune == 0 ? ' ' : c.Rune)).ToArray()).TrimEnd()));
+    }
+
+    // 1) 로그인 · 인증서 신뢰(지문 저장) · 버전
+    var saved = (await AppServices.Profiles.LoadAsync())[0];
+    Result("login", session.UserDisplay == "root@pam" && session.Version.StartsWith('9') && saved.CertificateThumbprint is { Length: > 0 },
+        $"{session.UserDisplay} · PVE {session.Version} · 지문 {saved.CertificateThumbprint?[..Math.Min(16, saved.CertificateThumbprint.Length)]}…");
+
+    // 2) 클러스터 자원 목록
+    await Step("resources", async () =>
+    {
+        await Wait(cluster.RefreshAsync(false));
+        var guests = string.Join(", ", cluster.Guests.Select(g => $"{g.Kind}/{g.VmId}:{g.Name}:{g.Status}"));
+        Result("resources",
+            cluster.Nodes.Any(n => n.Node == nodeName) && cluster.Guests.Any(g => g.VmId == 100 && g.Kind == Qemu)
+            && (!hasCt || cluster.Guests.Any(g => g.VmId == 200 && g.Kind == Lxc)) && cluster.Storages.Any(s => s.Storage == "local"),
+            $"노드 [{string.Join(",", cluster.Nodes.Select(n => n.Node))}] 게스트 [{guests}] 저장소 [{string.Join(",", cluster.Storages.Select(s => s.Storage))}]");
+    });
+
+    // 3) 화면 둘러보기 — 데이터센터·노드·저장소·게스트(VM·CT)의 모든 탭이 오류 없이 열리는지(CheckStatus 가 FAIL 을 찍는다)
+    var before = failures;
+    await Step("walk-datacenter", async () =>
+    {
+        if (FeatureRegistry.Datacenter is null) return;
+        await Wait(cluster.OpenDatacenterCommand.ExecuteAsync(null));
+        WalkNav("real-dc");
+        await Wait(AppServices.Navigator.PopAsync());
+    });
+    await Step("walk-node", async () =>
+    {
+        if (FeatureRegistry.Node is null) return;
+        await Wait(AppServices.Navigator.PushViewAsync("node", FeatureRegistry.Node(session, cluster.Nodes.First(n => n.Node == nodeName))));
+        WalkNav("real-node");
+        await Wait(AppServices.Navigator.PopAsync());
+    });
+    await Step("walk-storage", async () =>
+    {
+        if (FeatureRegistry.Storage is null) return;
+        await Wait(cluster.OpenStorageCommand.ExecuteAsync(cluster.Storages.First(s => s.Storage == "local")));
+        WalkNav("real-storage");
+        await Wait(AppServices.Navigator.PopAsync());
+    });
+    foreach (var id in hasCt ? new[] { 100, 200 } : [100])
+        await Step($"walk-guest{id}", async () =>
+        {
+            var guest = cluster.Guests.First(g => g.VmId == id);
+            await Wait(AppServices.Navigator.PushAsync(new GuestDetailViewModel(session, guest)));
+            Pump(2500);
+            Shot($"real-guestdetail-{id}");
+            CheckStatus($"real-guestdetail-{id}");
+            await Wait(AppServices.Navigator.PopAsync());
+            var detail = new GuestDetailViewModel(session, guest);
+            foreach (var entry in detail.ManagementEntries)
+            {
+                var feature = (GuestFeature)entry.Parameter!;
+                await Wait(AppServices.Navigator.PushViewAsync($"{id} · {L.T(feature.LabelKey)}", feature.Create(session, guest)));
+                Pump(1500);
+                Shot($"real-guest{id}-{feature.Id}");
+                WalkSubTabs($"real-guest{id}-{feature.Id}");
+                CheckStatus($"real-guest{id}-{feature.Id}");
+                await Wait(AppServices.Navigator.PopAsync());
+            }
+        });
+    Result("walk-screens", failures == before, $"화면 오류 {failures - before}개(위 FAIL 줄 참고)");
+
+    // 4) 실제 작업: VM 시작 → UPID → 작업 로그(TASK OK) · 작업 목록에 보임
+    await Step("task-start", async () =>
+    {
+        var upid = Do(() => api.StartGuestAsync(nodeName, Qemu, 100));
+        var task = Do(() => api.WaitTaskAsync(upid), 120000);
+        var logVm = new TaskLogViewModel(session, Do(() => api.GetTaskStatusAsync(upid)));
+        await Wait(AppServices.Navigator.PushAsync(logVm));
+        WaitFor(() => logVm.IsLoaded && logVm.Lines.Any(l => l.Contains("TASK OK")), 20000);
+        Shot("real-tasklog-start");
+        Result("task-start", task.IsOk && logVm.Lines.Any(l => l.Contains("TASK OK")),
+            $"{upid} · 상태 {task.Status} · 로그 [{string.Join(" | ", logVm.Lines.Take(6))}]");
+        await Wait(AppServices.Navigator.PopAsync());
+        await Wait(cluster.RefreshAsync(false));
+        Result("task-list", cluster.Tasks.Any(t => t.Upid == upid), $"작업 {cluster.Tasks.Count}개, 시작 작업 {(cluster.Tasks.Any(t => t.Upid == upid) ? "있음" : "없음")}");
+    });
+
+    // 5) VM VNC 콘솔(실제 vncproxy·vncwebsocket): 화면이 오고, 키 입력이 게스트에 닿는다 — 로그인 프롬프트에 root 로 들어가
+    // poweroff 를 치면 VM 이 꺼진다(서버 상태로 확인)
+    await Step("vnc", async () =>
+    {
+        await Wait(cluster.RefreshAsync(false));
+        var guest = cluster.Guests.First(g => g.VmId == 100);
+        await Wait(ConsoleLauncher.OpenGuestAsync(session, guest));
+        var page = nav.CurrentPage as ConsolePage;
+        var vm = page?.DataContext as ConsoleViewModel;
+        if (page is null || vm is null)
+        {
+            Result("vnc-connect", false, "콘솔 화면 없음: " + AppServices.Dialogs.Current?.Message);
+            return;
+        }
+
+        int Colors()
+        {
+            var fb = vm.Vnc.Framebuffer;
+            if (fb is null || fb.Length < 4) return 0;
+            var set = new HashSet<int>();
+            for (var i = 0; i + 3 < fb.Length; i += 4 * 97) set.Add(BitConverter.ToInt32(fb, i) & 0xFFFFFF);
+            return set.Count;
+        }
+
+        WaitFor(() => vm.IsConnected || vm.CanReconnect, 30000);
+        WaitFor(() => Colors() > 1, 20000);
+        Shot("real-vnc-connected");
+        Result("vnc-connect", vm.IsConnected && vm.Vnc.Width > 0 && Colors() > 1,
+            $"{(vm.IsConnected ? "연결됨" : vm.Status)} · {vm.Protocol} · {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지");
+        if (!vm.IsConnected) return;
+
+        var softInput = page.GetVisualDescendants().OfType<TextBox>().First();
+        void Type(string text)
+        {
+            softInput.Text = text;
+            Pump(300);
+            page.Tap(KeySyms.Return);
+            Pump(300);
+        }
+
+        // Alpine 이 부팅해 로그인 프롬프트를 띄울 때까지 — getty 가 뜨기 전 입력은 버려지므로 몇 번 되풀이한다
+        var status = "";
+        for (var attempt = 0; attempt < 6 && status != "stopped"; attempt++)
+        {
+            Pump(attempt == 0 ? 25000 : 5000);
+            Shot($"real-vnc-before-login-{attempt}");
+            Type("root");
+            Pump(4000);
+            Shot($"real-vnc-after-login-{attempt}");
+            Type("poweroff");
+            var end = DateTime.UtcNow.AddSeconds(25);
+            while (DateTime.UtcNow < end && status != "stopped")
+            {
+                Pump(1000);
+                var st = Task.Run(() => api.GetGuestCurrentStatusAsync(nodeName, Qemu, 100));
+                WaitFor(() => st.IsCompleted, 5000);
+                status = st.IsCompletedSuccessfully ? st.Result : status;
+            }
+        }
+
+        Result("vnc-keys", status == "stopped", $"VNC 로 'root'·'poweroff' 입력 → VM 상태 {status}");
+        await Wait(AppServices.Navigator.PopAsync());
+    });
+
+    // 6) 노드 셸(실제 termproxy): echo 결과가 화면에
+    await Step("node-shell", async () =>
+    {
+        var vm = new TerminalViewModel(api, ProxmoxClient.Core.Models.ConsoleTarget.ForNode(nodeName), $"{nodeName} · 셸");
+        await Wait(AppServices.Navigator.PushAsync(vm));
+        var page = (ProxmoxClient.UI.Views.Terminal.TerminalPage)nav.CurrentPage!;
+        WaitFor(() => vm.IsConnected, 20000);
+        WaitFor(() => TermScreen(page).Contains($"root@{nodeName}"), 15000);
+        var input = page.GetVisualDescendants().OfType<TextBox>().First();
+        input.Focus();
+        input.Text = "echo ok-$((6*7)); stty size";
+        Pump(300);
+        window.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+        window.KeyRelease(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+        WaitFor(() => TermScreen(page).Contains("\nok-42"), 8000);
+        Pump(500);
+        Shot("real-node-shell");
+        var screen = TermScreen(page);
+        var size = $"{page.Terminal.Buffer.Rows} {page.Terminal.Buffer.Columns}";
+        Result("node-shell", vm.IsConnected && screen.Contains("\nok-42") && screen.Contains(size),
+            $"{(vm.IsConnected ? "연결됨" : vm.StateText)} · ok-42 {(screen.Contains("\nok-42") ? "보임" : "없음")} · 크기 {size} {(screen.Contains(size) ? "맞음" : "다름")} · [{string.Join(" / ", screen.Split('\n').Where(l => l.Length > 0).TakeLast(4))}]");
+        await Wait(AppServices.Navigator.PopAsync());
+    });
+
+    // 7) CT 콘솔(실제 lxc-console 경유 termproxy): 로그인 후 echo
+    if (hasCt)
+        await Step("ct-console", async () =>
+        {
+            var guest = cluster.Guests.First(g => g.VmId == 200);
+            var vm = new TerminalViewModel(api, ProxmoxClient.Core.Models.ConsoleTarget.ForGuest(nodeName, Lxc, 200), "200 · 콘솔", guest);
+            await Wait(AppServices.Navigator.PushAsync(vm));
+            var page = (ProxmoxClient.UI.Views.Terminal.TerminalPage)nav.CurrentPage!;
+            WaitFor(() => vm.IsConnected, 20000);
+            var input = page.GetVisualDescendants().OfType<TextBox>().First();
+            input.Focus();
+            void Line(string text)
+            {
+                if (text.Length > 0) input.Text = text;
+                Pump(300);
+                window.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+                window.KeyRelease(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+                Pump(300);
+            }
+
+            Pump(1500);
+            Line("");
+            WaitFor(() => TermScreen(page).Contains("login:"), 10000);
+            Shot("real-ct-login");
+            Line("root");
+            WaitFor(() => TermScreen(page).Contains("Password:"), 8000);
+            Line(pvePassword);
+            Pump(2500);
+            Line("echo ct-$((6*7))");
+            WaitFor(() => TermScreen(page).Contains("\nct-42"), 8000);
+            Shot("real-ct-console");
+            var screen = TermScreen(page);
+            Result("ct-console", vm.IsConnected && screen.Contains("\nct-42"),
+                $"{(vm.IsConnected ? "연결됨" : vm.StateText)} · [{string.Join(" / ", screen.Split('\n').Where(l => l.Length > 0).TakeLast(5))}]");
+            await Wait(AppServices.Navigator.PopAsync());
+        });
+
+    // 8) 설정 편집 + digest(옵션 탭과 같은 경로: pending 읽기 → digest 붙여 PUT). 옛 digest 는 서버가 거절해야 한다
+    await Step("config-digest", async () =>
+    {
+        var pending = Do(() => api.GetGuestPendingAsync(nodeName, Qemu, 100));
+        var text = $"e2e 설명 {DateTime.UtcNow:HHmmss}\n둘째 줄 & 기호 %";
+        Do(() => api.UpdateGuestConfigAsync(nodeName, Qemu, 100,
+            ProxmoxClient.Presentation.Shared.FormHelpers.UpdateForm(pending.AddDigest(new Dictionary<string, string> { ["description"] = text }))));
+        var got = Pvesh($"/nodes/{nodeName}/qemu/100/config").GetProperty("description").GetString();
+        Result("config-edit", got?.TrimEnd('\n') == text, $"보낸 digest {pending.Digest[..Math.Min(12, pending.Digest.Length)]}… → pvesh description '{got}'");
+        var appView = Do(() => api.GetGuestConfigAsync(nodeName, Qemu, 100));
+        Result("config-read", appView.GetValueOrDefault("description")?.TrimEnd('\n') == text,
+            $"앱이 읽은 description '{appView.GetValueOrDefault("description")}'");
+
+        // 같은(이제 낡은) digest 로 다시 → 거절 · 앱이 digest 불일치로 알아본다
+        string outcome;
+        var mismatch = false;
+        try
+        {
+            Do(() => api.UpdateGuestConfigAsync(nodeName, Qemu, 100,
+                ProxmoxClient.Presentation.Shared.FormHelpers.UpdateForm(pending.AddDigest(new Dictionary<string, string> { ["description"] = "stale" }))));
+            outcome = "받아들임(거절해야 함)";
+        }
+        catch (ProxmoxClient.Core.Api.ProxmoxApiException ex)
+        {
+            mismatch = ex.IsDigestMismatch;
+            outcome = $"{ex.StatusCode}: {ex.Message}";
+        }
+
+        Result("config-stale-digest", mismatch, outcome);
+    });
+
+    // 9) 방화벽 규칙 추가·지우기 + digest(화면의 지우기 단추, 목록의 digest 를 쿼리로). 그 사이 서버에서 바뀌면 거절 → 알림
+    await Step("firewall", async () =>
+    {
+        var scope = ProxmoxClient.Core.Models.FirewallScope.ForGuest(nodeName, Qemu, 100);
+        var rulesPath = $"/nodes/{nodeName}/qemu/100/firewall/rules";
+        int RuleCount() => Pvesh(rulesPath).GetArrayLength();
+        foreach (var port in new[] { "2201", "2202" })
+            Do(() => api.Firewall.CreateRuleAsync(scope, new Dictionary<string, string>
+            {
+                ["type"] = "in", ["action"] = "ACCEPT", ["proto"] = "tcp", ["dport"] = port, ["enable"] = "1", ["comment"] = "e2e " + port
+            }));
+        var afterAdd = RuleCount();
+        Result("fw-add", afterAdd == 2, $"pvesh 규칙 {afterAdd}개");
+
+        var fw = new ProxmoxClient.UI.Views.Guest.Tabs.FirewallTab(api, scope);
+        await Wait(AppServices.Navigator.PushViewAsync("fw", fw));
+        Pump(2000);
+        Shot("real-fw-list");
+        var fwTable = fw.GetVisualDescendants().OfType<TableTab>().First();
+        void DeleteFirstRule()
+        {
+            if (fwTable.GetVisualDescendants().OfType<ListBox>().FirstOrDefault() is { } cards) cards.SelectedIndex = 0;
+            else if (fwTable.GetVisualDescendants().OfType<DataGrid>().FirstOrDefault() is { } grid) grid.SelectedIndex = 0;
+            Pump(300);
+            var delete = fwTable.GetVisualDescendants().OfType<Button>()
+                .First(b => ToolTip.GetTip(b) as string == L.T("Action_Delete") || b.Content as string == L.T("Action_Delete"));
+            delete.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            for (var i = 0; i < 3; i++)
+            {
+                WaitFor(() => AppServices.Dialogs.Current is not null, 1500);
+                if (AppServices.Dialogs.Current is not { } dialog) break;
+                dialog.ConfirmCommand.Execute(null);
+                Pump(400);
+            }
+
+            Pump(1500);
+        }
+
+        DeleteFirstRule();
+        var afterDelete = RuleCount();
+        Result("fw-delete", afterDelete == 1, $"화면에서 지우기 → pvesh 규칙 {afterDelete}개");
+
+        // 다른 곳(pvesh)에서 규칙을 하나 더 넣는다 → 화면의 digest 는 낡았다 → 지우기 거절, 다시 읽고 알림
+        Exec($"pvesh create {rulesPath} --type in --action DROP --enable 0 --comment other");
+        DeleteFirstRule();
+        var shown = fwTable.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == L.T("Digest_Changed"));
+        var afterStale = RuleCount();
+        Shot("real-fw-digest-mismatch");
+        Result("fw-stale-digest", shown && afterStale == 2, $"알림 {(shown ? "보임" : "없음")} · pvesh 규칙 {afterStale}개(2 여야)");
+        DeleteFirstRule(); // 다시 읽었으므로 이번엔 지워진다
+        var afterRetry = RuleCount();
+        Result("fw-delete-after-reload", afterRetry == 1, $"pvesh 규칙 {afterRetry}개");
+        await Wait(AppServices.Navigator.PopAsync());
+        Exec($"bash -c 'while pvesh delete {rulesPath}/0 >/dev/null 2>&1; do :; done'");
+    });
+
+    // 10) TOTP 로그인(tfa@pve) · 11) API 토큰 로그인 — 서버 목록으로 돌아가 새 프로필로 연결
+    async Task<ServerSession?> ConnectProfile(ConnectionProfile profile, string secretKind, string secret, Func<ProxmoxClient.UI.Views.Login.TfaDialog, Task>? tfa)
+    {
+        await Wait(AppServices.Navigator.PopToRootAsync());
+        Pump(500);
+        profile.Host = options.GetValueOrDefault("host", "127.0.0.1");
+        profile.Port = port;
+        profile.CertificateThumbprint = saved.CertificateThumbprint;
+        await AppServices.Profiles.SaveAsync(profile);
+        AppServices.SecretStore.Set($"profile.{profile.Id:N}.{secretKind}", secret);
+        await Wait(profiles.LoadAsync());
+        profiles.ConnectCommand.Execute(profiles.Profiles.First(p => p.Profile.Id == profile.Id));
+        if (tfa is not null)
+        {
+            ProxmoxClient.UI.Views.Login.TfaDialog? dialog = null;
+            WaitFor(() => (dialog = AppServices.Dialogs.Sheet as ProxmoxClient.UI.Views.Login.TfaDialog) is not null
+                          || AppServices.Dialogs.Current is not null, 20000);
+            if (dialog is null)
+            {
+                Result("totp-dialog", false, "창 없음: " + AppServices.Dialogs.Current?.Message);
+                AppServices.Dialogs.Current?.CancelCommand.Execute(null);
+                return null;
+            }
+
+            await tfa(dialog);
+        }
+
+        WaitFor(() => nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel || AppServices.Dialogs.Current is not null, 20000);
+        if (AppServices.Dialogs.Current is { } error)
+        {
+            Console.WriteLine($"DIALOG connect {profile.Name}: {error.Title} / {error.Message}");
+            error.CancelCommand.Execute(null);
+        }
+
+        return nav.CurrentPage?.DataContext switch
+        {
+            ClusterViewModel c => c.Session, MainViewModel m => m.Session, _ => null
+        };
+    }
+
+    var totpSecret = options.GetValueOrDefault("totp", Environment.GetEnvironmentVariable("PVE_TOTP_SECRET") ?? "");
+    if (totpSecret.Length > 0)
+        await Step("totp-login", async () =>
+        {
+            var tfaSession = await ConnectProfile(new ConnectionProfile { Name = "tfa", UserName = "tfa@pve" }, "password", pvePassword,
+                async dialog =>
+                {
+                    Shot("real-tfa-dialog");
+                    Result("totp-dialog", dialog.Kind == ProxmoxClient.Core.Api.TfaKind.Totp, $"{dialog.Kind}");
+                    await Wait(dialog.SubmitAsync("000000"));
+                    Pump(500);
+                    Shot("real-tfa-wrong");
+                    Result("totp-wrong", ReferenceEquals(AppServices.Dialogs.Sheet, dialog) && !dialog.Completed && dialog.CurrentError.Length > 0,
+                        dialog.CurrentError);
+                    // 바로 전 코드와 같은 30초 칸이면 서버가 다시 쓰기를 막을 수 있다 — 다음 칸까지 기다리지 않고 현재 코드
+                    await Wait(dialog.SubmitAsync(Totp(totpSecret)));
+                    WaitFor(() => dialog.Completed || AppServices.Dialogs.Sheet is null, 15000);
+                    if (!dialog.Completed && AppServices.Dialogs.Sheet is not null) Console.WriteLine("TOTP 오류: " + dialog.CurrentError);
+                });
+            Pump(1000);
+            Shot("real-tfa-done");
+            Result("totp-login", tfaSession is { UserDisplay: "tfa@pve" }, tfaSession?.UserDisplay ?? "(로그인 안 됨)");
+        });
+
+    var tokenId = options.GetValueOrDefault("token-id", Environment.GetEnvironmentVariable("PVE_TOKEN_ID") ?? "");
+    var tokenSecret = options.GetValueOrDefault("token-secret", Environment.GetEnvironmentVariable("PVE_TOKEN_SECRET") ?? "");
+    if (tokenId.Length > 0 && tokenSecret.Length > 0)
+        await Step("token-login", async () =>
+        {
+            var tokenSession = await ConnectProfile(
+                new ConnectionProfile { Name = "token", AuthMode = AuthMode.ApiToken, ApiTokenId = tokenId }, "token", tokenSecret, null);
+            var resources = tokenSession is null ? null : Do(() => tokenSession.Api.GetClusterResourcesAsync());
+            Pump(1500);
+            Shot("real-token-done");
+            Result("token-login", tokenSession is not null && resources?.Any(r => r.VmId == 100) == true,
+                $"{tokenSession?.UserDisplay ?? "(로그인 안 됨)"} · 자원 {resources?.Count ?? 0}개");
+        });
+}
 
 // ------------------------------------------------------------------ helpers
 
