@@ -20,6 +20,9 @@ public sealed partial class ProfilesViewModel : ViewModelBase
 
     [ObservableProperty] public partial bool IsEmpty { get; private set; }
 
+    /// <summary>지난 실행에서 앱이 죽어 남은 터미널 — 서버별 안내(누르면 그 서버로 로그인 → 다시 열지 묻는다).</summary>
+    public ObservableCollection<TerminalRestoreItem> PendingRestores { get; } = [];
+
     public override async void OnAppearing()
     {
         // 편집 화면에서 돌아올 때마다 다시 읽는다(저장·삭제 반영)
@@ -34,11 +37,30 @@ public sealed partial class ProfilesViewModel : ViewModelBase
             Profiles.Add(new ProfileItem(profile, AppServices.Profiles.GetSecret(profile) is not null));
 
         IsEmpty = Profiles.Count == 0;
+        RefreshPendingRestores();
         _loaded = true;
         await OnLoadedAsync();
     }
 
     public bool IsLoaded => _loaded;
+
+    /// <summary>다시 열 터미널 안내를 다시 만든다 — 지운 서버의 기록은 버린다.</summary>
+    private void RefreshPendingRestores()
+    {
+        Platform.SessionKeepAlive.DropPendingExcept(Profiles.Select(p => p.Profile.Id));
+        PendingRestores.Clear();
+        foreach (var item in Profiles)
+            if (TerminalRestore.PendingFor(item.Profile.Id) is { Count: > 0 } entries)
+                PendingRestores.Add(new TerminalRestoreItem(item, entries.Count));
+    }
+
+    /// <summary>안내를 닫는다 — 그 서버의 기록을 지운다.</summary>
+    [RelayCommand]
+    private void DismissRestore(TerminalRestoreItem restore)
+    {
+        Platform.SessionKeepAlive.TakePending(restore.Item.Profile.Id);
+        PendingRestores.Remove(restore);
+    }
 
     /// <summary>데스크톱 로그인 화면(Views/Login)이 목록을 읽은 뒤 마지막 로그인 서버를 고르는 자리. 모바일은 아무것도 하지 않는다.</summary>
     private partial Task OnLoadedAsync();
@@ -115,6 +137,8 @@ public sealed partial class ProfilesViewModel : ViewModelBase
             }
 
         await AppServices.Navigator.PushAsync(new ClusterViewModel(session));
+        await TerminalRestore.OfferAsync(session); // 앱이 죽어 끊긴 터미널이 이 서버에 있으면 다시 열지 묻는다
+        RefreshPendingRestores();
     }
 
     /// <summary>
@@ -191,6 +215,14 @@ public sealed partial class ProfilesViewModel : ViewModelBase
                 L.T("Cert_Trust"), true)
             : AppServices.Dialogs.ConfirmAsync(L.T("Cert_NewTitle"), L.T("Cert_NewText", details), L.T("Cert_Trust"));
     }
+}
+
+/// <summary>서버 목록 위 안내 한 줄 — "다시 열 터미널 N개 — 서버 이름".</summary>
+public sealed class TerminalRestoreItem(ProfileItem item, int count)
+{
+    public ProfileItem Item { get; } = item;
+
+    public string Text => L.T("Restore_Banner", count, Item.DisplayName);
 }
 
 /// <summary>목록의 프로필 한 줄.</summary>

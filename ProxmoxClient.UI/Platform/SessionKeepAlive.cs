@@ -1,3 +1,8 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using ProxmoxClient.Core.Models;
+using ProxmoxClient.Core.Profiles;
+
 namespace ProxmoxClient.UI.Platform;
 
 /// <summary>
@@ -17,7 +22,7 @@ public interface ISessionKeepAliveHost
 /// </summary>
 public static class SessionKeepAlive
 {
-    private static readonly Dictionary<object, string> Sessions = [];
+    private static readonly Dictionary<object, OpenTerminalEntry> Sessions = [];
     private static readonly List<object> Order = [];
 
     /// <summary>바꿔 넣으면 지금 연결된 세션을 바로 알려 준다.</summary>
@@ -41,8 +46,14 @@ public static class SessionKeepAlive
 
     public static void Acquire(object owner, string title)
     {
+        Acquire(owner, new OpenTerminalEntry { Title = title });
+    }
+
+    /// <summary>다시 열 수 있게 대상까지 남긴다(앱이 죽은 뒤 다음 실행에서 다시 연다).</summary>
+    public static void Acquire(object owner, OpenTerminalEntry entry)
+    {
         if (!Sessions.ContainsKey(owner)) Order.Add(owner);
-        Sessions[owner] = title;
+        Sessions[owner] = entry;
         Notify();
     }
 
@@ -62,56 +73,172 @@ public static class SessionKeepAlive
 
     private static void Notify()
     {
-        var titles = Order.Select(owner => Sessions[owner]).ToList();
-        Host?.Update(titles);
-        Persist(titles);
+        var entries = Order.Select(owner => Sessions[owner]).ToList();
+        Host?.Update(entries.Select(entry => entry.Title).ToList());
+        Persist();
     }
 
     /// <summary>
-    ///     열린 터미널 제목을 남겨 두는 파일 — 휴대폰·태블릿에서 앱이 터미널을 연 채로 죽으면(최근 앱에서 밀어 닫기,
-    ///     메모리 부족 등) 다음 실행 때 무엇이 끊겼는지 알린다. 정상적으로 닫으면 지워진다.
-    /// </summary>
-    public static string StatePath { get; set; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ProxmoxClient", "open-terminals.txt");
-
-    /// <summary>
-    ///     지난 실행에서 열려 있던 터미널 제목(앱이 그대로 죽었을 때만 남는다). 읽고 나면 지운다.
+    ///     열린 터미널 목록을 남겨 두는 파일(내용은 JSON — 이전 버전의 제목 줄 파일은 버린다) — 휴대폰·태블릿에서 앱이 터미널을 연 채로 죽으면(최근 앱에서 밀어 닫기,
+    ///     메모리 부족 등) 다음 실행 때 다시 열 수 있게 한다. 정상적으로 닫으면 지워진다.
     ///     데스크톱은 창을 닫아 끝내는 것이 정상 종료라 남기지 않는다.
     /// </summary>
-    public static IReadOnlyList<string> TakeOrphanedSessions()
+    public static string StatePath
+    {
+        get => _statePath;
+        set
+        {
+            _statePath = value;
+            _pending = null; // 새 파일에서 다시 읽는다
+        }
+    }
+
+    private static string _statePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ProxmoxClient", "open-terminals.txt");
+
+    private static List<OpenTerminalEntry>? _pending;
+
+    /// <summary>
+    ///     지난 실행에서 열려 있던(앱이 그대로 죽어 남은) 터미널 — 사용자가 다시 열거나 닫을 때까지 파일에도 남긴다
+    ///     (다시 열기 전에 앱이 또 죽어도 잃지 않게). 다시 열 수 없는 기록(대상이 없는 것)은 버린다.
+    /// </summary>
+    public static IReadOnlyList<OpenTerminalEntry> Pending => PendingList;
+
+    private static List<OpenTerminalEntry> PendingList
+    {
+        get
+        {
+            if (_pending is not null) return _pending;
+
+            _pending = PlatformInfo.IsTouch ? ReadState(StatePath).Where(entry => entry.CanReopen).ToList() : [];
+            return _pending;
+        }
+    }
+
+    /// <summary>이 서버(프로필)에서 다시 열 터미널을 꺼낸다 — 목록과 파일에서 빠진다.</summary>
+    public static IReadOnlyList<OpenTerminalEntry> TakePending(Guid profileId)
+    {
+        var taken = PendingList.Where(entry => entry.ProfileId == profileId).ToList();
+        if (taken.Count == 0) return taken;
+
+        PendingList.RemoveAll(entry => entry.ProfileId == profileId);
+        Persist();
+        return taken;
+    }
+
+    /// <summary>남은 프로필에 속하지 않은 기록(지운 서버)을 버린다.</summary>
+    public static void DropPendingExcept(IEnumerable<Guid> profileIds)
+    {
+        var keep = profileIds.ToHashSet();
+        if (PendingList.RemoveAll(entry => !keep.Contains(entry.ProfileId)) > 0) Persist();
+    }
+
+    /// <summary>파일 내용 — 못 읽거나 모양이 다르면(이전 버전 파일 포함) 빈 목록.</summary>
+    public static List<OpenTerminalEntry> ReadState(string path)
     {
         try
         {
-            if (!File.Exists(StatePath)) return [];
+            if (!File.Exists(path)) return [];
 
-            var titles = File.ReadAllLines(StatePath).Where(line => line.Length > 0).ToList();
-            File.Delete(StatePath);
-            return titles;
+            return JsonSerializer.Deserialize(File.ReadAllText(path), UiJsonContext.Default.ListOpenTerminalEntry) ?? [];
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
             return [];
         }
     }
 
-    private static void Persist(IReadOnlyList<string> titles)
+    private static void Persist()
     {
         if (!PlatformInfo.IsTouch) return;
 
         try
         {
-            if (titles.Count == 0)
+            var entries = Order.Select(owner => Sessions[owner]).Concat(PendingList).ToList();
+            if (entries.Count == 0)
             {
                 if (File.Exists(StatePath)) File.Delete(StatePath);
                 return;
             }
 
+            // 다 쓴 뒤 바꿔 넣는다 — 쓰는 도중에 앱이 죽어도 반쪽 파일이 남지 않게
             Directory.CreateDirectory(Path.GetDirectoryName(StatePath)!);
-            File.WriteAllLines(StatePath, titles.Select(title => title.ReplaceLineEndings(" ")));
+            var temp = StatePath + ".tmp";
+            File.WriteAllText(temp, JsonSerializer.Serialize(entries, UiJsonContext.Default.ListOpenTerminalEntry));
+            File.Move(temp, StatePath, true);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             AppLog.Warn($"open terminal list not saved: {ex.Message}");
         }
+    }
+}
+
+/// <summary>열린 터미널 하나 — 다시 열 서버(프로필)와 대상. 파일(open-terminals.txt, 내용은 JSON)에 이 모양으로 남는다.</summary>
+public sealed record OpenTerminalEntry
+{
+    /// <summary>서버 프로필(<see cref="ConnectionProfile.Id" />). 비어 있으면 다시 열 수 없다.</summary>
+    public Guid ProfileId { get; init; }
+
+    /// <summary>서버 이름(목록의 안내 문구).</summary>
+    public string ProfileName { get; init; } = string.Empty;
+
+    public string Title { get; init; } = string.Empty;
+
+    public string Node { get; init; } = string.Empty;
+
+    /// <summary>게스트 종류("Lxc"·"Qemu") — 노드 셸이면 null.</summary>
+    public string? GuestKind { get; init; }
+
+    public int VmId { get; init; }
+
+    public string? GuestName { get; init; }
+
+    /// <summary>노드 셸에서 실행한 명령(upgrade 등).</summary>
+    public string? Command { get; init; }
+
+    [JsonIgnore]
+    public bool CanReopen => ProfileId != Guid.Empty && Node.Length > 0 && Title.Length > 0
+                             && (GuestKind is null || (ParseKind() is not null && VmId > 0));
+
+    public static OpenTerminalEntry From(ConnectionProfile profile, ConsoleTarget target, string title,
+        PveResource? guest)
+    {
+        return new OpenTerminalEntry
+        {
+            ProfileId = profile.Id,
+            ProfileName = string.IsNullOrWhiteSpace(profile.Name) ? profile.Host : profile.Name,
+            Title = title,
+            Node = target.Node,
+            GuestKind = target.Kind?.ToString(),
+            VmId = target.VmId,
+            GuestName = guest?.Name,
+            Command = target.Command
+        };
+    }
+
+    public ConsoleTarget ToTarget()
+    {
+        return ParseKind() is { } kind ? ConsoleTarget.ForGuest(Node, kind, VmId) : ConsoleTarget.ForNode(Node, Command);
+    }
+
+    /// <summary>게스트 터미널이면 게스트(이름·노드만 채운 것 — 화면이 쓰는 정보).</summary>
+    public PveResource? ToGuest()
+    {
+        if (ParseKind() is not { } kind) return null;
+
+        return new PveResource
+        {
+            Id = $"{kind.ApiSegment()}/{VmId}",
+            Kind = kind,
+            VmId = VmId,
+            Name = GuestName ?? string.Empty,
+            Node = Node
+        };
+    }
+
+    private ResourceKind? ParseKind()
+    {
+        return GuestKind is not null && Enum.TryParse<ResourceKind>(GuestKind, out var kind) ? kind : null;
     }
 }

@@ -197,6 +197,101 @@ if (target == "tfa")
     Directory.Delete(profileDir, true);
     return failures == 0 ? 0 : 2;
 }
+// ---- 앱이 죽은 뒤 터미널 다시 열기(--target restore, 휴대폰): 남은 기록 → 서버 목록 안내 → 로그인 → 묻기 → 다시 열림(가짜 셸) ----
+if (target == "restore")
+{
+    if (desktop)
+    {
+        Console.WriteLine("SKIP restore: 휴대폰 화면 검사(--mode mobile)");
+        Directory.Delete(profileDir, true);
+        return 0;
+    }
+
+    var fakeProfile = profiles.Profiles[0].Profile;
+    var otherProfile = new ConnectionProfile { Name = "other", Host = "192.0.2.1", Port = port };
+    await AppServices.Profiles.SaveAsync(otherProfile);
+    // 지난 실행이 터미널 셋을 연 채로 죽었다(fake 서버 둘, 다른 서버 하나)
+    var statePath = Path.Combine(profileDir, "open-terminals.txt");
+    OpenTerminalEntry[] crashed =
+    [
+        OpenTerminalEntry.From(fakeProfile, ProxmoxClient.Core.Models.ConsoleTarget.ForNode("pve1"), "pve1 · 셸", null),
+        OpenTerminalEntry.From(otherProfile, ProxmoxClient.Core.Models.ConsoleTarget.ForNode("x"), "x · 셸", null),
+        OpenTerminalEntry.From(fakeProfile,
+            ProxmoxClient.Core.Models.ConsoleTarget.ForGuest("pve2", ProxmoxClient.Core.Models.ResourceKind.Lxc, 200),
+            "200 · dns", new ProxmoxClient.Core.Models.PveResource { Name = "dns" })
+    ];
+    File.WriteAllText(statePath, System.Text.Json.JsonSerializer.Serialize(crashed));
+    SessionKeepAlive.StatePath = statePath; // 새 실행 — 이 파일에서 읽는다
+    await Wait(profiles.LoadAsync());
+    Pump(400);
+    Shot("restore-banner");
+    var banners = string.Join(" / ", profiles.PendingRestores.Select(r => r.Text));
+    Check0("다시 열 터미널 안내", "서버별 한 줄(fake 2개, other 1개)", banners,
+        profiles.PendingRestores.Count == 2 && banners.Contains("2") && banners.Contains("fake") && banners.Contains("other"));
+
+    profiles.ConnectCommand.Execute(profiles.PendingRestores.First(r => r.Item.Profile.Id == fakeProfile.Id).Item);
+    var askedText = "";
+    var restoreDeadline = DateTime.UtcNow.AddSeconds(15);
+    while (DateTime.UtcNow < restoreDeadline && nav.CurrentPage?.DataContext is not TerminalViewModel)
+    {
+        if (AppServices.Dialogs.Current is { } d)
+        {
+            if (d.Title == L.T("Restore_PromptTitle"))
+            {
+                askedText = d.Message;
+                Shot("restore-prompt");
+            }
+            d.ConfirmCommand.Execute(null); // 인증서 신뢰 → 다시 열기
+        }
+        Pump(150);
+    }
+    Check0("로그인 뒤 묻기", "터미널 2개 제목", askedText.Replace("\n", " "),
+        askedText.Contains("2") && askedText.Contains("pve1 · 셸") && askedText.Contains("200 · dns") && !askedText.Contains("x · 셸"));
+
+    string TermScreen(ProxmoxClient.UI.Views.Terminal.TerminalPage tp)
+    {
+        var buf = tp.Terminal.Buffer;
+        lock (buf.Gate)
+            return string.Join("\n", Enumerable.Range(0, buf.Rows).Select(r =>
+                new string(buf.GetVisibleLine(r, 0).Cells.Where(c => c.Width != 0)
+                    .SelectMany(c => char.ConvertFromUtf32(c.Rune == 0 ? ' ' : c.Rune)).ToArray()).TrimEnd()));
+    }
+
+    bool Connected(string title) => nav.CurrentPage is ProxmoxClient.UI.Views.Terminal.TerminalPage tp
+                                    && tp.DataContext is TerminalViewModel { IsConnected: true } tv && tv.Title == title
+                                    && TermScreen(tp).Contains("가짜 Proxmox 셸");
+    WaitFor(() => Connected("200 · dns"), 10000);
+    var topVm = nav.CurrentPage?.DataContext as TerminalViewModel;
+    Shot("restore-terminal");
+    Check0("다시 연 터미널(맨 위)", "200 · dns · lxc/200 경로 · 가짜 셸 연결",
+        $"{topVm?.Title} · {topVm?.Target.BasePath} · {(topVm?.IsConnected == true ? "연결됨" : topVm?.StateText)}",
+        Connected("200 · dns") && topVm?.Target.BasePath == "nodes/pve2/lxc/200" && topVm.Guest?.Name == "dns");
+    var left = SessionKeepAlive.ReadState(statePath);
+    Check0("남은 기록", "다른 서버 것만 남고 연 터미널은 새로 기록",
+        string.Join(", ", left.Select(e => e.Title)),
+        SessionKeepAlive.Pending.Count == 1 && SessionKeepAlive.Pending[0].Title == "x · 셸"
+        && left.Any(e => e.Title == "200 · dns") && left.Any(e => e.Title == "x · 셸"));
+
+    await Wait(AppServices.Navigator.PopAsync()); // 아래 터미널은 보일 때 연결한다
+    WaitFor(() => Connected("pve1 · 셸"), 10000);
+    Check0("뒤로 → 아래 터미널", "pve1 · 셸 연결", (nav.CurrentPage?.DataContext as TerminalViewModel)?.Title ?? "(없음)",
+        Connected("pve1 · 셸"));
+
+    await Wait(AppServices.Navigator.PopToRootAsync());
+    await Wait(profiles.LoadAsync());
+    Pump(300);
+    Check0("목록으로 돌아오면", "다른 서버 안내만", string.Join(" / ", profiles.PendingRestores.Select(r => r.Text)),
+        profiles.PendingRestores.Count == 1 && profiles.PendingRestores[0].Item.Profile.Id == otherProfile.Id);
+    profiles.DismissRestoreCommand.Execute(profiles.PendingRestores[0]);
+    Pump(800);
+    Check0("안내 닫기", "기록이 지워짐(열린 터미널 없음 → 파일 없음)",
+        $"안내 {profiles.PendingRestores.Count}개, 파일 {(File.Exists(statePath) ? "있음" : "없음")}",
+        profiles.PendingRestores.Count == 0 && SessionKeepAlive.Pending.Count == 0 && !File.Exists(statePath));
+
+    Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
+    Directory.Delete(profileDir, true);
+    return failures == 0 ? 0 : 2;
+}
 profiles.ConnectCommand.Execute(profiles.Profiles[0]);
 WaitFor(() => AppServices.Dialogs.Current is not null || nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel);
 AppServices.Dialogs.Current?.ConfirmCommand.Execute(null); // 인증서 신뢰

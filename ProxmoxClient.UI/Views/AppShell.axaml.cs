@@ -51,7 +51,6 @@ public partial class AppShell : UserControl
     }
 
     private static AppShell? _shared;
-    private static bool _orphansChecked;
 
     protected override async void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
@@ -71,11 +70,6 @@ public partial class AppShell : UserControl
         ClipboardHelper.TopLevel = _topLevel;
 
         if (_navigation.CurrentPage is null) await AppServices.Navigator.PushAsync(new ProfilesViewModel());
-        if (!_orphansChecked)
-        {
-            _orphansChecked = true;
-            NotifyOrphanedSessions();
-        }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -102,16 +96,6 @@ public partial class AppShell : UserControl
                 DialogInput.Focus();
                 DialogInput.SelectAll();
             }, Avalonia.Threading.DispatcherPriority.Input);
-    }
-
-    /// <summary>지난 실행이 터미널을 연 채로 끝났으면(앱이 죽음) 끊긴 터미널을 알린다.</summary>
-    private static void NotifyOrphanedSessions()
-    {
-        var titles = Platform.SessionKeepAlive.TakeOrphanedSessions();
-        if (titles.Count == 0) return;
-
-        _ = AppServices.Dialogs.AlertAsync(L.T("KeepAlive_OrphanedTitle"),
-            L.T("KeepAlive_OrphanedMessage", string.Join("\n", titles.Select(title => "• " + title))));
     }
 
     private void OnSafeAreaChanged(object? sender, SafeAreaChangedArgs e)

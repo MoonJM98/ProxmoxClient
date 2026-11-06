@@ -1,6 +1,6 @@
 using ProxmoxClient.UI.Platform;
 
-/// <summary>앱 기록 파일 돌리기·끊긴 터미널 목록 남기기(휴대폰·태블릿) 검사.</summary>
+/// <summary>앱 기록 파일 돌리기 검사(끊긴 터미널 목록은 TerminalRestoreTests).</summary>
 public static class PlatformLifecycleTests
 {
     public static void AppLogRotatesAtLimit(Checker c)
@@ -34,48 +34,6 @@ public static class PlatformLifecycleTests
         {
             AppLog.Directory = saved;
             if (Directory.Exists(dir)) Directory.Delete(dir, true);
-        }
-    }
-
-    public static void OrphanedTerminalsArePersistedOnTouch(Checker c)
-    {
-        var path = Path.Combine(Path.GetTempPath(), "orphans-" + Guid.NewGuid().ToString("N"), "open-terminals.txt");
-        var savedPath = SessionKeepAlive.StatePath;
-        var savedForm = PlatformInfo.FormFactor;
-        var a = new object();
-        var b = new object();
-        try
-        {
-            SessionKeepAlive.StatePath = path;
-            PlatformInfo.FormFactor = FormFactor.Mobile;
-            SessionKeepAlive.Acquire(a, "100 · ct");
-            SessionKeepAlive.Acquire(b, "pve · Shell");
-            c.Equal("100 · ct|pve · Shell", string.Join("|", File.ReadAllLines(path)), "열린 터미널 기록");
-            SessionKeepAlive.Release(a);
-            c.Equal("pve · Shell", string.Join("|", File.ReadAllLines(path)), "닫으면 빠진다");
-
-            // 앱이 죽은 뒤 다음 실행 — 읽으면 지운다
-            c.Equal("pve · Shell", string.Join("|", SessionKeepAlive.TakeOrphanedSessions()), "지난 실행의 터미널");
-            c.Is(!File.Exists(path), "읽은 뒤 지운다");
-            c.Equal(0, SessionKeepAlive.TakeOrphanedSessions().Count, "두 번째는 없다");
-
-            SessionKeepAlive.Acquire(b, "pve · Shell");
-            SessionKeepAlive.Release(b);
-            c.Is(!File.Exists(path), "모두 닫으면 파일이 없다");
-
-            // 데스크톱은 창을 닫는 것이 정상 종료 — 남기지 않는다
-            PlatformInfo.FormFactor = FormFactor.Desktop;
-            SessionKeepAlive.Acquire(a, "desk");
-            c.Is(!File.Exists(path), "데스크톱은 남기지 않는다");
-            SessionKeepAlive.Release(a);
-        }
-        finally
-        {
-            SessionKeepAlive.Release(a);
-            SessionKeepAlive.Release(b);
-            SessionKeepAlive.StatePath = savedPath;
-            PlatformInfo.FormFactor = savedForm;
-            if (Path.GetDirectoryName(path) is { } dir && Directory.Exists(dir)) Directory.Delete(dir, true);
         }
     }
 }

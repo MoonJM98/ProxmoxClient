@@ -802,13 +802,25 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="KeepAlive_DisconnectAll" xml:space="preserve">
     <value>Disconnect all</value>
   </data>
-  <data name="KeepAlive_OrphanedTitle" xml:space="preserve">
-    <value>Terminal connections were lost</value>
+  <data name="Restore_PromptTitle" xml:space="preserve">
+    <value>Reopen terminals</value>
   </data>
-  <data name="KeepAlive_OrphanedMessage" xml:space="preserve">
-    <value>The app was closed last time while terminals were open, so these connections were lost. Sign in to the server again and reopen the terminal.
+  <data name="Restore_PromptMessage" xml:space="preserve">
+    <value>Reopen the {0} terminals that were open last time?
 
-{0}</value>
+{1}</value>
+  </data>
+  <data name="Restore_Reopen" xml:space="preserve">
+    <value>Reopen</value>
+  </data>
+  <data name="Restore_Banner" xml:space="preserve">
+    <value>{0} terminals to reopen — {1}</value>
+  </data>
+  <data name="Restore_BannerHint" xml:space="preserve">
+    <value>The app was closed last time while terminals were open. Tap to sign in and reopen them.</value>
+  </data>
+  <data name="Restore_Dismiss" xml:space="preserve">
+    <value>Dismiss</value>
   </data>
   <data name="Terminal_ReconnectedAfterBackground" xml:space="preserve">
     <value>This device can't keep terminal connections while the app is in the background, so a new connection was opened (work in the previous shell does not carry over).</value>

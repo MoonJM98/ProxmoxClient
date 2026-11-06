@@ -122,7 +122,9 @@ public sealed partial class TerminalViewModel : ViewModelBase
     /// <summary>연결된 동안 배경에서도 살려 두도록 등록한다(알림에 제목이 보인다).</summary>
     partial void OnIsConnectedChanged(bool value)
     {
-        if (value && !IsRemoved) Platform.SessionKeepAlive.Acquire(this, Title);
+        // 대상까지 남겨 앱이 죽은 뒤 다음 실행에서 다시 열 수 있게 한다(TerminalRestore)
+        if (value && !IsRemoved)
+            Platform.SessionKeepAlive.Acquire(this, Platform.OpenTerminalEntry.From(Api.Profile, Target, Title, Guest));
         else Platform.SessionKeepAlive.Release(this);
     }
 

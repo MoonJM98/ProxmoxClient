@@ -5,12 +5,25 @@ namespace ProxmoxClient.Core.Models;
 /// </summary>
 public sealed class ConsoleTarget
 {
-    private ConsoleTarget(string basePath, string displayName, string? command = null)
+    private ConsoleTarget(string basePath, string displayName, string node, ResourceKind? kind, int vmId,
+        string? command = null)
     {
         BasePath = basePath;
         DisplayName = displayName;
+        Node = node;
+        Kind = kind;
+        VmId = vmId;
         Command = command;
     }
+
+    /// <summary>노드 이름.</summary>
+    public string Node { get; }
+
+    /// <summary>게스트 종류 — 노드 셸이면 null.</summary>
+    public ResourceKind? Kind { get; }
+
+    /// <summary>게스트 번호 — 노드 셸이면 0.</summary>
+    public int VmId { get; }
 
     /// <summary>termproxy·vncwebsocket 앞까지의 API 상대 경로(이미 이스케이프됨).</summary>
     public string BasePath { get; }
@@ -23,11 +36,12 @@ public sealed class ConsoleTarget
 
     public static ConsoleTarget ForGuest(string node, ResourceKind kind, int vmid)
     {
-        return new ConsoleTarget($"nodes/{Uri.EscapeDataString(node)}/{kind.ApiSegment()}/{vmid}", vmid.ToString());
+        return new ConsoleTarget($"nodes/{Uri.EscapeDataString(node)}/{kind.ApiSegment()}/{vmid}", vmid.ToString(),
+            node, kind, vmid);
     }
 
     public static ConsoleTarget ForNode(string node, string? command = null)
     {
-        return new ConsoleTarget($"nodes/{Uri.EscapeDataString(node)}", node, command);
+        return new ConsoleTarget($"nodes/{Uri.EscapeDataString(node)}", node, node, null, 0, command);
     }
 }
