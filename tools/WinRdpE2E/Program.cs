@@ -175,7 +175,8 @@ internal sealed class E2E(Dictionary<string, string> options)
         _session = session;
         // NLA: 서버가 고른 보안 프로토콜(X.224 연결 확인의 selectedProtocol) — 1=TLS, 2=CredSSP, 8=CredSSP+EarlyUserAuth
         var confirm = ServerLog().Split('\n').LastOrDefault(l => l.StartsWith("RDP x224 confirm "))?.Trim();
-        var selected = confirm is null ? -1 : SelectedProtocol(confirm["RDP x224 confirm ".Length..]);
+        // 로그 형식: "RDP x224 confirm <16진> selected=0x..." — 16진 부분만(뒤에 붙는 꼬리는 버린다)
+        var selected = confirm is null ? -1 : SelectedProtocol(confirm["RDP x224 confirm ".Length..].Split(' ')[0]);
         Check("nla", selected is 2 or 8, $"selectedProtocol={selected} ({confirm})");
 
         // 세션 안 로그온이 끝날 때까지(탐색기)
