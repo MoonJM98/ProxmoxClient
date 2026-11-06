@@ -74,17 +74,40 @@ public sealed partial class ProxmoxApiClient
         // 닫히지 않게 감싸고, 끝나면 여기서 닫는다. 탐색되는 스트림은 다시 보낼 때 처음으로 돌린다
         await using var owned = stream;
         var start = stream.CanSeek ? stream.Position : 0;
-        using var response = await SendAsync(() =>
-                {
-                    if (stream.CanSeek) stream.Position = start;
-                    return new HttpRequestMessage(HttpMethod.Post,
-                        $"nodes/{Escape(node)}/storage/{Escape(storage)}/upload")
+        // 파일 업로드와 같은 멈춤 감시 — 보내기 시작한 뒤 진척 없이 오래 있으면 끊는다
+        using var idle = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        void Touch()
+        {
+            try
+            {
+                idle.CancelAfter(UploadIdleTimeout);
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
+        HttpResponseMessage sent;
+        try
+        {
+            sent = await SendAsync(() =>
                     {
-                        Content = BuildUploadForm(content, new KeepOpenStream(stream), length, fileName, checksum,
-                            progress)
-                    };
-                }, true, ct, Timeout.InfiniteTimeSpan)
-            .ConfigureAwait(false);
+                        if (stream.CanSeek) stream.Position = start;
+                        return new HttpRequestMessage(HttpMethod.Post,
+                            $"nodes/{Escape(node)}/storage/{Escape(storage)}/upload")
+                        {
+                            Content = BuildUploadForm(content, new KeepOpenStream(stream), length, fileName, checksum,
+                                progress, Touch)
+                        };
+                    }, true, idle.Token, Timeout.InfiniteTimeSpan)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new ProxmoxApiException(0, null, Res.T("ProxmoxApiClient_10"));
+        }
+
+        using var response = sent;
         using var doc = await ReadJsonDocumentAsync(response, ct).ConfigureAwait(false);
         var data = DataElement(doc);
         return data.ValueKind == JsonValueKind.String ? data.GetString() ?? string.Empty : string.Empty;
@@ -110,7 +133,7 @@ public sealed partial class ProxmoxApiClient
 
     /// <summary>스트림 업로드 본문 — 필드(content·checksum)를 파일보다 먼저 넣고 파일 길이를 알린다.</summary>
     internal static MultipartFormDataContent BuildUploadForm(string content, Stream stream, long length,
-        string fileName, (string Value, string Algorithm)? checksum, IProgress<double>? progress)
+        string fileName, (string Value, string Algorithm)? checksum, IProgress<double>? progress, Action? onRead = null)
     {
         var form = new MultipartFormDataContent();
         void Field(string name, string value)
@@ -127,7 +150,7 @@ public sealed partial class ProxmoxApiClient
             Field("checksum-algorithm", sum.Algorithm);
         }
 
-        var file = new StreamContent(new ProgressStream(stream, length, progress), UploadBufferSize);
+        var file = new StreamContent(new ProgressStream(stream, length, progress, onRead), UploadBufferSize);
         file.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
         // 선택기 스트림은 탐색이 안 돼 길이를 스스로 셀 수 없다 — 알려 준 길이를 그대로 쓴다(청크 전송 방지)
         file.Headers.ContentLength = length;

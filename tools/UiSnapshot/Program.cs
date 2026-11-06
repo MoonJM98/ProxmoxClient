@@ -395,6 +395,8 @@ async Task MainScreensCheck()
         cancellable && handled && !AppServices.Dialogs.IsBusyVisible && took.TotalSeconds < 3 && AppServices.Dialogs.Current is null &&
         ReferenceEquals(nav.CurrentPage, before));
     FakeSet("ticket_delay_ms=0");
+}
+
 // ---- 관리 기능 검사(한 덩어리): 방화벽 규칙 지우기에 digest · digest 불일치면 다시 읽고 알림 · 백업 "압축 없음" = compress=0 ·
 // CT 스냅숏에는 RAM 칸이 없다. 서버가 받은 값은 로그의 'MANAGE ...' 줄로 비교한다
 if (target == "manage")
