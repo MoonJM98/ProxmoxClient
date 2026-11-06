@@ -158,7 +158,21 @@ internal sealed class Harness(int? fakePvePort, string? filter)
         }
 
         Check(echo.SequenceEqual(payload), "PING 되돌림 내용");
-        return $"{key.Hidraw} report_descriptor 0xF1D0 · INIT cid={cid:X8} caps=0x{init[23]:X2} · PING 150B(3틀) 같음 · key pings={key.Pings}";
+        // sysfs report_descriptor: 알린 크기와 실제 길이(공급자가 장치를 찾는 방법)
+        var sys = $"/sys/class/hidraw/{Path.GetFileName(key.Hidraw)}/device/report_descriptor";
+        var descriptor = ReadSysfs(sys);
+        Check(descriptor.SequenceEqual(UhidDevice.FidoReportDescriptor), "report_descriptor 내용");
+        string readAll;
+        try
+        {
+            readAll = $"File.ReadAllBytes {File.ReadAllBytes(sys).Length}B";
+        }
+        catch (Exception ex)
+        {
+            readAll = $"File.ReadAllBytes → {ex.GetType().Name}";
+        }
+
+        return $"{key.Hidraw} report_descriptor {descriptor.Length}B(stat {new FileInfo(sys).Length}B, {readAll}) 0xF1D0 · INIT cid={cid:X8} caps=0x{init[23]:X2} · PING 150B(3틀) 같음 · key pings={key.Pings}";
     }
 
     private async Task<string> NoPinAsync()
@@ -420,7 +434,7 @@ internal sealed class Harness(int? fakePvePort, string? filter)
         {
             try
             {
-                return File.ReadAllBytes(Path.Combine(d, "device", "report_descriptor")).AsSpan()
+                return ReadSysfs(Path.Combine(d, "device", "report_descriptor")).AsSpan()
                     .IndexOf([(byte)0x06, (byte)0xD0, (byte)0xF1]) >= 0;
             }
             catch (IOException)
@@ -428,6 +442,14 @@ internal sealed class Harness(int? fakePvePort, string? filter)
                 return false;
             }
         }), 5000);
+    }
+
+    private static byte[] ReadSysfs(string path)
+    {
+        using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 0);
+        using var ms = new MemoryStream();
+        fs.CopyTo(ms);
+        return ms.ToArray();
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition, int ms)
