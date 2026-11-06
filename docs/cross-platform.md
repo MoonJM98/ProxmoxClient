@@ -105,7 +105,8 @@ GPU 경로가 초기화는 되는데 창이 검게 나오면 `PROXMOXCLIENT_REND
 | VNC 콘솔 조작(제스처·물리 키·화면 키보드 Shift/두벌식·클립보드) | `--target console` | 모바일·데스크톱 통과 |
 | 해석기·순수 논리 | `dotnet run --project tools/TerminalTests` (터미널 제어열·질의·유니코드·다시 감기·입력 부호, RDP 키, 2단계 인증·보안 키(CTAP2·PIN·U2F, 소프트웨어 키), 관리 입력 검사, 터미널 다시 열기 등) | 687/687 |
 | Core 단위 검사 | `dotnet test tests/ProxmoxClient.Core.Tests` (RFB 디코딩·VNC 인증·PVE 응답·저장소·UPID) | 60/60 |
-| RDP 실제 서버 | xrdp + 가짜 PVE rdpproxy(RDCleanPath) + `--target rdp` (IronRDP 2026.10.29, 고쳐 쓰기 없음) | 연결·로그인 화면·입력·한글 유니코드 키·해상도 맞춤·다시 연결 통과. CredSSP(NLA)는 xrdp 가 없어 미확인 |
+| RDP 실제 서버 | xrdp·FreeRDP(NLA) + 가짜 PVE rdpproxy(RDCleanPath) + `--target rdp` (IronRDP 2026.10.29), Windows Server 2025(러너 자신, NLA 필수) + `tools/WinRdpE2E` | 연결·CredSSP/NTLM(HYBRID·HYBRID_EX)·로그인 실패 안내·화면·입력·한글 유니코드 키·해상도 맞춤·다시 연결·Windows 클립보드 양방향 통과 |
+| 보안 키(USB, Linux) | GitHub 러너의 `/dev/uhid` 가상 FIDO 키(`tools/VirtualFido`) + 실제 `LinuxHidWebAuthnProvider` | CTAP2·PIN v1/v2·U2F·취소·뽑기·로그인 12개 통과. 실제 키·NFC·Windows/macOS 경로는 실물 확인 필요 |
 | 로그인 | `--target tfa`·`--target webauthn`(가짜 키)·`--target restore` | 통과 — 실제 보안 키는 미확인 |
 | CI | `.github/workflows/ci.yml` (Linux 빌드·검사·화면·RDP, Windows WPF, Android APK, macOS Desktop·iOS) | 모두 통과 |
 | 터미널 해석·입력 | `--target terminal` (가짜 셸: + 손잡이 선택·동기화 출력·마우스 보고 중 스크롤) | 모바일 20/20 |
@@ -116,7 +117,7 @@ GPU 경로가 초기화는 되는데 창이 검게 나오면 `PROXMOXCLIENT_REND
 | Linux 실제 데스크톱 | 릴리스 빌드를 Xvfb(X11) 에서 실행, xdotool 로 조작 | 인증서 확인·로그인·메인·CT 터미널(vim·top)·VNC 콘솔(물리 키 → 스캔코드) 정상 |
 | Linux 렌더링 경로 | 같은 실행에서 `PROXMOXCLIENT_LOG=1` 로 초기화 기록 확인 | GPU 없음: Vulkan(드라이버 없음) → EGL(libEGL 없음) → GLX(llvmpipe 는 Avalonia 가 거부) → 소프트웨어로 정상 전환. Mesa lavapipe 를 깔면 **Vulkan** 으로 그리며 로그인·메인·CT 터미널·VNC(타일 업로드·확대)·휠 입력 정상 |
 | Windows 빌드(Wine 9, Xvfb) | win-x64 자체 포함 빌드를 Wine 으로 실행 | Win32 플랫폼으로 시작. ANGLE(D3D11) 은 Wine 의 D3D 변환에서 창이 검게 나옴(Wine 한계로 보임 — 실제 Windows 미확인) → `PROXMOXCLIENT_RENDER=software` 로 로그인 화면 정상(라벨 'Software · Windows · Desktop'). 가짜 서버에 Windows 빌드로 접속: 자체 서명 인증서 확인 창 → 신뢰 → 영역 목록 받기 → 틀린 비밀번호는 '사용자 이름·비밀번호·영역이 맞지 않습니다' → 맞는 비밀번호로 메인(게스트 5·노드 2, 자동 새로고침, 상세 그래프) → 더블클릭으로 VNC 콘솔(웹소켓·화면·커서 모양, 클릭 mask=1, 키 a/b → QEMU 스캔코드 0x1e/0x30) |
-| Android | 헤드 빌드(AOT 설정 포함) | 빌드만 — 실기기·에뮬레이터 확인 필요(이 환경은 KVM 없음) |
+| Android 실제 동작 | GitHub Actions 에뮬레이터(API 35, x86_64) + 디버그 전용 자동화 고리 + `tools/AndroidE2E/e2e.sh` (`.github/workflows/android-e2e.yml`) | 35개 통과 — 안전 영역(제스처·3버튼), 액티비티 재생성 뒤 같은 셸, 연결 유지 서비스·알림·[모두 끊기]·연결 직후 끊김 10회, 마우스 우클릭(uinput)·뒤로 가기, 화면 보호. 알려진 것: 보호한 채 최근 앱에서 돌아온 뒤 끄면 앱을 나갈 때까지 캡처가 검다(시스템 최근 앱 상태 — 앱 밖) |
 | Windows·macOS | 빌드(WPF·데스크톱 헤드) | 실기기 확인 필요(Direct3D/ANGLE·Metal 경로, Credential Manager·Keychain, remote-viewer·openvpn 실행) |
 | 실제 Proxmox 서버 | — | 실서버 확인 필요(가짜 서버는 PVE 9.0 API 응답 형식을 따른다) |
 
