@@ -8,7 +8,7 @@ namespace ProxmoxClient.Core.Profiles;
 ///     %APPDATA%\ProxmoxClient\profiles\ (overridable directory). Per-profile files
 ///     keep a single damaged file from affecting the others; writes are atomic
 ///     (<see cref="AtomicFile" />: temp file + flush + replace with .bak). Corrupt files are preserved as a copy and
-///     skipped on load.
+///     restored from the .bak copy when that one is valid, otherwise skipped on load.
 /// </summary>
 public sealed class ProfileStore
 {
@@ -102,33 +102,48 @@ public sealed class ProfileStore
             return null;
         }
 
-        ConnectionProfile? profile;
-        try
+        var profile = TryParse(raw);
+        if (profile is null)
         {
-            profile = JsonSerializer.Deserialize<ConnectionProfile>(raw, SerializerOptions);
-        }
-        catch (JsonException)
-        {
-            AtomicFile.PreserveCorrupt(file); // 손상 프로필은 사본을 남기고 건너뜀(원본 유지)
-            return null;
-        }
+            // 손상 프로필은 사본을 남기고, 직전 저장본(.bak)이 멀쩡하면 그것으로 되살린다. 둘 다 안 되면 건너뜀(원본 유지)
+            AtomicFile.PreserveCorrupt(file);
+            if (await AtomicFile.TryRestoreBackupAsync(file, text => TryParse(text) is not null, ct)
+                    .ConfigureAwait(false) is not { } restored)
+                return null;
 
-        if (profile is null) return null;
+            raw = restored;
+            profile = TryParse(raw);
+            if (profile is null) return null;
+        }
 
         // 레거시 마이그레이션: 과거 버전이 디스크에 평문으로 저장한 비밀값 제거(비밀번호·토큰은 삭제, 프록시 비밀번호는 암호화).
         // 이전 내용(평문 포함)이 .bak 에 남으면 안 되므로 백업 없이 교체한다.
-        // 저장이 실패해도 프로필은 목록에 표시한다 — 다음 로드에서 다시 시도.
+        // 무슨 이유로든 저장이 실패해도 프로필은 목록에 표시한다 — 다음 로드에서 다시 시도.
         try
         {
             if (ContainsPlainSecret(raw)) await SaveCoreAsync(profile, false, ct).ConfigureAwait(false);
 
             await ProtectBackupAsync(file, ct).ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
         }
 
         return profile;
+    }
+
+    /// <summary>프로필 JSON 해석 — 형식이 깨졌거나 해석 중 어떤 오류가 나도 null.</summary>
+    private static ConnectionProfile? TryParse(string raw)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<ConnectionProfile>(raw, SerializerOptions);
+        }
+        catch (Exception ex) when (ex is JsonException or NotSupportedException or ArgumentException
+                                       or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     private static bool ContainsPlainSecret(string raw)

@@ -283,6 +283,12 @@ public sealed class ProxmoxTerminalSession : IDisposable
             var finished = await Task.WhenAny(receive, send, ping).ConfigureAwait(false);
             await finished.ConfigureAwait(false);
         }
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested
+                                                   && socket.State == WebSocketState.Aborted)
+        {
+            // 연결 유지 확인(ping/pong) 시간 초과 — 소켓이 끊겼다. 정상 종료가 아니라 연결 끊김으로 알린다
+            error = new IOException(Res.T("ConsoleSocket_Lost"), ex);
+        }
         catch (OperationCanceledException)
         {
             // 정상 종료

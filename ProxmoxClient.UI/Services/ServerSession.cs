@@ -44,8 +44,10 @@ public sealed class ServerSession(ProxmoxApiClient api, ConnectionProfile profil
         {
             if (_disposed) return;
 
+            // API 토큰은 갱신할 수 없다 — 401 이면 토큰이 철회된 것
+            var text = Profile.AuthMode == AuthMode.ApiToken ? "Session_TokenRejectedText" : "Session_ExpiredText";
             await AppServices.Dialogs.AlertAsync(Localization.L.T("Session_ExpiredTitle"),
-                Localization.L.T("Session_ExpiredText", DisplayName));
+                Localization.L.T(text, DisplayName));
             if (!_disposed) await AppServices.Navigator.PopToRootAsync();
         });
     }

@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using ProxmoxClient.Core.Localization;
 
 namespace ProxmoxClient.Core.Api;
 
@@ -8,9 +9,13 @@ public sealed partial class ProxmoxApiClient
     /// <summary>업로드 버퍼 — 너무 작으면 느리고, 크게 잡아도 이득이 거의 없다.</summary>
     private const int UploadBufferSize = 1 << 20;
 
+    /// <summary>보내는 도중 이만큼 파일을 더 읽어 가지 않으면(서버·회선이 멈춤) 끊긴 것으로 본다. 다 보낸 뒤 응답 대기에도 쓴다.</summary>
+    private static readonly TimeSpan UploadIdleTimeout = TimeSpan.FromMinutes(2);
+
     /// <summary>
     ///     로컬 파일을 저장소에 올린다(POST nodes/{node}/storage/{storage}/upload) — ISO·CT 템플릿 등.
-    ///     파일은 메모리에 통째로 읽지 않고 흘려 보내며, 수 GB 파일도 올릴 수 있도록 제한 시간을 두지 않는다.
+    ///     파일은 메모리에 통째로 읽지 않고 흘려 보내며, 수 GB 파일도 올릴 수 있도록 전체 제한 시간은 두지 않는다.
+    ///     대신 보내기 시작한 뒤 <see cref="UploadIdleTimeout" /> 넘게 진척이 없으면 멈춘다(쓰기 확인 대기에는 걸지 않는다).
     ///     서버는 받은 파일을 옮기는 작업(UPID)을 돌려준다.
     /// </summary>
     /// <param name="content">서버 콘텐츠 종류: iso, vztmpl, import.</param>
@@ -19,12 +24,34 @@ public sealed partial class ProxmoxApiClient
     public async Task<string> UploadToStorageAsync(string node, string storage, string content, string filePath,
         IProgress<double>? progress = null, CancellationToken ct = default)
     {
-        using var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Post,
-                    $"nodes/{Escape(node)}/storage/{Escape(storage)}/upload")
-                {
-                    Content = BuildUploadForm(content, filePath, progress)
-                }, true, ct, Timeout.InfiniteTimeSpan)
-            .ConfigureAwait(false);
+        using var idle = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        void Touch()
+        {
+            try
+            {
+                idle.CancelAfter(UploadIdleTimeout); // 조각을 읽어 갈 때마다 다시 잰다
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Post,
+                        $"nodes/{Escape(node)}/storage/{Escape(storage)}/upload")
+                    {
+                        Content = BuildUploadForm(content, filePath, progress, Touch)
+                    }, true, idle.Token, Timeout.InfiniteTimeSpan)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new ProxmoxApiException(0, null, Res.T("ProxmoxApiClient_10"));
+        }
+
+        using var _ = response;
         using var doc = await ReadJsonDocumentAsync(response, ct).ConfigureAwait(false);
         var data = DataElement(doc);
         return data.ValueKind == JsonValueKind.String ? data.GetString() ?? string.Empty : string.Empty;
@@ -35,7 +62,7 @@ public sealed partial class ProxmoxApiClient
     ///     따옴표로 감싼다(서버 쪽 multipart 파서가 이 형식을 기대한다). 파일 길이를 알려 청크 전송을 피한다.
     /// </summary>
     internal static MultipartFormDataContent BuildUploadForm(string content, string filePath,
-        IProgress<double>? progress)
+        IProgress<double>? progress, Action? onRead = null)
     {
         var fileName = Path.GetFileName(filePath);
         var length = new FileInfo(filePath).Length;
@@ -48,7 +75,7 @@ public sealed partial class ProxmoxApiClient
         form.Add(contentPart);
 
         var file = new StreamContent(
-            new ProgressStream(File.OpenRead(filePath), length, progress), UploadBufferSize);
+            new ProgressStream(File.OpenRead(filePath), length, progress, onRead), UploadBufferSize);
         file.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
         file.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
         {
@@ -62,7 +89,8 @@ public sealed partial class ProxmoxApiClient
     ///     읽은 양을 알려 주는 읽기 전용 스트림 — 업로드 진행률용. 길이·위치는 원래 파일 스트림을 그대로 따라
     ///     요청에 Content-Length 가 붙게 한다(청크 전송은 서버가 받지 못한다).
     /// </summary>
-    private sealed class ProgressStream(Stream inner, long length, IProgress<double>? progress) : Stream
+    private sealed class ProgressStream(Stream inner, long length, IProgress<double>? progress, Action? onRead)
+        : Stream
     {
         private long _read;
 
@@ -94,6 +122,7 @@ public sealed partial class ProxmoxApiClient
 
         private int Report(int count)
         {
+            onRead?.Invoke();
             _read += count;
             if (length > 0) progress?.Report((double)_read / length);
             return count;

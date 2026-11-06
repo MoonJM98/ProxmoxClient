@@ -108,6 +108,9 @@
     <data name="ProxmoxTerminalSession_06" xml:space="preserve">
     <value>Terminal authentication failed. Check the VM.Console privilege and whether the ticket expired.</value>
   </data>
+    <data name="ConsoleSocket_Lost" xml:space="preserve">
+    <value>The connection was lost (the server stopped responding).</value>
+  </data>
     <data name="ProxmoxVncSession_01" xml:space="preserve">
     <value>The VNC console is for VMs only. Use the terminal console for CTs.</value>
   </data>
@@ -239,6 +242,9 @@
   </data>
     <data name="ProxmoxApiClient_12" xml:space="preserve">
     <value>The connection dropped while reading the response: {0}</value>
+  </data>
+    <data name="ProxmoxApiClient_BadAddress" xml:space="preserve">
+    <value>The server or proxy address is invalid: {0}</value>
   </data>
     <data name="RfbClient_20" xml:space="preserve">
     <value>Unsupported VNC security type: {0}</value>

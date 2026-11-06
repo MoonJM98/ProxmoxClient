@@ -33,9 +33,31 @@ public partial class MainWindow : Window
             Loc.T("TableTab_ConfirmTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
         _autoConnectProfile = autoConnectProfile;
         Loaded += OnLoadedAsync;
-        Closing += (_, _) => _vm.Dispose();
+        Closing += OnClosingAsync;
         StateChanged += (_, _) => _vm.SetBackgrounded(WindowState == WindowState.Minimized);
     }
+
+    /// <summary>창 닫기 — 처음 한 번은 닫기를 미루고 VPN 터널을 정상 종료(최대 몇 초)한 뒤 다시 닫는다(UI 는 멈추지 않는다).</summary>
+    private async void OnClosingAsync(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (_vmDisposed) return;
+
+        e.Cancel = true;
+        _vmDisposed = true;
+        IsEnabled = false;
+        try
+        {
+            await _vm.DisposeAsync();
+        }
+        catch
+        {
+            _vm.Dispose();
+        }
+
+        Close();
+    }
+
+    private bool _vmDisposed;
 
     private async void OnLoadedAsync(object sender, RoutedEventArgs e)
     {

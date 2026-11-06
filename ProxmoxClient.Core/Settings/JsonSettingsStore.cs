@@ -5,7 +5,7 @@ namespace ProxmoxClient.Core.Settings;
 
 /// <summary>
 ///     %APPDATA%\ProxmoxClient 아래 JSON 설정 파일 공통 저장소.
-///     읽기 실패(없음·권한) 시 기본값을 돌려주며 예외를 던지지 않는다. 손상 파일은 사본을 남긴 뒤 기본값을 돌려주고,
+///     읽기 실패(없음·권한) 시 기본값을 돌려주며 예외를 던지지 않는다. 손상 파일은 사본을 남긴 뒤 .bak 이 멀쩡하면 그것으로 되살리고 아니면 기본값을 돌려주며,
 ///     원본은 사용자가 저장할 때까지 건드리지 않는다. 저장은 <see cref="AtomicFile" /> 로 원자적으로(.bak 백업 유지) 수행한다.
 ///     읽기·저장 모두 <c>normalize</c> 를 거쳐 범위를 벗어난 값이 앱으로 들어오거나 디스크에 남지 않는다.
 /// </summary>
@@ -51,15 +51,25 @@ public abstract class JsonSettingsStore<T> where T : class, new()
             return _normalize(new T()); // 일시적 읽기 실패 — 파일은 그대로 둔다
         }
 
+        if (TryParse(raw) is { } settings) return _normalize(settings);
+
+        // 손상 파일 사본 보존 — 사용자가 기본값 화면에서 저장해 원본이 교체돼도 내용을 복구할 수 있다.
+        // 직전 저장본(.bak)이 멀쩡하면 그것으로 되살린다
+        AtomicFile.PreserveCorrupt(_path);
+        var restored = await AtomicFile.TryRestoreBackupAsync(_path, text => TryParse(text) is not null, ct)
+            .ConfigureAwait(false);
+        return _normalize(restored is not null && TryParse(restored) is { } backup ? backup : new T());
+    }
+
+    private static T? TryParse(string raw)
+    {
         try
         {
-            return _normalize(JsonSerializer.Deserialize<T>(raw, SerializerOptions) ?? new T());
+            return JsonSerializer.Deserialize<T>(raw, SerializerOptions) ?? new T();
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or NotSupportedException)
         {
-            // 손상 파일 사본 보존 — 사용자가 기본값 화면에서 저장해 원본이 교체돼도 내용을 복구할 수 있다
-            AtomicFile.PreserveCorrupt(_path);
-            return _normalize(new T());
+            return null;
         }
     }
 

@@ -123,6 +123,10 @@
     <value>터미널 인증에 실패했습니다. 권한(VM.Console)과 티켓 만료 여부를 확인하세요.</value>
         <comment>ProxmoxTerminalSession.cs</comment>
   </data>
+    <data name="ConsoleSocket_Lost" xml:space="preserve">
+    <value>연결이 끊겼습니다(서버 응답 없음).</value>
+        <comment>ConsoleWebSocketStream.cs</comment>
+  </data>
     <data name="ProxmoxVncSession_01" xml:space="preserve">
     <value>VNC 콘솔은 VM 전용입니다. CT 는 터미널 콘솔을 사용하세요.</value>
         <comment>ProxmoxVncSession.cs</comment>
@@ -297,6 +301,10 @@
   </data>
     <data name="ProxmoxApiClient_12" xml:space="preserve">
     <value>응답을 읽는 중 연결이 끊겼습니다: {0}</value>
+        <comment>ProxmoxApiClient.cs</comment>
+  </data>
+    <data name="ProxmoxApiClient_BadAddress" xml:space="preserve">
+    <value>서버 또는 프록시 주소가 올바르지 않습니다: {0}</value>
         <comment>ProxmoxApiClient.cs</comment>
   </data>
     <data name="RfbClient_20" xml:space="preserve">
