@@ -26,6 +26,8 @@ public sealed partial class ProxmoxRdpSession
                 }
 
                 if (!await ApplyAsync(channel, outputs).ConfigureAwait(false)) break;
+
+                TryApplyPendingResize(); // 디스플레이 제어 채널이 준비되기 전에 온 해상도 요청
             }
         }
         catch (Exception ex) when (IsEndOfStream(ex))
@@ -102,7 +104,7 @@ public sealed partial class ProxmoxRdpSession
             }
         }
 
-        if (outputs.Dirty is not null) _framebufferStale = true;
+        if (outputs.Dirty is { } dirty) _staleRect = _staleRect is { } stale ? stale.Union(dirty) : dirty;
 
         return outputs;
     }
@@ -110,10 +112,9 @@ public sealed partial class ProxmoxRdpSession
     /// <summary>(잠금 밖에서) 화면·커서 알림과 재활성화. 서버가 세션을 끝냈으면 false.</summary>
     private async Task<bool> ApplyAsync(RdpChannel channel, Outputs outputs)
     {
-        if (Interlocked.Exchange(ref _resignalFrame, 0) == 1)
-            FrameReceived?.Invoke(0, 0, _width, _height); // 창이 처리 중에 옛 화면을 가져갔다 — 다시 그리게
-        else if (outputs.Dirty is { } dirty)
+        if (outputs.Dirty is { } dirty)
             FrameReceived?.Invoke(dirty.Left, dirty.Top, dirty.Right - dirty.Left + 1, dirty.Bottom - dirty.Top + 1);
+        ResignalIfOwed(); // 창이 처리 중에 옛 화면을 가져갔다 — 아직 옮기지 않은 영역을 다시 그리게
 
         if (outputs.Dirty is not null) Interlocked.Increment(ref _statsFrames);
 
@@ -190,7 +191,7 @@ public sealed partial class ProxmoxRdpSession
     private sealed class Outputs
     {
         public List<byte[]> Frames { get; } = [];
-        public (int Left, int Top, int Right, int Bottom)? Dirty { get; private set; }
+        public DirtyRect? Dirty { get; private set; }
         public RfbCursor? Cursor { get; set; }
         public bool CursorDefault { get; set; }
         public bool Terminate { get; set; }
@@ -199,12 +200,9 @@ public sealed partial class ProxmoxRdpSession
         /// <summary>바뀐 영역을 하나로 합친다(포함 좌표).</summary>
         public void AddDirty(InclusiveRectangle rect)
         {
-            var next = (Left: (int)rect.GetLeft(), Top: (int)rect.GetTop(), Right: (int)rect.GetRight(),
-                Bottom: (int)rect.GetBottom());
-            Dirty = Dirty is { } d
-                ? (Math.Min(d.Left, next.Left), Math.Min(d.Top, next.Top), Math.Max(d.Right, next.Right),
-                    Math.Max(d.Bottom, next.Bottom))
-                : next;
+            using var owned = rect;
+            var next = new DirtyRect(rect.GetLeft(), rect.GetTop(), rect.GetRight(), rect.GetBottom());
+            Dirty = Dirty is { } d ? d.Union(next) : next;
         }
     }
 }

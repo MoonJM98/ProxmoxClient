@@ -22,7 +22,7 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         Guest = guest;
         Protocol = protocol;
         Vnc = protocol == ConsoleProtocol.Rdp
-            ? new Core.Rdp.ProxmoxRdpSession(session.Api)
+            ? new Core.Rdp.ProxmoxRdpSession(session.Api) { ShareClipboard = false } // 설정을 읽은 뒤 정한다
             : new ProxmoxVncSession(session.Api)
             {
                 // Tight JPEG 영역은 Skia 로 바로 프레임버퍼에 푼다(데스크톱·모바일 공용)
@@ -49,6 +49,12 @@ public sealed partial class ConsoleViewModel : ViewModelBase
     public PveResource Guest { get; }
 
     public ConsoleProtocol Protocol { get; }
+
+    /// <summary>
+    ///     연결에 쓴 콘솔 설정 — 연결 직전에 저장된 설정을 읽는다(그 전에는 기본값). RDP 화면 쪽 설정
+    ///     (커서·부드러운 확대·해상도 맞춤)은 화면이 <see cref="IConsoleSession.Connected" /> 뒤에 여기서 읽는다.
+    /// </summary>
+    public ConsoleSettings Settings { get; private set; } = new();
 
     /// <summary>원격 화면 세션(VNC 또는 RDP).</summary>
     public IConsoleSession Vnc { get; }
@@ -125,7 +131,11 @@ public sealed partial class ConsoleViewModel : ViewModelBase
         try
         {
             // 설정 화면에서 저장한 콘솔 설정(화질·압축·키보드 등)을 연결 전에 읽는다 — 읽기 실패는 기본값
-            if (Vnc is ProxmoxVncSession vnc) vnc.Settings = await new ConsoleSettingsStore().LoadAsync();
+            Settings = await new ConsoleSettingsStore().LoadAsync();
+            if (Vnc is ProxmoxVncSession vnc) vnc.Settings = Settings;
+            // RDP 클립보드 공유는 Windows 에서만 된다(IronRDP 백엔드) — 다른 OS 는 클립보드 없이 연결
+            if (Vnc is Core.Rdp.ProxmoxRdpSession rdp)
+                rdp.ShareClipboard = Settings.RdpClipboard && Core.Rdp.ProxmoxRdpSession.ClipboardSupported;
             await Vnc.ConnectAsync(Guest.Node, Guest.VmId);
         }
         catch (Exception ex)

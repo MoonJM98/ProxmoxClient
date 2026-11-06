@@ -5019,7 +5019,7 @@ Continue?</value>
     <value>Share the clipboard with the guest automatically</value>
   </data>
   <data name="ConsoleSettings_RdpClipboardHint" xml:space="preserve">
-    <value>Copy on one side and paste on the other right away (text, images and other standard formats). The guest may need a clipboard agent such as spice-vdagent. Takes effect on reconnect.</value>
+    <value>Windows only. Copy on one side and paste on the other right away (text, images and other standard formats). The guest may need a clipboard agent such as spice-vdagent. Takes effect on reconnect.</value>
   </data>
   <data name="GuestFiles_Title" xml:space="preserve">
     <value>Files</value>

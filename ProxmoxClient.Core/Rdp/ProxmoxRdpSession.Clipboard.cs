@@ -31,12 +31,16 @@ public sealed partial class ProxmoxRdpSession
     /// <summary>클립보드 공유가 켜져 동작 중이다.</summary>
     public bool ClipboardActive => _clipboard is not null;
 
+    /// <summary>클립보드 공유를 쓸 수 있는 OS 인가 — IronRDP 백엔드가 Windows(user32 숨은 창)용뿐이다.</summary>
+    public static bool ClipboardSupported => OperatingSystem.IsWindows();
+
     /// <summary>
     ///     (연결 시작 시 부르는 스레드에서) 클립보드 백엔드를 만든다 — 메시지 루프가 있는 UI 스레드가 아니면 만들지 않는다.
+    ///     Windows 가 아니면(Android·Linux·macOS) 만들지 않는다. 만들지 못하면 클립보드 없이 연결한다.
     /// </summary>
     private CliprdrBackendFactory? CreateClipboard()
     {
-        if (!ShareClipboard || SynchronizationContext.Current is not { } context) return null;
+        if (!ShareClipboard || !ClipboardSupported || SynchronizationContext.Current is not { } context) return null;
 
         try
         {
@@ -50,7 +54,14 @@ public sealed partial class ProxmoxRdpSession
         catch (IronRdpException ex)
         {
             StatusChanged?.Invoke(Localization.Res.T("Rdp_Failed", ex.Inner.ToDisplay()));
-            _clipboard = null;
+            DisposeClipboard();
+            return null;
+        }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+        {
+            // 네이티브 백엔드·user32 가 없다 — 클립보드 없이 연결한다
+            Trace.TraceWarning($"[RDP 클립보드] 백엔드를 만들 수 없음 — 클립보드 없이 연결: {ex.Message}");
+            DisposeClipboard();
             return null;
         }
     }
@@ -64,6 +75,7 @@ public sealed partial class ProxmoxRdpSession
                 while (clipboard.NextClipboardMessage() is { } message)
                     using (message)
                         SubmitClipboard(message);
+                ResignalIfOwed();
 
                 await Task.Delay(ClipboardPollInterval, token).ConfigureAwait(false);
             }

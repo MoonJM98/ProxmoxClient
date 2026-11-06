@@ -25,15 +25,22 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
     private bool _disposed;
     private byte[]? _framebuffer;
 
-    /// <summary>디코딩 버퍼가 프레임버퍼보다 새롭다 — 다음에 <see cref="Framebuffer" /> 를 읽을 때 옮긴다.</summary>
-    private bool _framebufferStale;
+    /// <summary>
+    ///     (잠금 안에서) 디코딩 버퍼가 프레임버퍼보다 새로운 영역(포함 좌표 합집합) — 다음에 <see cref="Framebuffer" /> 를
+    ///     읽을 때 이 영역만 옮긴다.
+    /// </summary>
+    private DirtyRect? _staleRect;
+
     private DecodedImage? _image;
     private InputDatabase? _input;
 
     /// <summary>재활성화(해상도 변경) 중 — 이때 들어온 입력은 버린다.</summary>
     private bool _reactivating;
 
-    /// <summary>UI 가 잠금을 못 잡아 옛 프레임버퍼를 가져갔다 — 수신 처리가 끝나면 전체 갱신을 다시 알린다.</summary>
+    /// <summary>
+    ///     UI 가 잠금을 못 잡아 옛 프레임버퍼를 가져갔다 — 다음에 잠금을 잡아 옮긴 영역을 다시 알린다
+    ///     (<see cref="ResignalIfOwed" />·<see cref="Framebuffer" />).
+    /// </summary>
     private int _resignalFrame;
 
     private ActiveStage? _stage;
@@ -44,16 +51,19 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
     private int _statsFrames;
     private long _statsStarted = Stopwatch.GetTimestamp();
 
-    /// <summary>처음 요청할 게스트 해상도 — 서버가 다른 크기를 정할 수 있다.</summary>
+    /// <summary>
+    ///     처음 요청할 게스트 해상도(연결 전에 정한다) — 서버가 다른 크기를 정할 수 있다. 연결 전에
+    ///     <see cref="RequestDesktopSize" /> 를 불렀으면 그 크기가 먼저다.
+    /// </summary>
     public (int Width, int Height) InitialSize { get; set; } = (1280, 800);
 
     public bool IsConnected { get; private set; }
     public int Width => _width;
     public int Height => _height;
     /// <summary>
-    ///     프레임버퍼 — 화면이 바뀌었으면 읽는 순간 디코딩 버퍼에서 옮긴다. 수신 때마다 전체(1080p 8MB)를 복사하지 않고
-    ///     창이 그릴 때(렌더 틱에 한 번)만 복사한다. 수신 처리 중이라 잠금을 못 잡으면 기다리지 않고 지금 것을 주고,
-    ///     처리가 끝난 뒤 다시 그리게 알린다(<see cref="_resignalFrame" />).
+    ///     프레임버퍼 — 화면이 바뀌었으면 읽는 순간 디코딩 버퍼에서 바뀐 영역만 옮긴다(수신 때마다 전체를 복사하지 않고
+    ///     창이 그릴 때만). 수신 처리 중이라 잠금을 못 잡으면 기다리지 않고 지금 것을 주고, 다음에 옮길 때 그 영역을
+    ///     다시 알린다(<see cref="_resignalFrame" />).
     /// </summary>
     public byte[]? Framebuffer
     {
@@ -65,22 +75,48 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
                 return _framebuffer;
             }
 
+            DirtyRect? copied = null;
+            byte[]? framebuffer;
             try
             {
-                if (_framebufferStale && _image is not null && _framebuffer is not null)
+                framebuffer = _framebuffer;
+                if (_staleRect is { } stale && _image is not null && framebuffer is not null)
                 {
-                    using var data = _image.GetData();
-                    if ((int)data.GetSize() == _framebuffer.Length) data.Fill(_framebuffer);
-                    _framebufferStale = false;
+                    CopyFromImage(_image, framebuffer, _width, stale);
+                    copied = stale;
                 }
 
-                return _framebuffer;
+                _staleRect = null;
             }
             finally
             {
                 Monitor.Exit(_gate);
             }
+
+            // 앞서 옛 프레임버퍼를 가져간 창에 방금 옮긴 영역을 다시 그리게 한다(그때 바뀌어 있던 곳이 모두 들어 있다)
+            if (Interlocked.Exchange(ref _resignalFrame, 0) == 1 && copied is { } r)
+                FrameReceived?.Invoke(r.Left, r.Top, r.Right - r.Left + 1, r.Bottom - r.Top + 1);
+
+            return framebuffer;
         }
+    }
+
+    /// <summary>
+    ///     (잠금 밖에서) 창이 잠금을 못 잡아 옛 화면을 가져간 적이 있으면 아직 옮기지 않은 영역을 알려 다시 읽게 한다 —
+    ///     다시 읽을 때 옮기고 그 영역을 한 번 더 알린다. 잠금을 잡으므로 UI 스레드에서 부르지 않는다.
+    /// </summary>
+    private void ResignalIfOwed()
+    {
+        if (Volatile.Read(ref _resignalFrame) == 0) return;
+
+        DirtyRect? stale;
+        lock (_gate)
+        {
+            stale = _staleRect;
+            if (stale is null) Volatile.Write(ref _resignalFrame, 0); // 그때 옮길 것이 없었다 — 옛 화면이 곧 최신
+        }
+
+        if (stale is { } r) FrameReceived?.Invoke(r.Left, r.Top, r.Right - r.Left + 1, r.Bottom - r.Top + 1);
     }
 
     public event Action<string>? StatusChanged;
@@ -108,9 +144,10 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
     public async Task ConnectAsync(string node, int vmid, CancellationToken ct = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        var clipboard = CreateClipboard(); // 첫 await 전에 — 부른 UI 스레드에서 만든다
+        CliprdrBackendFactory? clipboard = null;
         try
         {
+            clipboard = CreateClipboard(); // 첫 await 전에 — 부른 UI 스레드에서 만든다
             await ConnectCoreAsync(node, vmid, clipboard, ct).ConfigureAwait(false);
         }
         catch
@@ -191,7 +228,11 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
         builder.SetDomain(string.Empty);
         builder.SetEnableTls(true);
         builder.SetEnableCredssp(true);
-        builder.SetDesktopSize((ushort)ClampDimension(InitialSize.Height), (ushort)ClampDimension(InitialSize.Width));
+        // 연결 전에 해상도 요청(RequestDesktopSize)이 왔으면 그 크기로 시작한다
+        var (width, height) = Volatile.Read(ref _pendingSize) is var pending and not 0
+            ? UnpackSize(pending)
+            : (ClampDimension(InitialSize.Width), ClampDimension(InitialSize.Height));
+        builder.SetDesktopSize((ushort)height, (ushort)width);
         builder.SetClientName(Environment.MachineName);
         builder.SetClientDir("C:\\Windows\\System32\\mstscax.dll");
         builder.SetPerformanceFlags(PerformanceFlags.NewDefault());
@@ -214,7 +255,7 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
         _image?.Dispose();
         _image = DecodedImage.New(PixelFormat.BgrA32, (ushort)_width, (ushort)_height);
         _framebuffer = new byte[_width * _height * 4];
-        _framebufferStale = false;
+        _staleRect = null;
     }
 
     public string TakeStatsText()
