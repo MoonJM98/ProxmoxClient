@@ -1088,7 +1088,10 @@ async Task RealPveCheck()
     }
 
     // 1) 로그인 · 인증서 신뢰(지문 저장) · 버전
-    var saved = (await AppServices.Profiles.LoadAsync())[0];
+    // 헤드리스는 UI 를 돌리며 기다려야 한다(그냥 await 하면 이어짐이 돌지 않아 멈춘다)
+    var loadSaved = AppServices.Profiles.LoadAsync();
+    await Wait(loadSaved);
+    var saved = loadSaved.Result[0];
     Result("login", session.UserDisplay == "root@pam" && session.Version.StartsWith('9') && saved.CertificateThumbprint is { Length: > 0 },
         $"{session.UserDisplay} · PVE {session.Version} · 지문 {saved.CertificateThumbprint?[..Math.Min(16, saved.CertificateThumbprint.Length)]}…");
 
@@ -1385,7 +1388,7 @@ async Task RealPveCheck()
         profile.Host = options.GetValueOrDefault("host", "127.0.0.1");
         profile.Port = port;
         profile.CertificateThumbprint = saved.CertificateThumbprint;
-        await AppServices.Profiles.SaveAsync(profile);
+        await Wait(AppServices.Profiles.SaveAsync(profile));
         AppServices.SecretStore.Set($"profile.{profile.Id:N}.{secretKind}", secret);
         await Wait(profiles.LoadAsync());
         profiles.ConnectCommand.Execute(profiles.Profiles.First(p => p.Profile.Id == profile.Id));
