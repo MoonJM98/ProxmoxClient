@@ -229,6 +229,7 @@ flags=$(win_flags)
 echo "    $flags"
 echo "$flags" | grep -qw SECURE && pass "FLAG_SECURE set on the window (dumpsys window)" || fail "FLAG_SECURE not on the window"
 adb exec-out screencap > "$OUT/secure-on.raw"
+adb shell dumpsys SurfaceFlinger > "$OUT/surfaceflinger-secure-on.txt" 2>&1
 shot 07-secure-on
 px=$(python3 -I "$HERE/pixels.py" "$OUT/secure-on.raw")
 info "secure on pixels: $px"
@@ -275,7 +276,15 @@ echo "$flags" | grep -qw SECURE && fail "FLAG_SECURE still set after disabling" 
 shot 08-secure-off
 info "secure off pixels: $px"
 bright=$(echo "$px" | sed -n 's/.*bright=\([0-9]*\).*/\1/p')
-[ "${bright:-0}" -gt 200 ] && pass "screencap shows the app again after disabling" || fail "screencap still dark after disabling ($px)"
+adb shell dumpsys SurfaceFlinger > "$OUT/surfaceflinger-secure-off.txt" 2>&1
+sf_secure=$(grep -iE "proxmoxclient|SurfaceView" "$OUT/surfaceflinger-secure-off.txt" | grep -ciE "isSecure=(true|1)|secure=true|\bSECURE\b" || true)
+adb exec-out su 2000 screencap > "$OUT/secure-off-shell.raw" 2>/dev/null || true
+info "secure off: SurfaceFlinger secure lines for app layers=$sf_secure · shell-user capture: $(python3 -I "$HERE/pixels.py" "$OUT/secure-off-shell.raw" 2>&1 | head -1)"
+if [ "${bright:-0}" -gt 200 ]; then
+  pass "screencap shows the app again after disabling"
+else
+  fail "screencap still dark after disabling ($px)"
+fi
 
 section "4. 마우스 오른쪽 클릭 ≠ 뒤로 가기"
 hook state
@@ -348,7 +357,7 @@ shot 11-dialog-3button
 hook dismiss
 hook root
 sleep 2
-ime_shown && adb shell input keyboard keyevent KEYCODE_BACK # 키보드만 닫기(첫 화면에서 뒤로 가면 앱이 닫힌다)
+sleep 2 # 뒤로 가기를 누르지 않는다(첫 화면에서 누르면 앱이 닫힌다)
 sleep 1
 hook state
 shot 12-profiles-3button
