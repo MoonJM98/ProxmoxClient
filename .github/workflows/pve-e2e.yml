@@ -1,0 +1,89 @@
+# 실제 Proxmox VE 끝까지: 러너에서 특권 Docker 컨테이너로 PVE 9(trixie, no-subscription)를 띄우고
+# (tools/PveE2E), 시험 대상(VM·CT·TOTP 사용자·API 토큰)을 만든 뒤 화면 검사 도구를 --real 로 붙인다.
+name: PVE E2E
+
+on:
+  push:
+    branches: ["claude/pve-e2e"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  PVE_PASSWORD: "E2eRoot!2345"
+  PVE_TOTP_SECRET: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP"
+
+jobs:
+  pve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: KVM 켜기
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm /dev/fuse
+          stat -fc %T /sys/fs/cgroup
+
+      - uses: actions/cache@v4
+        id: pve-image
+        with:
+          path: pve-image.tar.zst
+          key: pve-image-${{ hashFiles('tools/PveE2E/Dockerfile', 'tools/PveE2E/pve-hostname.*', 'tools/PveE2E/lxcfs-override.conf') }}
+
+      - name: PVE 이미지(빌드 또는 캐시)
+        run: |
+          if [ -f pve-image.tar.zst ]; then
+            zstd -dc pve-image.tar.zst | docker load
+          else
+            docker build -t pve-e2e tools/PveE2E
+            docker save pve-e2e | zstd -T0 -3 -o pve-image.tar.zst
+          fi
+          docker image ls pve-e2e
+
+      - name: PVE 띄우기
+        run: |
+          docker run -d --name pve --hostname pve --privileged --cgroupns=host \
+            -v /sys/fs/cgroup:/sys/fs/cgroup:rw --tmpfs /run --tmpfs /run/lock --tmpfs /tmp \
+            --device /dev/kvm --device /dev/fuse -p 8006:8006 pve-e2e
+          for i in $(seq 1 120); do
+            if curl -ksf https://127.0.0.1:8006/api2/json/version -o /dev/null -w '%{http_code}\n'; then break; fi
+            # 401 이면 API 가 떴다
+            code=$(curl -ks -o /dev/null -w '%{http_code}' https://127.0.0.1:8006/api2/json/version || true)
+            [ "$code" = "401" ] && break
+            sleep 2
+          done
+          docker exec pve systemctl --no-pager --failed || true
+          docker exec pve systemctl --no-pager status pve-cluster pveproxy pvedaemon pvestatd | head -60 || true
+          PVE_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' pve)
+          echo "PVE_IP=$PVE_IP" >> $GITHUB_ENV
+          curl -ks -o /dev/null -w 'api %{http_code}\n' https://$PVE_IP:8006/api2/json/version
+
+      - name: 시험 대상 만들기
+        run: |
+          docker cp tools/PveE2E/fixtures.sh pve:/root/fixtures.sh
+          docker exec pve bash /root/fixtures.sh "$PVE_PASSWORD" "$PVE_TOTP_SECRET" 2>&1 | tee fixtures.log
+          docker exec pve cat /root/e2e.env >> $GITHUB_ENV
+          docker exec pve pvesh get /cluster/resources --output-format json-pretty | head -80
+
+      - name: 진단
+        if: always()
+        run: |
+          mkdir -p shots
+          cp fixtures.log shots/ 2>/dev/null || true
+          docker exec pve journalctl --no-pager -b > shots/journal.txt 2>&1 || true
+          docker exec pve tar -C /var/log -czf - pveproxy pve 2>/dev/null > shots/pvelogs.tgz || true
+          docker logs pve > shots/docker.log 2>&1 || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pve-e2e
+          path: shots
+          retention-days: 7
