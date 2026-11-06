@@ -288,6 +288,10 @@ if (target == "restore")
         $"안내 {profiles.PendingRestores.Count}개, 파일 {(File.Exists(statePath) ? "있음" : "없음")}",
         profiles.PendingRestores.Count == 0 && SessionKeepAlive.Pending.Count == 0 && !File.Exists(statePath));
 
+    Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
+    Directory.Delete(profileDir, true);
+    return failures == 0 ? 0 : 2;
+}
 
 // ---- 보안 키 2단계 인증(--target webauthn): 가짜 키로 창(보안 키 기본) → 취소는 창 유지 → 서명은 webauthn:{JSON} 으로 로그인 ----
 if (target == "webauthn")
