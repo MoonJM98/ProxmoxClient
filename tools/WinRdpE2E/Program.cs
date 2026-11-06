@@ -288,7 +288,7 @@ internal sealed class E2E(Dictionary<string, string> options)
     private void StartFakePve(int port)
     {
         // 인증서를 미리 만든다(fake_pve.py 는 없을 때만 openssl 을 부른다 — Windows 러너 PATH 에는 openssl 이 없을 수 있다)
-        var tmp = Path.Combine(_out, "fakepve-tmp");
+        var tmp = Path.Combine(Path.GetTempPath(), "winrdp-e2e-fakepve"); // 결과 폴더(올리는 것)에 키를 두지 않는다
         var certDir = Path.Combine(tmp, "fakepve-cert");
         Directory.CreateDirectory(certDir);
         using (var key = RSA.Create(2048))
