@@ -1405,6 +1405,36 @@ async Task RealPveCheck()
         Exec($"bash -c 'while pvesh delete {rulesPath}/0 >/dev/null 2>&1; do :; done'");
     });
 
+    // 스냅숏(VM, qcow2): 만들기 → 목록·설명 → 되돌리기 → 지우기 — 작업이 모두 OK
+    await Step("snapshot", async () =>
+    {
+        var name = $"e2e{DateTime.UtcNow:HHmmss}";
+        var created = Do(() => api.WaitTaskAsync(Do(() => api.CreateSnapshotAsync(nodeName, Qemu, 100, name, "e2e 스냅숏"))), 120000);
+        var list = Do(() => api.GetSnapshotsAsync(nodeName, Qemu, 100));
+        var snap = list.FirstOrDefault(x => x.Name == name);
+        Result("snapshot-create", created.IsOk && snap is { Description: "e2e 스냅숏" } && snap.SnapTimeUtc is not null,
+            $"작업 {created.Status} · 목록 [{string.Join(", ", list.Select(x => $"{x.Name}:{x.Description}:{x.SnapTimeUtc:u}:{x.Parent}"))}]");
+        var rollback = Do(() => api.WaitTaskAsync(Do(() => api.RollbackSnapshotAsync(nodeName, Qemu, 100, name))), 120000);
+        Result("snapshot-rollback", rollback.IsOk, $"작업 {rollback.Status}");
+        var deleted = Do(() => api.WaitTaskAsync(Do(() => api.DeleteSnapshotAsync(nodeName, Qemu, 100, name))), 120000);
+        var after = Do(() => api.GetSnapshotsAsync(nodeName, Qemu, 100));
+        Result("snapshot-delete", deleted.IsOk && after.All(x => x.Name != name), $"작업 {deleted.Status} · 남은 [{string.Join(", ", after.Select(x => x.Name))}]");
+    });
+
+    // 백업(vzdump, 백업 탭과 같은 요청): 압축 없음 + 메모 템플릿 → 작업 OK → 저장소 백업 목록에 보임
+    await Step("backup", async () =>
+    {
+        var kind = hasCt ? Lxc : Qemu;
+        var vmid = hasCt ? 200 : 100;
+        var upid = Do(() => api.BackupGuestAsync(nodeName, kind, vmid, "local", hasCt ? "suspend" : "stop", "0",
+            new Dictionary<string, string> { ["notes-template"] = "e2e {{guestname}}" }));
+        var task = Do(() => api.WaitTaskAsync(upid), 300000);
+        var files = Do(() => api.GetStorageContentAsync(nodeName, "local", "backup"));
+        var mine = files.Where(f => f.Volid.Contains($"vzdump-{(hasCt ? "lxc" : "qemu")}-{vmid}-")).ToList();
+        Result("backup", task.IsOk && mine.Any(f => f.Volid.EndsWith(".tar", StringComparison.Ordinal) || f.Volid.EndsWith(".vma", StringComparison.Ordinal)),
+            $"작업 {task.Status} · 백업 [{string.Join(", ", mine.Select(f => $"{f.Volid} {f.SizeBytes}B"))}]");
+    });
+
     // 10) TOTP 로그인(tfa@pve) · 11) API 토큰 로그인 — 서버 목록으로 돌아가 새 프로필로 연결
     async Task<ServerSession?> ConnectProfile(ConnectionProfile profile, string secretKind, string secret, Func<ProxmoxClient.UI.Views.Login.TfaDialog, Task>? tfa)
     {
