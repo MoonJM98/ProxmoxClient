@@ -4,8 +4,11 @@
 name: Android E2E
 
 on:
+  # 실제 Android 에뮬레이터(API 35)로 기기 동작 확인 — Android 헤드·플랫폼·셸·터미널이 바뀔 때와 수동 실행
   push:
-    branches: ["claude/android-e2e"]
+    paths: ["ProxmoxClient.Android/**", "ProxmoxClient.UI/Platform/**", "ProxmoxClient.UI/Views/AppShell.axaml*", "ProxmoxClient.UI/Views/Terminal/**", "tools/AndroidE2E/**", ".github/workflows/android-e2e.yml"]
+  pull_request:
+    paths: ["ProxmoxClient.Android/**", "ProxmoxClient.UI/Platform/**", "ProxmoxClient.UI/Views/AppShell.axaml*", "ProxmoxClient.UI/Views/Terminal/**", "tools/AndroidE2E/**", ".github/workflows/android-e2e.yml"]
   workflow_dispatch:
 
 permissions:
