@@ -181,6 +181,12 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
+      # .NET for iOS 는 정해진 Xcode 판을 요구한다 — 러너에 깔린 것 중 가장 새 Xcode 로
+      - name: 가장 새 Xcode 고르기
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: ios 워크로드 설치
         run: dotnet workload install ios
 
