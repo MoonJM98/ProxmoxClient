@@ -300,6 +300,15 @@ info "screen protection off → capture visible after $(( $(date +%s) - t0 ))s (
 if [ "${b:-0}" -le 200 ]; then
   # 아직 검다 — 화면 키보드(IME) 쪽인지 가른다: IME 대상 창 기록, 키보드를 닫고/다시 열고 캡처
   adb shell dumpsys window | tr -d '\r' | grep -iE "imeInputTarget|imeLayeringTarget|imeControlTarget|mImeTarget" | head -6 | sed 's/^/    /' | tee -a "$OUT/ime-targets.txt"
+  hook resurface
+  sleep 3
+  adb exec-out screencap > "$OUT/secure-off-resurface.raw"
+  info "after SurfaceView hide/show: $(python3 -I "$HERE/pixels.py" "$OUT/secure-off-resurface.raw")"
+  hook bringtofront
+  sleep 4
+  adb exec-out screencap > "$OUT/secure-off-front.raw"
+  info "after bring-to-front: $(python3 -I "$HERE/pixels.py" "$OUT/secure-off-front.raw")"
+  adb shell dumpsys SurfaceFlinger > "$OUT/surfaceflinger-stuck.txt" 2>&1
   if ime_shown; then
     info "IME shown while still black"
     adb shell input keyevent KEYCODE_BACK # 키보드만 닫힌다

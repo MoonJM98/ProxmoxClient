@@ -112,6 +112,22 @@ internal static class DebugTestHook
                 MainActivity.Current?.Window?.DecorView?.Invalidate();
                 if (AppServices.Navigator.CurrentPage?.FindAncestorOfType<AppShell>() is { } shell) shell.InvalidateVisual();
                 break;
+            case "resurface":
+                // SurfaceView 를 숨겼다 다시 보인다(층을 새로 만든다) — 화면 보호 해제 뒤 검은 캡처 원인 가르기
+                if (MainActivity.Current?.Window?.DecorView is { } decor)
+                    foreach (var surface in SurfaceViews(decor))
+                    {
+                        surface.Visibility = Android.Views.ViewStates.Gone;
+                        surface.Post(() => surface.Visibility = Android.Views.ViewStates.Visible);
+                        Log("resurface " + surface);
+                    }
+                break;
+            case "bringtofront":
+                // 같은 액티비티를 다시 앞으로(전환만 일어난다)
+                if (MainActivity.Current is { } activity)
+                    activity.StartActivity(new Intent(activity, typeof(MainActivity))
+                        .AddFlags(ActivityFlags.ReorderToFront | ActivityFlags.NewTask));
+                break;
             case "dialog":
                 _ = AppServices.Dialogs.PromptAsync("E2E", "Dialog overlay safe-area check", watermark: "input");
                 break;
@@ -132,6 +148,16 @@ internal static class DebugTestHook
         }
 
         LogState();
+    }
+
+    private static IEnumerable<Android.Views.SurfaceView> SurfaceViews(Android.Views.View view)
+    {
+        if (view is Android.Views.SurfaceView surface) yield return surface;
+        if (view is Android.Views.ViewGroup group)
+            for (var i = 0; i < group.ChildCount; i++)
+                if (group.GetChildAt(i) is { } child)
+                    foreach (var inner in SurfaceViews(child))
+                        yield return inner;
     }
 
     private static async Task SetupAsync(string host, int port, string user, string password)

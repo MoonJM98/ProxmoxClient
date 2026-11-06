@@ -79,28 +79,6 @@ public class MainActivity : AvaloniaMainActivity
     {
         if (enabled) Window?.AddFlags(WindowManagerFlags.Secure);
         else Window?.ClearFlags(WindowManagerFlags.Secure);
-        // Avalonia 는 SurfaceView 에 그린다 — 그 층에도 같은 값을 건다(다음 그리기 때 층에 반영된다)
-        var count = Window?.DecorView is { } decor ? SetSurfaceViewsSecure(decor, enabled) : 0;
-#if DEBUG
-        DebugTestHook.Log($"screen security {enabled} surfaceViews={count}");
-#endif
-    }
-
-    private static int SetSurfaceViewsSecure(View view, bool enabled)
-    {
-        var count = 0;
-        if (view is SurfaceView surface)
-        {
-            surface.SetSecure(enabled);
-            surface.Invalidate();
-            count++;
-        }
-
-        if (view is ViewGroup group)
-            for (var i = 0; i < group.ChildCount; i++)
-                if (group.GetChildAt(i) is { } child)
-                    count += SetSurfaceViewsSecure(child, enabled);
-        return count;
     }
 
     /// <summary>
