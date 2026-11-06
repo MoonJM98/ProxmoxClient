@@ -247,6 +247,7 @@ visible_within() { # visible_within <초> <이름> → 걸린 초를 VIS_AFTER �
   done
   return 1
 }
+info "runtime cycle: IME shown=$(ime_shown && echo yes || echo no)"
 hook secure --es on false
 if visible_within 10 secure-off-runtime; then
   pass "runtime on→off: app visible again after ${VIS_AFTER}s (no surface recreation)"
@@ -276,6 +277,8 @@ adb shell uiautomator dump /sdcard/ui-recents.xml > /dev/null 2>&1
 adb pull /sdcard/ui-recents.xml "$OUT/ui-recents-secure-on.xml" > /dev/null 2>&1
 launch
 sleep 5
+info "recreated cycle: IME shown=$(ime_shown && echo yes || echo no)"
+adb shell dumpsys window | tr -d '\r' | grep -iE "imeInputTarget|imeLayeringTarget|imeControlTarget" | head -6 | sed 's/^/    /'
 hook secure --es on false
 grep "screen security False" "$PCLOG" | tail -1 | sed 's/^/    /'
 if visible_within 5 secure-off-quick; then
@@ -295,15 +298,25 @@ for _ in $(seq 1 20); do
 done
 info "screen protection off → capture visible after $(( $(date +%s) - t0 ))s ($px)"
 if [ "${b:-0}" -le 200 ]; then
-  # 아직 검다 — 앱 화면을 다시 그리게 하면(검사 고리 redraw) 보이는지, 화면을 누르면 보이는지 따로 본다
-  hook redraw
-  sleep 2
-  adb exec-out screencap > "$OUT/secure-off-redraw.raw"
-  info "after app redraw: $(python3 -I "$HERE/pixels.py" "$OUT/secure-off-redraw.raw")"
-  adb shell input tap $((W0 / 2)) $((H0 / 2))
-  sleep 2
-  adb exec-out screencap > "$OUT/secure-off-tap.raw"
-  info "after tap: $(python3 -I "$HERE/pixels.py" "$OUT/secure-off-tap.raw")"
+  # 아직 검다 — 화면 키보드(IME) 쪽인지 가른다: IME 대상 창 기록, 키보드를 닫고/다시 열고 캡처
+  adb shell dumpsys window | tr -d '\r' | grep -iE "imeInputTarget|imeLayeringTarget|imeControlTarget|mImeTarget" | head -6 | sed 's/^/    /' | tee -a "$OUT/ime-targets.txt"
+  if ime_shown; then
+    info "IME shown while still black"
+    adb shell input keyevent KEYCODE_BACK # 키보드만 닫힌다
+    sleep 3
+    adb exec-out screencap > "$OUT/secure-off-imehidden.raw"
+    info "after hiding the keyboard: $(python3 -I "$HERE/pixels.py" "$OUT/secure-off-imehidden.raw") ime_shown=$(ime_shown && echo yes || echo no)"
+    hook ime
+    sleep 3
+    adb exec-out screencap > "$OUT/secure-off-imeshown.raw"
+    info "after showing the keyboard again: $(python3 -I "$HERE/pixels.py" "$OUT/secure-off-imeshown.raw")"
+  else
+    info "IME not shown while still black"
+    hook ime
+    sleep 3
+    adb exec-out screencap > "$OUT/secure-off-imeshown.raw"
+    info "after showing the keyboard: $(python3 -I "$HERE/pixels.py" "$OUT/secure-off-imeshown.raw")"
+  fi
   adb exec-out screencap > "$OUT/secure-off.raw"
   px=$(python3 -I "$HERE/pixels.py" "$OUT/secure-off.raw")
 fi
