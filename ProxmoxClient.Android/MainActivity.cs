@@ -98,6 +98,20 @@ public class MainActivity : AvaloniaMainActivity
             return true;
         }
 
+        // 뒤로 가기 키(3버튼·제스처 뒤로 가기 — 예측 뒤로 가기를 켜지 않은 앱에는 키로 온다)는 화면에 보내지 않고
+        // 바로 뒤로 가기 처리로 넘긴다. 화면에 보내면 Avalonia 가 Esc 키로 바꿔 포커스를 가진 터미널 입력 칸이 먹어 버려
+        // (터미널에 ESC 가 가고) 터미널 화면이 닫히지 않았다(에뮬레이터 검사로 확인)
+        if (e is { KeyCode: Keycode.Back })
+        {
+            if (e.Action == KeyEventActions.Up && !e.IsCanceled)
+            {
+                if (OperatingSystem.IsAndroidVersionAtLeast(33)) OnBackPressedDispatcher.OnBackPressed(); // 오른쪽 클릭 걸러 내기 포함
+                else OnBackPressed();
+            }
+
+            return true;
+        }
+
         return base.DispatchKeyEvent(e);
     }
 

@@ -59,7 +59,19 @@ adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 adb shell settings put secure show_ime_with_hard_keyboard 1
-adb shell settings put global always_finish_activities 0
+# 느린 에뮬레이터에서 런처 등이 띄우는 "응답 없음" 창이 앱 위를 가리지 않게
+adb shell settings put global hide_error_dialogs 1
+adb shell settings put secure anr_show_background 0
+# "활동 보관 안 함" — 설정 값은 시스템이 부팅 때 읽으므로 켜고 프레임워크를 다시 시작한다(검사 내내 켜 둔다:
+# 앱이 배경으로 갈 때마다 액티비티가 없어지고 돌아오면 새로 만들어진다)
+adb shell settings put global always_finish_activities 1
+adb shell setprop sys.boot_completed 0 || true
+adb shell stop
+adb shell start
+for _ in $(seq 1 120); do [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ] && break; sleep 2; done
+sleep 15
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS > /dev/null 2>&1 || true
+info "always_finish_activities=$(adb shell settings get global always_finish_activities | tr -d '\r') (framework restarted)"
 adb install -r -g "$APK" > "$OUT/install.txt" 2>&1 || { cat "$OUT/install.txt"; fail "install"; exit 1; }
 adb shell pm grant "$PKG" android.permission.POST_NOTIFICATIONS || true
 ACT=$(adb shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER "$PKG" | tail -1 | tr -d '\r')
@@ -95,8 +107,8 @@ shot 03-cluster-gesture
 hook shell --es node pve1
 state_has "terminal=connected" && pass "node shell terminal connected" || fail "node shell terminal ($STATE)"
 for _ in $(seq 1 10); do hook state; echo "$STATE" | grep -q 'last="root@pve1' && break; sleep 1; done
-hook ime
-sleep 4
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS > /dev/null 2>&1 || true
+for _ in 1 2 3; do hook ime; sleep 4; ime_shown && break; done
 ime_shown && pass "soft keyboard open on terminal" || fail "soft keyboard not open on terminal"
 hook state
 info "terminal+keyboard state: $STATE"
@@ -105,7 +117,6 @@ shot 04-terminal-keyboard-gesture
 section "2. 액티비티 다시 만들기(활동 보관 안 함)"
 type_text "export MARK=e2e42"
 sleep 1
-adb shell settings put global always_finish_activities 1
 PID_BEFORE=$(pid)
 n=$(wc -l < "$PCLOG")
 adb shell input keyevent KEYCODE_HOME
@@ -118,7 +129,7 @@ adb shell dumpsys notification --noredact > "$OUT/dumpsys-notification-bg.txt"
 grep -q "TerminalKeepAliveService" "$OUT/dumpsys-services-bg.txt" && grep -q "isForeground=true" "$OUT/dumpsys-services-bg.txt" \
   && pass "keep-alive service is foreground while backgrounded" || fail "keep-alive service not foreground (dumpsys-services-bg.txt)"
 grep -E "^\s*(isForeground|foregroundId|types|foregroundServiceType)" "$OUT/dumpsys-services-bg.txt" | head -5 | sed 's/^/    /'
-grep -q "pkg=$PKG.*terminal_keepalive\|terminal_keepalive" "$OUT/dumpsys-notification-bg.txt" && pass "keep-alive notification posted (channel terminal_keepalive)" \
+grep -A3 "NotificationRecord.*pkg=$PKG" "$OUT/dumpsys-notification-bg.txt" | grep -q "channel=terminal_keepalive.*FOREGROUND_SERVICE" && pass "keep-alive notification posted (channel terminal_keepalive)" \
   || fail "keep-alive notification missing (dumpsys-notification-bg.txt)"
 [ "$(pid)" = "$PID_BEFORE" ] && [ -n "$PID_BEFORE" ] && pass "process alive in background (pid $PID_BEFORE)" || fail "process changed/died in background ($PID_BEFORE → $(pid))"
 
@@ -136,7 +147,6 @@ hook screen
 echo "$NEW" | grep -q "MARK_IS_e2e42" && pass "same shell session after recreation (echo \$MARK → e2e42)" || fail "shell variable lost after recreation"
 shot 05-terminal-after-recreate
 # 화면 보호가 새 액티비티에도 걸리는지는 5 에서 본다
-adb shell settings put global always_finish_activities 0
 
 section "3b. 알림의 [모두 끊기]"
 adb shell input keyevent KEYCODE_HOME
@@ -153,8 +163,11 @@ for attempt in 1 2 3; do
     tapped="notification action button at $xy"
     break
   fi
-  # 접힌 알림 — 펼침 단추를 누르고 다시 찾는다
-  if xy=$(python3 -I "$HERE/uitap.py" "$OUT/ui-shade-$attempt.xml" "id:android:id/expand_button"); then adb shell input tap $xy; fi
+  # 접힌 알림 — 이 앱 알림("터미널 연결 유지 중") 뒤의 펼침 단추를 누르고 다시 찾는다
+  if xy=$(python3 -I "$HERE/uitap.py" "$OUT/ui-shade-$attempt.xml" "after:Keeping terminal" "id:android:id/expand_button") \
+    || xy=$(python3 -I "$HERE/uitap.py" "$OUT/ui-shade-$attempt.xml" "after:터미널 연결" "id:android:id/expand_button"); then
+    adb shell input tap $xy
+  fi
   sleep 2
 done
 if [ -z "$tapped" ]; then
@@ -171,7 +184,7 @@ sleep 2
 adb shell dumpsys activity services "$PKG" > "$OUT/dumpsys-services-after-disconnect.txt"
 grep -q "TerminalKeepAliveService" "$OUT/dumpsys-services-after-disconnect.txt" && fail "keep-alive service still running after disconnect" \
   || pass "keep-alive service stopped after disconnect"
-adb shell dumpsys notification --noredact | grep -q terminal_keepalive && fail "notification still shown after disconnect" || pass "notification removed after disconnect"
+adb shell dumpsys notification --noredact | grep -q "NotificationRecord.*pkg=$PKG" && fail "notification still shown after disconnect" || pass "notification removed after disconnect"
 
 section "3c. 연결하자마자 끊김 경쟁(10회)"
 launch
@@ -216,25 +229,33 @@ shot 07-secure-on
 px=$(python3 -I "$HERE/pixels.py" "$OUT/secure-on.raw")
 info "secure on pixels: $px"
 echo "$px" | grep -q "^max=\([0-9]\|1[0-9]\) " && pass "screencap of the app is black with screen protection" || fail "screencap not black with screen protection ($px)"
-# 새 액티비티에도 걸리는지
-adb shell settings put global always_finish_activities 1
+# 새 액티비티에도 걸리는지(활동 보관 안 함 — HOME 으로 없어지고 다시 열면 새로 만들어진다)
+n=$(wc -l < "$PCLOG")
 adb shell input keyevent KEYCODE_HOME
 sleep 3
 launch
 sleep 5
-adb shell settings put global always_finish_activities 0
+tail -n +"$((n + 1))" "$PCLOG" | grep -q "activity created" && info "activity recreated for the secure check" || info "activity was not recreated"
 flags=$(win_flags)
 echo "$flags" | grep -qw SECURE && pass "FLAG_SECURE kept on the recreated activity" || fail "FLAG_SECURE lost on recreated activity"
 adb exec-out screencap > "$OUT/secure-recreated.raw"
 px=$(python3 -I "$HERE/pixels.py" "$OUT/secure-recreated.raw")
 echo "$px" | grep -q "^max=\([0-9]\|1[0-9]\) " && pass "recreated activity screencap black" || fail "recreated activity screencap not black ($px)"
 hook secure --es on false
-sleep 2
+# 끈 뒤 캡처가 다시 보일 때까지 걸린 시간
+t0=$(date +%s)
+px=""
+for _ in $(seq 1 20); do
+  adb exec-out screencap > "$OUT/secure-off.raw"
+  px=$(python3 -I "$HERE/pixels.py" "$OUT/secure-off.raw")
+  b=$(echo "$px" | sed -n 's/.*bright=\([0-9]*\).*/\1/p')
+  [ "${b:-0}" -gt 200 ] && break
+  sleep 1
+done
+info "screen protection off → capture visible after $(( $(date +%s) - t0 ))s"
 flags=$(win_flags)
 echo "$flags" | grep -qw SECURE && fail "FLAG_SECURE still set after disabling" || pass "FLAG_SECURE cleared after disabling"
-adb exec-out screencap > "$OUT/secure-off.raw"
 shot 08-secure-off
-px=$(python3 -I "$HERE/pixels.py" "$OUT/secure-off.raw")
 info "secure off pixels: $px"
 bright=$(echo "$px" | sed -n 's/.*bright=\([0-9]*\).*/\1/p')
 [ "${bright:-0}" -gt 200 ] && pass "screencap shows the app again after disabling" || fail "screencap still dark after disabling ($px)"
