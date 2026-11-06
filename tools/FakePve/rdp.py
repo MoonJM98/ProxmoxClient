@@ -280,9 +280,18 @@ class DownFixer:
         self.converted = 0
         self.seen = 0
         self.off = False
+        self.started = False
+
+    def pre_tpkt(self, data):
+        """첫 TPKT 전(CredSSP TSRequest DER·Early User Authorization Result)은 PDU 로 자르지 않고 그대로 — 0x30 은 빠른
+        경로 머리처럼 보여 길이를 잘못 읽고 멈춘다(NLA 서버). 연결 단계는 TLS 뒤 첫 TPKT(MCS)부터."""
+        if not self.started and data[:1] != b'\x03':
+            return True
+        self.started = True
+        return False
 
     def feed(self, data):
-        if self.off:
+        if self.off or self.pre_tpkt(data):
             return data
         self.buf += data
         out = b''
@@ -340,7 +349,7 @@ class UpFixer(DownFixer):
     무엇을 묻든 1 로 답한다(새 버전은 2). 버전 2 는 1 에 우선순위 값만 더한 것이라 클라이언트 동작은 같다."""
 
     def feed(self, data):
-        if self.off:
+        if self.off or self.pre_tpkt(data):
             return data
         self.buf += data
         out = b''
