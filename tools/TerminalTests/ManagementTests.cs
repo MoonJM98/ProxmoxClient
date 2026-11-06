@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Net.Sockets;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
-using ProxmoxClient.UI.Views.Guest.Tabs;
+using ProxmoxClient.Presentation.Guest.Tabs;
 
 /// <summary>관리 기능의 순수 검사 — property string 규칙, 숫자 읽기, 입력 검사, digest·업로드 확장자.</summary>
 public static class ManagementTests

@@ -14,6 +14,9 @@ public partial class App : Application
 
     private void OnStartup(object sender, StartupEventArgs e)
     {
+        // 공용 화면 로직(ProxmoxClient.Presentation)이 이 앱의 문구와 로그 파일을 쓰게 한다
+        UiText.Use(Loc.T, Loc.T);
+        PresentationLog.Sink = Log;
         InstallExceptionHandlers();
         ApplySavedLanguage();
         Controls.MenuSeparators.Register();

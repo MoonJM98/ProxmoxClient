@@ -102,7 +102,7 @@ internal static partial class CtNetwork
         if (dialog.ShowDialog() != true || dialog.Result is not { } values) return null;
 
         await api.UpdateGuestConfigAsync(guest.Node, guest.Kind, guest.VmId,
-            ActionHelpers.UpdateForm(edit.Build(values)));
+            FormHelpers.UpdateForm(edit.Build(values)));
         return Loc.T("GuestSettingsWindow_M06");
     }
 

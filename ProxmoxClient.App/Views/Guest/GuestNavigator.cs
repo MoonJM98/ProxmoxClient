@@ -46,9 +46,9 @@ public static class GuestNavigator
                 ("GuestHardware_All", () => new Hardware.HardwareView(api, guest))
             ]),
             "cloudinit" => CloudInitTab(api, guest),
-            "options" => CreateOptionsTab(api, guest, Tabs.GuestOptions.All),
+            "options" => CreateOptionsTab(api, guest, GuestOptions.All),
             "network" => Hardware.CtNetwork.Create(api, guest),
-            "dns" => CreateOptionsTab(api, guest, Tabs.GuestOptions.CtDns),
+            "dns" => CreateOptionsTab(api, guest, GuestOptions.CtDns),
             "tasks" => new Tabs.TasksTab(
                 async () => await api.GetNodeTasksAsync(guest.Node, vmid: guest.VmId),
                 "TasksTab_Hint", "TasksTab_Empty", api),
@@ -85,14 +85,14 @@ public static class GuestNavigator
     ///     웹 UI 처럼 …/pending 으로 읽어 재시작 후 적용될 값을 따로 보여 주고, 되돌리기(revert)를 할 수 있다.
     /// </summary>
     private static Tabs.OptionsTab CreateOptionsTab(ProxmoxApiClient api, PveResource guest,
-        IReadOnlyList<Tabs.GuestOption> options, IReadOnlyList<Shared.TableAction>? extraActions = null)
+        IReadOnlyList<GuestOption> options, IReadOnlyList<Shared.TableAction>? extraActions = null)
     {
         // 서버 버전이 모르는 설정(예: 8.0 전의 ciupgrade)은 옵션 목록이 저장 요청(target)을 보고 뺀다
         return new Tabs.OptionsTab(
             options.Where(o => o.AppliesTo(guest.Kind)).ToList(),
             () => api.GetGuestPendingAsync(guest.Node, guest.Kind, guest.VmId),
             async changes => await api.UpdateGuestConfigAsync(guest.Node, guest.Kind, guest.VmId,
-                Shared.ActionHelpers.UpdateForm(changes)),
+                FormHelpers.UpdateForm(changes)),
             async keys => await api.RevertGuestPendingAsync(guest.Node, guest.Kind, guest.VmId, keys),
             extraActions, api.Guests.Feature(nameof(Core.Api.Domains.GuestsApi.SetConfigAsync)));
     }
@@ -103,7 +103,7 @@ public static class GuestNavigator
     /// </summary>
     private static Tabs.OptionsTab CloudInitTab(ProxmoxApiClient api, PveResource guest)
     {
-        var tab = CreateOptionsTab(api, guest, Tabs.CloudInitOptions.All,
+        var tab = CreateOptionsTab(api, guest, CloudInitOptions.All,
             [RegenerateCloudInit(api, guest), ..CloudInitViews.Actions(api, guest)]);
         tab.LockedReason = config => HasCloudInitDrive(config) ? null : Loc.T("CloudInit_NoDrive");
         return tab;

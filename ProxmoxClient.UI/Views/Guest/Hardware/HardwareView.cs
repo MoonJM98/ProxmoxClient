@@ -293,7 +293,7 @@ public partial class HardwareView : UserControl
         }
         catch (ProxmoxApiException ex)
         {
-            HardwareLog.Warn($"[하드웨어] {_guest.VmId} 상태 조회 실패: {ex.Message}");
+            PresentationLog.Warn($"[하드웨어] {_guest.VmId} 상태 조회 실패: {ex.Message}");
             return false;
         }
     }
@@ -339,8 +339,8 @@ public partial class HardwareView : UserControl
         var title = Loc.T(row.IsUsedDisk ? "Hw_Detach" : "Hw_Remove");
         if (destroys)
         {
-            if (await FormDialog.ShowAsync(text, [ActionHelpers.TypeToConfirmField()],
-                    ActionHelpers.TypedMatches(row.Key)) is null)
+            if (await FormDialog.ShowAsync(text, [FormHelpers.TypeToConfirmField()],
+                    FormHelpers.TypedMatches(row.Key)) is null)
                 return;
         }
         else if (!await Ask.ConfirmAsync(text, title, destructive: true))
@@ -376,7 +376,7 @@ public partial class HardwareView : UserControl
     private Task SendAsync(IReadOnlyDictionary<string, string> changes, bool background, string doneText,
         string flowName, bool confirmed = false)
     {
-        var form = ActionHelpers.UpdateForm(changes);
+        var form = FormHelpers.UpdateForm(changes);
         // 읽을 때 받은 digest — 편집 창을 연 사이 다른 곳에서 설정이 바뀌었으면 서버가 거절한다(덮어쓰지 않음)
         _ctx?.Config.AddDigest(form);
         return RunAsync(async () =>
@@ -389,7 +389,7 @@ public partial class HardwareView : UserControl
             }
 
             form["background_delay"] = "5";
-            var status = await ActionHelpers.RunTaskAsync(_api, _api.Guests.UpdateConfigAsync(_guest, form),
+            var status = await FormHelpers.RunTaskAsync(_api, _api.Guests.UpdateConfigAsync(_guest, form),
                 "Hw_TaskDone");
             return $"{doneText} ({status})";
         });
@@ -416,7 +416,7 @@ public partial class HardwareView : UserControl
         catch (Exception ex)
         {
             _status.Text = Loc.T("AppSettingsWindow_M03", ex.Message);
-            HardwareLog.Warn($"[하드웨어] {_guest.VmId} 작업 실패: {ex.Message}");
+            PresentationLog.Warn($"[하드웨어] {_guest.VmId} 작업 실패: {ex.Message}");
         }
         finally
         {
@@ -461,7 +461,7 @@ public partial class HardwareView : UserControl
         await RunAsync(async () =>
         {
             using var flow = WriteConfirmation.Begin(edit.Title);
-            return await ActionHelpers.RunTaskAsync(_api, r.Send(_api), "Hw_TaskDone");
+            return await FormHelpers.RunTaskAsync(_api, r.Send(_api), "Hw_TaskDone");
         });
     }
 }

@@ -133,6 +133,6 @@ public static class NodeNavigator
         return new OptionsTab(
             section.Options,
             () => api.GetNodeSectionAsync(node, section.Path),
-            async changes => await api.UpdateNodeSectionAsync(node, section.Path, ActionHelpers.UpdateForm(changes)));
+            async changes => await api.UpdateNodeSectionAsync(node, section.Path, FormHelpers.UpdateForm(changes)));
     }
 }

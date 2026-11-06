@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        두 앱(WPF ProxmoxClient.App · Avalonia ProxmoxClient.UI)이 함께 쓰는 화면 로직 — 입력 칸 정의·편집기·마법사 초안·입력 검사.
+        UI 프레임워크를 참조하지 않는다. 화면 문구는 각 앱의 리소스에 있으므로 UiText 로 앱이 넣어 준 조회를 쓴다.
+        Core(서버 통신·모델)와 나눈 까닭: 이 코드는 앱 문구 키와 입력 대화상자 모델(FormField)에 묶여 있다.
+    -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>ProxmoxClient.Presentation</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- 옮겨 온 형식은 앱 안에서처럼 internal 그대로 두고 두 앱에만 연다 -->
+        <InternalsVisibleTo Include="ProxmoxClient.App" />
+        <InternalsVisibleTo Include="ProxmoxClient.UI" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\ProxmoxClient.Core\ProxmoxClient.Core.csproj" />
+    </ItemGroup>
+
+</Project>

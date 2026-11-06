@@ -125,8 +125,8 @@ public partial class HardwareView : UserControl
         var confirm = new FormDialog(
             Loc.T(row.IsUsedDisk ? "Hw_DetachConfirm" : destroys ? "Hw_DestroyConfirm" : "Hw_RemoveConfirm",
                 row.Header),
-            destroys ? [ActionHelpers.TypeToConfirmField()] : [],
-            destroys ? ActionHelpers.TypedMatches(row.Key) : null) { Owner = Window.GetWindow(this) };
+            destroys ? [FormHelpers.TypeToConfirmField()] : [],
+            destroys ? FormHelpers.TypedMatches(row.Key) : null) { Owner = Window.GetWindow(this) };
         if (confirm.ShowDialog() != true) return;
 
         // CT 는 웹 UI 처럼 늘 PUT, VM 은 미사용 디스크·실행 중 디스크를 백그라운드 작업으로
@@ -155,7 +155,7 @@ public partial class HardwareView : UserControl
     /// </summary>
     private Task SendAsync(IReadOnlyDictionary<string, string> changes, bool background, string doneText)
     {
-        var form = ActionHelpers.UpdateForm(changes);
+        var form = FormHelpers.UpdateForm(changes);
         return RunAsync(async () =>
         {
             if (!background)
@@ -165,7 +165,7 @@ public partial class HardwareView : UserControl
             }
 
             form["background_delay"] = "5";
-            var status = await ActionHelpers.RunTaskAsync(_api, _api.Guests.UpdateConfigAsync(_guest, form),
+            var status = await FormHelpers.RunTaskAsync(_api, _api.Guests.UpdateConfigAsync(_guest, form),
                 "Hw_TaskDone");
             return $"{doneText} ({status})";
         });
@@ -226,6 +226,6 @@ public partial class HardwareView : UserControl
         if (dialog.ShowDialog() != true || dialog.Result is not { } values) return;
 
         var r = request(values);
-        await RunAsync(() => ActionHelpers.RunTaskAsync(_api, r.Send(_api), "Hw_TaskDone"));
+        await RunAsync(() => FormHelpers.RunTaskAsync(_api, r.Send(_api), "Hw_TaskDone"));
     }
 }

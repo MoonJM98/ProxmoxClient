@@ -76,7 +76,7 @@ public sealed class TasksTab : UserControl
 
     private PveTask? FindTask(IReadOnlyDictionary<string, string>? row)
     {
-        return row is null ? null : _tasks.FirstOrDefault(t => t.Upid == ActionHelpers.Value(row, "upid"));
+        return row is null ? null : _tasks.FirstOrDefault(t => t.Upid == FormHelpers.Value(row, "upid"));
     }
 
     private TableAction LogAction(ProxmoxApiClient api)

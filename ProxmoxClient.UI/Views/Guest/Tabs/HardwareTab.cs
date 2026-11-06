@@ -176,7 +176,7 @@ public sealed class HardwareTab : UserControl
         }
         catch (Exception ex)
         {
-            HardwareLog.Warn($"[설정] 노드 {_guest.Node} 자원 조회 실패: {ex.Message}");
+            PresentationLog.Warn($"[설정] 노드 {_guest.Node} 자원 조회 실패: {ex.Message}");
         }
     }
 
@@ -226,7 +226,7 @@ public sealed class HardwareTab : UserControl
         }
         catch (Exception ex)
         {
-            HardwareLog.Warn($"[설정] 브리지 목록 조회 실패: {ex.Message}");
+            PresentationLog.Warn($"[설정] 브리지 목록 조회 실패: {ex.Message}");
         }
     }
 
@@ -420,7 +420,7 @@ public sealed class HardwareTab : UserControl
             using var flow = WriteConfirmation.Begin(Loc.T("GuestTab_Hardware"));
             // 읽을 때 받은 digest — 그 사이 다른 곳에서 설정이 바뀌었으면 서버가 거절한다(덮어쓰지 않음)
             await _api.UpdateGuestConfigAsync(_guest.Node, _guest.Kind, _guest.VmId,
-                _pending.AddDigest(ActionHelpers.UpdateForm(changes)));
+                _pending.AddDigest(FormHelpers.UpdateForm(changes)));
             // 다시 읽은 뒤에 써야 "불러왔습니다" 에 덮이지 않는다. 다시 읽기 실패 문구는 남긴다
             if (await LoadAsync()) SetStatus(Loc.T("GuestSettingsWindow_M06"));
         }
@@ -436,7 +436,7 @@ public sealed class HardwareTab : UserControl
         catch (Exception ex)
         {
             SetStatus(Loc.T("AppSettingsWindow_M03", ex.Message));
-            HardwareLog.Warn($"[설정] {_guest.Kind.Label()} {_guest.VmId} 저장 실패: {ex.Message}");
+            PresentationLog.Warn($"[설정] {_guest.Kind.Label()} {_guest.VmId} 저장 실패: {ex.Message}");
         }
         finally
         {

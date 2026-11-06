@@ -5,6 +5,7 @@ using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Views.Guest.Hardware;
 using ProxmoxClient.UI.Views.Shared;
 using static ProxmoxClient.UI.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.FormHelpers;
 
 namespace ProxmoxClient.UI.Views.Guest;
 
@@ -79,7 +80,7 @@ internal static class GuestMigrateAction
         catch (Exception ex) when (ex is ProxmoxApiException or System.Net.Http.HttpRequestException
                                        or TaskCanceledException)
         {
-            HardwareLog.Warn($"[이전] {guest.VmId} 사전 확인 실패: {ex.Message}");
+            PresentationLog.Warn($"[이전] {guest.VmId} 사전 확인 실패: {ex.Message}");
             return null;
         }
     }

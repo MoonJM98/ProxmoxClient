@@ -56,8 +56,8 @@ internal sealed class WizardData
             ImageStorages = images.Result,
             RootStorages = roots.Result,
             Bridges = bridges.Result.Select(b => (b, b)).ToList(),
-            Pools = pools.Result.Select(r => ActionHelpers.Value(r, "poolid")).Where(p => p.Length > 0).Select(p => (p, p)).ToList(),
-            CpuModels = cpus.Result.Select(r => ActionHelpers.Value(r, "name")).Where(n => n.Length > 0)
+            Pools = pools.Result.Select(r => FormHelpers.Value(r, "poolid")).Where(p => p.Length > 0).Select(p => (p, p)).ToList(),
+            CpuModels = cpus.Result.Select(r => FormHelpers.Value(r, "name")).Where(n => n.Length > 0)
                 .OrderBy(n => n, StringComparer.OrdinalIgnoreCase).Select(n => (n, n)).ToList(),
             HostCpus = host.Result?.CpuCores ?? 0,
             HostMemoryMiB = (host.Result?.MemTotalBytes ?? 0) / (1024 * 1024),
@@ -104,7 +104,7 @@ internal sealed class WizardData
         string content, CancellationToken ct)
     {
         var rows = await TryAsync(() => api.Storage.NodeStoragesAsync(node, content, ct), []);
-        return rows.Select(r => new StorageInfo(ActionHelpers.Value(r, "storage"), ActionHelpers.Value(r, "type")))
+        return rows.Select(r => new StorageInfo(FormHelpers.Value(r, "storage"), FormHelpers.Value(r, "type")))
             .Where(s => s.Id.Length > 0).OrderBy(s => s.Id, StringComparer.Ordinal).ToList();
     }
 

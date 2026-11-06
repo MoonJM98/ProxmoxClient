@@ -1,5 +1,6 @@
 using ProxmoxClient.App.Localization;
 using static ProxmoxClient.App.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.FormHelpers;
 
 namespace ProxmoxClient.App.Views.Datacenter;
 
@@ -42,7 +43,7 @@ internal static partial class StorageActions
 
     private static bool IsFlag(StorageType type, string key)
     {
-        return type.Fields.Any(f => f.Field.Key == key && f.Field.Kind == Shared.FormFieldKind.Bool);
+        return type.Fields.Any(f => f.Field.Key == key && f.Field.Kind == FormFieldKind.Bool);
     }
 
     private static void ApplyContent(StorageType type, IReadOnlyDictionary<string, string> values,

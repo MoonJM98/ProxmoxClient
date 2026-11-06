@@ -5,6 +5,7 @@ using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Api.Domains;
 using ProxmoxClient.Core.Models;
 using static ProxmoxClient.UI.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.FormHelpers;
 
 namespace ProxmoxClient.UI.Views.Guest.Tabs;
 

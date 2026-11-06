@@ -262,7 +262,7 @@ internal sealed class VmWizard
         foreach (var d in _d.Disks)
         {
             if (d.Storage.Length == 0) return Loc.T("Wz_PickStorage", d.Slot);
-            if (!Guest.Tabs.GuestInputChecks.TryParseGiB(d.SizeGib, out var gib) || gib is < 0.001m or > 131072m)
+            if (!GuestInputChecks.TryParseGiB(d.SizeGib, out var gib) || gib is < 0.001m or > 131072m)
                 return Loc.T("HwEd_DiskSizeRange");
         }
 

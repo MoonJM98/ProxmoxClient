@@ -66,18 +66,12 @@ public sealed class BytesHumanConverter : IValueConverter
     {
         if (value is not long bytes) return "-";
 
-        return FormatBytes(bytes);
+        return ByteFormatter.Format(bytes);
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         return Binding.DoNothing;
-    }
-
-    /// <summary>공통 바이트 형식(#,##0.## + 설정 단위) — <see cref="ByteFormatter" /> 에 위임.</summary>
-    public static string FormatBytes(long bytes)
-    {
-        return ByteFormatter.Format(bytes);
     }
 }
 

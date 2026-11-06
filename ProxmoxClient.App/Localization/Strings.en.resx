@@ -3742,6 +3742,9 @@ Paste the join information below into 'Join cluster' on the new node (same forma
   <data name="GuestOptions_DefaultOff" xml:space="preserve">
     <value>(Default: no)</value>
   </data>
+  <data name="GuestOptions_DescriptionTooLong" xml:space="preserve">
+    <value>The description cannot exceed {0} KiB.</value>
+  </data>
   <data name="GuestOptions_Features" xml:space="preserve">
     <value>Features (nesting=1,keyctl=1 …)</value>
   </data>
@@ -6503,6 +6506,9 @@ Overwrite them?</value>
   </data>
   <data name="Ct_MountPathInvalid" xml:space="preserve">
     <value>The path must start with /.</value>
+  </data>
+  <data name="Ct_MountPathRules" xml:space="preserve">
+    <value>Enter an absolute path inside the container (not /). Commas, line breaks, /./ and /../ are not allowed.</value>
   </data>
   <data name="Ct_Quota" xml:space="preserve">
     <value>Enable quota</value>

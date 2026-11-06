@@ -104,7 +104,7 @@ internal static partial class CtNetwork
         if (values is null) return null;
 
         await api.UpdateGuestConfigAsync(guest.Node, guest.Kind, guest.VmId,
-            config.AddDigest(ActionHelpers.UpdateForm(edit.Build(values))));
+            config.AddDigest(FormHelpers.UpdateForm(edit.Build(values))));
         return Loc.T("GuestSettingsWindow_M06");
     }
 
@@ -177,7 +177,7 @@ internal static partial class CtNetwork
     private static string? Validate(IReadOnlyDictionary<string, string> values, IReadOnlySet<string> otherNames)
     {
         if (otherNames.Contains(V(values, "name"))) return Loc.T("CtNet_NameInUse");
-        if (!Tabs.GuestInputChecks.IsMacOrEmpty(V(values, "hwaddr"))) return Loc.T("HwEd_MacInvalid");
+        if (!GuestInputChecks.IsMacOrEmpty(V(values, "hwaddr"))) return Loc.T("HwEd_MacInvalid");
         if (V(values, "tag") is { Length: > 0 } tag && !(int.TryParse(tag, out var t) && t is >= 1 and <= 4094))
             return Loc.T("GuestSettings_VlanRange");
         if (V(values, "mtu") is { Length: > 0 } mtu && !(int.TryParse(mtu, out var m) && m is >= 576 and <= 65535))

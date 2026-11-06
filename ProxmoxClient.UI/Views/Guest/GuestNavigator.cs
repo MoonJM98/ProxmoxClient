@@ -112,7 +112,7 @@ public static class GuestNavigator
         return new OptionsTab(
             options.Where(o => o.AppliesTo(kind)).ToList(),
             () => api.GetGuestPendingAsync(node, kind, vmid),
-            changes => api.UpdateGuestConfigAsync(node, kind, vmid, ActionHelpers.UpdateForm(changes)),
+            changes => api.UpdateGuestConfigAsync(node, kind, vmid, FormHelpers.UpdateForm(changes)),
             keys => api.RevertGuestPendingAsync(node, kind, vmid, keys),
             extraActions,
             api.Guests.Feature(nameof(GuestsApi.SetConfigAsync)));

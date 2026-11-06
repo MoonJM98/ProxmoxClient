@@ -139,7 +139,7 @@ public sealed class CloneWindow : UserControl
         }
         catch (Exception ex)
         {
-            HardwareLog.Warn($"[복제] 다음 VMID 조회 실패: {ex.Message}");
+            PresentationLog.Warn($"[복제] 다음 VMID 조회 실패: {ex.Message}");
         }
     }
 

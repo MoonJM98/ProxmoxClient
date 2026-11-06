@@ -72,12 +72,12 @@ internal static class DiskActions
     public static async Task<DiskDialog> ReassignAsync(HardwareContext ctx, string key)
     {
         var vms = (await ctx.Api.Cluster.ResourcesAsync("vm"))
-            .Where(r => ActionHelpers.Value(r, "type") == (ctx.IsCt ? "lxc" : "qemu")
-                        && ActionHelpers.Value(r, "node") == ctx.Guest.Node
-                        && ActionHelpers.Value(r, "template") != "1"
-                        && ActionHelpers.Value(r, "vmid") != ctx.Guest.VmId.ToString(CultureInfo.InvariantCulture))
-            .Select(r => (ActionHelpers.Value(r, "vmid"),
-                $"{ActionHelpers.Value(r, "vmid")} ({ActionHelpers.Value(r, "name")})"))
+            .Where(r => FormHelpers.Value(r, "type") == (ctx.IsCt ? "lxc" : "qemu")
+                        && FormHelpers.Value(r, "node") == ctx.Guest.Node
+                        && FormHelpers.Value(r, "template") != "1"
+                        && FormHelpers.Value(r, "vmid") != ctx.Guest.VmId.ToString(CultureInfo.InvariantCulture))
+            .Select(r => (FormHelpers.Value(r, "vmid"),
+                $"{FormHelpers.Value(r, "vmid")} ({FormHelpers.Value(r, "name")})"))
             .OrderBy(r => int.TryParse(r.Item1, out var id) ? id : int.MaxValue)
             .ToList();
         var isUnused = key.StartsWith("unused", StringComparison.Ordinal);

@@ -4948,6 +4948,10 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>(기본값: 아니요)</value>
     <comment>GuestOptions</comment>
   </data>
+  <data name="GuestOptions_DescriptionTooLong" xml:space="preserve">
+    <value>설명은 {0} KiB 를 넘을 수 없습니다.</value>
+    <comment>Views/Guest/Tabs/OptionEditors.Text</comment>
+  </data>
   <data name="GuestOptions_Features" xml:space="preserve">
     <value>기능(nesting=1,keyctl=1 …)</value>
     <comment>GuestOptions</comment>
@@ -8149,6 +8153,10 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   </data>
   <data name="Ct_MountPathInvalid" xml:space="preserve">
     <value>경로는 / 로 시작해야 합니다.</value>
+    <comment>Views/Guest/Hardware</comment>
+  </data>
+  <data name="Ct_MountPathRules" xml:space="preserve">
+    <value>컨테이너 안의 절대 경로를 입력하세요(/ 제외). 쉼표·줄바꿈과 /./ · /../ 는 쓸 수 없습니다.</value>
     <comment>Views/Guest/Hardware</comment>
   </data>
   <data name="Ct_Quota" xml:space="preserve">

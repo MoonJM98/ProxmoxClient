@@ -52,11 +52,11 @@ public sealed class SnapshotsTab : UserControl
             new TableAction
             {
                 LabelKey = "SnapshotDialog_05", IconKey = "IconTrash", NeedsSelection = true,
-                Confirm = row => Loc.T("SnapshotDialog_M06", ActionHelpers.Value(row!, "name")),
+                Confirm = row => Loc.T("SnapshotDialog_M06", FormHelpers.Value(row!, "name")),
                 Run = (row, _) => row is null
                     ? Task.FromResult<string?>(null)
                     : RunSnapshotAsync(() => _api.DeleteSnapshotAsync(_guest.Node, _guest.Kind, _guest.VmId,
-                        ActionHelpers.Value(row, "name")), Loc.T("SnapshotDialog_ActionDelete", ActionHelpers.Value(row, "name")))
+                        FormHelpers.Value(row, "name")), Loc.T("SnapshotDialog_ActionDelete", FormHelpers.Value(row, "name")))
             }
         ]);
 
@@ -142,9 +142,9 @@ public sealed class SnapshotsTab : UserControl
     {
         if (row is null) return null;
 
-        var name = ActionHelpers.Value(row, "name");
+        var name = FormHelpers.Value(row, "name");
         var canStart = _api.Supports(Core.Api.Versioning.PveApiVersion.Parse(ProxmoxApiClient.RollbackStartSince))
-                       && ActionHelpers.Value(row, "ram").Length == 0;
+                       && FormHelpers.Value(row, "ram").Length == 0;
         var start = false;
         if (canStart)
         {
@@ -175,13 +175,13 @@ public sealed class SnapshotsTab : UserControl
     {
         if (row is null) return null;
 
-        var name = ActionHelpers.Value(row, "name");
+        var name = FormHelpers.Value(row, "name");
         var values = await FormDialog.ShowAsync(Loc.T("SnapshotDialog_EditNoteTitle", name),
         [
             new FormField
             {
                 Key = "description", LabelKey = "FirewallWindow_13", Kind = FormFieldKind.Multiline,
-                Initial = ActionHelpers.Value(row, "description"), CanLoadFile = false
+                Initial = FormHelpers.Value(row, "description"), CanLoadFile = false
             }
         ]);
         if (values is null) return null;

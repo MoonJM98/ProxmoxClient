@@ -72,12 +72,12 @@ internal static class DiskActions
     public static async Task<DiskDialog> ReassignAsync(HardwareContext ctx, string key)
     {
         var vms = (await ctx.Api.Cluster.ResourcesAsync("vm"))
-            .Where(r => ActionHelpers.Value(r, "type") == (ctx.IsCt ? "lxc" : "qemu")
-                        && ActionHelpers.Value(r, "node") == ctx.Guest.Node
-                        && ActionHelpers.Value(r, "template") != "1"
-                        && ActionHelpers.Value(r, "vmid") != ctx.Guest.VmId.ToString(CultureInfo.InvariantCulture))
-            .Select(r => (ActionHelpers.Value(r, "vmid"),
-                $"{ActionHelpers.Value(r, "vmid")} ({ActionHelpers.Value(r, "name")})"))
+            .Where(r => FormHelpers.Value(r, "type") == (ctx.IsCt ? "lxc" : "qemu")
+                        && FormHelpers.Value(r, "node") == ctx.Guest.Node
+                        && FormHelpers.Value(r, "template") != "1"
+                        && FormHelpers.Value(r, "vmid") != ctx.Guest.VmId.ToString(CultureInfo.InvariantCulture))
+            .Select(r => (FormHelpers.Value(r, "vmid"),
+                $"{FormHelpers.Value(r, "vmid")} ({FormHelpers.Value(r, "name")})"))
             .OrderBy(r => int.TryParse(r.Item1, out var id) ? id : int.MaxValue)
             .ToList();
         var isUnused = key.StartsWith("unused", StringComparison.Ordinal);
@@ -121,7 +121,7 @@ internal static class DiskActions
                     Hint = Loc.T("HwDisk_SizeIncrementHint") }
             ],
             // 소수점만 받는다 — 1e3·1,5 같은 값은 서버 형식(+숫자[.숫자]G)이 아니다
-            Validate = values => Tabs.GuestInputChecks.TryParseGiB(V(values, "size"), out var gib)
+            Validate = values => GuestInputChecks.TryParseGiB(V(values, "size"), out var gib)
                                  && gib <= MaxResizeGib
                 ? null
                 : Loc.T("DeviceTable_SizeInvalid"),
@@ -134,7 +134,7 @@ internal static class DiskActions
     /// <summary>늘릴 크기 → 서버 형식 "+N[.N]G"(문화권과 무관하게 점).</summary>
     public static string ResizeSize(string text)
     {
-        Tabs.GuestInputChecks.TryParseGiB(text, out var gib);
+        GuestInputChecks.TryParseGiB(text, out var gib);
         return $"+{gib.ToString(CultureInfo.InvariantCulture)}G";
     }
 

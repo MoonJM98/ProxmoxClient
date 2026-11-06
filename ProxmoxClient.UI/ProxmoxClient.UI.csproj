@@ -32,6 +32,8 @@
 
     <ItemGroup>
         <ProjectReference Include="..\ProxmoxClient.Core\ProxmoxClient.Core.csproj" />
+        <!-- WPF 앱과 함께 쓰는 화면 로직(편집기·마법사 초안·입력 검사) -->
+        <ProjectReference Include="..\ProxmoxClient.Presentation\ProxmoxClient.Presentation.csproj" />
     </ItemGroup>
 
 </Project>

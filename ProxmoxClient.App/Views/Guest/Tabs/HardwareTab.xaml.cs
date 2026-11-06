@@ -290,7 +290,7 @@ public partial class HardwareTab : UserControl
         {
             // 비운 칸은 delete 로 보내 서버 기본값으로 되돌린다("memory=" 같은 빈 값은 서버가 거절한다)
             await _api.UpdateGuestConfigAsync(_guest.Node, _guest.Kind, _guest.VmId,
-                Shared.ActionHelpers.UpdateForm(changes));
+                FormHelpers.UpdateForm(changes));
             // 다시 읽은 뒤에 써야 "불러왔습니다" 에 덮이지 않는다. 다시 읽기 실패 문구는 남긴다
             if (await LoadAsync()) SetStatus(Loc.T("GuestSettingsWindow_M06"));
         }

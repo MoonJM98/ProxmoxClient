@@ -1,7 +1,5 @@
-using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Media;
-using ProxmoxClient.Core.Settings;
 using ProxmoxClient.UI.Localization;
 
 namespace ProxmoxClient.UI;
@@ -29,36 +27,6 @@ public sealed record GraphSeries(
     GraphValueUnit Unit)
 {
     public bool HasData => Values.Any(value => value is not null);
-}
-
-public static class ByteFormatter
-{
-    private const string NumberFormat = "#,##0.##";
-    private const double BytesPerStep = 1024;
-    private static readonly string[] Units = ["B", "KB", "MB", "GB", "TB", "PB"];
-
-    public static ByteDisplayUnit DisplayUnit { get; set; } = ByteDisplayUnit.Auto;
-
-    public static string Format(double bytes)
-    {
-        var exponent = DisplayUnit == ByteDisplayUnit.Auto ? AutoExponent(bytes) : (int)DisplayUnit;
-        exponent = Math.Clamp(exponent, 0, Units.Length - 1);
-        var scaled = bytes / Math.Pow(BytesPerStep, exponent);
-        return $"{scaled.ToString(NumberFormat, CultureInfo.CurrentCulture)} {Units[exponent]}";
-    }
-
-    private static int AutoExponent(double bytes)
-    {
-        var exponent = 0;
-        var size = Math.Abs(bytes);
-        while (size >= BytesPerStep && exponent < Units.Length - 1)
-        {
-            size /= BytesPerStep;
-            exponent++;
-        }
-
-        return exponent;
-    }
 }
 
 /// <summary>콤보 상자 선택지 — WPF ComboChoices 와 같은 목록·같은 사용법(Fill · Select · Selected).</summary>
