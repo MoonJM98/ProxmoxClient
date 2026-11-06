@@ -150,7 +150,7 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
             AbortSocket();
             channel.Complete();
             if (ex is IronRdpException rdp)
-                throw new InvalidOperationException(Res.T("Rdp_Failed", rdp.Inner.ToDisplay()), ex);
+                throw new InvalidOperationException(RdpErrors.Describe(rdp.Inner.Kind, rdp.Inner.ToDisplay()), ex);
 
             throw;
         }

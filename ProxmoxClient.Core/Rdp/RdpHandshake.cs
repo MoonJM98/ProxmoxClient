@@ -76,7 +76,11 @@ internal static class RdpHandshake
         return certificate.GetPublicKey();
     }
 
-    /// <summary>CredSSP(NTLM) — 외부 인증 서버(Kerberos)가 필요한 구성은 지원하지 않는다.</summary>
+    /// <summary>
+    ///     CredSSP(NLA) — Kerberos 설정을 넘기지 않으므로 IronRDP 는 NTLM 만 쓴다(Negotiate 아님). NTLM 은 외부 서버를
+    ///     찾지 않아 생성기가 네트워크 요청(KDC)으로 멈추는 일이 없다 — 멈추면 알 수 없는 구성이라 끝낸다.
+    ///     조기 인증 결과(HYBRID_EX)는 IronRDP 가 연결 상태의 선택 프로토콜을 보고 스스로 읽는다(DecodeServerMessage → null).
+    /// </summary>
     private static async Task CredsspAsync(RdpChannel channel, ClientConnector connector, string destination,
         byte[] serverPublicKey, WriteBuf writeBuf)
     {

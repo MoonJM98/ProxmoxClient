@@ -280,18 +280,20 @@ class DownFixer:
         self.converted = 0
         self.seen = 0
         self.off = False
+        # CredSSP(NLA) 단계: TLS 바로 뒤 TSRequest(DER 0x30 …)·조기 인증 결과(4바이트)는 TPKT 도 빠른 경로도 아니다 —
+        # 0x30 은 빠른 경로 머리처럼 보여 잘못 자르면 끝 몇 바이트가 묶여 서버가 영원히 기다린다. 첫 TPKT(MCS 연결) 전까지
+        # 그대로 흘린다
         self.started = False
 
-    def pre_tpkt(self, data):
-        """첫 TPKT 전(CredSSP TSRequest DER·Early User Authorization Result)은 PDU 로 자르지 않고 그대로 — 0x30 은 빠른
-        경로 머리처럼 보여 길이를 잘못 읽고 멈춘다(NLA 서버). 연결 단계는 TLS 뒤 첫 TPKT(MCS)부터."""
-        if not self.started and data[:1] != b'\x03':
-            return True
-        self.started = True
+    def _pass_credssp(self, data):
+        if not self.started and not self.buf:
+            if data[:1] != b'\x03':
+                return True
+            self.started = True
         return False
 
     def feed(self, data):
-        if self.off or self.pre_tpkt(data):
+        if self.off or self._pass_credssp(data):
             return data
         self.buf += data
         out = b''
@@ -349,7 +351,7 @@ class UpFixer(DownFixer):
     무엇을 묻든 1 로 답한다(새 버전은 2). 버전 2 는 1 에 우선순위 값만 더한 것이라 클라이언트 동작은 같다."""
 
     def feed(self, data):
-        if self.off or self.pre_tpkt(data):
+        if self.off or self._pass_credssp(data):
             return data
         self.buf += data
         out = b''
@@ -409,8 +411,12 @@ def serve(handler, vmid, token):
                     data += payload
         total = der_total(data)
         req, rest = decode_pdu(data[:total]), data[total:]
-        log('request version=%s destination=%s token_ok=%s x224=%d pcb=%r' % (
-            req.get(0), req.get(2), req.get(3) == token, len(req.get(6, b'')), req.get(5)))
+        x224_req = req.get(6, b'')
+        # RDP_NEG_REQ(맨 끝 8바이트: 01 flags 08 00 requestedProtocols) — 1=TLS 2=CredSSP 8=CredSSP+조기 인증 결과
+        requested = struct.unpack('<I', x224_req[-4:])[0] if len(x224_req) >= 8 and x224_req[-8] == 1 else None
+        log('request version=%s destination=%s token_ok=%s x224=%d requested=%s pcb=%r' % (
+            req.get(0), req.get(2), req.get(3) == token, len(x224_req),
+            '0x%x' % requested if requested is not None else '-', req.get(5)))
         if req.get(0) != VERSION_1 or 6 not in req:
             ws.send(error_pdu(2))
             return
@@ -428,7 +434,9 @@ def serve(handler, vmid, token):
             return
         raw.sendall(req[6])
         x224 = read_tpkt(raw)
-        log('x224 confirm %s' % x224.hex())
+        # RDP_NEG_RSP(02 flags 08 00 selectedProtocol) — 서버가 고른 보안
+        selected = struct.unpack('<I', x224[-4:])[0] if len(x224) >= 19 and x224[-8] == 2 else None
+        log('x224 confirm %s selected=%s' % (x224.hex(), '0x%x' % selected if selected is not None else '-'))
         tls = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         tls.check_hostname = False
         tls.verify_mode = ssl.CERT_NONE

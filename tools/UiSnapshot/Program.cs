@@ -468,12 +468,16 @@ if (target == "realshell") await RealShellCheck();
 // ---- RDP 콘솔 끝까지(--target rdp, 휴대폰): 가짜 PVE 의 RDCleanPath 프록시(tools/FakePve/rdp.py)가 이 PC 의 실제 RDP 서버
 // (xrdp, --rdp 호스트:포트)로 잇는다. 연결·화면 내용·화면 키보드 글자/특수키(게스트 셸이 파일로 적은 글로 확인)·
 // 창 크기에 맞춘 해상도 변경·웹소켓 끊김 뒤 다시 연결. RDP 서버가 없으면 SKIP(CI 에 xrdp 가 없을 때)
+// --rdpnla 1(또는 RDP_NLA=1): NLA(CredSSP/NTLM)를 요구하는 서버(FreeRDP 그림자 서버, tools/FakePve/nla-server.sh) —
+// 틀린 비밀번호는 로그인 화면이 아니라 CredSSP 거부(알아볼 수 있는 글), 연결은 CredSSP 로, 해상도는 서버가 고정(그림자 서버는
+// 보이는 X 화면을 그대로 보낸다)이라 요청 뒤에도 연결이 유지되는지만 본다
 if (target == "rdp") await RdpCheck();
 async Task RdpCheck()
 {
     var rdpTarget = options.GetValueOrDefault("rdp", Environment.GetEnvironmentVariable("RDP_TARGET") ?? "127.0.0.1:33890");
     var rdpUser = options.GetValueOrDefault("rdpuser", Environment.GetEnvironmentVariable("RDP_USER") ?? "rdptest");
     var rdpPassword = options.GetValueOrDefault("rdppass", Environment.GetEnvironmentVariable("RDP_PASSWORD") ?? "RdpTest!234");
+    var rdpNla = options.GetValueOrDefault("rdpnla", Environment.GetEnvironmentVariable("RDP_NLA") ?? "0") == "1";
     var hostPort = rdpTarget.Split(':');
     // 이 검사의 기다림은 모두 동기(Pump 없이 await 하면 헤드리스 UI 스레드가 이어짐을 돌리지 않아 멈춘다)
     try
@@ -522,6 +526,29 @@ async Task RdpCheck()
     // xrdp 로그인 화면(틀린 비밀번호 → 자동 로그온 실패): xrdp 는 이 화면을 느린 경로 비트맵(폭을 4 의 배수로 채운 것)으로
     // 그린다. 세션이 끊기지 않고(옛 IronRDP 는 "unhandled PDU"), 대화상자 왼쪽 테두리가 곧아야 한다(행 간격을 잘못 읽으면
     // 줄마다 밀려 비스듬히 그려진다). 프록시 고쳐 쓰기 없이(FAKEPVE_RDP_COMPAT 꺼짐)
+    if (rdpNla)
+    {
+        // NLA: 틀린 비밀번호 → CredSSP 단계에서 서버가 STATUS_LOGON_FAILURE 로 거부 → 시간 초과가 아니라 바로 알아볼 수 있는 글
+        Configure("wrong-" + rdpPassword);
+        var started = DateTime.UtcNow;
+        await Wait(ConsoleLauncher.OpenGuestAsync(cluster.Session, guest));
+        var failVm = (nav.CurrentPage as ConsolePage)?.DataContext as ConsoleViewModel;
+        if (failVm is not null)
+        {
+            WaitFor(() => failVm.IsConnected || failVm.CanReconnect, 30000);
+            var seconds = (DateTime.UtcNow - started).TotalSeconds;
+            Shot("rdp-nla-logon-failed");
+            var expected = ProxmoxClient.Core.Rdp.RdpErrors.Describe(Devolutions.IronRdp.IronRdpErrorKind.CredsspError, "STATUS_LOGON_FAILURE");
+            Check0("RDP NLA 틀린 비밀번호", "CredSSP 거부를 '로그인 실패' 글로 · 10초 안에(시간 초과 아님)",
+                $"{failVm.Status?.Replace('\n', ' ')} · {seconds:F1}초",
+                !failVm.IsConnected && failVm.Status?.Contains(expected) == true && seconds < 10);
+            await Wait(AppServices.Navigator.PopAsync());
+            Pump(500);
+        }
+
+        Configure(rdpPassword);
+    }
+    else
     {
         Configure("wrong-" + rdpPassword);
         var logFrom = LogSize();
@@ -572,6 +599,7 @@ async Task RdpCheck()
         });
     }
 
+    var connectFrom = LogSize();
     await Wait(ConsoleLauncher.OpenGuestAsync(cluster.Session, guest)); // 디스플레이 rdp → RDP 콘솔
     var page = nav.CurrentPage as ConsolePage;
     var vm = page?.DataContext as ConsoleViewModel;
@@ -597,6 +625,13 @@ async Task RdpCheck()
         vm.IsConnected && vm.Vnc.Width > 0 && Colors() > 3);
     Shot("rdp-connected");
     if (!vm.IsConnected) return;
+    if (rdpNla)
+    {
+        // 프록시가 본 X.224 확인의 선택 보안 — 2(CredSSP) 또는 8(CredSSP + 조기 인증 결과)이어야 NLA 로 들어간 것
+        var selected = LogSince(connectFrom, "RDP x224 confirm").Select(l => l[(l.IndexOf("selected=", StringComparison.Ordinal) + 9)..]).ToList();
+        Check0("RDP NLA(CredSSP/NTLM) 로그인", "서버가 CredSSP 를 골랐고 그대로 연결됨",
+            string.Join(", ", selected), selected.Count > 0 && selected.All(p => p is "0x2" or "0x8"));
+    }
 
     // 화면 키보드: xterm 을 누른 뒤 입력 칸에 글을 넣는다 → 게스트 셸이 파일로 적는다
     var softInput = page.GetVisualDescendants().OfType<TextBox>().First();
@@ -660,12 +695,18 @@ async Task RdpCheck()
     window.Width = 600;
     window.Height = 700;
     Pump(300);
-    WaitFor(() => page.LastRdpResize is { } r && r != before && vm.Vnc.Width == r.Width && vm.Vnc.Height == r.Height, 15000);
+    WaitFor(() => page.LastRdpResize is { } r && r != before && vm.Vnc.Width == r.Width && vm.Vnc.Height == r.Height,
+        rdpNla ? 5000 : 15000);
     Pump(1500);
     var asked = page.LastRdpResize;
-    Check0("RDP 해상도 맞춤", "창 600×700 → 요청한 크기로 게스트 해상도 바뀜",
-        $"{before.Width}×{before.Height} → 요청 {asked} · 지금 {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지 · {(vm.IsConnected ? "연결됨" : vm.Status)}",
-        asked is { } a && a != before && vm.Vnc.Width == a.Width && vm.Vnc.Height == a.Height && Colors() > 3 && vm.IsConnected);
+    if (rdpNla)
+        Check0("RDP 해상도 요청(그림자 서버는 크기 고정)", "창 600×700 → 요청은 보내고, 서버가 크기를 안 바꿔도 연결·화면 유지",
+            $"{before.Width}×{before.Height} → 요청 {asked} · 지금 {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지 · {(vm.IsConnected ? "연결됨" : vm.Status)}",
+            asked is { } na && na != before && vm.IsConnected && Colors() > 3);
+    else
+        Check0("RDP 해상도 맞춤", "창 600×700 → 요청한 크기로 게스트 해상도 바뀜",
+            $"{before.Width}×{before.Height} → 요청 {asked} · 지금 {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지 · {(vm.IsConnected ? "연결됨" : vm.Status)}",
+            asked is { } a && a != before && vm.Vnc.Width == a.Width && vm.Vnc.Height == a.Height && Colors() > 3 && vm.IsConnected);
     Shot("rdp-resized");
 
     // 웹소켓 끊김 → 끊김 알림·[다시 연결] → 다시 연결(새 토큰)하면 같은 세션 화면
