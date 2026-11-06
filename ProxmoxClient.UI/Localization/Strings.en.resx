@@ -703,6 +703,15 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Terminal_HistoryButton" xml:space="preserve">
     <value>History</value>
   </data>
+  <data name="Terminal_PasteConfirmTitle" xml:space="preserve">
+    <value>Paste multiple lines</value>
+  </data>
+  <data name="Terminal_PasteConfirm" xml:space="preserve">
+    <value>Pasting {0} lines. Each line may run right away.&#10;&#10;{1}</value>
+  </data>
+  <data name="Terminal_PasteConfirmRun" xml:space="preserve">
+    <value>Paste</value>
+  </data>
   <data name="Terminal_HistoryEmpty" xml:space="preserve">
     <value>No commands recorded yet.</value>
   </data>

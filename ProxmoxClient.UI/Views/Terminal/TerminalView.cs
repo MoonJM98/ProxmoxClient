@@ -50,7 +50,17 @@ public sealed class TerminalView : Grid
     private Point _touchPos;
     private double _pinchDistance;
     private double _pinchFont;
-    private int _mouseButton = -1;
+
+    // 마우스 보고 — 누른 단추(비트 0 왼쪽 1 가운데 2 오른쪽), 마지막으로 보고한 칸, 휠 나머지(터치패드의 잘게 나뉜 휠)
+    private int _mouseButtons;
+    private (int Col, int Row) _lastMouseCell = (-1, -1);
+    private double _wheelX;
+    private double _wheelY;
+    private double _wheelLines;
+
+    // 포커스 보고(?1004) — 마지막으로 알린 상태
+    private bool _focusReported;
+    private bool _focusReportQueued;
 
     // 바탕(OSC 11·화면 반전을 따른다)
     private readonly SolidColorBrush _background = new(Color.FromUInt32(0xFF000000 | TerminalRenderer.DefaultBackground));
@@ -75,8 +85,8 @@ public sealed class TerminalView : Grid
         Controls.SoftKeyboard.Configure(_input); // Enter 로 키보드가 닫히지 않게
         _input.TextChanged += OnInputText;
         _input.AddHandler(KeyDownEvent, OnInputKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
-        _input.GotFocus += (_, _) => _surface.InvalidateVisual();
-        _input.LostFocus += (_, _) => _surface.InvalidateVisual();
+        _input.GotFocus += (_, _) => OnInputFocusChanged();
+        _input.LostFocus += (_, _) => OnInputFocusChanged();
         _input.TemplateApplied += (_, _) => WatchPreedit();
 
         Children.Add(_surface);
@@ -104,8 +114,14 @@ public sealed class TerminalView : Grid
 
     public double TerminalFontSize => _renderer.FontSize;
 
-    /// <summary>Ctrl·Alt 를 한 번 적용(특수 키 막대의 고정 키) — 다음 입력에 붙이고 풀린다.</summary>
-    public Func<(bool Ctrl, bool Alt)>? TakeStickyModifiers { get; set; }
+    /// <summary>
+    ///     특수 키 막대에 고정해 둔 Ctrl·Alt·Shift(보기만 한다). 실제로 키나 글자를 보낼 때 붙이고
+    ///     <see cref="ClearStickyModifiers" /> 로 푼다 — Shift 같은 수식키만 눌렀을 때는 풀리지 않는다.
+    /// </summary>
+    public Func<KeyModifiers>? StickyModifiers { get; set; }
+
+    /// <summary>고정 키를 푼다(입력을 보냈다).</summary>
+    public Action? ClearStickyModifiers { get; set; }
 
     public bool HasSelection => _anchor is { } a && a != _caret;
 
@@ -234,17 +250,28 @@ public sealed class TerminalView : Grid
 
     public bool IsInputFocused => _input.IsFocused;
 
-    /// <summary>터미널로 보낸다 — 고정 키 적용, 아래로 되돌림, 선택 해제.</summary>
+    /// <summary>
+    ///     터미널로 보낸다 — 아래로 되돌림, 선택 해제. 고정 키는 무엇을 보내든 풀리고, <paramref name="applySticky" /> 이면
+    ///     글자 하나에만 붙는다(여러 글자 — 붙여넣기 등 — 에는 붙이지 않는다).
+    /// </summary>
     public void Send(string text, bool applySticky = true)
     {
         if (text.Length == 0) return;
 
-        if (applySticky && TakeStickyModifiers?.Invoke() is { } sticky && (sticky.Ctrl || sticky.Alt))
-            text = TerminalKeys.WithModifiers(text, sticky.Ctrl, sticky.Alt);
+        var sticky = StickyModifiers?.Invoke() ?? KeyModifiers.None;
+        if (sticky != KeyModifiers.None)
+        {
+            ClearStickyModifiers?.Invoke();
+            if (applySticky && IsSingleRune(text))
+                text = TerminalKeys.WithModifiers(text, sticky.HasFlag(KeyModifiers.Control),
+                    sticky.HasFlag(KeyModifiers.Alt), sticky.HasFlag(KeyModifiers.Shift));
+        }
+
         ScrollOffset = 0;
         if (HasSelection) ClearSelection();
-        // Enter — 지금 화면의 입력 줄을 명령으로 알린다(최근 명령 기록). 편집기 등 대체 화면·여러 줄 붙여넣기는 제외
-        if (text.EndsWith('\r') && text.IndexOf('\r') == text.Length - 1 && !Buffer.IsAlternateScreen &&
+        // Enter — 지금 화면의 입력 줄을 명령으로 알린다(최근 명령 기록). 편집기 등 대체 화면·여러 줄 붙여넣기·Shift+Enter 는 제외
+        if (text.EndsWith('\r') && text.IndexOf('\r') == text.Length - 1 && !text.Contains('\x1b') &&
+            !Buffer.IsAlternateScreen &&
             TerminalAssist.CommandFrom(TerminalAssist.CursorLine(Buffer).Text + text[..^1]) is { Length: > 0 } command)
             LineSubmitted?.Invoke(command);
         Input?.Invoke(text);
@@ -252,25 +279,78 @@ public sealed class TerminalView : Grid
         _surface.InvalidateVisual();
     }
 
-    /// <summary>특수 키 하나(특수 키 막대) — 고정한 Ctrl·Alt 는 수식키로 붙는다.</summary>
-    public void SendKey(Key key)
+    private static bool IsSingleRune(string text)
     {
-        var sticky = TakeStickyModifiers?.Invoke() ?? (false, false);
-        var modifiers = (sticky.Ctrl ? KeyModifiers.Control : 0) | (sticky.Alt ? KeyModifiers.Alt : 0);
-        if (TerminalKeys.Encode(key, modifiers, Buffer.ApplicationCursorKeys) is { } text) Send(text, false);
+        return System.Text.Rune.TryGetRuneAt(text, 0, out var rune) && rune.Utf16SequenceLength == text.Length;
     }
 
-    /// <summary>붙여넣기 — 줄바꿈은 CR 로(셸이 빈 줄을 더 실행하지 않게), 괄호 붙여넣기 모드면 감싼다.</summary>
+    /// <summary>특수 키 하나(특수 키 막대) — 고정한 Ctrl·Alt·Shift 는 수식키로 붙는다.</summary>
+    public void SendKey(Key key)
+    {
+        var modifiers = StickyModifiers?.Invoke() ?? KeyModifiers.None;
+        if (EncodeKey(key, modifiers) is { } text) Send(text, false);
+    }
+
+    private string? EncodeKey(Key key, KeyModifiers modifiers, string? keySymbol = null,
+        PhysicalKey physical = PhysicalKey.None)
+    {
+        return TerminalKeys.Encode(key, modifiers, Buffer.ApplicationCursorKeys, Buffer.ApplicationKeypad,
+            Buffer.NewLineMode, keySymbol, physical);
+    }
+
+    /// <summary>
+    ///     붙여넣기 — 줄바꿈은 CR 로(셸이 빈 줄을 더 실행하지 않게). 괄호 붙여넣기 모드면 감싸고 제어 문자를 걸러
+    ///     붙여넣은 글이 명령으로 해석되지 않게 한다. 아니면 터치 기기에서 여러 줄은 실행 전에 묻는다.
+    /// </summary>
     public void Paste(string text)
     {
         text = text.Replace("\r\n", "\r").Replace('\n', '\r');
-        if (Buffer.BracketedPaste) text = "\x1b[200~" + text.Replace("\x1b", "") + "\x1b[201~";
+        if (text.Length == 0) return;
+
+        if (Buffer.BracketedPaste)
+        {
+            Send("\x1b[200~" + CleanPaste(text) + "\x1b[201~", false);
+            return;
+        }
+
+        if (Platform.PlatformInfo.IsTouch && text.Contains('\r'))
+        {
+            _ = ConfirmPasteAsync(text);
+            return;
+        }
+
         Send(text, false);
+    }
+
+    /// <summary>괄호 붙여넣기 안의 글 — TAB·CR 말고 C0 제어 문자(ESC 포함)와 C1(0x80~0x9F)을 뺀다.</summary>
+    public static string CleanPaste(string text)
+    {
+        var sb = new System.Text.StringBuilder(text.Length);
+        foreach (var c in text)
+            if (c is '\t' or '\r' || c >= ' ' && c is not (>= '\x80' and <= '\x9f'))
+                sb.Append(c);
+        return sb.ToString();
+    }
+
+    private async Task ConfirmPasteAsync(string text)
+    {
+        var lines = text.TrimEnd('\r').Split('\r').Length;
+        var preview = text.Length > 200 ? text[..200] + "…" : text;
+        if (await Services.AppServices.Dialogs.ConfirmAsync(Localization.L.T("Terminal_PasteConfirmTitle"),
+                Localization.L.T("Terminal_PasteConfirm", lines, preview.TrimEnd('\r').Replace('\r', '\n')),
+                Localization.L.T("Terminal_PasteConfirmRun")))
+            Send(text, false);
+        FocusInput();
     }
 
     private void OnInputKeyDown(object? sender, KeyEventArgs e)
     {
         var mods = e.KeyModifiers;
+        // 한글 등 IME 가 조합 중이면 IME 에 맡긴다 — 글자가 확정된 뒤 입력 칸으로 들어온다
+        if (e.Key == Key.ImeProcessed ||
+            !string.IsNullOrEmpty(_preedit) && (mods & (KeyModifiers.Control | KeyModifiers.Alt)) == 0)
+            return;
+
         // 복사·붙여넣기 단축키(Ctrl+Shift+C/V, Ctrl+Insert, Shift+Insert)
         if (mods == (KeyModifiers.Control | KeyModifiers.Shift) && e.Key is Key.C or Key.V ||
             mods == KeyModifiers.Control && e.Key == Key.Insert || mods == KeyModifiers.Shift && e.Key == Key.Insert)
@@ -280,30 +360,63 @@ public sealed class TerminalView : Grid
             return;
         }
 
-        if (mods == KeyModifiers.Shift && e.Key is Key.PageUp or Key.PageDown)
+        // Shift+PgUp/PgDn — 스크롤백. 대체 화면은 스크롤백이 없으니 프로그램에 그대로 보낸다
+        if (mods == KeyModifiers.Shift && e.Key is Key.PageUp or Key.PageDown && !Buffer.IsAlternateScreen)
         {
             ScrollBy(e.Key == Key.PageUp ? Buffer.Rows - 1 : -(Buffer.Rows - 1));
             e.Handled = true;
             return;
         }
 
-        var sticky = TakeStickyModifiers?.Invoke() ?? (false, false);
-        if (sticky.Ctrl) mods |= KeyModifiers.Control;
-        if (sticky.Alt) mods |= KeyModifiers.Alt;
-
-        if (TerminalKeys.Encode(e.Key, mods, Buffer.ApplicationCursorKeys) is not { } text) return;
+        // 고정 키는 보기만 — 실제로 보낼 때(Send) 풀린다. Shift·Ctrl 만 누른 것은 아무것도 보내지 않으니 그대로 남는다
+        mods |= StickyModifiers?.Invoke() ?? KeyModifiers.None;
+        if (EncodeKey(e.Key, mods, e.KeySymbol, e.PhysicalKey) is not { } text) return;
 
         Send(text, false);
         e.Handled = true;
     }
 
+    /// <summary>한 번에 이보다 길게 들어온 글은 붙여넣기로 본다.</summary>
+    private const int PasteThreshold = 32;
+
+    /// <summary>
+    ///     입력 칸에 들어온 글자(소프트 키보드·IME 확정). 줄바꿈이 섞였거나 긴 글은 붙여넣기로(Gboard 클립보드·길게 눌러
+    ///     붙여넣기·Cmd+V) — 괄호 붙여넣기가 적용된다. 끝의 줄바꿈 하나는 Enter 로 본다.
+    /// </summary>
     private void OnInputText(object? sender, TextChangedEventArgs e)
     {
         var text = _input.Text;
         if (string.IsNullOrEmpty(text)) return;
 
         _input.Text = string.Empty;
-        Send(text.Replace("\r\n", "\r").Replace('\n', '\r'));
+        var body = text.EndsWith("\r\n", StringComparison.Ordinal) ? text[..^2]
+            : text.EndsWith('\n') || text.EndsWith('\r') ? text[..^1] : text;
+        var enter = body.Length < text.Length;
+        if (body.Contains('\n') || body.Contains('\r') || body.Length > PasteThreshold)
+        {
+            Paste(text);
+            return;
+        }
+
+        Send(enter ? body + (Buffer.NewLineMode ? "\r\n" : "\r") : body);
+    }
+
+    private void OnInputFocusChanged()
+    {
+        _surface.InvalidateVisual();
+        if (_focusReportQueued) return;
+
+        // 키보드를 다시 열 때(SoftKeyboard.Show) 포커스가 잠깐 나갔다 돌아온다 — 정리된 뒤의 상태만 알린다
+        _focusReportQueued = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _focusReportQueued = false;
+            var focused = _input.IsFocused;
+            if (focused == _focusReported) return;
+
+            _focusReported = focused;
+            if (Buffer.FocusReporting) Input?.Invoke(focused ? "\x1b[I" : "\x1b[O");
+        }, DispatcherPriority.Background);
     }
 
     /// <summary>입력 칸의 조합 중 글자(한글 IME)를 지켜보고 커서 자리에 그린다.</summary>
@@ -472,28 +585,42 @@ public sealed class TerminalView : Grid
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
-        var lines = (int)Math.Round(e.Delta.Y * 3);
-        if (lines == 0) return;
+        e.Handled = true;
 
         if (Buffer.MouseTracking != MouseTracking.None && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
+            // 한 칸(노치)에 보고 하나. 터치패드의 잘게 나뉜 값은 모아서 한 칸이 되면 보낸다
+            _wheelY += e.Delta.Y;
+            _wheelX += e.Delta.X;
+            var notchesY = (int)Math.Truncate(_wheelY);
+            var notchesX = (int)Math.Truncate(_wheelX);
+            _wheelY -= notchesY;
+            _wheelX -= notchesX;
             var (col, row) = ScreenCellAt(e.GetPosition(this));
-            for (var i = 0; i < Math.Abs(lines); i++)
-                Input?.Invoke(TerminalKeys.Mouse(lines > 0 ? 64 : 65, col, row, false, Buffer.SgrMouse));
-        }
-        else if (Buffer.IsAlternateScreen)
-        {
-            // 대체 화면(less·vim 등)은 스크롤백이 없다 — 방향키로 보낸다(xterm alternateScroll)
-            var key = lines > 0 ? Key.Up : Key.Down;
-            var text = TerminalKeys.Encode(key, KeyModifiers.None, Buffer.ApplicationCursorKeys)!;
-            Input?.Invoke(string.Concat(Enumerable.Repeat(text, Math.Abs(lines))));
-        }
-        else
-        {
-            ScrollBy(lines);
+            for (var i = 0; i < Math.Abs(notchesY); i++)
+                Input?.Invoke(TerminalKeys.Mouse(notchesY > 0 ? 64 : 65, col, row, false, Buffer.SgrMouse, e.KeyModifiers));
+            for (var i = 0; i < Math.Abs(notchesX); i++)
+                Input?.Invoke(TerminalKeys.Mouse(notchesX > 0 ? 66 : 67, col, row, false, Buffer.SgrMouse, e.KeyModifiers));
+            return;
         }
 
-        e.Handled = true;
+        // 화면 스크롤 — 한 칸에 3줄
+        _wheelLines += e.Delta.Y * 3;
+        var lines = (int)Math.Truncate(_wheelLines);
+        _wheelLines -= lines;
+        if (lines == 0) return;
+
+        if (Buffer.IsAlternateScreen) SendScrollArrows(lines);
+        else ScrollBy(lines);
+    }
+
+    /// <summary>대체 화면(less·vim 등)은 스크롤백이 없다 — 방향키로 보낸다(xterm alternateScroll, ?1007 로 끌 수 있다).</summary>
+    private void SendScrollArrows(int lines)
+    {
+        if (!Buffer.AlternateScroll) return;
+
+        var text = EncodeKey(lines > 0 ? Key.Up : Key.Down, KeyModifiers.None)!;
+        Input?.Invoke(string.Concat(Enumerable.Repeat(text, Math.Abs(lines))));
     }
 
     // ------------------------------------------------------------ 마우스·터치
@@ -549,9 +676,9 @@ public sealed class TerminalView : Grid
             };
             if (button < 0) return;
 
-            _mouseButton = button;
-            var (col, row) = ScreenCellAt(pos);
-            Input?.Invoke(TerminalKeys.Mouse(button, col, row, false, Buffer.SgrMouse));
+            _mouseButtons |= 1 << button;
+            var (col, row) = _lastMouseCell = ScreenCellAt(pos);
+            Input?.Invoke(TerminalKeys.Mouse(button, col, row, false, Buffer.SgrMouse, e.KeyModifiers));
             e.Pointer.Capture(this);
             e.Handled = true;
             return;
@@ -638,9 +765,7 @@ public sealed class TerminalView : Grid
             }
             else if (Buffer.IsAlternateScreen)
             {
-                var key = lines > 0 ? Key.Up : Key.Down;
-                var text = TerminalKeys.Encode(key, KeyModifiers.None, Buffer.ApplicationCursorKeys)!;
-                Input?.Invoke(string.Concat(Enumerable.Repeat(text, Math.Abs(lines))));
+                SendScrollArrows(lines);
             }
             else
             {
@@ -650,10 +775,46 @@ public sealed class TerminalView : Grid
             return;
         }
 
-        if (_mouseButton >= 0 && Buffer.MouseTracking is MouseTracking.Drag or MouseTracking.Any)
+        if (_mouseButtons != 0)
         {
-            var (col, row) = ScreenCellAt(pos);
-            Input?.Invoke(TerminalKeys.Mouse(_mouseButton + 32, col, row, false, Buffer.SgrMouse));
+            var cell = ScreenCellAt(pos);
+            // 이미 단추를 누른 채 다른 단추를 누르거나 떼면 Avalonia 는 PointerMoved 로 알린다
+            var (changed, released) = e.GetCurrentPoint(this).Properties.PointerUpdateKind switch
+            {
+                PointerUpdateKind.LeftButtonPressed => (0, false), PointerUpdateKind.MiddleButtonPressed => (1, false),
+                PointerUpdateKind.RightButtonPressed => (2, false), PointerUpdateKind.LeftButtonReleased => (0, true),
+                PointerUpdateKind.MiddleButtonReleased => (1, true), PointerUpdateKind.RightButtonReleased => (2, true),
+                _ => (-1, false)
+            };
+            if (changed >= 0)
+            {
+                if (released) _mouseButtons &= ~(1 << changed);
+                else _mouseButtons |= 1 << changed;
+                _lastMouseCell = cell;
+                Input?.Invoke(TerminalKeys.Mouse(changed, cell.Col, cell.Row, released, Buffer.SgrMouse, e.KeyModifiers));
+                if (_mouseButtons == 0) e.Pointer.Capture(null);
+                return;
+            }
+
+            // 끌기 보고(?1002·?1003) — 칸이 바뀔 때만. 단추가 여럿이면 번호가 낮은 것(xterm)
+            if (Buffer.MouseTracking is MouseTracking.Drag or MouseTracking.Any && cell != _lastMouseCell)
+            {
+                _lastMouseCell = cell;
+                var lowest = System.Numerics.BitOperations.TrailingZeroCount(_mouseButtons);
+                Input?.Invoke(TerminalKeys.Mouse(lowest + 32, cell.Col, cell.Row, false, Buffer.SgrMouse, e.KeyModifiers));
+            }
+
+            return;
+        }
+
+        if (Buffer.MouseTracking == MouseTracking.Any && !_selecting && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        {
+            // ?1003 — 단추 없이 움직여도 알린다(35), 칸이 바뀔 때만
+            var cell = ScreenCellAt(pos);
+            if (cell == _lastMouseCell) return;
+
+            _lastMouseCell = cell;
+            Input?.Invoke(TerminalKeys.Mouse(35, cell.Col, cell.Row, false, Buffer.SgrMouse, e.KeyModifiers));
             return;
         }
 
@@ -708,12 +869,18 @@ public sealed class TerminalView : Grid
             return;
         }
 
-        if (_mouseButton >= 0)
+        if (_mouseButtons != 0)
         {
-            var (col, row) = ScreenCellAt(pos);
-            Input?.Invoke(TerminalKeys.Mouse(_mouseButton, col, row, true, Buffer.SgrMouse));
-            _mouseButton = -1;
-            e.Pointer.Capture(null);
+            var released = e.InitialPressMouseButton switch
+            {
+                MouseButton.Left => 0, MouseButton.Middle => 1, MouseButton.Right => 2, _ => -1
+            };
+            if (released < 0 || (_mouseButtons & (1 << released)) == 0)
+                released = System.Numerics.BitOperations.TrailingZeroCount(_mouseButtons);
+            _mouseButtons &= ~(1 << released);
+            var (col, row) = _lastMouseCell = ScreenCellAt(pos);
+            Input?.Invoke(TerminalKeys.Mouse(released, col, row, true, Buffer.SgrMouse, e.KeyModifiers));
+            if (_mouseButtons == 0) e.Pointer.Capture(null);
             return;
         }
 
@@ -724,6 +891,12 @@ public sealed class TerminalView : Grid
         if (_anchor == _caret) _anchor = null; // 그냥 누른 것 — 선택 아님
         SelectionChanged?.Invoke(HasSelection);
         _surface.InvalidateVisual();
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        if (_mouseButtons == 0) _lastMouseCell = (-1, -1);
     }
 
     protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)

@@ -92,6 +92,15 @@ public sealed partial class TerminalBuffer
     public MouseTracking MouseTracking { get; private set; }
     public bool SgrMouse { get; private set; }
 
+    /// <summary>포커스 보고(?1004) — 입력 칸이 포커스를 얻고 잃을 때 ESC [ I · ESC [ O 를 보낸다.</summary>
+    public bool FocusReporting { get; private set; }
+
+    /// <summary>대체 화면에서 휠·손가락 스크롤을 방향키로(?1007, xterm alternateScroll). 기본 켜짐.</summary>
+    public bool AlternateScroll { get; private set; } = true;
+
+    /// <summary>줄바꿈 모드(LNM, CSI 20 h) — Enter 를 CR LF 로 보낸다.</summary>
+    public bool NewLineMode => _newLineMode;
+
     /// <summary>
     ///     동기화 출력(DEC 2026) 중 — 프로그램이 한 화면을 다 쓸 때까지 그리지 않는다(Claude Code·neovim 등은 다시 그릴 때마다
     ///     켜고 끈다). 그리는 중간 상태가 보이면 글자가 튀거나 겹쳐 보인다.
@@ -1471,8 +1480,14 @@ public sealed partial class TerminalBuffer
             case 1003:
                 MouseTracking = on ? MouseTracking.Any : MouseTracking.None;
                 break;
+            case 1004:
+                FocusReporting = on;
+                break;
             case 1006:
                 SgrMouse = on;
+                break;
+            case 1007:
+                AlternateScroll = on;
                 break;
             case 2004:
                 BracketedPaste = on;
@@ -1518,7 +1533,9 @@ public sealed partial class TerminalBuffer
             1000 => MouseTracking == MouseTracking.Click,
             1002 => MouseTracking == MouseTracking.Drag,
             1003 => MouseTracking == MouseTracking.Any,
+            1004 => FocusReporting,
             1006 => SgrMouse,
+            1007 => AlternateScroll,
             2004 => BracketedPaste,
             2026 => SynchronizedOutput,
             12 => CursorBlink,
@@ -1812,6 +1829,8 @@ public sealed partial class TerminalBuffer
         BracketedPaste = false;
         MouseTracking = MouseTracking.None;
         SgrMouse = false;
+        FocusReporting = false;
+        AlternateScroll = true;
         ApplicationKeypad = false;
         CursorStyle = 0;
         _newLineMode = false;

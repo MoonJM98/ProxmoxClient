@@ -869,6 +869,156 @@ async Task TerminalCheck()
             wheel.Count > 0 && wheel.All(w => w.StartsWith("input '\\x1b[<64;")));
     }
 
+    // ---- 입력(붙여넣기·고정 키·포커스 보고·휠·끌기) — 한 덩어리
+    {
+        input.Focus();
+        Pump(200);
+        Log("input");
+        // 화면 키보드로 한 번에 들어온 여러 줄·긴 글(Gboard 클립보드·길게 눌러 붙여넣기) → 괄호 붙여넣기로 감싼다
+        term.Write("\x1b[?2004h");
+        Pump(100);
+        Type("echo a\necho b");
+        var long40 = new string('x', 40);
+        Type(long40);
+        var pasted = Log("input");
+        term.Write("\x1b[?2004l");
+        Check("화면 키보드 붙여넣기(괄호)", "여러 줄·긴 글 → \\x1b[200~…\\x1b[201~", string.Join(" ", pasted),
+            pasted.SequenceEqual(["input '\\x1b[200~echo a\\recho b\\x1b[201~'", $"input '\\x1b[200~{long40}\\x1b[201~'"]));
+        Key(Avalonia.Input.Key.C, Avalonia.Input.RawInputModifiers.Control);
+        Log("input");
+
+        if (!desktop)
+        {
+            // 고정 키 — 수식키만 눌러서는 풀리지 않고, 여러 글자에는 붙지 않은 채 풀린다. 고정 Shift + 막대의 Tab·↑
+            var toggles = page.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().ToList();
+            var ctrlToggle = toggles.First(b => b.Content as string == "Ctrl");
+            var shiftToggle = toggles.First(b => b.Content as string == "Shift");
+            var barButtons = page.GetVisualDescendants().OfType<Avalonia.Controls.Button>().ToList();
+            void Click(string label) =>
+                barButtons.First(b => b.Content as string == label)
+                    .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+            ctrlToggle.IsChecked = true;
+            Key(Avalonia.Input.Key.LeftShift, Avalonia.Input.RawInputModifiers.Shift);
+            var kept = ctrlToggle.IsChecked == true;
+            Type("c");
+            ctrlToggle.IsChecked = true;
+            Type("abc");
+            var cleared = ctrlToggle.IsChecked != true;
+            shiftToggle.IsChecked = true;
+            Click("Tab");
+            Pump(100);
+            shiftToggle.IsChecked = true;
+            Click("↑");
+            Pump(100);
+            var sticky = Log("input");
+            Check("고정 키(Ctrl·Shift)", "Shift 만 눌러도 유지 → '\\x03', 여러 글자 'abc' 는 그대로·풀림, Shift+Tab '\\x1b[Z', Shift+↑ '\\x1b[1;2A'",
+                $"{string.Join(" ", sticky)}, 유지 {kept}, 풀림 {cleared}",
+                sticky.SequenceEqual(["input '\\x03'", "input 'abc'", "input '\\x1b[Z'", "input '\\x1b[1;2A'"]) && kept && cleared &&
+                shiftToggle.IsChecked != true);
+            Key(Avalonia.Input.Key.C, Avalonia.Input.RawInputModifiers.Control);
+            Log("input");
+
+            // 괄호 붙여넣기가 꺼진 셸에 여러 줄 — 터치 기기는 실행 전에 묻는다
+            Type("echo p1\necho p2");
+            var beforeConfirm = Log("input");
+            var dialog = AppServices.Dialogs.Current;
+            dialog?.ConfirmCommand.Execute(null);
+            Pump(200);
+            var afterConfirm = Log("input");
+            Check("여러 줄 붙여넣기 확인(터치)", "묻는 동안 안 보냄 → 확인하면 'echo p1\\recho p2'",
+                $"묻기 {(dialog is null ? "없음" : "있음")}, 전 {beforeConfirm.Count}개, 뒤 {string.Join(" ", afterConfirm)}",
+                dialog is not null && beforeConfirm.Count == 0 && afterConfirm.SequenceEqual(["input 'echo p1\\recho p2'"]));
+            Pump(300);
+        }
+
+        // 포커스 보고(?1004) — 키보드를 다시 열 때의 잠깐 나갔다 돌아오는 포커스는 알리지 않는다
+        input.Focus();
+        Pump(200);
+        term.Write("\x1b[?1004h");
+        Pump(100);
+        Log("input");
+        term.FocusInput();
+        Pump(300);
+        var bounce = Log("input");
+        term.Focusable = true; // 포커스를 입력 칸 밖으로
+        term.Focus();
+        Pump(200);
+        var lost = Log("input");
+        input.Focus();
+        Pump(200);
+        var got = Log("input");
+        term.Focusable = false;
+        term.Write("\x1b[?1004l");
+        Check("포커스 보고(?1004)", "다시 열기는 조용히, 잃으면 \\x1b[O, 얻으면 \\x1b[I",
+            $"다시 열기 {bounce.Count}개, 잃음 {string.Join(" ", lost)}, 얻음 {string.Join(" ", got)}",
+            bounce.Count == 0 && lost.SequenceEqual(["input '\\x1b[O'"]) && got.SequenceEqual(["input '\\x1b[I'"]));
+
+        if (desktop)
+        {
+            var cs = term.CellSize;
+            Avalonia.Point At(int col, int row, double dx = 0) =>
+                rowY + new Avalonia.Vector(6 + cs.Width * (col + 0.5) + dx, 4 + cs.Height * (row + 0.5));
+            var none = Avalonia.Input.RawInputModifiers.None;
+            var leftHeld = Avalonia.Input.RawInputModifiers.LeftMouseButton;
+
+            // 휠 — 마우스 보고 중이면 한 칸에 보고 하나, 잘게 나뉜 값(터치패드)은 모아서, 가로 휠은 66/67
+            term.Write("\x1b[?1002h\x1b[?1006h");
+            Pump(100);
+            Log("input");
+            window.MouseWheel(At(5, 3), new Avalonia.Vector(0, 1), none);
+            var oneNotch = Log("input");
+            for (var k = 0; k < 3; k++) window.MouseWheel(At(5, 3), new Avalonia.Vector(0, 0.4), none);
+            var fine = Log("input");
+            window.MouseWheel(At(5, 3), new Avalonia.Vector(-1, 0), none);
+            var horizontal = Log("input");
+            Check("휠(마우스 보고)", "한 칸 → 64 하나, 0.4×3 → 하나, 가로 → 66/67",
+                $"{string.Join(" ", oneNotch)} | {string.Join(" ", fine)} | {string.Join(" ", horizontal)}",
+                oneNotch.SequenceEqual(["input '\\x1b[<64;6;4M'"]) && fine.SequenceEqual(["input '\\x1b[<64;6;4M'"]) &&
+                horizontal.Count == 1 && (horizontal[0] == "input '\\x1b[<66;6;4M'" || horizontal[0] == "input '\\x1b[<67;6;4M'"));
+
+            // 끌기 — 칸이 바뀔 때만, 두 단추를 눌렀다 하나씩 떼면 뗀 단추를 알린다
+            window.MouseDown(At(2, 2), Avalonia.Input.MouseButton.Left, none);
+            window.MouseMove(At(2, 2, 2), leftHeld);
+            window.MouseMove(At(4, 2), leftHeld);
+            window.MouseMove(At(4, 2, 2), leftHeld);
+            window.MouseDown(At(4, 2), Avalonia.Input.MouseButton.Right, leftHeld);
+            window.MouseUp(At(4, 2), Avalonia.Input.MouseButton.Right, leftHeld);
+            window.MouseUp(At(4, 2), Avalonia.Input.MouseButton.Left, none);
+            var drag = Log("input");
+            Check("끌기 보고(?1002)", "누름 · 칸 바뀜 한 번 · 오른쪽 누름·뗌 · 왼쪽 뗌", string.Join(" ", drag),
+                drag.SequenceEqual(["input '\\x1b[<0;3;3M'", "input '\\x1b[<32;5;3M'", "input '\\x1b[<2;5;3M'",
+                    "input '\\x1b[<2;5;3m'", "input '\\x1b[<0;5;3m'"]));
+
+            // ?1003 — 단추 없이 움직여도 알린다(35), 칸이 바뀔 때만
+            term.Write("\x1b[?1003h");
+            Pump(100);
+            Log("input");
+            window.MouseMove(At(7, 1), none);
+            window.MouseMove(At(7, 1, 2), none);
+            window.MouseMove(At(8, 1), none);
+            var hover = Log("input");
+            Check("움직임 보고(?1003)", "칸마다 35 하나", string.Join(" ", hover),
+                hover.SequenceEqual(["input '\\x1b[<35;8;2M'", "input '\\x1b[<35;9;2M'"]));
+
+            // 대체 화면의 휠(마우스 보고 없음) — 방향키 3번, ?1007 을 끄면 아무것도 보내지 않는다
+            term.Write("\x1b[?1003l\x1b[?1006l\x1b[?1049h");
+            Pump(100);
+            Log("input");
+            window.MouseWheel(At(5, 3), new Avalonia.Vector(0, 1), none);
+            var arrows = Log("input");
+            term.Write("\x1b[?1007l");
+            window.MouseWheel(At(5, 3), new Avalonia.Vector(0, 1), none);
+            var off = Log("input");
+            term.Write("\x1b[?1007h\x1b[?1049l");
+            Pump(100);
+            Check("대체 화면 휠(?1007)", "켜짐 → ↑×3, 꺼짐 → 없음", $"{string.Join(" ", arrows)} | {off.Count}개",
+                arrows.SequenceEqual(["input '\\x1b[A\\x1b[A\\x1b[A'"]) && off.Count == 0);
+        }
+
+        Key(Avalonia.Input.Key.C, Avalonia.Input.RawInputModifiers.Control);
+        Log("input");
+    }
+
     // 창 크기 변경 → PTY 크기
     var oldColumns = buffer.Columns;
     window.Width -= 120;

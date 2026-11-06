@@ -703,6 +703,15 @@ Proxmox 웹 UI의 [노드 → 시스템 → 인증서]에 표시된 지문과 �
   <data name="Terminal_HistoryButton" xml:space="preserve">
     <value>기록</value>
   </data>
+  <data name="Terminal_PasteConfirmTitle" xml:space="preserve">
+    <value>여러 줄 붙여넣기</value>
+  </data>
+  <data name="Terminal_PasteConfirm" xml:space="preserve">
+    <value>{0}줄을 붙여넣습니다. 줄마다 바로 실행될 수 있습니다.&#10;&#10;{1}</value>
+  </data>
+  <data name="Terminal_PasteConfirmRun" xml:space="preserve">
+    <value>붙여넣기</value>
+  </data>
   <data name="Terminal_HistoryEmpty" xml:space="preserve">
     <value>아직 기록된 명령이 없습니다.</value>
   </data>

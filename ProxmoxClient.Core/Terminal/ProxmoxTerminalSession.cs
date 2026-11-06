@@ -158,8 +158,38 @@ public sealed class ProxmoxTerminalSession : IDisposable
     {
         if (string.IsNullOrEmpty(data)) return;
 
-        // 길이는 문자 수가 아니라 UTF-8 바이트 수 — 한글 등 멀티바이트 입력 시 필수
-        Enqueue($"0:{Encoding.UTF8.GetByteCount(data)}:{data}");
+        foreach (var message in InputMessages(data)) Enqueue(message);
+    }
+
+    /// <summary>입력 메시지 하나에 담는 최대 UTF-8 바이트 — 큰 붙여넣기를 한 프레임으로 보내지 않는다.</summary>
+    public const int MaxInputChunkBytes = 4096;
+
+    /// <summary>
+    ///     입력을 "0:길이:내용" 메시지로 — 길이는 문자 수가 아니라 UTF-8 바이트 수(한글 등 멀티바이트 입력 시 필수).
+    ///     길면 <paramref name="maxBytes" /> 이하로 나누되, 서로게이트 쌍(이모지 등)은 가르지 않는다.
+    /// </summary>
+    public static IEnumerable<string> InputMessages(string data, int maxBytes = MaxInputChunkBytes)
+    {
+        var start = 0;
+        while (start < data.Length)
+        {
+            var end = start;
+            var bytes = 0;
+            while (end < data.Length)
+            {
+                var length = char.IsHighSurrogate(data[end]) && end + 1 < data.Length && char.IsLowSurrogate(data[end + 1])
+                    ? 2
+                    : 1;
+                var size = Encoding.UTF8.GetByteCount(data.AsSpan(end, length));
+                if (bytes + size > maxBytes && end > start) break;
+
+                bytes += size;
+                end += length;
+            }
+
+            yield return $"0:{bytes}:{data[start..end]}";
+            start = end;
+        }
     }
 
     /// <summary>

@@ -27,6 +27,7 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
     private readonly Button _paste;
     private readonly ToggleButton _ctrl;
     private readonly ToggleButton _alt;
+    private readonly ToggleButton _shift;
     private readonly Border _more;
     private TerminalViewModel? _vm;
     private (int Columns, int Rows) _pendingSize;
@@ -69,7 +70,8 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
             await ClipboardHelper.SetTextAsync(text);
             AppServices.Dialogs.Toast(L.T("Terminal_RemoteCopied", text.Length));
         });
-        _terminal.TakeStickyModifiers = TakeSticky;
+        _terminal.StickyModifiers = PeekSticky;
+        _terminal.ClearStickyModifiers = ClearSticky;
         _terminal.LineSubmitted += command =>
         {
             _history?.Add(command);
@@ -147,6 +149,7 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
         // 특수 키 막대(터치)
         _ctrl = Toggle("Ctrl");
         _alt = Toggle("Alt");
+        _shift = Toggle("Shift"); // Shift+Tab(모드 바꾸기·메뉴 뒤로)·Shift+방향키
         var main = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -154,9 +157,14 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
             {
                 WithContent(KeyButton(L.T("Console_Keyboard"), () => _terminal.FocusInput(), L.T("Console_Keyboard")), KeyboardIcon()),
                 Key("Esc", Avalonia.Input.Key.Escape),
-                KeyButton("Tab", () => _ = CompleteAsync(), L.T("Terminal_Completions", "…")), // 후보가 여럿이면 목록으로
+                // 후보가 여럿이면 목록으로. Shift 를 고정했으면 Shift+Tab(ESC [ Z)
+                KeyButton("Tab", () =>
+                {
+                    if (_shift.IsChecked == true) _terminal.SendKey(Avalonia.Input.Key.Tab);
+                    else _ = CompleteAsync();
+                }, L.T("Terminal_Completions", "…")),
                 KeyButton(L.T("Terminal_HistoryButton"), ShowHistory, L.T("Terminal_History")),
-                _ctrl, _alt,
+                _ctrl, _alt, _shift,
                 Key("←", Avalonia.Input.Key.Left), Key("↑", Avalonia.Input.Key.Up),
                 Key("↓", Avalonia.Input.Key.Down), Key("→", Avalonia.Input.Key.Right),
                 Text("|"), Text("-"), Text("/"), Text("~"),
@@ -259,11 +267,16 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
         _paste.IsEnabled = connected;
     }
 
-    private (bool Ctrl, bool Alt) TakeSticky()
+    /// <summary>고정해 둔 수식키 — 터미널이 실제로 무언가를 보낼 때 붙이고 <see cref="ClearSticky" /> 로 푼다.</summary>
+    private KeyModifiers PeekSticky()
     {
-        var result = (_ctrl.IsChecked == true, _alt.IsChecked == true);
-        _ctrl.IsChecked = _alt.IsChecked = false;
-        return result;
+        return (_ctrl.IsChecked == true ? KeyModifiers.Control : 0) | (_alt.IsChecked == true ? KeyModifiers.Alt : 0) |
+               (_shift.IsChecked == true ? KeyModifiers.Shift : 0);
+    }
+
+    private void ClearSticky()
+    {
+        _ctrl.IsChecked = _alt.IsChecked = _shift.IsChecked = false;
     }
 
     /// <summary>한 줄 가로 스크롤(스크롤 막대는 숨기고 손가락으로 민다).</summary>
