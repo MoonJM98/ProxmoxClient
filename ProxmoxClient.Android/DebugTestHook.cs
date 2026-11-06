@@ -107,6 +107,11 @@ internal static class DebugTestHook
                 await store.SaveAsync(settings with { SecureScreen = on });
                 ScreenSecurity.Set(on);
                 break;
+            case "redraw":
+                // 앱 화면만 다시 그린다(화면 보호를 끈 뒤 캡처가 검게 남는지 원인 가르기)
+                MainActivity.Current?.Window?.DecorView?.Invalidate();
+                if (AppServices.Navigator.CurrentPage?.FindAncestorOfType<AppShell>() is { } shell) shell.InvalidateVisual();
+                break;
             case "dialog":
                 _ = AppServices.Dialogs.PromptAsync("E2E", "Dialog overlay safe-area check", watermark: "input");
                 break;

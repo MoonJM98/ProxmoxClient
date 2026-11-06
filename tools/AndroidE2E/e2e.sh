@@ -65,6 +65,8 @@ adb shell settings put secure anr_show_background 0
 # "활동 보관 안 함" — 설정 값은 시스템이 부팅 때 읽으므로 켜고 프레임워크를 다시 시작한다(검사 내내 켜 둔다:
 # 앱이 배경으로 갈 때마다 액티비티가 없어지고 돌아오면 새로 만들어진다)
 adb shell settings put global always_finish_activities 1
+sleep 5 # 설정 값이 파일에 쓰일 때까지(바로 다시 시작하면 잃는다)
+info "always_finish_activities before restart=$(adb shell settings get global always_finish_activities | tr -d '\r')"
 adb shell setprop sys.boot_completed 0 || true
 adb shell stop
 adb shell start
@@ -217,6 +219,8 @@ for _ in $(seq 1 10); do hook state > /dev/null; state_has "terminal=connected" 
 state_has "terminal=connected" && pass "reconnect after race works" || fail "reconnect after race ($STATE)"
 
 section "5. 화면 보호(FLAG_SECURE)"
+W0=$(adb shell wm size | tr -d '\r' | sed -n 's/.*: \([0-9]*\)x\([0-9]*\).*/\1/p' | tail -1)
+H0=$(adb shell wm size | tr -d '\r' | sed -n 's/.*: \([0-9]*\)x\([0-9]*\).*/\2/p' | tail -1)
 win_flags() { adb shell dumpsys window windows | tr -d '\r' | awk -v pkg="$PKG" '/Window #/{inwin = index($0, pkg) > 0} inwin && /fl=/' | head -3; }
 sleep 2
 hook secure --es on true
@@ -252,7 +256,20 @@ for _ in $(seq 1 20); do
   [ "${b:-0}" -gt 200 ] && break
   sleep 1
 done
-info "screen protection off → capture visible after $(( $(date +%s) - t0 ))s"
+info "screen protection off → capture visible after $(( $(date +%s) - t0 ))s ($px)"
+if [ "${b:-0}" -le 200 ]; then
+  # 아직 검다 — 앱 화면을 다시 그리게 하면(검사 고리 redraw) 보이는지, 화면을 누르면 보이는지 따로 본다
+  hook redraw
+  sleep 2
+  adb exec-out screencap > "$OUT/secure-off-redraw.raw"
+  info "after app redraw: $(python3 -I "$HERE/pixels.py" "$OUT/secure-off-redraw.raw")"
+  adb shell input tap $((W0 / 2)) $((H0 / 2))
+  sleep 2
+  adb exec-out screencap > "$OUT/secure-off-tap.raw"
+  info "after tap: $(python3 -I "$HERE/pixels.py" "$OUT/secure-off-tap.raw")"
+  adb exec-out screencap > "$OUT/secure-off.raw"
+  px=$(python3 -I "$HERE/pixels.py" "$OUT/secure-off.raw")
+fi
 flags=$(win_flags)
 echo "$flags" | grep -qw SECURE && fail "FLAG_SECURE still set after disabling" || pass "FLAG_SECURE cleared after disabling"
 shot 08-secure-off
@@ -331,7 +348,7 @@ shot 11-dialog-3button
 hook dismiss
 hook root
 sleep 2
-adb shell input keyboard keyevent KEYCODE_BACK > /dev/null 2>&1 || true # 키보드 닫기
+ime_shown && adb shell input keyboard keyevent KEYCODE_BACK # 키보드만 닫기(첫 화면에서 뒤로 가면 앱이 닫힌다)
 sleep 1
 hook state
 shot 12-profiles-3button
