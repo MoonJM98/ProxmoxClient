@@ -17,4 +17,9 @@
         <ProjectReference Include="..\..\ProxmoxClient.UI\ProxmoxClient.UI.csproj" />
     </ItemGroup>
 
+    <!-- 소프트웨어 보안 키 — tools/VirtualFido(uhid 가상 USB 키)와 같은 코드를 쓴다 -->
+    <ItemGroup>
+        <Compile Include="..\VirtualFido\SoftAuthenticator.cs" Link="SoftAuthenticator.cs" />
+    </ItemGroup>
+
 </Project>

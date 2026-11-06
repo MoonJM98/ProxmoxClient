@@ -1,0 +1,89 @@
+# USB 보안 키 끝까지 검사 — 러너(전체 VM)에서 uhid 로 가상 FIDO2 키(tools/VirtualFido)를 꽂고
+# 실제 LinuxHidWebAuthnProvider 가 커널 hidraw 를 거쳐 서명을 받는지 본다(PIN·U2F·취소·뽑기 포함).
+name: HID e2e
+
+on:
+  push:
+    branches: ["claude/hid-e2e"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+
+jobs:
+  hid:
+    name: 보안 키(uhid 가상 키)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: 빌드(VirtualFido·UiSnapshot)
+        run: |
+          dotnet build tools/VirtualFido -c Release
+          dotnet build tools/UiSnapshot -c Release
+
+      # 가상 키 장치(/dev/uhid)와 그 키의 /dev/hidrawN 을 일반 사용자가 쓰게 한다(실제 키는 systemd uaccess·libfido2 규칙)
+      - name: uhid 준비
+        run: |
+          sudo modprobe uhid
+          ls -l /dev/uhid
+          echo 'KERNEL=="hidraw*", SUBSYSTEM=="hidraw", MODE="0666"' | sudo tee /etc/udev/rules.d/70-virtual-fido.rules
+          sudo udevadm control --reload-rules
+          sudo chmod 666 /dev/uhid
+          uname -r
+
+      - name: 가상 키 검사(tools/VirtualFido + FakePve)
+        run: |
+          set -u
+          PORT=19710
+          mkdir -p hid
+          python3 -I tools/FakePve/fake_pve.py "$PORT" > hid/fakepve.log 2>&1 &
+          FAKE_PID=$!
+          trap 'kill "$FAKE_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do grep -q "^listening" hid/fakepve.log && break; sleep 1; done
+          dotnet run --project tools/VirtualFido -c Release --no-build -- --fakepve "$PORT" 2>&1 | tee hid/virtualfido.log
+          grep -E "^(PASS|FAIL|SKIP)" hid/virtualfido.log || true
+          grep -q "^DONE ok" hid/virtualfido.log
+
+      # 화면 끝까지: 2단계 인증 창(보안 키) → 실제 Linux 공급자 → 가상 키(PIN 1234, 항상 사용자 확인) → 로그인
+      - name: 화면 검사(UiSnapshot --target webauthn, 실제 공급자)
+        run: |
+          set -u
+          PORT=19711
+          mkdir -p hid
+          python3 -I tools/FakePve/fake_pve.py "$PORT" > hid/fakepve-ui.log 2>&1 &
+          FAKE_PID=$!
+          dotnet run --project tools/VirtualFido -c Release --no-build -- serve --pin 1234 --always-uv \
+            --cred fake-credential --rp pve.example > hid/serve.log 2>&1 &
+          KEY_PID=$!
+          trap 'kill "$FAKE_PID" "$KEY_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do grep -q "^listening" hid/fakepve-ui.log && grep -q "^READY" hid/serve.log && break; sleep 1; done
+          cat hid/serve.log
+          dotnet run --project tools/UiSnapshot -c Release --no-build -- \
+            --port "$PORT" --out hid/shots --mode mobile --target webauthn --webauthn-key linux \
+            --serverlog hid/fakepve-ui.log > hid/uisnapshot.log 2>&1 || true
+          cat hid/uisnapshot.log | tail -n 40
+          kill "$KEY_PID" 2>/dev/null || true
+          sleep 1
+          echo "--- 가상 키 로그"; cat hid/serve.log
+          echo "--- 서버 로그(TFA)"; grep TFA hid/fakepve-ui.log || true
+          grep -q "^DONE ok" hid/uisnapshot.log && grep -q "CBOR 06" hid/serve.log
+
+      - name: 결과 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hid-e2e-${{ github.run_id }}
+          path: hid/
+          retention-days: 7
+          if-no-files-found: ignore

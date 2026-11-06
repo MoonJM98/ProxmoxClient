@@ -296,7 +296,12 @@ if (target == "restore")
 // ---- 보안 키 2단계 인증(--target webauthn): 가짜 키로 창(보안 키 기본) → 취소는 창 유지 → PIN 묻기(틀리면 다시) → 서명은 webauthn:{JSON} 으로 로그인 ----
 if (target == "webauthn")
 {
-    var fakeKey = new UiSnapshot.FakeWebAuthnProvider { CancelFirst = 1 };
+    // --webauthn-key linux: 실제 Linux 공급자(/dev/hidraw) — tools/VirtualFido serve --pin 1234 --always-uv 가 띄운 가상 키
+    var fakeKey = new UiSnapshot.FakeWebAuthnProvider
+    {
+        CancelFirst = 1,
+        Inner = options.GetValueOrDefault("webauthn-key") == "linux" ? new LinuxHidWebAuthnProvider() : null
+    };
     WebAuthnProviders.Current = fakeKey;
     var waProfile = new ConnectionProfile
     {
