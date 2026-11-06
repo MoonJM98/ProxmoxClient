@@ -78,7 +78,7 @@ public sealed class LinuxHidWebAuthnProvider : IWebAuthnProvider
 
     /// <summary>
     ///     /dev/hidrawN — 쓰기는 보고서 번호(0) + 64바이트, 읽기는 64바이트. 읽기는 막히는 호출이라 스레드 풀에서 한다
-    ///     (취소하면 CTAPHID CANCEL 에 키가 답해 풀린다).
+    ///     (취소하면 CTAPHID CANCEL 에 키가 답해 풀린다). 키를 뽑으면 <see cref="WebAuthnException" />.
     /// </summary>
     private sealed class Hidraw(FileStream stream) : IHidReportDevice
     {
@@ -88,7 +88,14 @@ public sealed class LinuxHidWebAuthnProvider : IWebAuthnProvider
             {
                 var buffer = new byte[HidCtapTransport.ReportSize + 1];
                 report.CopyTo(buffer, 1);
-                stream.Write(buffer);
+                try
+                {
+                    stream.Write(buffer);
+                }
+                catch (IOException ex)
+                {
+                    throw Unplugged(ex);
+                }
             }, ct);
         }
 
@@ -97,9 +104,24 @@ public sealed class LinuxHidWebAuthnProvider : IWebAuthnProvider
             return Task.Run(() =>
             {
                 var buffer = new byte[HidCtapTransport.ReportSize];
-                var n = stream.Read(buffer);
-                return n > 0 ? buffer[..n] : throw new WebAuthnException(L.T("Tfa_WebAuthnNoKey"));
+                int n;
+                try
+                {
+                    n = stream.Read(buffer);
+                }
+                catch (IOException ex)
+                {
+                    throw Unplugged(ex);
+                }
+
+                return n > 0 ? buffer[..n] : throw Unplugged(null);
             }, CancellationToken.None);
+        }
+
+        /// <summary>키를 뽑으면 hidraw 읽기·쓰기가 EIO(장치 없음)로 끝난다 — 키를 못 찾은 것으로 알린다.</summary>
+        private static WebAuthnException Unplugged(Exception? inner)
+        {
+            return new WebAuthnException(L.T("Tfa_WebAuthnNoKey"), inner);
         }
 
         public void Dispose()
