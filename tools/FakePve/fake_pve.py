@@ -62,6 +62,10 @@ class H(BaseHTTPRequestHandler):
         # /__fake/expire 뒤로는 티켓 갱신까지 모두 거부 — 세션 만료 처리 검사용
         if path=='/__fake/expire':
             STATE_FLAGS['expired']=True; self.send(True); return True
+        # /__fake/termdrop?on=1 — 터미널 웹소켓을 인증("OK") 직후 바로 닫는다(연결하자마자 끊기는 경우 검사), on=0 으로 끈다
+        if path=='/__fake/termdrop':
+            STATE_FLAGS['termdrop']=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('on',['1'])[0]=='1'
+            self.send(STATE_FLAGS['termdrop']); return True
         if STATE_FLAGS.get('expired'):
             sys.stderr.write("EXPIRED %s\n"%path); self.send(None,401); return True
         return False
@@ -75,7 +79,7 @@ class H(BaseHTTPRequestHandler):
         if path.endswith('/vncwebsocket') and self.headers.get('Upgrade','').lower()=='websocket':
             # termproxy 가 준 포트(5901)면 가짜 셸, 아니면 VNC 화면
             if urllib.parse.parse_qs(p.query).get('port',[''])[0]=='5901':
-                import term; term.serve(self); self.close_connection=True; return
+                import term; term.serve(self, drop=STATE_FLAGS.get('termdrop', False)); self.close_connection=True; return
             import vnc; vnc.serve(self); self.close_connection=True; return
         m=re.match(r'/nodes/[^/]+/qemu/(\d+)/rdp/([^/]+)$',path)
         if m and self.headers.get('Upgrade','').lower()=='websocket':

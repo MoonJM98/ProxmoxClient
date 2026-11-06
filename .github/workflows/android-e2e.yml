@@ -1,0 +1,105 @@
+# Android 에뮬레이터 끝까지 검사 — 디버그 APK(자동 검사 고리 포함)를 실제 Android(에뮬레이터)에 설치해
+# 안전 영역·액티비티 다시 만들기·연결 유지 서비스·마우스 오른쪽 클릭·화면 보호를 확인한다(tools/AndroidE2E/e2e.sh).
+# 가짜 PVE(tools/FakePve)는 러너에서 돌고 에뮬레이터는 10.0.2.2 로 붙는다. 화면 캡처·기록은 산출물로 올린다.
+name: Android E2E
+
+on:
+  push:
+    branches: ["claude/android-e2e"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+  FAKEPVE_PORT: "19800"
+
+jobs:
+  emulator:
+    name: Android 에뮬레이터 검사
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: nuget-android-e2e-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'nuget.config') }}
+          restore-keys: nuget-android-
+
+      - name: android 워크로드 설치
+        run: dotnet workload install android
+
+      - name: Android SDK 의존성
+        run: >
+          dotnet build ProxmoxClient.Android -t:InstallAndroidDependencies -f net10.0-android
+          -p:AndroidSdkDirectory="$ANDROID_SDK_ROOT" -p:AcceptAndroidSDKLicenses=True
+
+      # 디버그(자동 검사 고리 포함), 에뮬레이터용 x64 만. 어셈블리를 APK 안에 넣는다(빠른 배포 끔)
+      - name: 디버그 APK(x64)
+        run: |
+          dotnet build ProxmoxClient.Android -c Debug -f net10.0-android -p:RuntimeIdentifier=android-x64 \
+            -p:EmbedAssembliesIntoApk=true -p:AndroidSdkDirectory="$ANDROID_SDK_ROOT"
+          ls -la ProxmoxClient.Android/bin/Debug/net10.0-android/android-x64/*-Signed.apk
+
+      # 진짜 마우스 오른쪽 클릭을 만드는 uinput 도우미(에뮬레이터 x86_64 용)
+      - name: uinput 마우스 도우미(NDK)
+        run: |
+          NDK="${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_HOME:-}}"
+          echo "NDK=$NDK"
+          "$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android30-clang" -O2 -static \
+            -o "$RUNNER_TEMP/uinput_mouse" tools/AndroidE2E/uinput_mouse.c
+          file "$RUNNER_TEMP/uinput_mouse"
+
+      # 실제 셸 모드(bash PTY)는 CT 루트(/var/lib/lxc)를 만들어 root 로 띄운다
+      - name: 가짜 PVE 서버
+        run: |
+          mkdir -p e2e-out
+          sudo -E env FAKEPVE_REAL_SHELL=1 setsid nohup python3 -I tools/FakePve/fake_pve.py "$FAKEPVE_PORT" > e2e-out/fakepve.log 2>&1 &
+          for i in $(seq 1 30); do grep -q "^listening" e2e-out/fakepve.log && break; sleep 1; done
+          cat e2e-out/fakepve.log
+
+      - name: KVM 켜기
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: 에뮬레이터 검사
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          UINPUT_MOUSE: ${{ runner.temp }}/uinput_mouse
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disk-size: 6000M
+          ram-size: 4096M
+          force-avd-creation: true
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash tools/AndroidE2E/e2e.sh ProxmoxClient.Android/bin/Debug/net10.0-android/android-x64/io.github.moonjm98.proxmoxclient-Signed.apk e2e-out "$FAKEPVE_PORT" e2e-out/fakepve.log
+
+      - name: 결과 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-e2e-${{ github.run_id }}
+          path: e2e-out/
+          retention-days: 14
+          if-no-files-found: warn

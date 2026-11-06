@@ -42,6 +42,9 @@ public class MainActivity : AvaloniaMainActivity
         Current = this;
         base.OnCreate(savedInstanceState);
         ApplyScreenSecurity(ScreenSecurity.Enabled);
+#if DEBUG
+        DebugTestHook.Log($"activity created recreated={savedInstanceState is not null}");
+#endif
     }
 
     protected override void OnStart()
@@ -65,6 +68,9 @@ public class MainActivity : AvaloniaMainActivity
     protected override void OnDestroy()
     {
         if (ReferenceEquals(Current, this)) Current = null;
+#if DEBUG
+        DebugTestHook.Log("activity destroyed");
+#endif
         base.OnDestroy();
     }
 
@@ -85,6 +91,9 @@ public class MainActivity : AvaloniaMainActivity
     {
         if (e is { KeyCode: Keycode.Back } && IsMouse(e.Source))
         {
+#if DEBUG
+            DebugTestHook.Log($"mouse BACK key dropped action={e.Action}");
+#endif
             MarkSecondaryButton();
             return true;
         }
@@ -123,6 +132,9 @@ public class MainActivity : AvaloniaMainActivity
                         (e.ActionMasked is MotionEventActions.ButtonPress or MotionEventActions.ButtonRelease &&
                          e.ActionButton == MotionEventButtonState.Secondary);
         if (secondary) MarkSecondaryButton();
+#if DEBUG
+        if (secondary) DebugTestHook.Log($"secondary button {e.ActionMasked}");
+#endif
     }
 
     private void MarkSecondaryButton()
@@ -148,6 +160,9 @@ public class MainActivity : AvaloniaMainActivity
     {
         public override void HandleOnBackPressed()
         {
+#if DEBUG
+            DebugTestHook.Log($"back callback rightClick={activity.IsRightClickBack()}");
+#endif
             if (activity.IsRightClickBack()) return;
 
             Enabled = false;

@@ -39,6 +39,9 @@ public class MainApplication : AvaloniaAndroidApplication<App>
         // 설정의 "화면 보호" — 액티비티 창에 FLAG_SECURE
         ProxmoxClient.UI.Platform.ScreenSecurity.Host = new AndroidScreenSecurityHost();
         AppServices.ProfilesDirectory = Path.Combine(FilesDir!.AbsolutePath, "profiles");
+#if DEBUG
+        DebugTestHook.Register(this); // 디버그 빌드 전용 자동 검사 고리(에뮬레이터 검사)
+#endif
         return base.CustomizeAppBuilder(builder)
             .UseAppFonts()
             .With(new AndroidPlatformOptions

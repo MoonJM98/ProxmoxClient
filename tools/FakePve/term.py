@@ -69,7 +69,7 @@ def top(cols, rows):
     return ''.join(out)
 
 
-def serve(handler):
+def serve(handler, drop=False):
     key = handler.headers.get('Sec-WebSocket-Key', '')
     accept = base64.b64encode(hashlib.sha1((key + GUID).encode()).digest()).decode()
     handler.send_response(101)
@@ -89,6 +89,11 @@ def serve(handler):
         _, auth = ws.read_frame()
         log('auth %s' % auth.decode(errors='replace').strip())
         send('OK')
+        if drop:
+            log('drop')
+            ws.sock.sendall(bytes([0x88, 0x02, 0x03, 0xE8]))
+            ws.sock.shutdown(2)
+            return
         if os.environ.get('FAKEPVE_REAL_SHELL') == '1':
             serve_real(ws, send, log)
             return
