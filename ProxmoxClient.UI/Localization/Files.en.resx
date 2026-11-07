@@ -16,4 +16,7 @@
   <data name="GuestFiles_UploadConfirm" xml:space="preserve">
     <value>Upload {0} file(s) to the folder "{1}"? Continue?</value>
   </data>
+  <data name="GuestFiles_ContainerReadConfirm" xml:space="preserve">
+    <value>Read the files of "{0}" through the node shell (pct exec)? Listing files runs commands inside the container. Continue?</value>
+  </data>
 </root>

@@ -16,7 +16,7 @@ public static class DatacenterNavigator
 {
     /// <param name="openResource">검색 탭에서 행을 두 번 눌렀을 때 노드·게스트·저장소 창을 여는 동작.</param>
     public static NavWindow Create(ProxmoxApiClient api, PermissionsInfo permissions, string? initialTabId = null,
-        Action<IReadOnlyDictionary<string, string>, Control?>? openResource = null)
+        Action<IReadOnlyDictionary<string, string>, object?>? openResource = null)
     {
         var tabs = new NavTabList();
         // 웹 UI 데이터센터 메뉴 순서 — 저장소·풀·작업 목록은 서버가 권한에 맞게 걸러 주므로 늘 보인다
@@ -34,7 +34,7 @@ public static class DatacenterNavigator
 
     /// <summary>검색·요약·클러스터·Ceph·옵션·저장소·백업·복제.</summary>
     private static void AddGeneral(NavTabList tabs, ProxmoxApiClient api, PermissionsInfo permissions,
-        Action<IReadOnlyDictionary<string, string>, Control?>? openResource)
+        Action<IReadOnlyDictionary<string, string>, object?>? openResource)
     {
         var audit = permissions.CanSysAudit;
         tabs.Add("search", "DcTab_Search", "IconSearch", true, () => SearchTab.Create(api, openResource,

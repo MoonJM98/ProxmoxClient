@@ -21,8 +21,9 @@ public sealed partial class ProxmoxApiClient
             headerTimeout).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            throw new ProxmoxApiException((int)response.StatusCode, Excerpt(body));
+            using var errorCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            errorCts.CancelAfter(DefaultRequestTimeout);
+            throw await ErrorFromResponseAsync(response, errorCts.Token).ConfigureAwait(false);
         }
 
         using var idle = CancellationTokenSource.CreateLinkedTokenSource(ct);

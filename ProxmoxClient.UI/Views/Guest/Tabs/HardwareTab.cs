@@ -8,6 +8,7 @@ using ProxmoxClient.UI.Platform;
 using ProxmoxClient.UI.Services;
 using ProxmoxClient.UI.Views.Guest.Hardware;
 using ProxmoxClient.UI.Views.Shared;
+using static ProxmoxClient.Presentation.Guest.Tabs.Net0Editor;
 
 namespace ProxmoxClient.UI.Views.Guest.Tabs;
 
@@ -52,7 +53,11 @@ public sealed class HardwareTab : UserControl
     private readonly Button _save;
     private bool _busy;
     private bool _loaded;
-    private IReadOnlyDictionary<string, string> _config = new Dictionary<string, string>();
+    /// <summary>
+    ///     대기 중 변경까지 반영한 설정(…/pending 의 Effective) — 하드웨어 화면과 같다. 현재 값(config)으로 채우면
+    ///     재시작 후 적용될 변경을 모른 채 저장해 그 변경을 지워 버린다.
+    /// </summary>
+    private GuestPendingConfig _pending = GuestPendingConfig.Empty;
 
     /// <summary>불러온 직후 네트워크 칸으로 만든 net0 — 저장 때 이와 같으면 사용자가 칸을 건드리지 않은 것이다.</summary>
     private string _loadedNet0 = string.Empty;
@@ -65,7 +70,7 @@ public sealed class HardwareTab : UserControl
         _api = api;
         _guest = guest;
 
-        ComboChoices.Fill(_nicModel, ComboChoices.NicModels);
+        ComboChoices.Fill(_nicModel, ChoiceLists.NicModels);
 
         _rowSockets = HardwareInput.Form(Loc.T("GuestSettingsWindow_11"), _sockets);
         _rowCores = HardwareInput.Form(Loc.T("CreateGuestWindow_08"), _cores);
@@ -172,7 +177,7 @@ public sealed class HardwareTab : UserControl
         }
         catch (Exception ex)
         {
-            HardwareLog.Warn($"[설정] 노드 {_guest.Node} 자원 조회 실패: {ex.Message}");
+            PresentationLog.Warn($"[설정] 노드 {_guest.Node} 자원 조회 실패: {ex.Message}");
         }
     }
 
@@ -193,7 +198,7 @@ public sealed class HardwareTab : UserControl
     {
         try
         {
-            _config = await _api.GetGuestConfigAsync(_guest.Node, _guest.Kind, _guest.VmId);
+            _pending = await _api.GetGuestPendingAsync(_guest.Node, _guest.Kind, _guest.VmId);
             await LoadBridgesAsync();
 
             _cores.Text = Get("cores");
@@ -222,13 +227,13 @@ public sealed class HardwareTab : UserControl
         }
         catch (Exception ex)
         {
-            HardwareLog.Warn($"[설정] 브리지 목록 조회 실패: {ex.Message}");
+            PresentationLog.Warn($"[설정] 브리지 목록 조회 실패: {ex.Message}");
         }
     }
 
     private string Get(string key)
     {
-        return _config.TryGetValue(key, out var value) ? value : string.Empty;
+        return _pending.Effective.TryGetValue(key, out var value) ? value : string.Empty;
     }
 
     private void ParseNet0(string net0)
@@ -280,46 +285,13 @@ public sealed class HardwareTab : UserControl
     /// </summary>
     private string BuildNet0()
     {
-        return MergeNet0(Get("net0"), IsVm, new HardwareTab.NicInput(
+        return MergeNet0(Get("net0"), IsVm, new NicInput(
             ComboChoices.Selected(_nicModel) is { Length: > 0 } m ? m : DefaultNicModel,
             _mac.Text?.Trim() ?? string.Empty,
             string.IsNullOrWhiteSpace(_bridge.Text) ? DefaultBridge : _bridge.Text!.Trim(),
             _vlan.Text?.Trim() ?? string.Empty,
             _nicFirewall.IsChecked == true,
             _ip.Text?.Trim() ?? string.Empty));
-    }
-
-    /// <summary>간편 화면의 네트워크 칸 값.</summary>
-    internal sealed record NicInput(string Model, string Mac, string Bridge, string Vlan, bool Firewall, string Ip);
-
-    /// <summary>
-    ///     기존 net0 에 화면 칸만 반영한다 — 이 화면에 없는 설정(mtu·rate·queues·link_down·CT 의 gw·ip6 등)은
-    ///     원래 값 그대로 둔다.
-    /// </summary>
-    internal static string MergeNet0(string currentNet0, bool isVm, NicInput input)
-    {
-        var current = PropertyString.Parse(currentNet0);
-        PropertyString updated;
-        if (isVm)
-        {
-            // VM 형식은 첫 항목이 "모델=MAC" — 모델이 바뀔 수 있으므로 첫 항목을 새로 만들고 나머지를 뒤에 붙인다
-            var oldModel = current.Items.Count > 0 ? current.Items[0].Key : null;
-            var rest = current.Items.Where(kv => kv.Key != oldModel)
-                .Select(kv => new KeyValuePair<string, string?>(kv.Key, kv.Value));
-            var head = input.Mac.Length > 0 ? $"{input.Model}={input.Mac}" : input.Model;
-            updated = PropertyString.Parse(head).With(rest);
-        }
-        else
-        {
-            // 빈 IP 는 ip 키를 뺀다(예전처럼 dhcp 로 바꾸지 않는다)
-            updated = (current.Has("name") ? current : current.With("name", "eth0")).With("ip", input.Ip);
-        }
-
-        return updated
-            .With("bridge", input.Bridge)
-            .With("tag", input.Vlan)
-            .With("firewall", input.Firewall ? "1" : null)
-            .Format();
     }
 
     /// <summary>입력 필터로 걸러지지 않는 범위(최소값 등) 검증. 오류 메시지 또는 null.</summary>
@@ -335,6 +307,18 @@ public sealed class HardwareTab : UserControl
         var vlanText = _vlan.Text?.Trim() ?? string.Empty;
         if (vlanText.Length > 0 && (!int.TryParse(vlanText, out var tag) || tag is < 1 or > 4094))
             return Loc.T("GuestSettings_VlanRange");
+
+        if (IsVm && !GuestInputChecks.IsMacOrEmpty(_mac.Text ?? string.Empty))
+            return Loc.T("HwEd_MacInvalid");
+
+        // 벌룬(최소 메모리)이 메모리보다 크면 서버가 거절한다(0 은 끄기)
+        if (IsVm && !GuestInputChecks.IsBalloonOk(_balloon.Text ?? string.Empty, memoryText.Length > 0
+                ? memoryText
+                : Get("memory")))
+            return Loc.T("GuestSettings_BalloonTooLarge");
+
+        if (!IsVm && !GuestInputChecks.IsCtIpv4(_ip.Text ?? string.Empty))
+            return Loc.T("GuestSettings_CtIpInvalid");
 
         // 소켓 × 코어가 노드의 논리 CPU 수를 넘으면 Proxmox 가 시작을 거부한다
         if (_host is { CpuCores: > 0 } host && TotalVcpus() > host.CpuCores)
@@ -402,8 +386,9 @@ public sealed class HardwareTab : UserControl
         {
             // 비운 칸은 delete 로 보내 서버 기본값으로 되돌린다("memory=" 같은 빈 값은 서버가 거절한다)
             using var flow = WriteConfirmation.Begin(Loc.T("GuestTab_Hardware"));
+            // 읽을 때 받은 digest — 그 사이 다른 곳에서 설정이 바뀌었으면 서버가 거절한다(덮어쓰지 않음)
             await _api.UpdateGuestConfigAsync(_guest.Node, _guest.Kind, _guest.VmId,
-                ActionHelpers.UpdateForm(changes));
+                _pending.AddDigest(FormHelpers.UpdateForm(changes)));
             // 다시 읽은 뒤에 써야 "불러왔습니다" 에 덮이지 않는다. 다시 읽기 실패 문구는 남긴다
             if (await LoadAsync()) SetStatus(Loc.T("GuestSettingsWindow_M06"));
         }
@@ -411,10 +396,15 @@ public sealed class HardwareTab : UserControl
         {
             SetStatus(string.Empty); // 확인 창에서 취소 — 저장하지 않았다
         }
+        catch (ProxmoxApiException ex) when (ex.IsDigestMismatch)
+        {
+            // 다른 곳에서 바뀐 설정을 다시 읽어 칸을 채운 뒤 알린다
+            if (await LoadAsync()) SetStatus(Loc.T("Digest_Changed"));
+        }
         catch (Exception ex)
         {
             SetStatus(Loc.T("AppSettingsWindow_M03", ex.Message));
-            HardwareLog.Warn($"[설정] {_guest.Kind.Label()} {_guest.VmId} 저장 실패: {ex.Message}");
+            PresentationLog.Warn($"[설정] {_guest.Kind.Label()} {_guest.VmId} 저장 실패: {ex.Message}");
         }
         finally
         {

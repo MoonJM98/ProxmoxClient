@@ -28,13 +28,13 @@ internal static class RdpHandshake
         if (connector.ShouldPerformCredssp())
             await CredsspAsync(channel, connector, destination, serverPublicKey, writeBuf).ConfigureAwait(false);
 
-        while (!connector.GetDynState().IsTerminal())
+        while (!connector.DynState.IsTerminal())
             await channel.StepAsync(connector, writeBuf).ConfigureAwait(false);
 
         var state = connector.ConsumeAndCastToClientConnectorState();
-        if (state.GetEnumType() != ClientConnectorStateType.Connected)
+        if (state.EnumType != ClientConnectorStateType.Connected)
             throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed,
-                Res.T("Rdp_NotConnected", state.GetEnumType()));
+                Res.T("Rdp_NotConnected", state.EnumType));
 
         return state.GetConnectedResult();
     }
@@ -45,7 +45,7 @@ internal static class RdpHandshake
     {
         var writeBuf = WriteBuf.New();
         var written = connector.StepNoInput(writeBuf);
-        var x224Request = new byte[(int)written.GetSize().Get()];
+        var x224Request = new byte[(int)written.Size.Get()];
         writeBuf.ReadIntoBuf(x224Request);
 
         var request = RDCleanPathPdu.NewRequest(x224Request, destination, token, string.Empty);
@@ -59,15 +59,15 @@ internal static class RdpHandshake
                 break;
             case RDCleanPathResultType.GeneralError:
                 throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed,
-                    Res.T("Rdp_GatewayError", response.GetErrorCode(), response.GetErrorMessage()));
+                    Res.T("Rdp_GatewayError", response.ErrorCode, response.ErrorMessage));
             default:
                 throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed, Res.T("Rdp_Negotiation"));
         }
 
         writeBuf.Clear();
-        connector.Step(Utils.VecU8ToByte(response.GetX224Response()), writeBuf);
+        connector.Step(Utils.VecU8ToByte(response.X224Response), writeBuf);
 
-        var chain = response.GetServerCertChain();
+        var chain = response.ServerCertChain;
         if (chain.IsEmpty() || chain.Next() is not { } first)
             throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed, Res.T("Rdp_NoCertificate"));
 
@@ -76,7 +76,11 @@ internal static class RdpHandshake
         return certificate.GetPublicKey();
     }
 
-    /// <summary>CredSSP(NTLM) — 외부 인증 서버(Kerberos)가 필요한 구성은 지원하지 않는다.</summary>
+    /// <summary>
+    ///     CredSSP(NLA) — Kerberos 설정을 넘기지 않으므로 IronRDP 는 NTLM 만 쓴다(Negotiate 아님). NTLM 은 외부 서버를
+    ///     찾지 않아 생성기가 네트워크 요청(KDC)으로 멈추는 일이 없다 — 멈추면 알 수 없는 구성이라 끝낸다.
+    ///     조기 인증 결과(HYBRID_EX)는 IronRDP 가 연결 상태의 선택 프로토콜을 보고 스스로 읽는다(DecodeServerMessage → null).
+    /// </summary>
     private static async Task CredsspAsync(RdpChannel channel, ClientConnector connector, string destination,
         byte[] serverPublicKey, WriteBuf writeBuf)
     {
@@ -86,15 +90,22 @@ internal static class RdpHandshake
 
         while (true)
         {
-            var state = sequence.ProcessTsRequest(tsRequest).Start();
-            if (!state.IsCompleted())
-                throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed, Res.T("Rdp_NeedsNetworkAuth"));
+            ClientState clientState;
+            using (var generator = sequence.ProcessTsRequest(tsRequest))
+            {
+                var state = generator.Start();
+                if (!state.IsCompleted())
+                    throw new IronRdpLibException(IronRdpLibExceptionType.ConnectionFailed,
+                        Res.T("Rdp_NeedsNetworkAuth"));
+
+                clientState = state.ClientStateIfCompleted;
+            }
 
             writeBuf.Clear();
-            var written = sequence.HandleProcessResult(state.GetClientStateIfCompleted(), writeBuf);
-            if (written.GetSize().IsSome())
+            var written = sequence.HandleProcessResult(clientState, writeBuf);
+            if (written.Size.IsSome())
             {
-                var reply = new byte[(int)written.GetSize().Get()];
+                var reply = new byte[(int)written.Size.Get()];
                 writeBuf.ReadIntoBuf(reply);
                 await channel.WriteAsync(reply).ConfigureAwait(false);
             }

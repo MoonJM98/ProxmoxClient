@@ -7,6 +7,114 @@
   <data name="Login_VpnUnsupported" xml:space="preserve">
     <value>VPN (OpenVPN) connections are not supported in this version yet. Connect from the WPF app, or sign in to a server that does not need a VPN.</value>
   </data>
+  <data name="Tfa_Title" xml:space="preserve">
+    <value>Two-factor authentication</value>
+  </data>
+  <data name="Tfa_Prompt" xml:space="preserve">
+    <value>Enter the two-factor code for {0}.</value>
+  </data>
+  <data name="Tfa_KindTotp" xml:space="preserve">
+    <value>Authenticator app (TOTP)</value>
+  </data>
+  <data name="Tfa_KindRecovery" xml:space="preserve">
+    <value>Recovery key</value>
+  </data>
+  <data name="Tfa_KindYubico" xml:space="preserve">
+    <value>Yubico OTP</value>
+  </data>
+  <data name="Tfa_TotpWatermark" xml:space="preserve">
+    <value>6-digit code from your app</value>
+  </data>
+  <data name="Tfa_YubicoWatermark" xml:space="preserve">
+    <value>Touch your YubiKey</value>
+  </data>
+  <data name="Tfa_RecoveryLeft" xml:space="preserve">
+    <value>Recovery keys left (IDs): {0}</value>
+  </data>
+  <data name="Tfa_RecoveryLow" xml:space="preserve">
+    <value>Only a few recovery keys are left. Generate a new set after signing in.</value>
+  </data>
+  <data name="Tfa_EmptyCode" xml:space="preserve">
+    <value>Enter the verification code.</value>
+  </data>
+  <data name="Tfa_Verifying" xml:space="preserve">
+    <value>Verifying…</value>
+  </data>
+  <data name="Tfa_SecurityKeyUnsupported" xml:space="preserve">
+    <value>Legacy-format (pre-PVE 7.2) U2F security key requests are not supported in this app — use TOTP or a recovery key, or an API token.</value>
+  </data>
+  <data name="Tfa_KindWebAuthn" xml:space="preserve">
+    <value>Security key</value>
+  </data>
+  <data name="Tfa_KindU2f" xml:space="preserve">
+    <value>Security key (U2F)</value>
+  </data>
+  <data name="Tfa_WebAuthnStart" xml:space="preserve">
+    <value>Use security key</value>
+  </data>
+  <data name="Tfa_WebAuthnHint" xml:space="preserve">
+    <value>Verify with your registered security key (WebAuthn). Press the button, then tap or touch the key when asked.</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptWindows" xml:space="preserve">
+    <value>Follow the Windows Security prompt to verify your security key…</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptUsb" xml:space="preserve">
+    <value>Insert your USB security key and touch its button…</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptNfc" xml:space="preserve">
+    <value>Hold your security key against the back of the phone (NFC)…</value>
+  </data>
+  <data name="Tfa_WebAuthnCancelled" xml:space="preserve">
+    <value>Security key verification was cancelled. Try again or choose another method.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoKey" xml:space="preserve">
+    <value>No USB security key found. Insert the key and try again.</value>
+  </data>
+  <data name="Tfa_WebAuthnHidPermission" xml:space="preserve">
+    <value>No permission to open the security key device ({0}). Install the libfido2 udev rules (your distribution's libfido2 package) or check the device permissions.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoWindows" xml:space="preserve">
+    <value>Security keys (WebAuthn) require Windows 10 1903 or later — use TOTP or a recovery key.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoLinux" xml:space="preserve">
+    <value>Security keys (WebAuthn) need a USB security key (/dev/hidraw) — use TOTP or a recovery key.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoMac" xml:space="preserve">
+    <value>USB security keys cannot be used on this Mac — use TOTP or a recovery key.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoIos" xml:space="preserve">
+    <value>Security keys (WebAuthn) are not supported on iOS yet — use TOTP or a recovery key.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoNfc" xml:space="preserve">
+    <value>This device has neither NFC nor USB host support, so security keys (WebAuthn) cannot be used — use TOTP or a recovery key.</value>
+  </data>
+  <data name="Tfa_WebAuthnNfcOff" xml:space="preserve">
+    <value>NFC is turned off. Turn on NFC in Settings and try again.</value>
+  </data>
+  <data name="Tfa_PinWatermark" xml:space="preserve">
+    <value>Security key PIN</value>
+  </data>
+  <data name="Tfa_PinPrompt" xml:space="preserve">
+    <value>Enter the security key PIN. For an NFC key, tap it again after entering the PIN.</value>
+  </data>
+  <data name="Tfa_PinPromptRetries" xml:space="preserve">
+    <value>Enter the security key PIN ({0} attempts left). For an NFC key, tap it again after entering the PIN.</value>
+  </data>
+  <data name="Tfa_PinEmpty" xml:space="preserve">
+    <value>Enter the PIN.</value>
+  </data>
+  <data name="Tfa_WebAuthnMacOpen" xml:space="preserve">
+    <value>Could not open the USB security key. If another program (such as a browser) is using it, close it and try again.</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptAndroid" xml:space="preserve">
+    <value>Hold your security key against the back of the phone (NFC), or plug it in via USB and touch its button…</value>
+  </data>
+  <data name="Tfa_WebAuthnUsbDenied" xml:space="preserve">
+    <value>Access to the USB security key was not allowed.</value>
+  </data>
+  <data name="Tfa_NoMethod" xml:space="preserve">
+    <value>No two-factor method usable for this account. Check its two-factor settings in the web UI or use an API token.</value>
+  </data>
   <data name="Login_VpnNote" xml:space="preserve">
     <value>Opens an OpenVPN tunnel with this .ovpn before signing in (desktop). On Linux and macOS openvpn needs permission to create the tunnel (root or CAP_NET_ADMIN). On Android, connect with a VPN app first.</value>
   </data>

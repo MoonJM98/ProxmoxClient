@@ -2,15 +2,27 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ProxmoxClient.UI.ViewModels"
              xmlns:c="using:ProxmoxClient.UI.Converters"
+             xmlns:l="using:ProxmoxClient.UI.Localization"
              x:Class="ProxmoxClient.UI.Views.TaskLogView"
              x:DataType="vm:TaskLogViewModel">
     <Grid RowDefinitions="Auto,*">
         <Border Classes="card" Margin="16,12,16,8">
             <StackPanel Spacing="4">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Ellipse Classes="dot" Fill="{Binding TaskItem.Status, Converter={x:Static c:Conv.TaskBrush}}" />
-                    <TextBlock Text="{Binding TaskItem.Status}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                </StackPanel>
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Ellipse Classes="dot" Margin="0,0,8,0"
+                             Fill="{Binding TaskItem.Status, Converter={x:Static c:Conv.TaskBrush}}" />
+                    <TextBlock Grid.Column="1" Text="{Binding TaskItem.Status}" FontWeight="SemiBold"
+                               TextWrapping="Wrap" VerticalAlignment="Center" />
+                    <!-- 줄마다 따로 그려 여러 줄 선택이 안 되므로 전체 복사 단추 -->
+                    <Button Grid.Column="2" Classes="icon" Command="{Binding CopyAllCommand}"
+                            ToolTip.Tip="{l:Tr Task_LogCopyAll}"
+                            AutomationProperties.Name="{l:Tr Task_LogCopyAll}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Path Classes="icon" Width="16" Height="16" Data="{StaticResource IconCopy}" />
+                            <TextBlock Text="{l:Tr Task_LogCopyAll}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
                 <TextBlock Classes="subtle">
                     <Run Text="{Binding TaskItem.Node}" />
                     <Run Text="·" />
@@ -21,9 +33,28 @@
             </StackPanel>
         </Border>
         <Border Grid.Row="1" Classes="card" Margin="16,0,16,16" Padding="10">
-            <ScrollViewer HorizontalScrollBarVisibility="Auto">
-                <SelectableTextBlock Text="{Binding LogText}" FontFamily="fonts:App#JetBrains Mono, fonts:App#Pretendard" FontSize="12" />
-            </ScrollViewer>
+            <Grid>
+                <!-- 긴 로그도 보이는 줄만 그린다(가상화) — 새 줄은 뒤에 붙고, 맨 아래를 보고 있으면 따라 내려간다 -->
+                <ScrollViewer x:Name="LogScroll" HorizontalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="LogLines" ItemsSource="{Binding Lines}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <SelectableTextBlock Text="{Binding}" FontSize="12"
+                                                     FontFamily="fonts:App#JetBrains Mono, fonts:App#Pretendard" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                <TextBlock Classes="subtle" Text="{Binding Message}" TextWrapping="Wrap"
+                           IsVisible="{Binding HasMessage}" />
+                <ProgressBar IsIndeterminate="True" VerticalAlignment="Top" Margin="24,24,24,0"
+                             IsVisible="{Binding !IsLoaded}" />
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

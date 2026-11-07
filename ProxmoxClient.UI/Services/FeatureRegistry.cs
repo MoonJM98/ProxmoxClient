@@ -63,7 +63,14 @@ public static class PreviewRegistry
     }
 }
 
-public sealed record PreviewTab(string Id, string LabelKey, string IconKey, Func<PreviewContext, Control> Create);
+public sealed record PreviewTab(string Id, string LabelKey, string IconKey, Func<PreviewContext, Control> Create)
+{
+    /// <summary>공용 화면 설계도(<see cref="ViewSpec" />)로 만드는 탭.</summary>
+    public PreviewTab(string id, string labelKey, string iconKey, Func<PreviewContext, ViewSpec> create)
+        : this(id, labelKey, iconKey, ctx => Views.Shared.ViewSpecs.Build(create(ctx)))
+    {
+    }
+}
 
 /// <summary>미리보기 탭이 받는 것 — 로그인한 세션과 가짜 서버의 대표 대상(VM 100 · CT 200 · 노드 pve1 · 스토리지 local).</summary>
 public sealed record PreviewContext(

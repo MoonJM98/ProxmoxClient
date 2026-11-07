@@ -31,6 +31,7 @@ public sealed class GuestsApi(ProxmoxApiClient api) : PveDomainApi(api)
     [PveParam("entrypoint", "9.0")]
     [PveParam("env", "9.0")]
     [PveParam("ha-managed", "9.0")]
+    [PveParam("live-restore", "7.1")]
     public Task<string> CreateAsync(string node, ResourceKind kind, IReadOnlyDictionary<string, string> form,
         CancellationToken ct = default)
     {

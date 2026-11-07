@@ -16,7 +16,7 @@ using ProxmoxClient.Core.Vpn;
 
 namespace ProxmoxClient.App.ViewModels;
 
-public partial class MainViewModel : ObservableObject, IDisposable
+public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable
 {
     private const int TaskListCapacity = 100;
     private const int VpnLogCapacityChars = 16000;
@@ -144,23 +144,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public ProxmoxApiClient? Api { get; private set; }
     /// <summary>서버 인증서 신뢰 확인 UI(창이 설정). 신뢰하면 프로필에 지문을 기록하고 true.</summary>
     public Func<CertificateRejection, ConnectionProfile, bool>? ConfirmCertificate { get; set; }
+    /// <summary>기다리지 않고 정리한다 — VPN 은 프로세스를 바로 끝낸다. 창을 닫을 때는 <see cref="DisposeAsync" />.</summary>
     public void Dispose()
     {
         if (_disposed) return;
 
         _disposed = true;
         _timer.Stop();
-        try
-        {
-            if (_vpn.State is not VpnState.Disconnected) _vpn.DisconnectAsync().GetAwaiter().GetResult();
-        }
-        catch
-        {
-        }
-
         _vpn.Dispose();
         Api?.Dispose();
         GC.SuppressFinalize(this);
+    }
+    /// <summary>VPN 터널을 정상 종료(UI 스레드를 막지 않고 기다림)한 뒤 정리한다.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+
+        _timer.Stop();
+        await _vpn.DisposeAsync().ConfigureAwait(true);
+        Dispose();
     }
     /// <summary>시작 시 설정 적용 — 새로고침 간격과 자동 새로고침 기본 상태.</summary>
     public void ApplyStartupSettings(AppSettings settings)

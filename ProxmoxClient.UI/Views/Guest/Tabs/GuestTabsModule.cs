@@ -51,7 +51,7 @@ internal static class GuestTabsModule
         return new OptionsTab(
             GuestOptions.For(kind),
             () => api.GetGuestPendingAsync(node, kind, vmid),
-            changes => api.UpdateGuestConfigAsync(node, kind, vmid, ActionHelpers.UpdateForm(changes)),
+            changes => api.UpdateGuestConfigAsync(node, kind, vmid, FormHelpers.UpdateForm(changes)),
             keys => api.RevertGuestPendingAsync(node, kind, vmid, keys),
             null,
             api.Guests.Feature(nameof(GuestsApi.SetConfigAsync)));

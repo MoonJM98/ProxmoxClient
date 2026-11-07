@@ -2,6 +2,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\ProxmoxClient.Core\ProxmoxClient.Core.csproj" />
+        <ProjectReference Include="..\ProxmoxClient.Presentation\ProxmoxClient.Presentation.csproj" />
     </ItemGroup>
 
     <ItemGroup>

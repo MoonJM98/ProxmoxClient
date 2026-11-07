@@ -5,6 +5,7 @@ using Avalonia.Media;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
 using ProxmoxClient.UI.Localization;
+using ProxmoxClient.UI.Platform;
 using ProxmoxClient.UI.Services;
 using ProxmoxClient.UI.Views.Shared;
 
@@ -37,8 +38,15 @@ public sealed class SnapshotsTab : UserControl
         _api = api;
         _guest = guest;
 
+        // 휴대폰: 아래에 늘 펼친 입력 칸 대신 위 단추로 입력 창을 띄운다(목록이 화면을 다 쓰게)
+        var mobile = !PlatformInfo.IsDesktop;
+        var createAction = new TableAction
+        {
+            LabelKey = "SnapshotDialog_06", IconKey = "IconCamera", Run = (_, _) => CreateFromFormAsync()
+        };
         _table = new TableTab(LoadAsync, Columns, "SnapshotsTab_Hint",
         [
+            ..(mobile ? [createAction] : Array.Empty<TableAction>()),
             new TableAction
             {
                 LabelKey = "SnapshotDialog_EditNote", IconKey = "IconPencil", NeedsSelection = true,
@@ -47,26 +55,27 @@ public sealed class SnapshotsTab : UserControl
             new TableAction
             {
                 LabelKey = "SnapshotDialog_04", IconKey = "IconUndo", NeedsSelection = true,
-                Confirm = row => Loc.T("SnapshotDialog_M03", ActionHelpers.Value(row!, "name")),
-                Run = (row, _) => row is null
-                    ? Task.FromResult<string?>(null)
-                    : RunSnapshotAsync(() => _api.RollbackSnapshotAsync(_guest.Node, _guest.Kind, _guest.VmId,
-                        ActionHelpers.Value(row, "name")), Loc.T("SnapshotDialog_ActionRollback", ActionHelpers.Value(row, "name")))
+                Run = RollbackAsync
             },
             new TableAction
             {
                 LabelKey = "SnapshotDialog_05", IconKey = "IconTrash", NeedsSelection = true,
-                Confirm = row => Loc.T("SnapshotDialog_M06", ActionHelpers.Value(row!, "name")),
+                Confirm = row => Loc.T("SnapshotDialog_M06", FormHelpers.Value(row!, "name")),
                 Run = (row, _) => row is null
                     ? Task.FromResult<string?>(null)
                     : RunSnapshotAsync(() => _api.DeleteSnapshotAsync(_guest.Node, _guest.Kind, _guest.VmId,
-                        ActionHelpers.Value(row, "name")), Loc.T("SnapshotDialog_ActionDelete", ActionHelpers.Value(row, "name")))
+                        FormHelpers.Value(row, "name")), Loc.T("SnapshotDialog_ActionDelete", FormHelpers.Value(row, "name")))
             }
         ]);
 
         _create = ActionBar.IconButton(Loc.T("SnapshotDialog_08"), "IconCamera", this);
         _create.Classes.Add("accent");
         _create.Click += async (_, _) => await CreateAsync();
+
+        // RAM 상태 저장은 VM 만(컨테이너 스냅숏에는 없다). VM 도 꺼져 있으면 저장할 메모리가 없다 — 켜져 있을 때만 고른다
+        _includeRam.IsVisible = _guest.Kind == ResourceKind.Qemu;
+        _includeRam.IsEnabled = false;
+        AttachedToVisualTree += async (_, _) => await UpdateRamOptionAsync();
 
         var form = new StackPanel
         {
@@ -86,7 +95,7 @@ public sealed class SnapshotsTab : UserControl
             }
         };
 
-        var card = new Border { Classes = { "card" }, Margin = new Thickness(12, 0, 12, 0), Child = form };
+        var card = new Border { Classes = { "card" }, Margin = new Thickness(12, 0, 12, 0), Child = form, IsVisible = !mobile };
         var grid = new Grid { RowDefinitions = new RowDefinitions("*,Auto,Auto") };
         Grid.SetRow(_table, 0);
         Grid.SetRow(card, 1);
@@ -114,18 +123,73 @@ public sealed class SnapshotsTab : UserControl
         return rows;
     }
 
-    /// <summary>설명(메모)만 바꾼다 — 스냅숏 내용은 그대로라 작업 없이 바로 끝난다.</summary>
-    private async Task<string?> EditNoteAsync(IReadOnlyDictionary<string, string>? row, Control? owner)
+    private async Task UpdateRamOptionAsync()
+    {
+        if (_guest.Kind != ResourceKind.Qemu) return;
+
+        bool running;
+        try
+        {
+            running = await _api.GetGuestCurrentStatusAsync(_guest.Node, _guest.Kind, _guest.VmId) == "running";
+        }
+        catch (ProxmoxApiException)
+        {
+            running = _guest.Status == "running";
+        }
+
+        _includeRam.IsEnabled = running;
+        if (!running) _includeRam.IsChecked = false;
+        ToolTip.SetTip(_includeRam, running ? null : Loc.T("Snapshot_RamNeedsRunning"));
+    }
+
+    /// <summary>
+    ///     스냅숏으로 되돌린다 — 경고와 함께 "되돌린 뒤 시작" 을 고르게 한다(start=1, 7.2+).
+    ///     RAM 을 담은 VM 스냅숏은 서버가 알아서 켜므로 그 칸을 두지 않는다.
+    /// </summary>
+    private async Task<string?> RollbackAsync(IReadOnlyDictionary<string, string>? row, object? owner)
     {
         if (row is null) return null;
 
-        var name = ActionHelpers.Value(row, "name");
+        var name = FormHelpers.Value(row, "name");
+        var canStart = _api.Supports(Core.Api.Versioning.PveApiVersion.Parse(ProxmoxApiClient.RollbackStartSince))
+                       && FormHelpers.Value(row, "ram").Length == 0;
+        var start = false;
+        if (canStart)
+        {
+            // 확인 창 대신 같은 경고를 안내로 단 입력 창 — 확인을 누르면 되돌린다
+            var values = await FormDialog.ShowAsync(Loc.T("SnapshotDialog_ActionRollback", name),
+            [
+                new FormField
+                {
+                    Key = "start", LabelKey = "Snapshot_RollbackStart", Kind = FormFieldKind.Bool, Initial = "0",
+                    Hint = Loc.T("SnapshotDialog_M03", name)
+                }
+            ]);
+            if (values is null) return null;
+
+            start = values.GetValueOrDefault("start") == "1";
+        }
+        else if (!await Ask.ConfirmAsync(Loc.T("SnapshotDialog_M03", name), Loc.T("SnapshotDialog_04")))
+        {
+            return null;
+        }
+
+        return await RunSnapshotAsync(() => _api.RollbackSnapshotAsync(_guest.Node, _guest.Kind, _guest.VmId,
+            name, start), Loc.T("SnapshotDialog_ActionRollback", name));
+    }
+
+    /// <summary>설명(메모)만 바꾼다 — 스냅숏 내용은 그대로라 작업 없이 바로 끝난다.</summary>
+    private async Task<string?> EditNoteAsync(IReadOnlyDictionary<string, string>? row, object? owner)
+    {
+        if (row is null) return null;
+
+        var name = FormHelpers.Value(row, "name");
         var values = await FormDialog.ShowAsync(Loc.T("SnapshotDialog_EditNoteTitle", name),
         [
             new FormField
             {
                 Key = "description", LabelKey = "FirewallWindow_13", Kind = FormFieldKind.Multiline,
-                Initial = ActionHelpers.Value(row, "description"), CanLoadFile = false
+                Initial = FormHelpers.Value(row, "description"), CanLoadFile = false
             }
         ]);
         if (values is null) return null;
@@ -145,12 +209,44 @@ public sealed class SnapshotsTab : UserControl
         return task.IsOk ? Loc.T("SnapshotDialog_Done", label) : Loc.T("SnapshotDialog_Failed", label, task.Status);
     }
 
+    /// <summary>휴대폰: 이름·설명·RAM 을 입력 창으로 받아 만든다(데스크톱의 아래 입력 칸과 같은 검사·같은 흐름).</summary>
+    private async Task<string?> CreateFromFormAsync()
+    {
+        await UpdateRamOptionAsync();
+        var fields = new List<FormField>
+        {
+            new() { Key = "name", LabelKey = "MainWindow_40", Required = true, Trim = true },
+            new() { Key = "description", LabelKey = "FirewallWindow_13" }
+        };
+        if (_includeRam.IsVisible && _includeRam.IsEnabled)
+            fields.Add(new FormField { Key = "ram", LabelKey = "SnapshotDialog_09", Kind = FormFieldKind.Bool, Initial = "0" });
+        var values = await FormDialog.ShowAsync(Loc.T("SnapshotDialog_06"), fields,
+            v => GuestInputChecks.IsSnapshotName(v.GetValueOrDefault("name") ?? string.Empty)
+                ? null
+                : Loc.T("Snapshot_NameRules", GuestInputChecks.SnapshotNameMax));
+        if (values is null) return null;
+
+        _newName.Text = values.GetValueOrDefault("name");
+        _newDescription.Text = values.GetValueOrDefault("description");
+        _includeRam.IsChecked = values.GetValueOrDefault("ram") == "1";
+        await CreateAsync();
+        return null; // 결과는 CreateAsync 가 아래 상태 줄에 쓰고 목록을 다시 읽는다
+    }
+
     private async Task CreateAsync()
     {
         var name = _newName.Text?.Trim() ?? string.Empty;
         if (name.Length == 0 || name.Contains(' '))
         {
             await Ask.InfoAsync(Loc.T("SnapshotDialog_M01"), Loc.T("ProfileDialog_M08"));
+            return;
+        }
+
+        // pve-snapshot-name: 글자로 시작, 글자·숫자·_·- 만, 2~40자
+        if (!GuestInputChecks.IsSnapshotName(name))
+        {
+            await Ask.InfoAsync(Loc.T("Snapshot_NameRules", GuestInputChecks.SnapshotNameMax),
+                Loc.T("ProfileDialog_M08"));
             return;
         }
 
@@ -164,7 +260,8 @@ public sealed class SnapshotsTab : UserControl
                 _status.Text = Loc.T("SnapshotDialog_Running", label);
                 _status.Text = await RunSnapshotAsync(
                     () => _api.CreateSnapshotAsync(_guest.Node, _guest.Kind, _guest.VmId, name,
-                        string.IsNullOrWhiteSpace(description) ? null : description, _includeRam.IsChecked == true),
+                        string.IsNullOrWhiteSpace(description) ? null : description,
+                        _includeRam.IsVisible && _includeRam.IsEnabled && _includeRam.IsChecked == true),
                     label) ?? string.Empty;
             }
 

@@ -25,16 +25,11 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
     private bool _disposed;
     private byte[]? _framebuffer;
 
-    /// <summary>디코딩 버퍼가 프레임버퍼보다 새롭다 — 다음에 <see cref="Framebuffer" /> 를 읽을 때 옮긴다.</summary>
-    private bool _framebufferStale;
     private DecodedImage? _image;
     private InputDatabase? _input;
 
     /// <summary>재활성화(해상도 변경) 중 — 이때 들어온 입력은 버린다.</summary>
     private bool _reactivating;
-
-    /// <summary>UI 가 잠금을 못 잡아 옛 프레임버퍼를 가져갔다 — 수신 처리가 끝나면 전체 갱신을 다시 알린다.</summary>
-    private int _resignalFrame;
 
     private ActiveStage? _stage;
     private ClientWebSocket? _websocket;
@@ -44,44 +39,17 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
     private int _statsFrames;
     private long _statsStarted = Stopwatch.GetTimestamp();
 
-    /// <summary>처음 요청할 게스트 해상도 — 서버가 다른 크기를 정할 수 있다.</summary>
+    /// <summary>
+    ///     처음 요청할 게스트 해상도(연결 전에 정한다) — 서버가 다른 크기를 정할 수 있다. 연결 전에
+    ///     <see cref="RequestDesktopSize" /> 를 불렀으면 그 크기가 먼저다.
+    /// </summary>
     public (int Width, int Height) InitialSize { get; set; } = (1280, 800);
 
     public bool IsConnected { get; private set; }
     public int Width => _width;
     public int Height => _height;
-    /// <summary>
-    ///     프레임버퍼 — 화면이 바뀌었으면 읽는 순간 디코딩 버퍼에서 옮긴다. 수신 때마다 전체(1080p 8MB)를 복사하지 않고
-    ///     창이 그릴 때(렌더 틱에 한 번)만 복사한다. 수신 처리 중이라 잠금을 못 잡으면 기다리지 않고 지금 것을 주고,
-    ///     처리가 끝난 뒤 다시 그리게 알린다(<see cref="_resignalFrame" />).
-    /// </summary>
-    public byte[]? Framebuffer
-    {
-        get
-        {
-            if (!Monitor.TryEnter(_gate))
-            {
-                Volatile.Write(ref _resignalFrame, 1);
-                return _framebuffer;
-            }
-
-            try
-            {
-                if (_framebufferStale && _image is not null && _framebuffer is not null)
-                {
-                    using var data = _image.GetData();
-                    if ((int)data.GetSize() == _framebuffer.Length) data.Fill(_framebuffer);
-                    _framebufferStale = false;
-                }
-
-                return _framebuffer;
-            }
-            finally
-            {
-                Monitor.Exit(_gate);
-            }
-        }
-    }
+    /// <summary>프레임버퍼(BGRA) — 화면 갱신이 오면 수신 스레드가 바뀐 영역만 옮겨 둔다(<see cref="CopyRect" />).</summary>
+    public byte[]? Framebuffer => Volatile.Read(ref _framebuffer);
 
     public event Action<string>? StatusChanged;
     public event Action<int, int>? Connected;
@@ -108,9 +76,10 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
     public async Task ConnectAsync(string node, int vmid, CancellationToken ct = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        var clipboard = CreateClipboard(); // 첫 await 전에 — 부른 UI 스레드에서 만든다
+        CliprdrBackendFactory? clipboard = null;
         try
         {
+            clipboard = CreateClipboard(); // 첫 await 전에 — 부른 UI 스레드에서 만든다
             await ConnectCoreAsync(node, vmid, clipboard, ct).ConfigureAwait(false);
         }
         catch
@@ -152,9 +121,12 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
             }
 
             _channel = channel;
+            // 화면 크기를 먼저 읽는다 — ActiveStage.New 는 연결 결과를 가져가 버려 그 뒤로는 읽을 수 없다
+            // ("ConnectionResult: is consumed or never constructed")
+            var size = result.DesktopSize;
             _stage = ActiveStage.New(result);
             _input = InputDatabase.New();
-            ResetImage(result.GetDesktopSize());
+            ResetImage(size);
             IsConnected = true;
         }
 
@@ -178,7 +150,7 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
             AbortSocket();
             channel.Complete();
             if (ex is IronRdpException rdp)
-                throw new InvalidOperationException(Res.T("Rdp_Failed", rdp.Inner.ToDisplay()), ex);
+                throw new InvalidOperationException(RdpErrors.Describe(rdp.Inner.Kind, rdp.Inner.ToDisplay()), ex);
 
             throw;
         }
@@ -188,15 +160,22 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
     {
         var builder = ConfigBuilder.New();
         builder.WithUsernameAndPassword(proxy.User, proxy.Password);
-        builder.SetDomain(string.Empty);
-        builder.SetEnableTls(true);
-        builder.SetEnableCredssp(true);
-        builder.SetDesktopSize((ushort)ClampDimension(InitialSize.Height), (ushort)ClampDimension(InitialSize.Width));
-        builder.SetClientName(Environment.MachineName);
-        builder.SetClientDir("C:\\Windows\\System32\\mstscax.dll");
-        builder.SetPerformanceFlags(PerformanceFlags.NewDefault());
-        builder.SetEnableServerPointer(true); // 게스트 커서 모양을 받아 PC 커서로 쓴다
-        builder.SetPointerSoftwareRendering(false);
+        builder.Domain = string.Empty;
+        builder.EnableTls = true;
+        builder.EnableCredssp = true;
+        // 서버가 CredSSP 없이 TLS 만 고르면 계정은 클라이언트 정보 PDU 로만 간다 — 자동 로그온 표시가 없으면 서버가 로그인
+        // 화면을 띄우는데, 일회성 비밀번호는 사용자가 모르므로 들어갈 수 없다(mstsc 도 비밀번호가 있으면 켠다)
+        builder.Autologon = true;
+        // 연결 전에 해상도 요청(RequestDesktopSize)이 왔으면 그 크기로 시작한다
+        var (width, height) = Volatile.Read(ref _pendingSize) is var pending and not 0
+            ? UnpackSize(pending)
+            : (ClampDimension(InitialSize.Width), ClampDimension(InitialSize.Height));
+        builder.SetDesktopSize((ushort)height, (ushort)width);
+        builder.ClientName = Environment.MachineName;
+        builder.ClientDir = "C:\\Windows\\System32\\mstscax.dll";
+        builder.PerformanceFlags = PerformanceFlags.NewDefault();
+        builder.EnableServerPointer = true; // 게스트 커서 모양을 받아 PC 커서로 쓴다
+        builder.PointerSoftwareRendering = false;
         return builder.Build();
     }
 
@@ -206,15 +185,18 @@ public sealed partial class ProxmoxRdpSession(ProxmoxApiClient api) : IConsoleSe
         return Math.Clamp(value & ~1, 200, 8192);
     }
 
-    /// <summary>(잠금 안에서) 새 화면 크기로 디코딩 버퍼·프레임버퍼를 만든다.</summary>
+    /// <summary>
+    ///     (잠금 안에서) 새 화면 크기로 디코딩 버퍼·프레임버퍼를 만든다. 프레임버퍼는 새 배열로 바꾼다 — 창이 들고 있는 옛 배열은
+    ///     그대로 남아(옛 크기로 그린다) 읽는 중에 크기가 바뀌어도 넘치지 않는다. 새 배열을 먼저 놓고 크기를 바꾼다.
+    /// </summary>
     private void ResetImage(DesktopSize size)
     {
-        _width = size.GetWidth();
-        _height = size.GetHeight();
+        int width = size.Width, height = size.Height;
         _image?.Dispose();
-        _image = DecodedImage.New(PixelFormat.BgrA32, (ushort)_width, (ushort)_height);
-        _framebuffer = new byte[_width * _height * 4];
-        _framebufferStale = false;
+        _image = DecodedImage.New(PixelFormat.BgrA32, (ushort)width, (ushort)height);
+        Volatile.Write(ref _framebuffer, new byte[width * height * 4]);
+        _width = width;
+        _height = height;
     }
 
     public string TakeStatsText()

@@ -7,6 +7,9 @@
   <data name="DcFirewall_OptionValue" xml:space="preserve">
     <value>Value</value>
   </data>
+  <data name="DcFirewall_DefaultValue" xml:space="preserve">
+    <value>(Default: {0})</value>
+  </data>
   <data name="DcFirewall_OptionsHint" xml:space="preserve">
     <value>Firewall options. Select a row to change that option only.</value>
   </data>

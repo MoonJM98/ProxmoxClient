@@ -16,4 +16,7 @@
   <data name="GuestFiles_UploadConfirm" xml:space="preserve">
     <value>파일 {0}개를 “{1}” 폴더에 올립니다. 계속할까요?</value>
   </data>
+  <data name="GuestFiles_ContainerReadConfirm" xml:space="preserve">
+    <value>“{0}” 의 파일을 노드 셸(pct exec)로 읽습니다. 파일 목록을 읽으려면 컨테이너 안에서 명령을 실행해야 합니다. 계속할까요?</value>
+  </data>
 </root>

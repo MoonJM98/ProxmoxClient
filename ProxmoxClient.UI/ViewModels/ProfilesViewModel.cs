@@ -20,6 +20,9 @@ public sealed partial class ProfilesViewModel : ViewModelBase
 
     [ObservableProperty] public partial bool IsEmpty { get; private set; }
 
+    /// <summary>지난 실행에서 앱이 죽어 남은 터미널 — 서버별 안내(누르면 그 서버로 로그인 → 다시 열지 묻는다).</summary>
+    public ObservableCollection<TerminalRestoreItem> PendingRestores { get; } = [];
+
     public override async void OnAppearing()
     {
         // 편집 화면에서 돌아올 때마다 다시 읽는다(저장·삭제 반영)
@@ -34,11 +37,30 @@ public sealed partial class ProfilesViewModel : ViewModelBase
             Profiles.Add(new ProfileItem(profile, AppServices.Profiles.GetSecret(profile) is not null));
 
         IsEmpty = Profiles.Count == 0;
+        RefreshPendingRestores();
         _loaded = true;
         await OnLoadedAsync();
     }
 
     public bool IsLoaded => _loaded;
+
+    /// <summary>다시 열 터미널 안내를 다시 만든다 — 지운 서버의 기록은 버린다.</summary>
+    private void RefreshPendingRestores()
+    {
+        Platform.SessionKeepAlive.DropPendingExcept(Profiles.Select(p => p.Profile.Id));
+        PendingRestores.Clear();
+        foreach (var item in Profiles)
+            if (TerminalRestore.PendingFor(item.Profile.Id) is { Count: > 0 } entries)
+                PendingRestores.Add(new TerminalRestoreItem(item, entries.Count));
+    }
+
+    /// <summary>안내를 닫는다 — 그 서버의 기록을 지운다.</summary>
+    [RelayCommand]
+    private void DismissRestore(TerminalRestoreItem restore)
+    {
+        Platform.SessionKeepAlive.TakePending(restore.Item.Profile.Id);
+        PendingRestores.Remove(restore);
+    }
 
     /// <summary>데스크톱 로그인 화면(Views/Login)이 목록을 읽은 뒤 마지막 로그인 서버를 고르는 자리. 모바일은 아무것도 하지 않는다.</summary>
     private partial Task OnLoadedAsync();
@@ -94,13 +116,15 @@ public sealed partial class ProfilesViewModel : ViewModelBase
             profile.Password = SecureStringHelper.FromString(secret);
 
         ServerSession? session = null;
+        using var connecting = new CancellationTokenSource(); // 진행 표시의 취소·뒤로 가기
         var ok = await TryAsync(async () =>
             {
-                await VpnTunnel.EnsureAsync(profile); // VPN 을 쓰는 서버는 터널부터(지원 안 하는 기기면 안내 오류)
-                session = await LoginAsync(profile, item);
+                await VpnTunnel.EnsureAsync(profile, ct: connecting.Token); // VPN 을 쓰는 서버는 터널부터(지원 안 하는 기기면 안내 오류)
+                session = await LoginAsync(profile, item, connecting.Token);
             },
-            L.T("Connect_Busy", item.DisplayName));
-        if (!ok || session is null) return;
+            L.T("Connect_Busy", item.DisplayName), connecting);
+        if (connecting.IsCancellationRequested) session?.Dispose(); // 끝나는 순간 취소함 — 미리 받던 요청도 취소됐다
+        if (!ok || session is null || connecting.IsCancellationRequested) return;
 
         if (remember)
             try
@@ -113,13 +137,16 @@ public sealed partial class ProfilesViewModel : ViewModelBase
             }
 
         await AppServices.Navigator.PushAsync(new ClusterViewModel(session));
+        await TerminalRestore.OfferAsync(session); // 앱이 죽어 끊긴 터미널이 이 서버에 있으면 다시 열지 묻는다
+        RefreshPendingRestores();
     }
 
     /// <summary>
     ///     로그인하고 버전을 읽어 연결을 확인한다. 서버 인증서를 아직 신뢰하지 않았으면 지문을 보여 주고,
     ///     사용자가 신뢰하면 프로필에 지문을 저장한 뒤 다시 시도한다.
     /// </summary>
-    private static async Task<ServerSession> LoginAsync(ConnectionProfile profile, ProfileItem item)
+    private static async Task<ServerSession> LoginAsync(ConnectionProfile profile, ProfileItem item,
+        CancellationToken ct = default)
     {
         for (var prompt = 0;; prompt++)
         {
@@ -127,19 +154,28 @@ public sealed partial class ProfilesViewModel : ViewModelBase
             var api = new ProxmoxApiClient(profile) { WriteGuard = WriteConfirmation.GuardAsync };
             try
             {
-                await api.LoginAsync();
+                try
+                {
+                    await api.LoginAsync(ct);
+                }
+                catch (TfaRequiredException tfa)
+                {
+                    // 2단계 인증 계정 — 코드를 받아 마저 로그인한다. 취소하면 조용히 끝낸다(사용자 취소와 같게)
+                    if (!await Views.Login.TfaDialog.RunAsync(api, tfa.Challenge))
+                        throw new WriteCancelledException("POST", "/access/ticket");
+                }
                 // 버전 확인과 첫 화면 데이터를 동시에 요청한다(화면 전환을 기다리지 않고 미리 받기 시작)
-                var overview = api.GetClusterOverviewAsync();
+                var overview = api.GetClusterOverviewAsync(ct);
                 _ = overview.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
-                var permissionsTask = api.GetPermissionsSummaryAsync();
-                var version = await api.GetVersionAsync();
+                var permissionsTask = api.GetPermissionsSummaryAsync(ct);
+                var version = await api.GetVersionAsync(ct);
                 var session = new ServerSession(api, profile, version.Version);
                 session.WatchExpiry();
                 try
                 {
                     session.Permissions = await permissionsTask;
                 }
-                catch (Exception)
+                catch (Exception) when (!ct.IsCancellationRequested)
                 {
                     // 권한 요약을 못 읽어도 로그인은 진행 — 서버가 요청마다 권한을 다시 확인한다
                 }
@@ -179,6 +215,14 @@ public sealed partial class ProfilesViewModel : ViewModelBase
                 L.T("Cert_Trust"), true)
             : AppServices.Dialogs.ConfirmAsync(L.T("Cert_NewTitle"), L.T("Cert_NewText", details), L.T("Cert_Trust"));
     }
+}
+
+/// <summary>서버 목록 위 안내 한 줄 — "다시 열 터미널 N개 — 서버 이름".</summary>
+public sealed class TerminalRestoreItem(ProfileItem item, int count)
+{
+    public ProfileItem Item { get; } = item;
+
+    public string Text => L.T("Restore_Banner", count, Item.DisplayName);
 }
 
 /// <summary>목록의 프로필 한 줄.</summary>

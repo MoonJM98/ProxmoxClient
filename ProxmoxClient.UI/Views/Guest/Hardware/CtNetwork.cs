@@ -32,9 +32,6 @@ internal static partial class CtNetwork
         new() { Key = "link_down", HeaderKey = "HwEd_Disconnect", Width = 70, Format = TableFormats.Flag }
     ];
 
-    [GeneratedRegex("^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$")]
-    private static partial Regex MacPattern();
-
     [GeneratedRegex(@"^net(\d+)$")]
     private static partial Regex NetKey();
 
@@ -45,23 +42,29 @@ internal static partial class CtNetwork
 
     public static TableTab Create(ProxmoxApiClient api, PveResource guest)
     {
-        return new TableTab(async () => ToRows(await api.GetGuestConfigAsync(guest.Node, guest.Kind, guest.VmId)),
+        // 표는 대기 중 변경까지 반영한 값(하드웨어 화면과 같다). 지우기는 이 목록을 읽을 때의 digest 로 보낸다
+        var loaded = GuestPendingConfig.Empty;
+        return new TableTab(async () =>
+            {
+                loaded = await api.GetGuestPendingAsync(guest.Node, guest.Kind, guest.VmId);
+                return ToRows(loaded.Effective);
+            },
             Columns, "CtNet_Hint",
         [
             new TableAction { LabelKey = "Action_Add", IconKey = "IconPlus",
-                Run = (_, _) => EditAsync(api, guest, null) },
+                Run = (_, _) => DigestGuard.RunAsync(() => EditAsync(api, guest, null)) },
             new TableAction { LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                Run = (row, _) => EditAsync(api, guest, row!["id"]) },
+                Run = (row, _) => DigestGuard.RunAsync(() => EditAsync(api, guest, row!["id"])) },
             new TableAction
             {
                 LabelKey = "Hw_Remove", IconKey = "IconTrash", NeedsSelection = true,
                 Confirm = row => Loc.T("Hw_RemoveConfirm", row!["id"]),
-                Run = async (row, _) =>
+                Run = (row, _) => DigestGuard.RunAsync(async () =>
                 {
                     await api.UpdateGuestConfigAsync(guest.Node, guest.Kind, guest.VmId,
-                        new Dictionary<string, string> { ["delete"] = row!["id"] });
+                        loaded.AddDigest(new Dictionary<string, string> { ["delete"] = row!["id"] }));
                     return Loc.T("Hw_Removed");
-                }
+                })
             }
         ]);
     }
@@ -94,15 +97,28 @@ internal static partial class CtNetwork
     private static async Task<string?> EditAsync(ProxmoxApiClient api, PveResource guest, string? key)
     {
         var config = await api.GetGuestPendingAsync(guest.Node, guest.Kind, guest.VmId);
-        var ctx = new HardwareContext(api, guest, config, running: false);
+        var ctx = new HardwareContext(api, guest, config, await IsRunningAsync(api, guest));
         var edit = await EditorAsync(ctx, key);
         var values = await FormDialog.ShowAsync(edit.Title, edit.Fields, edit.Validate,
             api.Guests.Feature(nameof(Core.Api.Domains.GuestsApi.SetConfigAsync)));
         if (values is null) return null;
 
         await api.UpdateGuestConfigAsync(guest.Node, guest.Kind, guest.VmId,
-            ActionHelpers.UpdateForm(edit.Build(values)));
+            config.AddDigest(FormHelpers.UpdateForm(edit.Build(values))));
         return Loc.T("GuestSettingsWindow_M06");
+    }
+
+    /// <summary>실행 중인가 — 못 읽으면 목록의 상태로.</summary>
+    private static async Task<bool> IsRunningAsync(ProxmoxApiClient api, PveResource guest)
+    {
+        try
+        {
+            return await api.GetGuestCurrentStatusAsync(guest.Node, guest.Kind, guest.VmId) == "running";
+        }
+        catch (ProxmoxApiException)
+        {
+            return guest.IsRunning;
+        }
     }
 
     /// <summary>CT 네트워크 편집 창 — 새로 만들면 이름 eth0/eth1…, 방화벽 켬, 첫 브리지.</summary>
@@ -161,7 +177,7 @@ internal static partial class CtNetwork
     private static string? Validate(IReadOnlyDictionary<string, string> values, IReadOnlySet<string> otherNames)
     {
         if (otherNames.Contains(V(values, "name"))) return Loc.T("CtNet_NameInUse");
-        if (V(values, "hwaddr") is { Length: > 0 } mac && !MacPattern().IsMatch(mac)) return Loc.T("HwEd_MacInvalid");
+        if (!GuestInputChecks.IsMacOrEmpty(V(values, "hwaddr"))) return Loc.T("HwEd_MacInvalid");
         if (V(values, "tag") is { Length: > 0 } tag && !(int.TryParse(tag, out var t) && t is >= 1 and <= 4094))
             return Loc.T("GuestSettings_VlanRange");
         if (V(values, "mtu") is { Length: > 0 } mtu && !(int.TryParse(mtu, out var m) && m is >= 576 and <= 65535))

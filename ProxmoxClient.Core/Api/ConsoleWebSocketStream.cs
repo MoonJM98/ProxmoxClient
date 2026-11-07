@@ -1,4 +1,5 @@
 using System.Net.WebSockets;
+using ProxmoxClient.Core.Localization;
 
 namespace ProxmoxClient.Core.Api;
 
@@ -33,17 +34,17 @@ internal sealed class ConsoleWebSocketStream(ClientWebSocket websocket) : Stream
         // 작은 읽기(헤더 1~4바이트)는 내부 버퍼에 크게 받아 수신 호출 횟수를 줄인다.
         if (_pending.Count == 0 && buffer.Length >= DirectReceiveThreshold)
         {
-            if (websocket.State is not (WebSocketState.Open or WebSocketState.CloseReceived)) return 0;
+            if (!CanReceive()) return 0;
 
-            var direct = await websocket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
+            var direct = await ReceiveAsync(buffer, ct).ConfigureAwait(false);
             return direct.MessageType == WebSocketMessageType.Close ? 0 : direct.Count;
         }
 
         while (_pending.Count == 0)
         {
-            if (websocket.State is not (WebSocketState.Open or WebSocketState.CloseReceived)) return 0;
+            if (!CanReceive()) return 0;
 
-            var result = await websocket.ReceiveAsync(_receiveBuffer.AsMemory(), ct).ConfigureAwait(false);
+            var result = await ReceiveAsync(_receiveBuffer.AsMemory(), ct).ConfigureAwait(false);
             if (result.MessageType == WebSocketMessageType.Close) return 0;
 
             _pending = new ArraySegment<byte>(_receiveBuffer, 0, result.Count);
@@ -53,6 +54,33 @@ internal sealed class ConsoleWebSocketStream(ClientWebSocket websocket) : Stream
         _pending.AsSpan(0, take).CopyTo(buffer.Span);
         _pending = _pending.Slice(take);
         return take;
+    }
+
+    /// <summary>받을 수 있는 상태인지 — 끊긴(Aborted: 연결 유지 확인 실패 등) 소켓은 정상 종료가 아니라 오류로 알린다.</summary>
+    private bool CanReceive()
+    {
+        return websocket.State switch
+        {
+            WebSocketState.Open or WebSocketState.CloseReceived => true,
+            WebSocketState.Aborted => throw new IOException(Res.T("ConsoleSocket_Lost")),
+            _ => false
+        };
+    }
+
+    /// <summary>
+    ///     수신 — 연결 유지 확인(ping/pong) 시간 초과로 소켓이 끊기면 ClientWebSocket 은 "Aborted"
+    ///     OperationCanceledException 을 던진다. 우리가 취소한 것이 아니면 "연결 끊김" 오류로 바꿔 화면이 다시 연결을 권하게 한다.
+    /// </summary>
+    private async ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken ct)
+    {
+        try
+        {
+            return await websocket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            throw new IOException(Res.T("ConsoleSocket_Lost"), ex);
+        }
     }
 
     public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct)

@@ -24,7 +24,7 @@ public partial class LoginWindow
         var openId = IsOpenIdRealm;
         PassLabel.Visibility = PassBox.Visibility = openId ? Visibility.Collapsed : Visibility.Visible;
         OpenIdHint.Visibility = openId ? Visibility.Visible : Visibility.Collapsed;
-        OpenIdHint.Text = openId ? Loc.T("OpenId_Hint", OpenIdLogin.RedirectUrl) : string.Empty;
+        OpenIdHint.Text = openId ? Loc.T("OpenId_Hint", OpenIdFlow.RedirectUrl) : string.Empty;
     }
 
     private async Task ConnectOpenIdAsync(ConnectionProfile stored)
@@ -51,7 +51,7 @@ public partial class LoginWindow
         try
         {
             await CertificateTrust.RunAsync(
-                () => OpenIdLogin.RunAsync(client, realm, wait),
+                () => OpenIdFlow.RunAsync(client, realm, wait),
                 rejection => CertificateTrust.Confirm(this, rejection, runtime),
                 () => TrustStoredCertificateAsync(stored, runtime));
 

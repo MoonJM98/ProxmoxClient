@@ -29,6 +29,19 @@ public sealed class GuestPendingConfig
     /// <summary>삭제 예정인 키.</summary>
     public IReadOnlySet<string> DeletedKeys { get; }
 
+    /// <summary>
+    ///     읽은 설정 파일의 digest — 쓰기 요청에 함께 보내면, 그 사이 다른 곳에서 설정이 바뀌었을 때 서버가
+    ///     덮어쓰지 않고 거절한다. 서버가 주지 않았으면 빈 문자열(그때는 보내지 않는다).
+    /// </summary>
+    public string Digest => Current.TryGetValue("digest", out var digest) ? digest : string.Empty;
+
+    /// <summary>쓰기 폼에 digest 를 더한다(있을 때만). 같은 폼을 돌려준다.</summary>
+    public Dictionary<string, string> AddDigest(Dictionary<string, string> form)
+    {
+        if (Digest.Length > 0) form["digest"] = Digest;
+        return form;
+    }
+
     public static GuestPendingConfig Empty { get; } = FromConfig(new Dictionary<string, string>());
 
     /// <summary>대기 중 변경이 없는 일반 설정으로 만든다(노드·데이터센터 옵션 등).</summary>

@@ -69,6 +69,18 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Cluster_NoGuests" xml:space="preserve">
     <value>No guests to show</value>
   </data>
+  <data name="Cluster_NoNodes" xml:space="preserve">
+    <value>No nodes to show</value>
+  </data>
+  <data name="Cluster_NoStorage" xml:space="preserve">
+    <value>No storage to show</value>
+  </data>
+  <data name="Cluster_NoTasks" xml:space="preserve">
+    <value>No recent tasks</value>
+  </data>
+  <data name="Cluster_TasksFailed" xml:space="preserve">
+    <value>Couldn't load the task list: {0}</value>
+  </data>
   <data name="Cluster_NodeSummary" xml:space="preserve">
     <value>{0} of {1} nodes online</value>
   </data>
@@ -185,6 +197,12 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Console_Open" xml:space="preserve">
     <value>Console</value>
   </data>
+  <data name="Console_SerialTitle" xml:space="preserve">
+    <value>{0} · serial</value>
+  </data>
+  <data name="Console_NodeShellTitle" xml:space="preserve">
+    <value>{0} · Shell</value>
+  </data>
   <data name="Desktop_SelectItem" xml:space="preserve">
     <value>Select an item from the list</value>
   </data>
@@ -221,6 +239,9 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   </data>
   <data name="Guest_Config" xml:space="preserve">
     <value>Configuration</value>
+  </data>
+  <data name="Guest_LoadFailed" xml:space="preserve">
+    <value>Couldn't load: {0}</value>
   </data>
   <data name="Guest_KindCt" xml:space="preserve">
     <value>CT</value>
@@ -612,6 +633,9 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Task_LogEmpty" xml:space="preserve">
     <value>(no log)</value>
   </data>
+  <data name="Task_LogCopyAll" xml:space="preserve">
+    <value>Copy all</value>
+  </data>
   <data name="Write_Apply" xml:space="preserve">
     <value>Apply</value>
   </data>
@@ -646,6 +670,9 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Session_ExpiredText" xml:space="preserve">
     <value>The login session for {0} expired and could not be renewed. Please log in again.</value>
   </data>
+  <data name="Session_TokenRejectedText" xml:space="preserve">
+    <value>{0} rejected the API token (it was deleted or expired, or its permissions changed). Check the token in the server settings and connect again.</value>
+  </data>
   <data name="Console_Reconnect" xml:space="preserve">
     <value>Reconnect</value>
   </data>
@@ -670,8 +697,53 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Console_ViewActual" xml:space="preserve">
     <value>1:1</value>
   </data>
+  <data name="Console_Menu" xml:space="preserve">
+    <value>Console menu — tap to show or hide keys and settings. Drag to move it.</value>
+  </data>
+  <data name="Console_Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
   <data name="Console_ViewModeTip" xml:space="preserve">
     <value>View mode — fit (all) · fill (no bars) · actual size (1:1). When zoomed in, drag with two fingers to move the view.</value>
+  </data>
+  <data name="Console_HangulKey" xml:space="preserve">
+    <value>Han/Eng</value>
+  </data>
+  <data name="Console_HangulTip" xml:space="preserve">
+    <value>Hangul/English key — switch the guest IME to Hangul, then Korean typed on the on-screen keyboard arrives as Dubeolsik keys.</value>
+  </data>
+  <data name="Console_RightAltTip" xml:space="preserve">
+    <value>Right Alt — many Korean Windows setups use it as the Hangul/English key.</value>
+  </data>
+  <data name="Console_PasteToGuest" xml:space="preserve">
+    <value>Paste to guest</value>
+  </data>
+  <data name="Console_PasteToGuestTip" xml:space="preserve">
+    <value>Send the device clipboard to the guest clipboard (needs VM display clipboard = VNC and a guest agent).</value>
+  </data>
+  <data name="Console_TypeClipboard" xml:space="preserve">
+    <value>Type clipboard</value>
+  </data>
+  <data name="Console_TypeClipboardTip" xml:space="preserve">
+    <value>Type the device clipboard text as key presses (works without a guest clipboard).</value>
+  </data>
+  <data name="Console_CopyFromGuest" xml:space="preserve">
+    <value>Copy from guest</value>
+  </data>
+  <data name="Console_CopyFromGuestTip" xml:space="preserve">
+    <value>Copy the guest clipboard to the device clipboard.</value>
+  </data>
+  <data name="Console_ClipboardEmpty" xml:space="preserve">
+    <value>The device clipboard has no text.</value>
+  </data>
+  <data name="Console_PastedToGuest" xml:space="preserve">
+    <value>Sent to the guest clipboard. Paste it in the guest (Ctrl+V).</value>
+  </data>
+  <data name="Console_GuestClipboardEmpty" xml:space="preserve">
+    <value>Could not get the guest clipboard. Check that the VM display clipboard is set to VNC.</value>
+  </data>
+  <data name="Console_CharNotSent" xml:space="preserve">
+    <value>Cannot send these characters as keys: {0} — use [Paste to guest] in the menu.</value>
   </data>
   <data name="Realm_Fetch" xml:space="preserve">
     <value>Fetch realms</value>
@@ -697,6 +769,15 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   <data name="Terminal_HistoryButton" xml:space="preserve">
     <value>History</value>
   </data>
+  <data name="Terminal_PasteConfirmTitle" xml:space="preserve">
+    <value>Paste multiple lines</value>
+  </data>
+  <data name="Terminal_PasteConfirm" xml:space="preserve">
+    <value>Pasting {0} lines. Each line may run right away.&#10;&#10;{1}</value>
+  </data>
+  <data name="Terminal_PasteConfirmRun" xml:space="preserve">
+    <value>Paste</value>
+  </data>
   <data name="Terminal_HistoryEmpty" xml:space="preserve">
     <value>No commands recorded yet.</value>
   </data>
@@ -705,5 +786,46 @@ Trust this certificate and continue? You will be warned again if the fingerprint
   </data>
   <data name="Terminal_TooManyCompletions" xml:space="preserve">
     <value>Too many candidates — type a few more letters.</value>
+  </data>
+  <data name="KeepAlive_Channel" xml:space="preserve">
+    <value>Terminal connection</value>
+  </data>
+  <data name="KeepAlive_ChannelDesc" xml:space="preserve">
+    <value>Shown while open terminals (CT console, node shell) stay connected with the app in the background.</value>
+  </data>
+  <data name="KeepAlive_Title" xml:space="preserve">
+    <value>Keeping terminal connected</value>
+  </data>
+  <data name="KeepAlive_Many" xml:space="preserve">
+    <value>{0} terminals — {1}</value>
+  </data>
+  <data name="KeepAlive_DisconnectAll" xml:space="preserve">
+    <value>Disconnect all</value>
+  </data>
+  <data name="Restore_PromptTitle" xml:space="preserve">
+    <value>Reopen terminals</value>
+  </data>
+  <data name="Restore_PromptMessage" xml:space="preserve">
+    <value>Reopen the {0} terminals that were open last time?
+
+{1}</value>
+  </data>
+  <data name="Restore_Reopen" xml:space="preserve">
+    <value>Reopen</value>
+  </data>
+  <data name="Restore_Banner" xml:space="preserve">
+    <value>{0} terminals to reopen — {1}</value>
+  </data>
+  <data name="Restore_BannerHint" xml:space="preserve">
+    <value>The app was closed last time while terminals were open. Tap to sign in and reopen them.</value>
+  </data>
+  <data name="Restore_Dismiss" xml:space="preserve">
+    <value>Dismiss</value>
+  </data>
+  <data name="Terminal_ReconnectedAfterBackground" xml:space="preserve">
+    <value>This device can't keep terminal connections while the app is in the background, so a new connection was opened (work in the previous shell does not carry over).</value>
+  </data>
+  <data name="Terminal_RemoteCopied" xml:space="preserve">
+    <value>Copied text from the remote program to the clipboard ({0} chars)</value>
   </data>
 </root>

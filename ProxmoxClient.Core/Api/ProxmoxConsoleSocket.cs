@@ -14,6 +14,14 @@ internal static class ProxmoxConsoleSocket
     /// <summary>프록시는 생성 후 짧은 시간만 연결을 기다리므로 그 안에 붙어야 한다.</summary>
     private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(25);
 
+    /// <summary>
+    ///     연결 유지 확인 — 이 간격으로 ping 을 보내고 <see cref="KeepAliveTimeout" /> 안에 pong 이 없으면 연결을 끊는다.
+    ///     회선이 조용히 죽어도(와이파이 전환·절전·NAT 만료) 수신 루프가 영영 기다리지 않고 "연결 끊김"으로 끝난다.
+    /// </summary>
+    internal static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(15);
+
+    internal static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromSeconds(10);
+
     public static Task<ClientWebSocket> ConnectAsync(
         ProxmoxApiClient api, string node, ResourceKind kind, int vmid, int port, string ticket, CancellationToken ct)
     {
@@ -57,6 +65,8 @@ internal static class ProxmoxConsoleSocket
         var profile = api.Profile;
         var websocket = new ClientWebSocket();
         if (subProtocol is not null) websocket.Options.AddSubProtocol(subProtocol);
+        websocket.Options.KeepAliveInterval = KeepAliveInterval;
+        websocket.Options.KeepAliveTimeout = KeepAliveTimeout;
         if (api.AuthTicket is { } authTicket)
         {
             if (uri.HostNameType == UriHostNameType.IPv6)
@@ -100,18 +110,34 @@ internal static class ProxmoxConsoleSocket
         }
     }
 
-    private static void ApplyProxy(ClientWebSocket websocket, ConnectionProfile profile)
+    /// <summary>
+    ///     API 클라이언트(ConfigureProxy)와 같은 프록시 선택 — 직접 연결이면 시스템 프록시도 쓰지 않고(Proxy=null),
+    ///     시스템이면 기본값을 그대로 두며, 지정 프록시는 같은 스키마(http·https·socks5)로 붙는다.
+    /// </summary>
+    internal static void ApplyProxy(ClientWebSocket websocket, ConnectionProfile profile)
     {
-        if (profile.ProxyMode == ProxyMode.None
-            || string.IsNullOrWhiteSpace(profile.ProxyHost)
-            || profile.ProxyPort is not > 0)
+        switch (profile.ProxyMode)
+        {
+            case ProxyMode.None:
+                websocket.Options.Proxy = null; // 기본값(시스템 프록시)으로 새지 않게
+                return;
+            case ProxyMode.System:
+                return; // ClientWebSocket 기본값이 시스템 프록시
+        }
+
+        // 지정 프록시인데 주소가 비었으면 API 클라이언트처럼 프록시 없이 붙는다
+        if (string.IsNullOrWhiteSpace(profile.ProxyHost) || profile.ProxyPort is not > 0)
+        {
+            websocket.Options.Proxy = null;
             return;
+        }
 
-        var scheme = profile.ProxyMode == ProxyMode.Socks5 ? "socks5" : "http"; // 웹소켓 프록시는 http CONNECT 사용
-        var proxy = new WebProxy($"{scheme}://{profile.ProxyHost}:{profile.ProxyPort!.Value}");
-        if (!string.IsNullOrEmpty(profile.ProxyUserName))
-            proxy.Credentials = new NetworkCredential(profile.ProxyUserName, profile.ProxyPassword ?? string.Empty);
-
-        websocket.Options.Proxy = proxy;
+        var scheme = profile.ProxyMode switch
+        {
+            ProxyMode.Https => "https",
+            ProxyMode.Socks5 => "socks5",
+            _ => "http"
+        };
+        websocket.Options.Proxy = ProxmoxApiClient.BuildProxy(scheme, profile);
     }
 }

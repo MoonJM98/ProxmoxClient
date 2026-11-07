@@ -4,7 +4,8 @@ using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
 using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.Views.Shared;
-using static ProxmoxClient.UI.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.FormHelpers;
 
 namespace ProxmoxClient.UI.Views.Guest.Tabs;
 
@@ -85,7 +86,7 @@ internal static class BackupList
 
     /// <summary>메모·보호 설정만 바꾼다(볼륨 내용은 그대로).</summary>
     private static Task<string?> EditNotesAsync(ProxmoxApiClient api, PveResource guest,
-        IReadOnlyDictionary<string, string> row, Control? owner)
+        IReadOnlyDictionary<string, string> row, object? owner)
     {
         return SubmitAsync(owner, Loc.T("BackupList_NotesTitle", row["volid"]),
         [
@@ -103,7 +104,7 @@ internal static class BackupList
     ///     복원 — 같은 번호면 지금 게스트를 덮어쓰고(번호 입력 확인), 다른 번호면 새 게스트로 만든다.
     /// </summary>
     private static async Task<string?> RestoreAsync(ProxmoxApiClient api, PveResource guest,
-        IReadOnlyDictionary<string, string> row, Control? owner)
+        IReadOnlyDictionary<string, string> row, object? owner)
     {
         var isVm = guest.Kind == ResourceKind.Qemu;
         var current = guest.VmId.ToString(CultureInfo.InvariantCulture);
@@ -125,6 +126,7 @@ internal static class BackupList
                 Key = "unique", LabelKey = "BackupList_Unique", Kind = FormFieldKind.Bool, Initial = "0"
             },
             new FormField { Key = "start", LabelKey = "BackupList_StartAfter", Kind = FormFieldKind.Bool },
+            ..RestoreOptionFields(api, isVm, row),
             new FormField { Key = "confirm", LabelKey = "BackupList_OverwriteConfirm" }
         ], values =>
         {
@@ -138,10 +140,65 @@ internal static class BackupList
             if (!isVm) form["restore"] = "1";
             if (values["storage"].Length > 0) form["storage"] = values["storage"];
             if (values["vmid"] == current) form["force"] = "1";
+            AddRestoreOptions(form, values);
             return api.Guests.CreateAsync(guest.Node, guest.Kind, form);
         }, "BackupList_Restored",
-            values => values["vmid"] != current || values["confirm"] == current
-                ? null
-                : Loc.T("BackupList_OverwriteMismatch", current));
+            values => ValidateRestoreOptions(values)
+                      ?? (values["vmid"] != current || values["confirm"] == current
+                          ? null
+                          : Loc.T("BackupList_OverwriteMismatch", current)));
+    }
+
+    /// <summary>
+    ///     복원 추가 설정 — 대역폭 제한(bwlimit, KiB/s), VM 은 PBS 백업일 때 실시간 복원(live-restore: 복원하면서 바로 켠다),
+    ///     CT 는 권한 없는(unprivileged) 컨테이너 여부를 백업과 다르게 정할 수 있다.
+    /// </summary>
+    private static IEnumerable<FormField> RestoreOptionFields(ProxmoxApiClient api, bool isVm,
+        IReadOnlyDictionary<string, string> row)
+    {
+        yield return new FormField
+        {
+            Key = "bwlimit", LabelKey = "BackupList_BwLimit", Hint = Loc.T("BackupList_BwLimitHint"), Advanced = true
+        };
+        if (isVm)
+        {
+            // 실시간 복원은 Proxmox Backup Server 의 백업만 된다(형식 pbs-vm)
+            if (Value(row, "format").StartsWith("pbs", StringComparison.Ordinal))
+                yield return new FormField
+                {
+                    Key = "live-restore", LabelKey = "BackupList_LiveRestore", Kind = FormFieldKind.Bool,
+                    Initial = "0", Hint = Loc.T("BackupList_LiveRestoreHint"),
+                    Requires = api.Guests.Feature(nameof(Core.Api.Domains.GuestsApi.CreateAsync), "live-restore")
+                };
+        }
+        else
+        {
+            yield return new FormField
+            {
+                Key = "unprivileged", LabelKey = "BackupList_Unprivileged", Kind = FormFieldKind.Choice,
+                Choices = [("", "BackupList_FromBackup"), ("1", "BackupList_Unprivileged1"), ("0", "BackupList_Unprivileged0")], Advanced = true
+            };
+        }
+    }
+
+    internal static void AddRestoreOptions(Dictionary<string, string> form, IReadOnlyDictionary<string, string> values)
+    {
+        string V(string key) => values.TryGetValue(key, out var v) ? v.Trim() : string.Empty;
+        if (V("bwlimit").Length > 0) form["bwlimit"] = V("bwlimit");
+        if (V("live-restore") == "1")
+        {
+            form["live-restore"] = "1";
+            form.Remove("start"); // 실시간 복원은 서버가 바로 켠다 — start 는 필요 없다
+        }
+
+        if (V("unprivileged").Length > 0) form["unprivileged"] = V("unprivileged");
+    }
+
+    private static string? ValidateRestoreOptions(IReadOnlyDictionary<string, string> values)
+    {
+        var bw = values.TryGetValue("bwlimit", out var v) ? v.Trim() : string.Empty;
+        return bw.Length == 0 || long.TryParse(bw, NumberStyles.None, CultureInfo.InvariantCulture, out _)
+            ? null
+            : Loc.T("BackupList_BwLimitHint");
     }
 }

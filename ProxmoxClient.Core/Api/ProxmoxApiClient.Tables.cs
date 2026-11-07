@@ -126,6 +126,20 @@ public sealed partial class ProxmoxApiClient
             : new Dictionary<string, string>(StringComparer.Ordinal);
     }
 
+    /// <summary>
+    ///     응답 봉투에서 data 옆에 붙은 문자열 속성(GET {relativePath}) — 예: 노드 네트워크 목록의 "changes"
+    ///     (적용 전 바뀐 내용의 diff). 없으면 빈 문자열.
+    /// </summary>
+    public async Task<string> GetEnvelopeTextAsync(string relativePath, string attribute,
+        CancellationToken ct = default)
+    {
+        using var doc = await GetDocumentAsync(relativePath, ct).ConfigureAwait(false);
+        var root = doc.RootElement;
+        return root.ValueKind == JsonValueKind.Object && root.TryGetProperty(attribute, out var value)
+            ? ToText(value)
+            : string.Empty;
+    }
+
     /// <summary>문자열 응답(GET {relativePath}) — 패키지 변경 기록처럼 긴 글.</summary>
     public async Task<string> GetTextAsync(string relativePath, CancellationToken ct = default)
     {

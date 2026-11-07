@@ -55,6 +55,33 @@ Pump(600);
 var nav = window.GetVisualDescendants().OfType<NavigationPage>().First();
 var shot = 0;
 
+// 셸 다시 붙이기(Android 액티비티를 다시 만들 때) — 같은 셸을 새 창에 옮겨도 페이지 스택이 그대로이고
+// 대화상자 입력 칸 포커스(구독)가 새 창에서 한 번만 동작하며, 원래 창으로 돌아와도 같아야 한다
+{
+    var reShell = window.GetVisualDescendants().OfType<AppShell>().First();
+    var pageBefore = nav.CurrentPage;
+    window.Content = null;
+    Pump(100);
+    var other = new Window { Width = window.Width, Height = window.Height, Content = reShell };
+    other.Show();
+    Pump(400);
+    var samePage = ReferenceEquals(nav.CurrentPage, pageBefore);
+    var shown = ReferenceEquals(TopLevel.GetTopLevel(nav), other); // 페이지 스택이 새 창에 실제로 붙었다(빈 화면이 아니다)
+    var prompt = AppServices.Dialogs.PromptAsync("t", "m");
+    Pump(300);
+    var focused = other.FocusManager?.GetFocusedElement() is TextBox { Name: "DialogInput" };
+    AppServices.Dialogs.Current?.CancelCommand.Execute(null);
+    await Wait(prompt);
+    other.Content = null;
+    other.Close();
+    window.Content = reShell;
+    Pump(400);
+    var back = ReferenceEquals(nav.CurrentPage, pageBefore) && ReferenceEquals(TopLevel.GetTopLevel(nav), window);
+    var ok = samePage && shown && focused && back;
+    Console.WriteLine($"| 셸 다시 붙이기 | 페이지 유지·보임·입력 포커스·원래 창 복귀 | {samePage}/{shown}/{focused}/{back} | {(ok ? "통과" : "실패")} |");
+    if (!ok) failures++;
+}
+
 // 로그인(프로필 저장 → 연결 → 인증서 신뢰)
 // --vpn x.ovpn: 로그인 전에 실제 OpenVPN 터널을 연다(--host 는 터널 너머 주소)
 var vpnConfig = options.GetValueOrDefault("vpn");
@@ -63,7 +90,10 @@ await AppServices.Profiles.SaveAsync(new ConnectionProfile
     Name = "fake", Host = options.GetValueOrDefault("host", "127.0.0.1"), Port = port,
     UseVpn = vpnConfig is not null, VpnConfigPath = vpnConfig
 });
-AppServices.SecretStore.Set(SecretKey(), "secret");
+// --real 1: 실제 PVE(가짜 전용 단계는 건너뛴다) — 비밀번호는 --password 또는 PVE_PASSWORD
+var real = options.GetValueOrDefault("real", "0") == "1";
+AppServices.SecretStore.Set(SecretKey(),
+    options.GetValueOrDefault("password", Environment.GetEnvironmentVariable("PVE_PASSWORD") ?? "secret"));
 var profiles = (ProfilesViewModel)nav.CurrentPage!.DataContext!;
 await Wait(profiles.LoadAsync());
 // 연결 전 화면 캡처: 데스크톱은 로그인 화면(인증 영역을 가져오며 처음 보는 인증서를 묻는다), 두 형태 모두 서버 설정 화면
@@ -114,12 +144,225 @@ if (!desktop)
     var realmNames = string.Join(",", edit.Realms.Select(r => r.Realm));
     Check0("사용자·영역 따로(PC 와 같이)", "사용자 칸 root + 영역 목록, 저장값 root@영역",
         $"사용자 '{edit.UserOnly}', 영역 [{realmNames}] → {edit.ComposedUser}",
-        edit.UserOnly == "root" && edit.Realms.Count > 2 && other is not null && edit.ComposedUser == $"root@{other.Realm}");
+        edit.UserOnly == "root" && edit.Realms.Count > (real ? 1 : 2) && other is not null && edit.ComposedUser == $"root@{other.Realm}");
     edit.SelectedRealm = edit.Realms.FirstOrDefault(r => r.Realm == "pam");
 }
 if (AppServices.Dialogs.Current is { } editorDialog) editorDialog.CancelCommand.Execute(null);
 await Wait(AppServices.Navigator.PopAsync());
 Pump(300);
+// ---- 2단계 인증 로그인(--target tfa): 창이 뜨고(TOTP 기본·숫자 키보드), 틀린 코드는 오류 후 다시, 맞는 코드면 로그인 ----
+if (target == "tfa")
+{
+    var tfaProfile = new ConnectionProfile
+    {
+        Name = "tfa", Host = options.GetValueOrDefault("host", "127.0.0.1"), Port = port, UserName = "tfa@pam"
+    };
+    await AppServices.Profiles.SaveAsync(tfaProfile);
+    AppServices.SecretStore.Set($"profile.{tfaProfile.Id:N}.password", "secret");
+    await Wait(profiles.LoadAsync());
+    profiles.ConnectCommand.Execute(profiles.Profiles.First(p => p.Profile.Name == "tfa"));
+    ProxmoxClient.UI.Views.Login.TfaDialog? tfaDialog = null;
+    var tfaDeadline = DateTime.UtcNow.AddSeconds(15);
+    while (DateTime.UtcNow < tfaDeadline
+           && (tfaDialog = AppServices.Dialogs.Sheet as ProxmoxClient.UI.Views.Login.TfaDialog) is null)
+    {
+        if (AppServices.Dialogs.Current is { } tfaTrust) tfaTrust.ConfirmCommand.Execute(null); // 처음 보는 인증서 — 신뢰
+        Pump(150);
+    }
+
+    Check0("2단계 인증 창", "TOTP 기본 · 숫자 키보드",
+        tfaDialog is null ? "창 없음: " + AppServices.Dialogs.Current?.Message : $"{tfaDialog.Kind} · {tfaDialog.CodeContentType}",
+        tfaDialog is { Kind: ProxmoxClient.Core.Api.TfaKind.Totp }
+        && tfaDialog.CodeContentType == Avalonia.Input.TextInput.TextInputContentType.Digits);
+    if (tfaDialog is not null)
+    {
+        Shot("tfa-dialog");
+        await Wait(tfaDialog.SubmitAsync("000000"));
+        Pump(300);
+        Shot("tfa-wrong");
+        Check0("틀린 TOTP 코드", "오류를 보이고 창 유지(다시 입력)", tfaDialog.CurrentError,
+            ReferenceEquals(AppServices.Dialogs.Sheet, tfaDialog) && !tfaDialog.Completed
+            && tfaDialog.CurrentError.Length > 0 && tfaDialog.CurrentError != L.T("Tfa_Verifying"));
+        await Wait(tfaDialog.SubmitAsync("123 456"));
+        WaitFor(() => nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel, 15000);
+        var tfaSession = nav.CurrentPage?.DataContext switch
+        {
+            ClusterViewModel c => c.Session, MainViewModel m => m.Session, _ => null
+        };
+        Check0("맞는 코드로 로그인", "tfa@pam 세션 · 완성된 티켓",
+            $"{tfaSession?.UserDisplay ?? "(로그인 안 됨)"} · {tfaSession?.Api.AuthTicket}",
+            tfaSession is { UserDisplay: "tfa@pam" } && tfaSession.Api.AuthTicket == "PVE:tfa@pam:0000::sig"
+            && AppServices.Dialogs.Sheet is null);
+        Shot("tfa-done");
+    }
+
+    Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
+    Directory.Delete(profileDir, true);
+    return failures == 0 ? 0 : 2;
+}
+// ---- 앱이 죽은 뒤 터미널 다시 열기(--target restore, 휴대폰): 남은 기록 → 서버 목록 안내 → 로그인 → 묻기 → 다시 열림(가짜 셸) ----
+if (target == "restore")
+{
+    if (desktop)
+    {
+        Console.WriteLine("SKIP restore: 휴대폰 화면 검사(--mode mobile)");
+        Directory.Delete(profileDir, true);
+        return 0;
+    }
+
+    var fakeProfile = profiles.Profiles[0].Profile;
+    var otherProfile = new ConnectionProfile { Name = "other", Host = "192.0.2.1", Port = port };
+    await AppServices.Profiles.SaveAsync(otherProfile);
+    // 지난 실행이 터미널 셋을 연 채로 죽었다(fake 서버 둘, 다른 서버 하나)
+    var statePath = Path.Combine(profileDir, "open-terminals.txt");
+    OpenTerminalEntry[] crashed =
+    [
+        OpenTerminalEntry.From(fakeProfile, ProxmoxClient.Core.Models.ConsoleTarget.ForNode("pve1"), "pve1 · 셸", null),
+        OpenTerminalEntry.From(otherProfile, ProxmoxClient.Core.Models.ConsoleTarget.ForNode("x"), "x · 셸", null),
+        OpenTerminalEntry.From(fakeProfile,
+            ProxmoxClient.Core.Models.ConsoleTarget.ForGuest("pve2", ProxmoxClient.Core.Models.ResourceKind.Lxc, 200),
+            "200 · dns", new ProxmoxClient.Core.Models.PveResource { Name = "dns" })
+    ];
+    File.WriteAllText(statePath, System.Text.Json.JsonSerializer.Serialize(crashed));
+    SessionKeepAlive.StatePath = statePath; // 새 실행 — 이 파일에서 읽는다
+    await Wait(profiles.LoadAsync());
+    Pump(400);
+    Shot("restore-banner");
+    var banners = string.Join(" / ", profiles.PendingRestores.Select(r => r.Text));
+    Check0("다시 열 터미널 안내", "서버별 한 줄(fake 2개, other 1개)", banners,
+        profiles.PendingRestores.Count == 2 && banners.Contains("2") && banners.Contains("fake") && banners.Contains("other"));
+
+    profiles.ConnectCommand.Execute(profiles.PendingRestores.First(r => r.Item.Profile.Id == fakeProfile.Id).Item);
+    var askedText = "";
+    var restoreDeadline = DateTime.UtcNow.AddSeconds(15);
+    while (DateTime.UtcNow < restoreDeadline && nav.CurrentPage?.DataContext is not TerminalViewModel)
+    {
+        if (AppServices.Dialogs.Current is { } d)
+        {
+            if (d.Title == L.T("Restore_PromptTitle"))
+            {
+                askedText = d.Message;
+                Shot("restore-prompt");
+            }
+            d.ConfirmCommand.Execute(null); // 인증서 신뢰 → 다시 열기
+        }
+        Pump(150);
+    }
+    Check0("로그인 뒤 묻기", "터미널 2개 제목", askedText.Replace("\n", " "),
+        askedText.Contains("2") && askedText.Contains("pve1 · 셸") && askedText.Contains("200 · dns") && !askedText.Contains("x · 셸"));
+
+    string TermScreen(ProxmoxClient.UI.Views.Terminal.TerminalPage tp)
+    {
+        var buf = tp.Terminal.Buffer;
+        lock (buf.Gate)
+            return string.Join("\n", Enumerable.Range(0, buf.Rows).Select(r =>
+                new string(buf.GetVisibleLine(r, 0).Cells.Where(c => c.Width != 0)
+                    .SelectMany(c => char.ConvertFromUtf32(c.Rune == 0 ? ' ' : c.Rune)).ToArray()).TrimEnd()));
+    }
+
+    bool Connected(string title) => nav.CurrentPage is ProxmoxClient.UI.Views.Terminal.TerminalPage tp
+                                    && tp.DataContext is TerminalViewModel { IsConnected: true } tv && tv.Title == title
+                                    && TermScreen(tp).Contains("가짜 Proxmox 셸");
+    WaitFor(() => Connected("200 · dns"), 10000);
+    var topVm = nav.CurrentPage?.DataContext as TerminalViewModel;
+    Shot("restore-terminal");
+    Check0("다시 연 터미널(맨 위)", "200 · dns · lxc/200 경로 · 가짜 셸 연결",
+        $"{topVm?.Title} · {topVm?.Target.BasePath} · {(topVm?.IsConnected == true ? "연결됨" : topVm?.StateText)}",
+        Connected("200 · dns") && topVm?.Target.BasePath == "nodes/pve2/lxc/200" && topVm.Guest?.Name == "dns");
+    var left = SessionKeepAlive.ReadState(statePath);
+    Check0("남은 기록", "다른 서버 것만 남고 연 터미널은 새로 기록",
+        string.Join(", ", left.Select(e => e.Title)),
+        SessionKeepAlive.Pending.Count == 1 && SessionKeepAlive.Pending[0].Title == "x · 셸"
+        && left.Any(e => e.Title == "200 · dns") && left.Any(e => e.Title == "x · 셸"));
+
+    await Wait(AppServices.Navigator.PopAsync()); // 아래 터미널은 보일 때 연결한다
+    WaitFor(() => Connected("pve1 · 셸"), 10000);
+    Check0("뒤로 → 아래 터미널", "pve1 · 셸 연결", (nav.CurrentPage?.DataContext as TerminalViewModel)?.Title ?? "(없음)",
+        Connected("pve1 · 셸"));
+
+    await Wait(AppServices.Navigator.PopToRootAsync());
+    await Wait(profiles.LoadAsync());
+    Pump(300);
+    Check0("목록으로 돌아오면", "다른 서버 안내만", string.Join(" / ", profiles.PendingRestores.Select(r => r.Text)),
+        profiles.PendingRestores.Count == 1 && profiles.PendingRestores[0].Item.Profile.Id == otherProfile.Id);
+    profiles.DismissRestoreCommand.Execute(profiles.PendingRestores[0]);
+    Pump(800);
+    Check0("안내 닫기", "기록이 지워짐(열린 터미널 없음 → 파일 없음)",
+        $"안내 {profiles.PendingRestores.Count}개, 파일 {(File.Exists(statePath) ? "있음" : "없음")}",
+        profiles.PendingRestores.Count == 0 && SessionKeepAlive.Pending.Count == 0 && !File.Exists(statePath));
+
+    Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
+    Directory.Delete(profileDir, true);
+    return failures == 0 ? 0 : 2;
+}
+
+// ---- 보안 키 2단계 인증(--target webauthn): 가짜 키로 창(보안 키 기본) → 취소는 창 유지 → PIN 묻기(틀리면 다시) → 서명은 webauthn:{JSON} 으로 로그인 ----
+if (target == "webauthn")
+{
+    // --webauthn-key linux: 실제 Linux 공급자(/dev/hidraw) — tools/VirtualFido serve --pin 1234 --always-uv 가 띄운 가상 키
+    var fakeKey = new UiSnapshot.FakeWebAuthnProvider
+    {
+        CancelFirst = 1,
+        Inner = options.GetValueOrDefault("webauthn-key") == "linux" ? new LinuxHidWebAuthnProvider() : null
+    };
+    WebAuthnProviders.Current = fakeKey;
+    var waProfile = new ConnectionProfile
+    {
+        Name = "webauthn", Host = options.GetValueOrDefault("host", "127.0.0.1"), Port = port, UserName = "webauthn@pam"
+    };
+    await AppServices.Profiles.SaveAsync(waProfile);
+    AppServices.SecretStore.Set($"profile.{waProfile.Id:N}.password", "secret");
+    await Wait(profiles.LoadAsync());
+    profiles.ConnectCommand.Execute(profiles.Profiles.First(p => p.Profile.Name == "webauthn"));
+    ProxmoxClient.UI.Views.Login.TfaDialog? waDialog = null;
+    var waDeadline = DateTime.UtcNow.AddSeconds(15);
+    while (DateTime.UtcNow < waDeadline
+           && (waDialog = AppServices.Dialogs.Sheet as ProxmoxClient.UI.Views.Login.TfaDialog) is null)
+    {
+        if (AppServices.Dialogs.Current is { } waTrust) waTrust.ConfirmCommand.Execute(null); // 처음 보는 인증서 — 신뢰
+        Pump(150);
+    }
+
+    Check0("보안 키 2단계 인증 창", "보안 키(WebAuthn) 기본",
+        waDialog is null ? "창 없음: " + AppServices.Dialogs.Current?.Message : $"{waDialog.Kind}",
+        waDialog is { Kind: ProxmoxClient.Core.Api.TfaKind.WebAuthn });
+    if (waDialog is not null)
+    {
+        Shot("webauthn-dialog");
+        await Wait(waDialog.UseSecurityKeyAsync());
+        Pump(200);
+        Check0("보안 키 취소", "취소 안내 · 창 유지", waDialog.CurrentError,
+            ReferenceEquals(AppServices.Dialogs.Sheet, waDialog) && !waDialog.Completed
+            && waDialog.CurrentError == L.T("Tfa_WebAuthnCancelled"));
+        // 키가 PIN 을 요구 — 창에 PIN 칸(남은 횟수), 틀리면 오류와 함께 다시, 맞으면 서명
+        fakeKey.AskPin = true;
+        var waKeyTask = waDialog.UseSecurityKeyAsync();
+        WaitFor(() => waDialog.WaitingForPin);
+        Shot("webauthn-pin");
+        Check0("보안 키 PIN 묻기", "PIN 칸 · 남은 횟수 8", waDialog.PinHint,
+            waDialog.WaitingForPin && waDialog.PinHint.Contains('8'));
+        waDialog.EnterPin("0000");
+        WaitFor(() => waDialog.WaitingForPin && waDialog.CurrentError.Length > 0);
+        Check0("틀린 PIN", "오류 · 남은 횟수 7 · 다시 묻기", $"{waDialog.CurrentError} / {waDialog.PinHint}",
+            waDialog.WaitingForPin && waDialog.PinHint.Contains('7') && waDialog.CurrentError.Length > 0);
+        waDialog.EnterPin("1234");
+        await Wait(waKeyTask);
+        WaitFor(() => nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel, 15000);
+        var waSession = nav.CurrentPage?.DataContext switch
+        {
+            ClusterViewModel c => c.Session, MainViewModel m => m.Session, _ => null
+        };
+        Check0("보안 키 서명으로 로그인", $"webauthn@pam 세션 · origin https://{waProfile.Host}:{port}",
+            $"{waSession?.UserDisplay ?? "(로그인 안 됨: " + waDialog.CurrentError + ")"} · {waSession?.Api.AuthTicket} · {fakeKey.LastOrigin}",
+            waSession is { UserDisplay: "webauthn@pam" } && waSession.Api.AuthTicket == "PVE:webauthn@pam:0000::sig"
+            && fakeKey.LastOrigin?.ToString().TrimEnd('/') == $"https://{waProfile.Host}:{port}" && AppServices.Dialogs.Sheet is null);
+        Shot("webauthn-done");
+    }
+
+    Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
+    Directory.Delete(profileDir, true);
+    return failures == 0 ? 0 : 2;
+}
 profiles.ConnectCommand.Execute(profiles.Profiles[0]);
 WaitFor(() => AppServices.Dialogs.Current is not null || nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel);
 AppServices.Dialogs.Current?.ConfirmCommand.Execute(null); // 인증서 신뢰
@@ -230,6 +473,506 @@ if (target == "compact") await CompactButtonCheck();
 if (target == "terminal") await TerminalCheck();
 if (target == "expiry") await ExpiryCheck();
 if (target == "realshell") await RealShellCheck();
+if (target == "real") await RealPveCheck();
+// ---- RDP 콘솔 끝까지(--target rdp, 휴대폰): 가짜 PVE 의 RDCleanPath 프록시(tools/FakePve/rdp.py)가 이 PC 의 실제 RDP 서버
+// (xrdp, --rdp 호스트:포트)로 잇는다. 연결·화면 내용·화면 키보드 글자/특수키(게스트 셸이 파일로 적은 글로 확인)·
+// 창 크기에 맞춘 해상도 변경·웹소켓 끊김 뒤 다시 연결. RDP 서버가 없으면 SKIP(CI 에 xrdp 가 없을 때)
+// --rdpnla 1(또는 RDP_NLA=1): NLA(CredSSP/NTLM)를 요구하는 서버(FreeRDP 그림자 서버, tools/FakePve/nla-server.sh) —
+// 틀린 비밀번호는 로그인 화면이 아니라 CredSSP 거부(알아볼 수 있는 글), 연결은 CredSSP 로, 해상도는 서버가 고정(그림자 서버는
+// 보이는 X 화면을 그대로 보낸다)이라 요청 뒤에도 연결이 유지되는지만 본다
+if (target == "rdp") await RdpCheck();
+async Task RdpCheck()
+{
+    var rdpTarget = options.GetValueOrDefault("rdp", Environment.GetEnvironmentVariable("RDP_TARGET") ?? "127.0.0.1:33890");
+    var rdpUser = options.GetValueOrDefault("rdpuser", Environment.GetEnvironmentVariable("RDP_USER") ?? "rdptest");
+    var rdpPassword = options.GetValueOrDefault("rdppass", Environment.GetEnvironmentVariable("RDP_PASSWORD") ?? "RdpTest!234");
+    var rdpNla = options.GetValueOrDefault("rdpnla", Environment.GetEnvironmentVariable("RDP_NLA") ?? "0") == "1";
+    var hostPort = rdpTarget.Split(':');
+    // 이 검사의 기다림은 모두 동기(Pump 없이 await 하면 헤드리스 UI 스레드가 이어짐을 돌리지 않아 멈춘다)
+    try
+    {
+        using var probe = new System.Net.Sockets.TcpClient();
+        if (!probe.ConnectAsync(hostPort[0], int.Parse(hostPort[1])).Wait(3000)) throw new TimeoutException();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"SKIP rdp: RDP 서버({rdpTarget})에 붙을 수 없음 — {ex.GetType().Name}");
+        return;
+    }
+
+    // 가짜 PVE 설정: 대상 서버·rdpproxy 가 줄 계정, VM 101 디스플레이를 rdp 로
+    void Configure(string password)
+    {
+        using var http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true });
+        var form = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["target"] = rdpTarget, ["user"] = rdpUser, ["password"] = password, ["vmid"] = "101"
+        });
+        http.Send(new HttpRequestMessage(HttpMethod.Post, $"https://127.0.0.1:{port}/__fake/rdp") { Content = form })
+            .EnsureSuccessStatusCode();
+    }
+
+    var serverLog = options.GetValueOrDefault("serverlog", "");
+    long LogSize() => File.Exists(serverLog) ? new FileInfo(serverLog).Length : 0;
+    List<string> LogSince(long offset, string prefix)
+    {
+        if (!File.Exists(serverLog)) return [];
+        using var fs = new FileStream(serverLog, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        fs.Seek(offset, SeekOrigin.Begin);
+        return new StreamReader(fs).ReadToEnd().Split('\n').Where(l => l.StartsWith(prefix)).Select(l => l[prefix.Length..].Trim()).ToList();
+    }
+
+    int ColorsOf(byte[]? fb)
+    {
+        if (fb is null || fb.Length < 4) return 0;
+        var set = new HashSet<int>();
+        for (var i = 0; i + 3 < fb.Length; i += 4 * 97) set.Add(BitConverter.ToInt32(fb, i) & 0xFFFFFF);
+        return set.Count;
+    }
+
+    var guest = cluster.Guests.First(g => g.VmId == 101);
+
+    // xrdp 로그인 화면(틀린 비밀번호 → 자동 로그온 실패): xrdp 는 이 화면을 느린 경로 비트맵(폭을 4 의 배수로 채운 것)으로
+    // 그린다. 세션이 끊기지 않고(옛 IronRDP 는 "unhandled PDU"), 대화상자 왼쪽 테두리가 곧아야 한다(행 간격을 잘못 읽으면
+    // 줄마다 밀려 비스듬히 그려진다). 프록시 고쳐 쓰기 없이(FAKEPVE_RDP_COMPAT 꺼짐)
+    if (rdpNla)
+    {
+        // NLA: 틀린 비밀번호 → CredSSP 단계에서 서버가 STATUS_LOGON_FAILURE 로 거부 → 시간 초과가 아니라 바로 알아볼 수 있는 글
+        Configure("wrong-" + rdpPassword);
+        var started = DateTime.UtcNow;
+        await Wait(ConsoleLauncher.OpenGuestAsync(cluster.Session, guest));
+        var failVm = (nav.CurrentPage as ConsolePage)?.DataContext as ConsoleViewModel;
+        if (failVm is not null)
+        {
+            WaitFor(() => failVm.IsConnected || failVm.CanReconnect, 30000);
+            var seconds = (DateTime.UtcNow - started).TotalSeconds;
+            Shot("rdp-nla-logon-failed");
+            var expected = ProxmoxClient.Core.Rdp.RdpErrors.Describe(Devolutions.IronRdp.IronRdpErrorKind.CredsspError, "STATUS_LOGON_FAILURE");
+            Check0("RDP NLA 틀린 비밀번호", "CredSSP 거부를 '로그인 실패' 글로 · 10초 안에(시간 초과 아님)",
+                $"{failVm.Status?.Replace('\n', ' ')} · {seconds:F1}초",
+                !failVm.IsConnected && failVm.Status?.Contains(expected) == true && seconds < 10);
+            await Wait(AppServices.Navigator.PopAsync());
+            Pump(500);
+        }
+
+        Configure(rdpPassword);
+    }
+    else
+    {
+        Configure("wrong-" + rdpPassword);
+        var logFrom = LogSize();
+        await Wait(ConsoleLauncher.OpenGuestAsync(cluster.Session, guest));
+        var loginPage = nav.CurrentPage as ConsolePage;
+        var loginVm = loginPage?.DataContext as ConsoleViewModel;
+        if (loginVm is not null)
+        {
+            WaitFor(() => loginVm.IsConnected || loginVm.CanReconnect, 30000);
+            WaitFor(() => ColorsOf(loginVm.Vnc.Framebuffer) > 8, 15000);
+            Pump(3000);
+            Shot("rdp-login-screen");
+            var fb = loginVm.Vnc.Framebuffer;
+            int w = loginVm.Vnc.Width, h = loginVm.Vnc.Height;
+            // 대화상자 높이의 가운데 줄들에서, 왼쪽 바탕색이 처음 끊기는 x
+            var edges = new List<int>();
+            if (fb is not null && fb.Length >= w * h * 4)
+                for (var y = h * 2 / 5; y < h * 3 / 5; y++)
+                {
+                    var bg = BitConverter.ToInt32(fb, y * w * 4) & 0xFFFFFF;
+                    for (var x = 1; x < w / 2; x++)
+                        if ((BitConverter.ToInt32(fb, (y * w + x) * 4) & 0xFFFFFF) != bg)
+                        {
+                            edges.Add(x);
+                            break;
+                        }
+                }
+
+            var spread = edges.Count > 0 ? edges.Max() - edges.Min() : -1;
+            var quirks = LogSince(logFrom, "RDP server sent");
+            Check0("RDP xrdp 로그인 화면(느린 경로·채운 폭 비트맵)", "연결 유지 · 서버가 느린 경로로 보냄 · 왼쪽 테두리 곧음(±1)",
+                $"{(loginVm.IsConnected ? "연결됨" : loginVm.Status)} · {(quirks.Count > 0 ? "느린 경로 받음" : "느린 경로 없음")} · 테두리 {edges.Count}줄 x {(edges.Count > 0 ? $"{edges.Min()}~{edges.Max()}" : "-")}",
+                loginVm.IsConnected && quirks.Count > 0 && edges.Count > 20 && spread is >= 0 and <= 1);
+            await Wait(AppServices.Navigator.PopAsync());
+            Pump(500);
+        }
+
+        Configure(rdpPassword);
+    }
+
+
+    void Drop()
+    {
+        using var http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true });
+        http.Send(new HttpRequestMessage(HttpMethod.Post, $"https://127.0.0.1:{port}/__fake/rdp-drop")
+        {
+            Content = new FormUrlEncodedContent([])
+        });
+    }
+
+    var connectFrom = LogSize();
+    await Wait(ConsoleLauncher.OpenGuestAsync(cluster.Session, guest)); // 디스플레이 rdp → RDP 콘솔
+    var page = nav.CurrentPage as ConsolePage;
+    var vm = page?.DataContext as ConsoleViewModel;
+    Check0("RDP 콘솔 고르기", "vga type=rdp → RDP 콘솔", vm?.Protocol.ToString() ?? "(콘솔 없음)",
+        vm?.Protocol == ProxmoxClient.Core.Vnc.ConsoleProtocol.Rdp);
+    if (page is null || vm is null || vm.Protocol != ProxmoxClient.Core.Vnc.ConsoleProtocol.Rdp) return;
+
+    // 화면 내용 — 표본 픽셀의 색 가짓수(검은 화면·한 색이 아니다)
+    int Colors()
+    {
+        var fb = vm.Vnc.Framebuffer;
+        if (fb is null || fb.Length < 4) return 0;
+        var set = new HashSet<int>();
+        for (var i = 0; i + 3 < fb.Length; i += 4 * 97) set.Add(BitConverter.ToInt32(fb, i) & 0xFFFFFF);
+        return set.Count;
+    }
+
+    WaitFor(() => vm.IsConnected || vm.CanReconnect, 30000);
+    WaitFor(() => Colors() > 20, 30000); // 세션(Xorg·창 관리자·xterm 글자)이 뜨기까지 — 처음 로그인은 몇 초 걸린다
+    Pump(2500);
+    Check0("RDP 연결", "연결됨 · 화면 크기 = 보기 크기 · 화면 내용 있음",
+        $"{(vm.IsConnected ? "연결됨" : vm.Status)} · {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지",
+        vm.IsConnected && vm.Vnc.Width > 0 && Colors() > 3);
+    Shot("rdp-connected");
+    if (!vm.IsConnected) return;
+    if (rdpNla)
+    {
+        // 프록시가 본 X.224 확인의 선택 보안 — 2(CredSSP) 또는 8(CredSSP + 조기 인증 결과)이어야 NLA 로 들어간 것
+        var selected = LogSince(connectFrom, "RDP x224 confirm").Select(l => l[(l.IndexOf("selected=", StringComparison.Ordinal) + 9)..]).ToList();
+        Check0("RDP NLA(CredSSP/NTLM) 로그인", "서버가 CredSSP 를 골랐고 그대로 연결됨",
+            string.Join(", ", selected), selected.Count > 0 && selected.All(p => p is "0x2" or "0x8"));
+    }
+
+    // 화면 키보드: xterm 을 누른 뒤 입력 칸에 글을 넣는다 → 게스트 셸이 파일로 적는다
+    var softInput = page.GetVisualDescendants().OfType<TextBox>().First();
+    void Click(int x, int y)
+    {
+        vm.SendPointer(0, x, y);
+        vm.SendPointer(1, x, y);
+        vm.SendPointer(0, x, y);
+        Pump(300);
+    }
+
+    void Type(string text)
+    {
+        softInput.Text = text;
+        Pump(200);
+    }
+
+    string ReadTyped(string path)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(8);
+        while (DateTime.UtcNow < deadline)
+        {
+            Pump(300);
+            try
+            {
+                if (File.Exists(path)) return File.ReadAllText(path).TrimEnd('\n');
+            }
+            catch (IOException)
+            {
+            }
+        }
+
+        return "(파일 없음)";
+    }
+
+    Click(120, 120);
+    var typedPath = $"/tmp/rdp-typed-{Environment.ProcessId}.txt";
+    // 특수키: 'x' 를 지우기 키로 지운다
+    Type("echo Ab1-x");
+    page.Tap(KeySyms.BackSpace);
+    Type($"c > {typedPath}");
+    page.Tap(KeySyms.Return);
+    var typed = ReadTyped(typedPath);
+    Shot("rdp-typed");
+    Check0("RDP 화면 키보드 글자·특수키", "게스트 셸이 'Ab1-c' 를 받음(대문자·숫자·기호·지우기·Enter)", typed, typed == "Ab1-c");
+
+    // 한글: RDP 는 두벌식 키(영문 입력기에서 'gksrmf')가 아니라 유니코드 키 입력으로 보낸다 — 프록시가 본 빠른 경로 입력
+    // (서버 로그 'RDP unicode U+XXXX')으로 확인한다. xrdp 는 ibus 없이 빌드되면 유니코드 키를 버린다(글자가 안 들어감,
+    // Windows 는 그대로 넣는다) — 그래서 게스트가 받은 글은 참고로만 적는다
+    var koreanPath = $"/tmp/rdp-korean-{Environment.ProcessId}.txt";
+    var unicodeFrom = LogSize();
+    Type($"echo 한글 > {koreanPath}\n");
+    var korean = ReadTyped(koreanPath);
+    var unicodeKeys = LogSince(unicodeFrom, "RDP unicode");
+    Shot("rdp-korean");
+    Check0("RDP 화면 키보드 한글", "유니코드 키 한·글(누름·뗌)이 서버로, 두벌식 키(gksrmf) 아님",
+        $"{string.Join(", ", unicodeKeys)} · 게스트가 적은 글 '{korean}'",
+        unicodeKeys.SequenceEqual(["U+D55C down", "U+D55C up", "U+AE00 down", "U+AE00 up"]) && korean is "한글" or "");
+    // 창 크기 → 게스트 해상도(디스플레이 제어 채널 → 서버가 재활성화로 새 크기)
+    var before = (vm.Vnc.Width, vm.Vnc.Height);
+    window.Width = 600;
+    window.Height = 700;
+    Pump(300);
+    WaitFor(() => page.LastRdpResize is { } r && r != before && vm.Vnc.Width == r.Width && vm.Vnc.Height == r.Height,
+        rdpNla ? 5000 : 15000);
+    Pump(1500);
+    var asked = page.LastRdpResize;
+    if (rdpNla)
+        Check0("RDP 해상도 요청(그림자 서버는 크기 고정)", "창 600×700 → 요청은 보내고, 서버가 크기를 안 바꿔도 연결·화면 유지",
+            $"{before.Width}×{before.Height} → 요청 {asked} · 지금 {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지 · {(vm.IsConnected ? "연결됨" : vm.Status)}",
+            asked is { } na && na != before && vm.IsConnected && Colors() > 3);
+    else
+        Check0("RDP 해상도 맞춤", "창 600×700 → 요청한 크기로 게스트 해상도 바뀜",
+            $"{before.Width}×{before.Height} → 요청 {asked} · 지금 {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지 · {(vm.IsConnected ? "연결됨" : vm.Status)}",
+            asked is { } a && a != before && vm.Vnc.Width == a.Width && vm.Vnc.Height == a.Height && Colors() > 3 && vm.IsConnected);
+    Shot("rdp-resized");
+
+    // 웹소켓 끊김 → 끊김 알림·[다시 연결] → 다시 연결(새 토큰)하면 같은 세션 화면
+    Drop();
+    WaitFor(() => vm.CanReconnect, 30000);
+    Check0("RDP 끊김 알림", "웹소켓이 끊기면 연결 끊김·[다시 연결]", vm.Status ?? "(상태 없음)", vm.CanReconnect && !vm.IsConnected);
+    await Wait(vm.ReconnectAsync());
+    WaitFor(() => vm.IsConnected || vm.CanReconnect, 30000);
+    WaitFor(() => Colors() > 3, 15000);
+    Pump(2000);
+    var reconnectPath = $"/tmp/rdp-again-{Environment.ProcessId}.txt";
+    Click(120, 120);
+    Type($"echo again > {reconnectPath}\n");
+    var again = ReadTyped(reconnectPath);
+    Shot("rdp-reconnected");
+    Check0("RDP 다시 연결", "다시 연결되고 화면·입력이 다시 동작",
+        $"{(vm.IsConnected ? "연결됨" : vm.Status)} · {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지 · 입력 '{again}'",
+        vm.IsConnected && Colors() > 3 && again == "again");
+    Type($"rm -f /tmp/rdp-*-{Environment.ProcessId}.txt; clear\n"); // 게스트 사용자 파일이라 게스트 셸에서 지운다
+    Pump(500);
+    await Wait(AppServices.Navigator.PopAsync());
+    Pump(500);
+}
+// ---- 메인 화면 검사(--target mainscreens, 휴대폰) — 느린 서버의 작업 로그 줄 중복·긴 목록 가상화·탭별 오류/빈 상태·연결 취소
+if (target == "mainscreens") await MainScreensCheck();
+async Task MainScreensCheck()
+{
+    if (desktop)
+    {
+        Console.WriteLine("SKIP mainscreens: 휴대폰 화면 검사(--mode mobile)");
+        return;
+    }
+
+    using var http = new HttpClient(new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true });
+    void FakeSet(string query)
+    {
+        var set = Task.Run(() => http.GetAsync($"https://127.0.0.1:{port}/api2/json/__fake/set?{query}"));
+        WaitFor(() => set.IsCompleted, 5000);
+    }
+
+    T? Find<T>(Func<T, bool> where) where T : Control =>
+        nav.CurrentPage!.GetVisualDescendants().OfType<T>().FirstOrDefault(c => c.IsEffectivelyVisible && where(c));
+
+    // 1) 작업 로그 — 응답이 2초 새로 고침 주기보다 느려도(첫 읽기 중 타이머가 돌아도) 줄이 겹치지 않는다
+    FakeSet("tasklog_delay_ms=2600&tasklog_lines=1200");
+    var logVm = new TaskLogViewModel(cluster.Session, cluster.Tasks[0]);
+    await Wait(AppServices.Navigator.PushAsync(logVm));
+    Pump(400);
+    var spinner = Find<ProgressBar>(p => p.IsIndeterminate) is not null;
+    Shot("tasklog-loading");
+    Check0("작업 로그 첫 읽기", "읽는 동안 진행 표시", spinner ? "진행 표시" : "없음", spinner && !logVm.IsLoaded);
+    WaitFor(() => logVm.IsLoaded && logVm.Lines.Count >= 1200, 20000);
+    Pump(3000); // 겹친 새로 고침이 있었다면 이 사이에 줄이 더 붙는다
+    var distinct = logVm.Lines.Distinct().Count();
+    Check0("작업 로그 줄 중복(느린 서버)", "1200줄, 겹침 없음", $"{logVm.Lines.Count}줄, 서로 다른 줄 {distinct}",
+        logVm.Lines.Count == 1200 && distinct == 1200);
+    var realized = nav.CurrentPage!.GetVisualDescendants().OfType<SelectableTextBlock>().Count();
+    var logScroll = nav.CurrentPage!.GetVisualDescendants().OfType<ScrollViewer>().First(v => v.Name == "LogScroll");
+    var atBottom = logScroll.Offset.Y + logScroll.Viewport.Height >= logScroll.Extent.Height - 30;
+    Shot("tasklog-long");
+    Check0("긴 작업 로그", "보이는 줄만 그림(가상화)·맨 아래로 따라감", $"그린 줄 {realized}, {(atBottom ? "맨 아래" : $"위치 {logScroll.Offset.Y:F0}/{logScroll.Extent.Height:F0}")}",
+        realized < 300 && atBottom);
+    Check0("작업 로그 전체 복사", "모든 줄", $"{logVm.LogText.Split('\n').Length}줄", logVm.LogText.Split('\n').Length == 1200);
+    FakeSet("tasklog_delay_ms=0&tasklog_lines=3");
+    await Wait(AppServices.Navigator.PopAsync());
+
+    // 2) 작업 목록 권한 없음 — 작업 탭에 알리고 나머지는 그대로
+    var page = (TabbedPage)nav.CurrentPage!;
+    FakeSet("tasks_forbidden=1");
+    await Wait(cluster.RefreshAsync(false));
+    page.SelectedIndex = 3;
+    Pump(500);
+    var tasksBanner = Find<TextBlock>(t => t.Text == cluster.TasksErrorMessage && t.Text is not null) is not null;
+    Shot("cluster-tasks-forbidden");
+    Check0("작업 목록 권한 없음", "작업 탭에 안내, 다른 오류 배너 없음", $"{cluster.TasksErrorMessage ?? "(없음)"}, 배너 {(tasksBanner ? "보임" : "안 보임")}",
+        cluster.HasTasksError && tasksBanner && !cluster.HasError && cluster.Guests.Count > 0);
+    FakeSet("tasks_forbidden=0");
+    await Wait(cluster.RefreshAsync(false));
+    Check0("작업 목록 권한 회복", "안내 사라짐", cluster.HasTasksError ? "남음" : "사라짐", !cluster.HasTasksError && cluster.Tasks.Count > 0);
+
+    // 3) 게스트가 많아도 보이는 카드만 만든다(가상화) — 당겨서 새로 고침 칸 안에서도
+    FakeSet("extra_guests=300");
+    await Wait(cluster.RefreshAsync(false));
+    page.SelectedIndex = 0;
+    Pump(800);
+    int GuestCards() => nav.CurrentPage!.GetVisualDescendants().OfType<Button>()
+        .Count(b => b.Classes.Contains("row") && b.DataContext is ProxmoxClient.Core.Models.PveResource);
+    var cards = GuestCards();
+    var refreshHost = nav.CurrentPage!.GetVisualDescendants().OfType<RefreshContainer>().First(r => r.IsEffectivelyVisible);
+    var guestScroll = refreshHost.GetVisualDescendants().OfType<ScrollViewer>().First();
+    guestScroll.ScrollToEnd();
+    Pump(600);
+    guestScroll.ScrollToEnd();
+    Pump(600);
+    var lastShown = nav.CurrentPage!.GetVisualDescendants().OfType<Button>()
+        .Any(b => b.IsEffectivelyVisible && b.DataContext == cluster.Guests[^1]);
+    Shot("cluster-many-guests-end");
+    Check0("긴 게스트 목록", "보이는 카드만(가상화), 끝까지 스크롤하면 마지막 게스트", $"게스트 {cluster.Guests.Count}개 중 카드 {cards}·{GuestCards()}개, 마지막 {(lastShown ? "보임" : "안 보임")}",
+        cluster.Guests.Count > 300 && cards < 60 && GuestCards() < 60 && lastShown);
+    guestScroll.Offset = default;
+    Pump(300);
+
+    // 4) 서버에 닿지 않는 세션 — 모든 탭에 오류 배너, 진행 표시는 멈춘다
+    var deadProfile = new ConnectionProfile { Name = "dead", Host = "127.0.0.1", Port = 19619 };
+    var dead = new ClusterViewModel(new ServerSession(new ProxmoxClient.Core.Api.ProxmoxApiClient(deadProfile), deadProfile, "9.0"));
+    await Wait(AppServices.Navigator.PushAsync(dead));
+    WaitFor(() => dead.HasError, 10000);
+    var deadPage = (TabbedPage)nav.CurrentPage!;
+    var banners = new List<bool>();
+    for (var i = 0; i < 4; i++)
+    {
+        deadPage.SelectedIndex = i;
+        Pump(300);
+        banners.Add(Find<TextBlock>(t => t.Text == dead.ErrorMessage) is not null);
+        if (i == 0) Shot("cluster-error");
+    }
+    var stillSpinning = Find<ProgressBar>(p => p.IsIndeterminate) is not null;
+    Check0("연결 실패 상태", "탭마다 오류 배너, 진행 표시 멈춤", $"배너 [{string.Join(",", banners.Select(b => b ? "O" : "X"))}], 진행 표시 {(stillSpinning ? "돎" : "멈춤")}",
+        banners.All(b => b) && !stillSpinning && !dead.IsLoading);
+    await Wait(AppServices.Navigator.PopAsync());
+
+    // 5) 오래 걸리는 연결 — 진행 표시의 취소(뒤로 가기)로 바로 멈추고 오류 창을 띄우지 않는다
+    FakeSet("ticket_delay_ms=6000");
+    var before = nav.CurrentPage;
+    profiles.ConnectCommand.Execute(profiles.Profiles[0]);
+    WaitFor(() => AppServices.Dialogs.IsBusyVisible, 3000);
+    var cancellable = AppServices.Dialogs.CanCancelBusy;
+    Shot("connect-busy-cancel");
+    var started = DateTime.UtcNow;
+    var handled = AppServices.Dialogs.HandleBack();
+    WaitFor(() => !AppServices.Dialogs.IsBusyVisible, 4000);
+    var took = DateTime.UtcNow - started;
+    Pump(500);
+    Check0("연결 취소", "취소 단추, 뒤로 가기로 바로 멈춤·오류 창 없음·화면 그대로",
+        $"단추 {(cancellable ? "있음" : "없음")}, {took.TotalMilliseconds:F0}ms, 대화상자 {(AppServices.Dialogs.Current is null ? "없음" : AppServices.Dialogs.Current.Title)}",
+        cancellable && handled && !AppServices.Dialogs.IsBusyVisible && took.TotalSeconds < 3 && AppServices.Dialogs.Current is null &&
+        ReferenceEquals(nav.CurrentPage, before));
+    FakeSet("ticket_delay_ms=0");
+}
+
+// ---- 관리 기능 검사(한 덩어리): 방화벽 규칙 지우기에 digest · digest 불일치면 다시 읽고 알림 · 백업 "압축 없음" = compress=0 ·
+// CT 스냅숏에는 RAM 칸이 없다. 서버가 받은 값은 로그의 'MANAGE ...' 줄로 비교한다
+if (target == "manage")
+{
+    var manageLog = options.GetValueOrDefault("serverlog", "");
+    var manageOffset = File.Exists(manageLog) ? new FileInfo(manageLog).Length : 0L;
+    List<string> ManageLines()
+    {
+        Pump(800);
+        if (manageLog.Length == 0 || !File.Exists(manageLog)) return [];
+        using var fs = new FileStream(manageLog, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        fs.Seek(manageOffset, SeekOrigin.Begin);
+        using var reader = new StreamReader(fs);
+        var text = reader.ReadToEnd();
+        manageOffset = fs.Position;
+        return text.Split('\n').Where(l => l.StartsWith("MANAGE ", StringComparison.Ordinal)).Select(l => l[7..].Trim()).ToList();
+    }
+    void ManageCheck(string name, bool pass, string got)
+    {
+        Console.WriteLine($"{(pass ? "OK" : "FAIL")} manage/{name}: {got}");
+        if (!pass) failures++;
+    }
+    Button ToolButton(Control root, string labelKey) => root.GetVisualDescendants().OfType<Button>()
+        .First(b => ToolTip.GetTip(b) as string == L.T(labelKey) || b.Content as string == L.T(labelKey));
+    void Press(Button b) => b.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    void ConfirmDialogs()
+    {
+        // 표 단추의 확인 문구 · 쓰기 확인 창을 모두 확인으로
+        for (var i = 0; i < 3; i++)
+        {
+            WaitFor(() => AppServices.Dialogs.Current is not null, 1500);
+            if (AppServices.Dialogs.Current is not { } dialog) break;
+            dialog.ConfirmCommand.Execute(null);
+            Pump(400);
+        }
+    }
+
+    var mapi = cluster.Session.Api;
+    var vm100 = cluster.Guests.First(g => g.VmId == 100);
+    var ct200 = cluster.Guests.First(g => g.VmId == 200);
+
+    // 방화벽: 지우기는 목록의 digest 를 쿼리로 보낸다(가짜 서버의 digest 를 처음 값으로)
+    await Wait(mapi.GetObjectAsync("__fake/fw-digest"));
+    var fw = new ProxmoxClient.UI.Views.Guest.Tabs.FirewallTab(mapi,
+        ProxmoxClient.Core.Models.FirewallScope.ForGuest(vm100.Node, vm100.Kind, vm100.VmId));
+    await Wait(AppServices.Navigator.PushViewAsync("fw", fw));
+    Pump(1500);
+    var fwTable = fw.GetVisualDescendants().OfType<TableTab>().First();
+    void DeleteFirstRule()
+    {
+        // 모바일은 카드 목록(ListBox), 데스크톱은 표(DataGrid)
+        if (fwTable.GetVisualDescendants().OfType<ListBox>().FirstOrDefault() is { } cards) cards.SelectedIndex = 0;
+        else if (fwTable.GetVisualDescendants().OfType<DataGrid>().FirstOrDefault() is { } grid) grid.SelectedIndex = 0;
+        Pump(400);
+        if (AppServices.Dialogs.Sheet is ProxmoxClient.UI.Views.Shared.RowDetailSheet rowSheet)
+        {
+            Shot("row-detail-sheet");
+            // 목록 카드는 요약만 — 상세 시트에는 표의 모든 열이 빠짐없이 나와야 한다
+            var texts = rowSheet.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToHashSet();
+            string[] headers = ["FirewallWindow_06", "FirewallWindow_05", "FirewallWindow_07", "FirewallWindow_08",
+                "FirewallWindow_09", "FwRule_Iface", "FirewallWindow_10", "FirewallWindow_12", "FwRule_SourcePort",
+                "FwRule_Dest", "FirewallWindow_11", "FwRule_Log", "FirewallWindow_13"];
+            var missing = headers.Where(h => !texts.Contains(L.T(h))).ToList();
+            ManageCheck("row-sheet-all-columns", missing.Count == 0, "빠진 열: " + string.Join(",", missing));
+        }
+        // 휴대폰은 카드를 누르면 상세 시트가 뜨고, 항목 작업은 그 시트에 있다
+        Press(ToolButton(RowActions(fwTable), "Action_Delete"));
+        ConfirmDialogs();
+        Pump(800);
+    }
+    DeleteFirstRule();
+    var fwLines = ManageLines();
+    ManageCheck("fw-delete-digest", fwLines.Contains("fw DELETE pos=0 digest=fwdigest1"), string.Join(" | ", fwLines));
+
+    // 다른 사용자가 규칙을 바꿨다 → 예전 digest 로 지우면 서버가 거절하고, 화면은 다시 읽어 알린다
+    await Wait(mapi.GetObjectAsync("__fake/fw-digest?value=fwdigest2"));
+    DeleteFirstRule();
+    var mismatchShown = fwTable.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == L.T("Digest_Changed"));
+    ManageCheck("fw-digest-mismatch-message", mismatchShown, string.Join(" | ", ManageLines()));
+    Shot("manage-fw-digest-mismatch");
+    // 다시 읽었으므로 새 digest 로 지우면 통과한다
+    DeleteFirstRule();
+    fwLines = ManageLines();
+    ManageCheck("fw-delete-after-reload", fwLines.Contains("fw DELETE pos=0 digest=fwdigest2"), string.Join(" | ", fwLines));
+    await Wait(AppServices.Navigator.PopAsync());
+
+    // 백업 "압축 없음" → compress=0 (빼면 서버 기본값 zstd 로 압축된다)
+    var backup = new ProxmoxClient.UI.Views.Guest.Tabs.BackupTab(mapi, vm100);
+    await Wait(AppServices.Navigator.PushViewAsync("backup", backup));
+    Pump(1500);
+    var compressBox = backup.GetVisualDescendants().OfType<ComboBox>()
+        .First(c => c.Items.OfType<object>().Any(i => (i as ContentControl)?.Content as string == L.T("BackupWindow_10")
+                                                      || i?.ToString() == L.T("BackupWindow_10")));
+    ComboChoices.Select(compressBox, "0");
+    Pump(200);
+    Press(ToolButton(backup, "BackupWindow_12"));
+    ConfirmDialogs();
+    var backupLines = ManageLines();
+    ManageCheck("backup-none-compress0", backupLines.Contains("vzdump compress=0"), string.Join(" | ", backupLines));
+    await Wait(AppServices.Navigator.PopAsync());
+
+    // 스냅숏: CT 에는 RAM 포함 칸이 없고, 실행 중인 VM 에는 있다
+    bool RamOption(ProxmoxClient.Core.Models.PveResource guest, out bool enabled)
+    {
+        var tab = new ProxmoxClient.UI.Views.Guest.Tabs.SnapshotsTab(mapi, guest);
+        Wait(AppServices.Navigator.PushViewAsync("snap", tab)).GetAwaiter().GetResult();
+        Pump(1200);
+        var box = tab.GetVisualDescendants().OfType<CheckBox>().FirstOrDefault(c => c.Content as string == L.T("SnapshotDialog_09"));
+        enabled = box?.IsEnabled == true;
+        var visible = box?.IsVisible == true;
+        Wait(AppServices.Navigator.PopAsync()).GetAwaiter().GetResult();
+        return visible;
+    }
+    ManageCheck("ct-snapshot-no-ram", !RamOption(ct200, out _), "CT 200 RAM 칸 숨김");
+    var vmRam = RamOption(vm100, out var vmRamEnabled);
+    ManageCheck("vm-snapshot-ram", vmRam && vmRamEnabled, $"VM 100 RAM 칸 보임={vmRam} 켜짐={vmRamEnabled}");
+}
 VpnReport();
 
 foreach (var (prefix, vmid) in new[] { ("guest", 100), ("lxc", 200) })
@@ -258,6 +1001,568 @@ foreach (var (prefix, vmid) in new[] { ("guest", 100), ("lxc", 200) })
 Console.WriteLine(failures == 0 ? "DONE ok" : $"DONE failures={failures}");
 Directory.Delete(profileDir, true);
 return failures == 0 ? 0 : 2;
+
+// ---- 실제 PVE(--real 1 --target real): tools/PveE2E 가 띄운 Proxmox VE 9 에 붙어 가짜 서버로는 못 보는 것을 확인한다.
+// 시험 대상: 노드 pve, VM 100(Alpine ISO, VGA std, 꺼진 채), CT 200(--ct 1 이면 켜짐), TOTP 사용자 tfa@pve(--totp 비밀),
+// API 토큰(--token-id·--token-secret). 서버 쪽 확인은 --exec(기본 "docker exec pve") 로 pvesh 를 부른다.
+// 줄마다 "PASS real/이름: …" 또는 "FAIL real/이름: …" 를 찍는다
+async Task RealPveCheck()
+{
+    var session = cluster.Session;
+    var api = session.Api;
+    var execPrefix = options.GetValueOrDefault("exec", "docker exec pve");
+    var pvePassword = options.GetValueOrDefault("password", Environment.GetEnvironmentVariable("PVE_PASSWORD") ?? "");
+    var hasCt = options.GetValueOrDefault("ct", Environment.GetEnvironmentVariable("PVE_CT") ?? "0") == "1";
+    var nodeName = options.GetValueOrDefault("node", "pve");
+    const ProxmoxClient.Core.Models.ResourceKind Qemu = ProxmoxClient.Core.Models.ResourceKind.Qemu;
+    const ProxmoxClient.Core.Models.ResourceKind Lxc = ProxmoxClient.Core.Models.ResourceKind.Lxc;
+
+    void Result(string name, bool pass, string got)
+    {
+        Console.WriteLine($"{(pass ? "PASS" : "FAIL")} real/{name}: {got.Replace('\n', ' ')}");
+        if (!pass) failures++;
+    }
+
+    // 한 단계가 예외로 끝나도 다음 단계는 한다
+    async Task Step(string name, Func<Task> body)
+    {
+        try
+        {
+            await body();
+        }
+        catch (Exception ex)
+        {
+            Result(name, false, $"{ex.GetType().Name}: {ex.Message}");
+            if (AppServices.Dialogs.Current is { } d) d.CancelCommand.Execute(null);
+        }
+    }
+
+    // 쓰기 요청은 확인 창을 거친다 — 기다리는 동안 뜨는 확인 창은 모두 확인으로
+    T Do<T>(Func<Task<T>> start, int ms = 30000)
+    {
+        var task = start();
+        var end = DateTime.UtcNow.AddMilliseconds(ms);
+        while (!task.IsCompleted && DateTime.UtcNow < end)
+        {
+            if (AppServices.Dialogs.Current is { } d) d.ConfirmCommand.Execute(null);
+            Pump(50);
+        }
+
+        if (!task.IsCompleted) throw new TimeoutException($"{ms} ms 안에 끝나지 않음");
+        return task.GetAwaiter().GetResult();
+    }
+
+    string Exec(string command)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo("bash", ["-c", $"{execPrefix} {command}"])
+        {
+            RedirectStandardOutput = true, RedirectStandardError = true
+        };
+        using var p = System.Diagnostics.Process.Start(psi)!;
+        var stdout = p.StandardOutput.ReadToEndAsync();
+        var stderr = p.StandardError.ReadToEndAsync();
+        p.WaitForExit(60000);
+        return stdout.Result + (p.ExitCode != 0 ? "\nSTDERR " + stderr.Result : "");
+    }
+
+    System.Text.Json.JsonElement Pvesh(string path) =>
+        System.Text.Json.JsonDocument.Parse(Exec($"pvesh get {path} --output-format json").Split("\nSTDERR")[0]).RootElement;
+
+    string Totp(string base32)
+    {
+        var clean = base32.TrimEnd('=').ToUpperInvariant();
+        var bytes = new List<byte>();
+        int buffer = 0, bits = 0;
+        foreach (var ch in clean)
+        {
+            buffer = (buffer << 5) | "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".IndexOf(ch);
+            bits += 5;
+            if (bits < 8) continue;
+            bytes.Add((byte)(buffer >> (bits - 8)));
+            bits -= 8;
+        }
+
+        var counter = BitConverter.GetBytes(DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30);
+        if (BitConverter.IsLittleEndian) Array.Reverse(counter);
+        var mac = System.Security.Cryptography.HMACSHA1.HashData(bytes.ToArray(), counter);
+        var o = mac[^1] & 15;
+        var value = ((mac[o] & 0x7f) << 24) | (mac[o + 1] << 16) | (mac[o + 2] << 8) | mac[o + 3];
+        return (value % 1_000_000).ToString("D6", CultureInfo.InvariantCulture);
+    }
+
+    string TermScreen(ProxmoxClient.UI.Views.Terminal.TerminalPage tp)
+    {
+        var buf = tp.Terminal.Buffer;
+        lock (buf.Gate)
+            return string.Join("\n", Enumerable.Range(0, buf.Rows).Select(r =>
+                new string(buf.GetVisibleLine(r, 0).Cells.Where(c => c.Width != 0)
+                    .SelectMany(c => char.ConvertFromUtf32(c.Rune == 0 ? ' ' : c.Rune)).ToArray()).TrimEnd()));
+    }
+
+    // 1) 로그인 · 인증서 신뢰(지문 저장) · 버전
+    // 헤드리스는 UI 를 돌리며 기다려야 한다(그냥 await 하면 이어짐이 돌지 않아 멈춘다)
+    var loadSaved = AppServices.Profiles.LoadAsync();
+    await Wait(loadSaved);
+    var saved = loadSaved.Result[0];
+    Result("login", session.UserDisplay == "root@pam" && session.Version.StartsWith('9') && saved.CertificateThumbprint is { Length: > 0 },
+        $"{session.UserDisplay} · PVE {session.Version} · 지문 {saved.CertificateThumbprint?[..Math.Min(16, saved.CertificateThumbprint.Length)]}…");
+
+    // 2) 클러스터 자원 목록
+    await Step("resources", async () =>
+    {
+        await Wait(cluster.RefreshAsync(false));
+        var guests = string.Join(", ", cluster.Guests.Select(g => $"{g.Kind}/{g.VmId}:{g.Name}:{g.Status}"));
+        Result("resources",
+            cluster.Nodes.Any(n => n.Node == nodeName) && cluster.Guests.Any(g => g.VmId == 100 && g.Kind == Qemu)
+            && (!hasCt || cluster.Guests.Any(g => g.VmId == 200 && g.Kind == Lxc)) && cluster.Storages.Any(s => s.Storage == "local"),
+            $"노드 [{string.Join(",", cluster.Nodes.Select(n => n.Node))}] 게스트 [{guests}] 저장소 [{string.Join(",", cluster.Storages.Select(s => s.Storage))}]");
+    });
+
+    // 3) 화면 둘러보기 — 데이터센터·노드·저장소·게스트(VM·CT)의 모든 탭이 오류 없이 열리는지(CheckStatus 가 FAIL 을 찍는다)
+    var before = failures;
+    await Step("walk-datacenter", async () =>
+    {
+        if (FeatureRegistry.Datacenter is null) return;
+        await Wait(cluster.OpenDatacenterCommand.ExecuteAsync(null));
+        WalkNav("real-dc");
+        await Wait(AppServices.Navigator.PopAsync());
+    });
+    await Step("walk-node", async () =>
+    {
+        if (FeatureRegistry.Node is null) return;
+        await Wait(AppServices.Navigator.PushViewAsync("node", FeatureRegistry.Node(session, cluster.Nodes.First(n => n.Node == nodeName))));
+        WalkNav("real-node");
+        await Wait(AppServices.Navigator.PopAsync());
+    });
+    await Step("walk-storage", async () =>
+    {
+        if (FeatureRegistry.Storage is null) return;
+        await Wait(cluster.OpenStorageCommand.ExecuteAsync(cluster.Storages.First(s => s.Storage == "local")));
+        WalkNav("real-storage");
+        await Wait(AppServices.Navigator.PopAsync());
+    });
+    foreach (var id in hasCt ? new[] { 100, 200 } : [100])
+        await Step($"walk-guest{id}", async () =>
+        {
+            var guest = cluster.Guests.First(g => g.VmId == id);
+            await Wait(AppServices.Navigator.PushAsync(new GuestDetailViewModel(session, guest)));
+            Pump(2500);
+            Shot($"real-guestdetail-{id}");
+            CheckStatus($"real-guestdetail-{id}");
+            await Wait(AppServices.Navigator.PopAsync());
+            var detail = new GuestDetailViewModel(session, guest);
+            foreach (var entry in detail.ManagementEntries)
+            {
+                var feature = (GuestFeature)entry.Parameter!;
+                await Wait(AppServices.Navigator.PushViewAsync($"{id} · {L.T(feature.LabelKey)}", feature.Create(session, guest)));
+                Pump(1500);
+                Shot($"real-guest{id}-{feature.Id}");
+                WalkSubTabs($"real-guest{id}-{feature.Id}");
+                CheckStatus($"real-guest{id}-{feature.Id}");
+                await Wait(AppServices.Navigator.PopAsync());
+            }
+        });
+    Result("walk-screens", failures == before, $"화면 오류 {failures - before}개(위 FAIL 줄 참고)");
+
+    // 4) 실제 작업: VM 시작 → UPID → 작업 로그(TASK OK) · 작업 목록에 보임
+    await Step("task-start", async () =>
+    {
+        var upid = Do(() => api.StartGuestAsync(nodeName, Qemu, 100));
+        var task = Do(() => api.WaitTaskAsync(upid), 120000);
+        var logVm = new TaskLogViewModel(session, Do(() => api.GetTaskStatusAsync(upid)));
+        await Wait(AppServices.Navigator.PushAsync(logVm));
+        WaitFor(() => logVm.IsLoaded && logVm.Lines.Any(l => l.Contains("TASK OK")), 20000);
+        Shot("real-tasklog-start");
+        Result("task-start", task.IsOk && logVm.Lines.Any(l => l.Contains("TASK OK")),
+            $"{upid} · 상태 {task.Status} · 로그 [{string.Join(" | ", logVm.Lines.Take(6))}]");
+        await Wait(AppServices.Navigator.PopAsync());
+        await Wait(cluster.RefreshAsync(false));
+        Result("task-list", cluster.Tasks.Any(t => t.Upid == upid), $"작업 {cluster.Tasks.Count}개, 시작 작업 {(cluster.Tasks.Any(t => t.Upid == upid) ? "있음" : "없음")}");
+    });
+
+    // 5) VM VNC 콘솔(실제 vncproxy·vncwebsocket): 화면이 오고, 키 입력이 게스트에 닿는다 — 로그인 프롬프트에 root 로 들어가
+    // poweroff 를 치면 VM 이 꺼진다(서버 상태로 확인)
+    await Step("vnc", async () =>
+    {
+        await Wait(cluster.RefreshAsync(false));
+        var guest = cluster.Guests.First(g => g.VmId == 100);
+        await Wait(ConsoleLauncher.OpenGuestAsync(session, guest));
+        var page = nav.CurrentPage as ConsolePage;
+        var vm = page?.DataContext as ConsoleViewModel;
+        if (page is null || vm is null)
+        {
+            Result("vnc-connect", false, "콘솔 화면 없음: " + AppServices.Dialogs.Current?.Message);
+            return;
+        }
+
+        int Colors()
+        {
+            var fb = vm.Vnc.Framebuffer;
+            if (fb is null || fb.Length < 4) return 0;
+            var set = new HashSet<int>();
+            for (var i = 0; i + 3 < fb.Length; i += 4 * 97) set.Add(BitConverter.ToInt32(fb, i) & 0xFFFFFF);
+            return set.Count;
+        }
+
+        WaitFor(() => vm.IsConnected || vm.CanReconnect, 30000);
+        WaitFor(() => Colors() > 1, 20000);
+        Shot("real-vnc-connected");
+        Result("vnc-connect", vm.IsConnected && vm.Vnc.Width > 0 && Colors() > 1,
+            $"{(vm.IsConnected ? "연결됨" : vm.Status)} · {vm.Protocol} · {vm.Vnc.Width}×{vm.Vnc.Height} · 색 {Colors()}가지");
+        if (!vm.IsConnected) return;
+
+        var softInput = page.GetVisualDescendants().OfType<TextBox>().First();
+        void Type(string text)
+        {
+            softInput.Text = text;
+            Pump(300);
+            page.Tap(KeySyms.Return);
+            Pump(300);
+        }
+
+        // Alpine 이 부팅해 로그인 프롬프트를 띄울 때까지 — getty 가 뜨기 전 입력은 버려지므로 몇 번 되풀이한다
+        var status = "";
+        for (var attempt = 0; attempt < 6 && status != "stopped"; attempt++)
+        {
+            Pump(attempt == 0 ? 25000 : 5000);
+            Shot($"real-vnc-before-login-{attempt}");
+            Type("root");
+            Pump(4000);
+            Shot($"real-vnc-after-login-{attempt}");
+            Type("poweroff");
+            var end = DateTime.UtcNow.AddSeconds(25);
+            while (DateTime.UtcNow < end && status != "stopped")
+            {
+                Pump(1000);
+                var st = Task.Run(() => api.GetGuestCurrentStatusAsync(nodeName, Qemu, 100));
+                WaitFor(() => st.IsCompleted, 5000);
+                status = st.IsCompletedSuccessfully ? st.Result : status;
+            }
+        }
+
+        Result("vnc-keys", status == "stopped", $"VNC 로 'root'·'poweroff' 입력 → VM 상태 {status}");
+        await Wait(AppServices.Navigator.PopAsync());
+    });
+
+    // 6) 노드 셸(실제 termproxy): echo 결과가 화면에
+    await Step("node-shell", async () =>
+    {
+        var vm = new TerminalViewModel(api, ProxmoxClient.Core.Models.ConsoleTarget.ForNode(nodeName), $"{nodeName} · 셸");
+        await Wait(AppServices.Navigator.PushAsync(vm));
+        var page = (ProxmoxClient.UI.Views.Terminal.TerminalPage)nav.CurrentPage!;
+        WaitFor(() => vm.IsConnected, 20000);
+        WaitFor(() => TermScreen(page).Contains($"root@{nodeName}"), 15000);
+        var input = page.GetVisualDescendants().OfType<TextBox>().First();
+        input.Focus();
+        input.Text = "echo ok-$((6*7)); stty size";
+        Pump(300);
+        window.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+        window.KeyRelease(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+        WaitFor(() => TermScreen(page).Contains("\nok-42"), 8000);
+        Pump(500);
+        Shot("real-node-shell");
+        var screen = TermScreen(page);
+        var size = $"{page.Terminal.Buffer.Rows} {page.Terminal.Buffer.Columns}";
+        Result("node-shell", vm.IsConnected && screen.Contains("\nok-42") && screen.Contains(size),
+            $"{(vm.IsConnected ? "연결됨" : vm.StateText)} · ok-42 {(screen.Contains("\nok-42") ? "보임" : "없음")} · 크기 {size} {(screen.Contains(size) ? "맞음" : "다름")} · [{string.Join(" / ", screen.Split('\n').Where(l => l.Length > 0).TakeLast(4))}]");
+        await Wait(AppServices.Navigator.PopAsync());
+    });
+
+    // 7) CT 콘솔(실제 lxc-console 경유 termproxy): 로그인 후 echo
+    if (hasCt)
+        await Step("ct-console", async () =>
+        {
+            var guest = cluster.Guests.First(g => g.VmId == 200);
+            var vm = new TerminalViewModel(api, ProxmoxClient.Core.Models.ConsoleTarget.ForGuest(nodeName, Lxc, 200), "200 · 콘솔", guest);
+            await Wait(AppServices.Navigator.PushAsync(vm));
+            var page = (ProxmoxClient.UI.Views.Terminal.TerminalPage)nav.CurrentPage!;
+            WaitFor(() => vm.IsConnected, 20000);
+            var input = page.GetVisualDescendants().OfType<TextBox>().First();
+            input.Focus();
+            void Line(string text)
+            {
+                if (text.Length > 0) input.Text = text;
+                Pump(300);
+                window.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+                window.KeyRelease(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+                Pump(300);
+            }
+
+            // 콘솔(tty)은 앞선 실행에서 이미 로그인돼 있을 수 있다 — 로그인 프롬프트일 때만 로그인
+            string LastLine() => TermScreen(page).Split('\n').LastOrDefault(l => l.Length > 0) ?? "";
+            Pump(1500);
+            Line("");
+            WaitFor(() => LastLine().EndsWith("login:") || LastLine().EndsWith('#'), 10000);
+            Shot("real-ct-login");
+            if (LastLine().EndsWith("login:"))
+            {
+                Line("root");
+                WaitFor(() => LastLine().StartsWith("Password:"), 8000);
+                Line(pvePassword);
+                WaitFor(() => LastLine().EndsWith('#'), 8000);
+            }
+            Line("echo ct-$((6*7))");
+            WaitFor(() => TermScreen(page).Contains("\nct-42"), 8000);
+            Shot("real-ct-console");
+            var screen = TermScreen(page);
+            Result("ct-console", vm.IsConnected && screen.Contains("\nct-42"),
+                $"{(vm.IsConnected ? "연결됨" : vm.StateText)} · [{string.Join(" / ", screen.Split('\n').Where(l => l.Length > 0).TakeLast(5))}]");
+            await Wait(AppServices.Navigator.PopAsync());
+        });
+
+    // 8) 설정 편집 + digest(옵션 탭과 같은 경로: pending 읽기 → digest 붙여 PUT). 옛 digest 는 서버가 거절해야 한다
+    await Step("config-digest", async () =>
+    {
+        var pending = Do(() => api.GetGuestPendingAsync(nodeName, Qemu, 100));
+        var text = $"e2e 설명 {DateTime.UtcNow:HHmmss}\n둘째 줄 & 기호 %";
+        Do(() => api.UpdateGuestConfigAsync(nodeName, Qemu, 100,
+            ProxmoxClient.Presentation.Shared.FormHelpers.UpdateForm(pending.AddDigest(new Dictionary<string, string> { ["description"] = text }))));
+        var got = Pvesh($"/nodes/{nodeName}/qemu/100/config").GetProperty("description").GetString();
+        Result("config-edit", got?.TrimEnd('\n') == text, $"보낸 digest {pending.Digest[..Math.Min(12, pending.Digest.Length)]}… → pvesh description '{got}'");
+        var appView = Do(() => api.GetGuestConfigAsync(nodeName, Qemu, 100));
+        Result("config-read", appView.GetValueOrDefault("description")?.TrimEnd('\n') == text,
+            $"앱이 읽은 description '{appView.GetValueOrDefault("description")}'");
+
+        // 같은(이제 낡은) digest 로 다시 → 거절 · 앱이 digest 불일치로 알아본다
+        string outcome;
+        var mismatch = false;
+        try
+        {
+            Do(() => api.UpdateGuestConfigAsync(nodeName, Qemu, 100,
+                ProxmoxClient.Presentation.Shared.FormHelpers.UpdateForm(pending.AddDigest(new Dictionary<string, string> { ["description"] = "stale" }))));
+            outcome = "받아들임(거절해야 함)";
+        }
+        catch (ProxmoxClient.Core.Api.ProxmoxApiException ex)
+        {
+            mismatch = ex.IsDigestMismatch;
+            outcome = $"{ex.StatusCode}: {ex.Message}";
+        }
+
+        Result("config-stale-digest", mismatch, outcome);
+
+        // CT 설정은 다른 문구(assert_if_modified)로 거절한다
+        if (!hasCt) return;
+        var ctPending = Do(() => api.GetGuestPendingAsync(nodeName, Lxc, 200));
+        Do(() => api.UpdateGuestConfigAsync(nodeName, Lxc, 200,
+            ProxmoxClient.Presentation.Shared.FormHelpers.UpdateForm(ctPending.AddDigest(new Dictionary<string, string> { ["description"] = text }))));
+        var ctMismatch = false;
+        try
+        {
+            Do(() => api.UpdateGuestConfigAsync(nodeName, Lxc, 200,
+                ProxmoxClient.Presentation.Shared.FormHelpers.UpdateForm(ctPending.AddDigest(new Dictionary<string, string> { ["description"] = "stale" }))));
+            outcome = "받아들임(거절해야 함)";
+        }
+        catch (ProxmoxClient.Core.Api.ProxmoxApiException ex)
+        {
+            ctMismatch = ex.IsDigestMismatch;
+            outcome = $"{ex.StatusCode}: {ex.Message}";
+        }
+
+        Result("ct-config-stale-digest", ctMismatch, outcome);
+    });
+
+    // 9) 방화벽 규칙 추가·지우기 + digest(화면의 지우기 단추, 목록의 digest 를 쿼리로). 그 사이 서버에서 바뀌면 거절 → 알림
+    await Step("firewall", async () =>
+    {
+        var scope = ProxmoxClient.Core.Models.FirewallScope.ForGuest(nodeName, Qemu, 100);
+        var rulesPath = $"/nodes/{nodeName}/qemu/100/firewall/rules";
+        int RuleCount() => Pvesh(rulesPath).GetArrayLength();
+        foreach (var port in new[] { "2201", "2202" })
+            Do(() => api.Firewall.CreateRuleAsync(scope, new Dictionary<string, string>
+            {
+                ["type"] = "in", ["action"] = "ACCEPT", ["proto"] = "tcp", ["dport"] = port, ["enable"] = "1", ["comment"] = "e2e " + port
+            }));
+        var afterAdd = RuleCount();
+        Result("fw-add", afterAdd == 2, $"pvesh 규칙 {afterAdd}개");
+
+        var fw = new ProxmoxClient.UI.Views.Guest.Tabs.FirewallTab(api, scope);
+        await Wait(AppServices.Navigator.PushViewAsync("fw", fw));
+        Pump(2000);
+        Shot("real-fw-list");
+        var fwTable = fw.GetVisualDescendants().OfType<TableTab>().First();
+        void DeleteFirstRule()
+        {
+            if (fwTable.GetVisualDescendants().OfType<ListBox>().FirstOrDefault() is { } cards) cards.SelectedIndex = 0;
+            else if (fwTable.GetVisualDescendants().OfType<DataGrid>().FirstOrDefault() is { } grid) grid.SelectedIndex = 0;
+            Pump(300);
+            var delete = RowActions(fwTable).GetVisualDescendants().OfType<Button>()
+                .First(b => ToolTip.GetTip(b) as string == L.T("Action_Delete") || b.Content as string == L.T("Action_Delete"));
+            delete.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            for (var i = 0; i < 3; i++)
+            {
+                WaitFor(() => AppServices.Dialogs.Current is not null, 1500);
+                if (AppServices.Dialogs.Current is not { } dialog) break;
+                dialog.ConfirmCommand.Execute(null);
+                Pump(400);
+            }
+
+            Pump(1500);
+        }
+
+        DeleteFirstRule();
+        var afterDelete = RuleCount();
+        Result("fw-delete", afterDelete == 1, $"화면에서 지우기 → pvesh 규칙 {afterDelete}개");
+
+        // 다른 곳(pvesh)에서 규칙을 하나 더 넣는다 → 화면의 digest 는 낡았다 → 지우기 거절, 다시 읽고 알림
+        Exec($"pvesh create {rulesPath} --type in --action DROP --enable 0 --comment other");
+        DeleteFirstRule();
+        var shown = fwTable.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == L.T("Digest_Changed"));
+        var afterStale = RuleCount();
+        Shot("real-fw-digest-mismatch");
+        Result("fw-stale-digest", shown && afterStale == 2, $"알림 {(shown ? "보임" : "없음")} · pvesh 규칙 {afterStale}개(2 여야)");
+        DeleteFirstRule(); // 다시 읽었으므로 이번엔 지워진다
+        var afterRetry = RuleCount();
+        Result("fw-delete-after-reload", afterRetry == 1, $"pvesh 규칙 {afterRetry}개");
+        await Wait(AppServices.Navigator.PopAsync());
+        Exec($"bash -c 'while pvesh delete {rulesPath}/0 >/dev/null 2>&1; do :; done'");
+    });
+
+    // 스냅숏(VM, qcow2): 만들기 → 목록·설명 → 되돌리기 → 지우기 — 작업이 모두 OK
+    await Step("snapshot", async () =>
+    {
+        var name = $"e2e{DateTime.UtcNow:HHmmss}";
+        var created = Do(() => api.WaitTaskAsync(Do(() => api.CreateSnapshotAsync(nodeName, Qemu, 100, name, "e2e 스냅숏"))), 120000);
+        var list = Do(() => api.GetSnapshotsAsync(nodeName, Qemu, 100));
+        var snap = list.FirstOrDefault(x => x.Name == name);
+        Result("snapshot-create", created.IsOk && snap is { Description: "e2e 스냅숏" } && snap.SnapTimeUtc is not null,
+            $"작업 {created.Status} · 목록 [{string.Join(", ", list.Select(x => $"{x.Name}:{x.Description}:{x.SnapTimeUtc:u}:{x.Parent}"))}]");
+        var rollback = Do(() => api.WaitTaskAsync(Do(() => api.RollbackSnapshotAsync(nodeName, Qemu, 100, name))), 120000);
+        Result("snapshot-rollback", rollback.IsOk, $"작업 {rollback.Status}");
+        var deleted = Do(() => api.WaitTaskAsync(Do(() => api.DeleteSnapshotAsync(nodeName, Qemu, 100, name))), 120000);
+        var after = Do(() => api.GetSnapshotsAsync(nodeName, Qemu, 100));
+        Result("snapshot-delete", deleted.IsOk && after.All(x => x.Name != name), $"작업 {deleted.Status} · 남은 [{string.Join(", ", after.Select(x => x.Name))}]");
+    });
+
+    // 백업(vzdump, 백업 탭과 같은 요청): 압축 없음 + 메모 템플릿 → 작업 OK → 저장소 백업 목록에 보임
+    await Step("backup", async () =>
+    {
+        var kind = hasCt ? Lxc : Qemu;
+        var vmid = hasCt ? 200 : 100;
+        var upid = Do(() => api.BackupGuestAsync(nodeName, kind, vmid, "local", hasCt ? "suspend" : "stop", "0",
+            new Dictionary<string, string> { ["notes-template"] = "e2e {{guestname}}" }));
+        var task = Do(() => api.WaitTaskAsync(upid), 300000);
+        var files = Do(() => api.GetStorageContentAsync(nodeName, "local", "backup"));
+        var mine = files.Where(f => f.Volid.Contains($"vzdump-{(hasCt ? "lxc" : "qemu")}-{vmid}-")).ToList();
+        Result("backup", task.IsOk && mine.Any(f => f.Volid.EndsWith(".tar", StringComparison.Ordinal) || f.Volid.EndsWith(".vma", StringComparison.Ordinal)),
+            $"작업 {task.Status} · 백업 [{string.Join(", ", mine.Select(f => $"{f.Volid} {f.SizeBytes}B"))}]");
+    });
+
+    // 복제(복제 창과 같은 요청: 새 번호·이름·전체 복제) → 목록에 보임 → 지우기. CT 는 끈 채로(디렉터리 저장소는 스냅숏이 없다)
+    async Task CloneAndDestroy(ProxmoxClient.Core.Models.ResourceKind kind, int source, int newId)
+    {
+        var tag = kind == Qemu ? "vm" : "ct";
+        await Step($"clone-{tag}", async () =>
+        {
+            var task = Do(() => api.WaitTaskAsync(Do(() => api.CloneGuestAsync(nodeName, kind, source, newId, $"e2e-clone-{tag}", true))), 300000);
+            await Wait(cluster.RefreshAsync(false));
+            var clone = cluster.Guests.FirstOrDefault(g => g.VmId == newId);
+            var config = Do(() => api.GetGuestConfigAsync(nodeName, kind, newId));
+            var name = config.GetValueOrDefault(kind == Qemu ? "name" : "hostname");
+            Result($"clone-{tag}", task.IsOk && clone is not null && name == $"e2e-clone-{tag}",
+                $"작업 {task.Status} · 목록 {(clone is null ? "없음" : clone.Name)} · 설정 이름 '{name}'");
+            if (clone is null) return;
+            var destroy = Do(() => api.WaitTaskAsync(Do(() => api.Guests.DestroyAsync(clone, true, true))), 120000);
+            await Wait(cluster.RefreshAsync(false));
+            Result($"destroy-{tag}", destroy.IsOk && cluster.Guests.All(g => g.VmId != newId), $"작업 {destroy.Status}");
+        });
+    }
+
+    await CloneAndDestroy(Qemu, 100, 901);
+    if (hasCt)
+    {
+        await Step("ct-power", async () =>
+        {
+            var stop = Do(() => api.WaitTaskAsync(Do(() => api.ShutdownGuestAsync(nodeName, Lxc, 200))), 120000);
+            var stopped = Do(() => api.GetGuestCurrentStatusAsync(nodeName, Lxc, 200));
+            Result("ct-shutdown", stop.IsOk && stopped == "stopped", $"작업 {stop.Status} · 상태 {stopped}");
+        });
+        await CloneAndDestroy(Lxc, 200, 902);
+        await Step("ct-start", async () =>
+        {
+            var start = Do(() => api.WaitTaskAsync(Do(() => api.StartGuestAsync(nodeName, Lxc, 200))), 120000);
+            var running = Do(() => api.GetGuestCurrentStatusAsync(nodeName, Lxc, 200));
+            Result("ct-start", start.IsOk && running == "running", $"작업 {start.Status} · 상태 {running}");
+        });
+    }
+
+    // 10) TOTP 로그인(tfa@pve) · 11) API 토큰 로그인 — 서버 목록으로 돌아가 새 프로필로 연결
+    async Task<ServerSession?> ConnectProfile(ConnectionProfile profile, string secretKind, string secret, Func<ProxmoxClient.UI.Views.Login.TfaDialog, Task>? tfa)
+    {
+        await Wait(AppServices.Navigator.PopToRootAsync());
+        Pump(500);
+        profile.Host = options.GetValueOrDefault("host", "127.0.0.1");
+        profile.Port = port;
+        profile.CertificateThumbprint = saved.CertificateThumbprint;
+        await Wait(AppServices.Profiles.SaveAsync(profile));
+        AppServices.SecretStore.Set($"profile.{profile.Id:N}.{secretKind}", secret);
+        await Wait(profiles.LoadAsync());
+        profiles.ConnectCommand.Execute(profiles.Profiles.First(p => p.Profile.Id == profile.Id));
+        if (tfa is not null)
+        {
+            ProxmoxClient.UI.Views.Login.TfaDialog? dialog = null;
+            WaitFor(() => (dialog = AppServices.Dialogs.Sheet as ProxmoxClient.UI.Views.Login.TfaDialog) is not null
+                          || AppServices.Dialogs.Current is not null, 20000);
+            if (dialog is null)
+            {
+                Result("totp-dialog", false, "창 없음: " + AppServices.Dialogs.Current?.Message);
+                AppServices.Dialogs.Current?.CancelCommand.Execute(null);
+                return null;
+            }
+
+            await tfa(dialog);
+        }
+
+        WaitFor(() => nav.CurrentPage?.DataContext is ClusterViewModel or MainViewModel || AppServices.Dialogs.Current is not null, 20000);
+        if (AppServices.Dialogs.Current is { } error)
+        {
+            Console.WriteLine($"DIALOG connect {profile.Name}: {error.Title} / {error.Message}");
+            error.CancelCommand.Execute(null);
+        }
+
+        return nav.CurrentPage?.DataContext switch
+        {
+            ClusterViewModel c => c.Session, MainViewModel m => m.Session, _ => null
+        };
+    }
+
+    var totpSecret = options.GetValueOrDefault("totp", Environment.GetEnvironmentVariable("PVE_TOTP_SECRET") ?? "");
+    if (totpSecret.Length > 0)
+        await Step("totp-login", async () =>
+        {
+            var tfaSession = await ConnectProfile(new ConnectionProfile { Name = "tfa", UserName = "tfa@pve" }, "password", pvePassword,
+                async dialog =>
+                {
+                    Shot("real-tfa-dialog");
+                    Result("totp-dialog", dialog.Kind == ProxmoxClient.Core.Api.TfaKind.Totp, $"{dialog.Kind}");
+                    await Wait(dialog.SubmitAsync("000000"));
+                    Pump(500);
+                    Shot("real-tfa-wrong");
+                    Result("totp-wrong", ReferenceEquals(AppServices.Dialogs.Sheet, dialog) && !dialog.Completed && dialog.CurrentError.Length > 0,
+                        dialog.CurrentError);
+                    // 바로 전 코드와 같은 30초 칸이면 서버가 다시 쓰기를 막을 수 있다 — 다음 칸까지 기다리지 않고 현재 코드
+                    await Wait(dialog.SubmitAsync(Totp(totpSecret)));
+                    WaitFor(() => dialog.Completed || AppServices.Dialogs.Sheet is null, 15000);
+                    if (!dialog.Completed && AppServices.Dialogs.Sheet is not null) Console.WriteLine("TOTP 오류: " + dialog.CurrentError);
+                });
+            Pump(1000);
+            Shot("real-tfa-done");
+            Result("totp-login", tfaSession is { UserDisplay: "tfa@pve" }, tfaSession?.UserDisplay ?? "(로그인 안 됨)");
+        });
+
+    var tokenId = options.GetValueOrDefault("token-id", Environment.GetEnvironmentVariable("PVE_TOKEN_ID") ?? "");
+    var tokenSecret = options.GetValueOrDefault("token-secret", Environment.GetEnvironmentVariable("PVE_TOKEN_SECRET") ?? "");
+    if (tokenId.Length > 0 && tokenSecret.Length > 0)
+        await Step("token-login", async () =>
+        {
+            var tokenSession = await ConnectProfile(
+                new ConnectionProfile { Name = "token", AuthMode = AuthMode.ApiToken, ApiTokenId = tokenId }, "token", tokenSecret, null);
+            var resources = tokenSession is null ? null : Do(() => tokenSession.Api.GetClusterResourcesAsync());
+            Pump(1500);
+            Shot("real-token-done");
+            Result("token-login", tokenSession is not null && resources?.Any(r => r.VmId == 100) == true,
+                $"{tokenSession?.UserDisplay ?? "(로그인 안 됨)"} · 자원 {resources?.Count ?? 0}개");
+        });
+}
 
 // ------------------------------------------------------------------ helpers
 
@@ -467,6 +1772,15 @@ async Task RealShellCheck()
     var big = Screen().Contains("50000") && Screen().Contains("END-OF-SEQ");
     Check("대량 출력(seq 50000)", "끝까지·프롬프트 복귀", $"{sw.ElapsedMilliseconds} ms, 스크롤백 {buffer.ScrollbackCount}줄", big);
 
+    // systemd 처럼 묻기 — 에코·줄 단위 끄고 창 크기(CSI 18t)를 묻고 0.33초만 기다린 뒤 원래대로. 답이 제때 와야 하고,
+    // 늦은 답이 화면(로그인 칸)에 찍히면 안 된다
+    Run("clear; stty -echo -icanon min 0 time 3; printf '\\e[18t'; r=$(dd bs=1 count=32 2>/dev/null | tr -d '\\033'); stty sane; echo \"CSI18=[$r]\"; sleep 0.5");
+    WaitFor(() => Screen().Contains("CSI18=["), 4000);
+    Pump(800);
+    var csi18 = Screen().Split('\n').FirstOrDefault(l => l.Contains("CSI18=")) ?? "";
+    Check("systemd 식 크기 질의(0.33초)", $"CSI18=[[8;{buffer.Rows};{buffer.Columns}t], 화면에 ^[ 없음", csi18,
+        csi18.Contains($"[8;{buffer.Rows};{buffer.Columns}t]") && !Screen().Contains("^["));
+
     var oldColumns = buffer.Columns;
     window.Width -= 160;
     Pump(800);
@@ -479,6 +1793,55 @@ async Task RealShellCheck()
 
     if (!desktop)
     {
+        // 화면 키보드로 터미널이 줄면 전체 화면 프로그램(대체 화면)도 새 크기를 받아 다시 그려야 한다(사용자 요청)
+        var kbShell = window.GetVisualDescendants().OfType<AppShell>().First();
+        Run("clear; tput smcup; trap 'tput clear; echo WINCH $(stty size)' WINCH; echo READY $(stty size); while :; do read -r -t 0.1 _; done"); // read 는 셸 안 명령 — sleep 이면 WINCH 가 sleep 쪽으로 간다
+        WaitFor(() => buffer.IsAlternateScreen && Screen().Contains("READY"), 4000);
+        var rowsBefore = buffer.Rows;
+        kbShell.ApplyKeyboardInset(300);
+        Pump(800);
+        WaitFor(() => Screen().Contains($"WINCH {buffer.Rows} {buffer.Columns}"), 4000);
+        var kbRows = buffer.Rows;
+        Shot("realshell-keyboard-alt");
+        var shrunk = kbRows < rowsBefore && Screen().Contains($"WINCH {kbRows} {buffer.Columns}");
+        kbShell.ApplyKeyboardInset(0);
+        Pump(800);
+        WaitFor(() => Screen().Contains($"WINCH {buffer.Rows} {buffer.Columns}"), 4000);
+        var restored = buffer.Rows == rowsBefore && Screen().Contains($"WINCH {rowsBefore} {buffer.Columns}");
+        Check("키보드 → 대체 화면 크기 변경", $"행 {rowsBefore}→줄어듦→{rowsBefore}, 프로그램이 WINCH 받음",
+            $"행 {rowsBefore}→{kbRows}→{buffer.Rows}, 화면 [{Screen().Split('\n').FirstOrDefault(l => l.Length > 0)}]", shrunk && restored);
+        Key(Avalonia.Input.Key.C, Avalonia.Input.RawInputModifiers.Control);
+        Type("tput rmcup; clear");
+        Key(Avalonia.Input.Key.Enter);
+        WaitFor(() => !buffer.IsAlternateScreen && Prompt(), 4000);
+
+        // 연결 유지 장치가 있으면(Android 포그라운드 서비스) 배경으로 가도 끊지 않는다 — 같은 셸이 그대로(사용자 요청)
+        var keep = new FakeKeepAliveHost();
+        ProxmoxClient.UI.Platform.SessionKeepAlive.Host = keep;
+        var listed = keep.Titles.SequenceEqual(["pve1 · 셸"]);
+        Run("export KEEPMARK=$((6*7))kept");
+        Pump(300);
+        SetForeground(false);
+        Pump(1500);
+        var stayed = vm.IsConnected;
+        SetForeground(true);
+        Pump(300);
+        Run("echo \"mark=$KEEPMARK\"");
+        WaitFor(() => Screen().Contains("mark=42kept"), 4000);
+        var sameShell = Screen().Contains("mark=42kept");
+        Check("배경 → 복귀(연결 유지)", "알림에 제목, 배경에서 안 끊김, 같은 셸(변수 그대로)",
+            $"알림 [{string.Join(", ", keep.Titles)}], {(stayed ? "연결 유지" : "끊김")}, {(sameShell ? "같은 셸" : "새 셸")}",
+            listed && stayed && sameShell);
+
+        ProxmoxClient.UI.Platform.SessionKeepAlive.RequestDisconnectAll(); // 알림의 [모두 끊기]
+        WaitFor(() => !vm.IsConnected, 3000);
+        Check("알림 [모두 끊기]", "터미널 끊김, 알림 사라짐", $"{(vm.IsConnected ? "연결됨" : "끊김")}, 알림 {keep.Titles.Count}개",
+            !vm.IsConnected && keep.Titles.Count == 0);
+
+        // 연결 유지 장치가 없으면(iOS 등) 예전처럼 배경에서 끊고 돌아오면 다시 연결
+        ProxmoxClient.UI.Platform.SessionKeepAlive.Host = null;
+        await Wait(vm.ConnectAsync()); // 헤드리스는 UI 를 돌리며 기다려야 한다
+        WaitFor(() => vm.IsConnected && Prompt(), 8000);
         SetForeground(false);
         WaitFor(() => !vm.IsConnected, 3000);
         var paused = !vm.IsConnected && vm.StateText == L.T("Console_PausedBackground");
@@ -591,6 +1954,11 @@ async Task TerminalCheck()
     var wide = lsRow >= 0 && buffer.GetVisibleLine(lsRow, 0).Cells is var cells &&
                Array.FindIndex(cells, c => c.Rune == '공') is var i && cells[i].Width == 2 && cells[i + 1].Width == 0;
     Check("한글 폭(2칸)", "'공' 2칸 + 이어진 칸", wide ? "2칸" : "어긋남", wide);
+    // NFD 한글(첫가끝 자모)은 초성 칸 하나(2칸)에 중성·종성이 붙는다
+    var nfdRow = Enumerable.Range(0, buffer.Rows).FirstOrDefault(r => buffer.GetVisibleLine(r, 0).Cells[0].Rune == 0x1112, -1);
+    var nfd = nfdRow >= 0 && buffer.GetVisibleLine(nfdRow, 0) is var nfdLine && nfdLine.Cells[0].Width == 2 &&
+              nfdLine.GetExtra(0) == "\u1161\u11ab" && nfdLine.Cells[2].Rune == 0x1100;
+    Check("NFD 한글 묶음", "'한' 2칸 + 붙은 자모", nfd ? "묶음" : "어긋남", nfd);
 
     // 화면 키보드: Enter 가 '완료'로 키보드를 닫지 않게 여러 줄 칸(Return 키) — 그래도 셸에는 Enter 한 번만 간다.
     // 키보드가 닫힌 뒤 다시 누르면 포커스를 옮겼다 돌려 키보드를 다시 연다(이미 포커스가 있으면 열리지 않던 문제)
@@ -708,7 +2076,277 @@ async Task TerminalCheck()
     var selected = term.GetSelectedText();
     Check("선택", "글자가 골라짐", $"'{selected}'", selected.Length > 0);
     Shot("terminal-selection");
+
+    if (!desktop)
+    {
+        // 손가락 선택 — 끝 손잡이를 오른쪽으로 끌면 선택이 늘고, 끄는 동안 확대경을 그린다(사용자 요청: 드래그 커서가 안 보임)
+        // 프롬프트 줄(root@pve1:~#)의 첫 단어를 길게 눌러 고른다 — 칸 크기로 정확히 짚는다(특수 키 막대 높이에 따라 행 수가 바뀐다)
+        var cell = term.CellSize;
+        term.ClearSelection();
+        var press = rowY + new Avalonia.Vector(6 + cell.Width * 1.5, 4 + cell.Height * (buffer.CursorY + 0.5));
+        var lp = window.TouchBegin(press, Avalonia.Input.RawInputModifiers.None);
+        Pump(700);
+        window.TouchEnd(lp, press, Avalonia.Input.RawInputModifiers.None);
+        Pump(300);
+        var before2 = term.GetSelectedText();
+        var lines = Screen().Split('\n');
+        var selRow = Array.FindLastIndex(lines, l => l.Contains(before2));
+        var lineText = lines[selRow];
+        var endCol = lineText.TrimEnd().Length - 1;
+        // 지금 선택 끝(단어 끝) 손잡이 — 칸 아래(맨 아랫줄이면 칸 위로 뒤집힌다)
+        var selEnd = lineText.IndexOf(before2, StringComparison.Ordinal) + before2.Length;
+        var lastRow = selRow == buffer.Rows - 1 || 4 + cell.Height * (selRow + 1) + 18 > term.Bounds.Height;
+        var knob = rowY + new Avalonia.Vector(6 + cell.Width * selEnd + 9,
+            lastRow ? 4 + cell.Height * selRow - 9 : 4 + cell.Height * (selRow + 1) + 9);
+        var target = rowY + new Avalonia.Vector(6 + cell.Width * (endCol + 0.5), 4 + cell.Height * (selRow + 0.5));
+        var t = window.TouchBegin(knob, Avalonia.Input.RawInputModifiers.None);
+        Pump(60);
+        var framesBefore = term.FramesDrawn;
+        for (var step = 1; step <= 8; step++)
+        {
+            window.TouchMove(t, knob + (target - knob) * (step / 8.0), Avalonia.Input.RawInputModifiers.None);
+            Pump(30);
+        }
+
+        Shot("terminal-selection-loupe");
+        var drew = term.FramesDrawn > framesBefore;
+        window.TouchEnd(t, target, Avalonia.Input.RawInputModifiers.None);
+        Pump(300);
+        var grown = term.GetSelectedText();
+        Shot("terminal-selection-handles");
+        Check("손잡이 끌어 선택 늘리기", $"'{before2}' → 줄 끝까지 늘어남, 끄는 동안 다시 그림",
+            $"'{grown}', 그리기 {(drew ? "있음" : "없음")}", grown.Length > before2.Length && grown.TrimEnd() == lineText.TrimEnd() && drew);
+    }
+
     term.ClearSelection();
+
+    // 동기화 출력(DEC 2026) — 끄는 신호가 올 때까지 그리지 않는다. 모드 질의(DECRQM)에 지원한다고 답한다
+    Log("input");
+    term.Write("\x1b[?2026$p");
+    var rqm = Log("input");
+    Pump(100);
+    var frames0 = term.FramesDrawn;
+    term.Write("\x1b[?2026h\x1b[2J\x1b[HSYNC-HALF");
+    Pump(120);
+    var heldFrames = term.FramesDrawn - frames0;
+    var heldFlag = buffer.SynchronizedOutput;
+    term.Write(" SYNC-DONE\x1b[?2026l");
+    Pump(120);
+    var shownFrames = term.FramesDrawn - frames0;
+    term.Write("\x1b[?2026h");
+    Pump(400); // 끄는 신호가 오지 않으면 잠시 뒤 그냥 그린다 — 헤드리스는 타이머가 돌지 않아 그 타이머가 부르는 것을 직접 부른다
+    typeof(ProxmoxClient.UI.Views.Terminal.TerminalView).GetMethod("Redraw",
+        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(term, null);
+    Pump(100);
+    var timeoutFrames = term.FramesDrawn - frames0 - shownFrames;
+    term.Write("\x1b[?2026l");
+    Check("동기화 출력(2026)", "질의 답 '?2026;2$y', 켜진 동안 안 그림 → 끄면 그림, 안 끄면 0.2초 뒤 그림",
+        $"답 {string.Join(" ", rqm)}, 켜짐 {heldFrames}번 → 끈 뒤 {shownFrames}번, 시간 초과 {timeoutFrames}번",
+        rqm.SequenceEqual(["input '\\x1b[?2026;2$y'"]) && heldFlag && heldFrames == 0 && shownFrames > 0 && timeoutFrames > 0);
+    // 대체 글꼴 — 한자·가나·중국어·기호·Nerd 아이콘·이모지가 기기 글꼴 없이도 그려져야 한다(앱에 넣은 글꼴)
+    var samples = new (string Text, string Font)[]
+    {
+        ("漢", "Noto Sans Mono CJK KR"), ("學", "Noto Sans Mono CJK KR"), ("か", "Pretendard|Noto Sans Mono CJK KR"),
+        ("钅", "Noto Sans Mono CJK KR"), ("𠀋", "Noto Sans Mono CJK KR"), ("α", "JetBrains Mono"),
+        ("Ж", "JetBrains Mono"), ("∀", "JetBrains Mono"), ("⏺", "DejaVu Sans Mono|Noto Sans Symbols|Noto Sans Symbols 2|Noto Sans Math"),
+        ("⎿", "DejaVu Sans Mono|Noto Sans Symbols|Noto Sans Symbols 2|Noto Sans Math"), ("\ue0a0", "JetBrains Mono|Symbols Nerd Font Mono"),
+        ("\uf113", "Symbols Nerd Font Mono"), ("😀", "*"), ("한", "Pretendard")
+    };
+    var fontResults = samples.Select(x => (x.Text, Got: term.FontFor(char.ConvertToUtf32(x.Text, 0)) ?? "(없음)", x.Font)).ToList();
+    var fontsOk = fontResults.All(r => r.Font == "*" ? r.Got != "(없음)" : r.Font.Split('|').Contains(r.Got));
+    term.Write("\r\n漢字 學校 かなカナ 中文钅 𠀋 αβγ Жж ∀∂∑ ⏺ ✻ ⎿ ★ \ue0a0\ue0b0 \uf113 😀 한글\r\n");
+    Pump(300);
+    Shot("terminal-fallback-fonts");
+    Check("대체 글꼴(한자·가나·기호·아이콘·이모지)", "모두 앱에 넣은 글꼴(이모지는 기기 또는 Noto Emoji)",
+        string.Join(" ", fontResults.Select(r => $"{r.Text}={r.Got}")), fontsOk);
+
+    // systemd 가 콘솔을 열 때 묻는 것들(창 크기 CSI 18t·배경색 OSC 11·터미널 이름 XTGETTCAP) — 답이 없으면 0.33초씩 기다리다
+    // 커서 위치 질문으로 넘어가고, 늦게 온 답이 로그인 칸에 '^[[24;80R' 로 찍힌다(사용자 보고). 바로 답해야 한다
+    Log("input");
+    term.Write("\x1b[18t\x1b]11;?\x1b\\\x1bP+q6E616D65;636F6C73\x1b\\");
+    var answers = Log("input");
+    var expectSize = $"input '\\x1b[8;{buffer.Rows};{buffer.Columns}t'";
+    Check("systemd 질의 응답", "크기 8;행;열 t · 배경 rgb · 이름 xterm-256color · 모르는 이름은 0+r",
+        string.Join(" ", answers),
+        answers.Count == 1 && answers[0].StartsWith(expectSize[..^1], StringComparison.Ordinal) &&
+        answers[0].Contains("\\x1b]11;rgb:0c0c/0c0c/0c0c\\x1b\\\\") &&
+        answers[0].Contains("\\x1bP1+r6E616D65=787465726D2D323536636F6C6F72\\x1b\\\\") &&
+        answers[0].Contains("\\x1bP0+r636F6C73\\x1b\\\\"));
+
+    Type("clear");
+    Key(Avalonia.Input.Key.Enter);
+    Pump(300);
+
+    // 마우스 보고를 켠 전체 화면 프로그램(Claude Code 전체 화면 모드 등) — 손가락으로 끌면 방향키가 아니라 휠로 보낸다
+    if (!desktop)
+    {
+        term.Write("\x1b[?1049h\x1b[?1000h\x1b[?1006h");
+        Pump(100);
+        Log("input");
+        var t = window.TouchBegin(mid, Avalonia.Input.RawInputModifiers.None);
+        for (var step = 1; step <= 6; step++)
+        {
+            window.TouchMove(t, mid + new Avalonia.Vector(0, step * 20), Avalonia.Input.RawInputModifiers.None);
+            Pump(20);
+        }
+
+        window.TouchEnd(t, mid + new Avalonia.Vector(0, 120), Avalonia.Input.RawInputModifiers.None);
+        var wheel = Log("input");
+        term.Write("\x1b[?1000l\x1b[?1006l\x1b[?1049l");
+        Pump(100);
+        Check("마우스 보고 중 손가락 끌기", "휠 위(\\x1b[<64;…M) 여러 번, 방향키 없음", string.Join(" ", wheel.Take(3)) + (wheel.Count > 3 ? $" …({wheel.Count})" : ""),
+            wheel.Count > 0 && wheel.All(w => w.StartsWith("input '\\x1b[<64;")));
+    }
+
+    // ---- 입력(붙여넣기·고정 키·포커스 보고·휠·끌기) — 한 덩어리
+    {
+        input.Focus();
+        Pump(200);
+        Log("input");
+        // 화면 키보드로 한 번에 들어온 여러 줄·긴 글(Gboard 클립보드·길게 눌러 붙여넣기) → 괄호 붙여넣기로 감싼다
+        term.Write("\x1b[?2004h");
+        Pump(100);
+        Type("echo a\necho b");
+        var long40 = new string('x', 40);
+        Type(long40);
+        var pasted = Log("input");
+        term.Write("\x1b[?2004l");
+        Check("화면 키보드 붙여넣기(괄호)", "여러 줄·긴 글 → \\x1b[200~…\\x1b[201~", string.Join(" ", pasted),
+            pasted.SequenceEqual(["input '\\x1b[200~echo a\\recho b\\x1b[201~'", $"input '\\x1b[200~{long40}\\x1b[201~'"]));
+        Key(Avalonia.Input.Key.C, Avalonia.Input.RawInputModifiers.Control);
+        Log("input");
+
+        if (!desktop)
+        {
+            // 고정 키 — 수식키만 눌러서는 풀리지 않고, 여러 글자에는 붙지 않은 채 풀린다. 고정 Shift + 막대의 Tab·↑
+            var toggles = page.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>().ToList();
+            var ctrlToggle = toggles.First(b => b.Content as string == "Ctrl");
+            var shiftToggle = toggles.First(b => b.Content as string == "Shift");
+            var barButtons = page.GetVisualDescendants().OfType<Avalonia.Controls.Button>().ToList();
+            void Click(string label) =>
+                barButtons.First(b => b.Content as string == label)
+                    .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+            ctrlToggle.IsChecked = true;
+            Key(Avalonia.Input.Key.LeftShift, Avalonia.Input.RawInputModifiers.Shift);
+            var kept = ctrlToggle.IsChecked == true;
+            Type("c");
+            ctrlToggle.IsChecked = true;
+            Type("abc");
+            var cleared = ctrlToggle.IsChecked != true;
+            shiftToggle.IsChecked = true;
+            Click("Tab");
+            Pump(100);
+            shiftToggle.IsChecked = true;
+            Click("↑");
+            Pump(100);
+            var sticky = Log("input");
+            Check("고정 키(Ctrl·Shift)", "Shift 만 눌러도 유지 → '\\x03', 여러 글자 'abc' 는 그대로·풀림, Shift+Tab '\\x1b[Z', Shift+↑ '\\x1b[1;2A'",
+                $"{string.Join(" ", sticky)}, 유지 {kept}, 풀림 {cleared}",
+                sticky.SequenceEqual(["input '\\x03'", "input 'abc'", "input '\\x1b[Z'", "input '\\x1b[1;2A'"]) && kept && cleared &&
+                shiftToggle.IsChecked != true);
+            Key(Avalonia.Input.Key.C, Avalonia.Input.RawInputModifiers.Control);
+            Log("input");
+
+            // 괄호 붙여넣기가 꺼진 셸에 여러 줄 — 터치 기기는 실행 전에 묻는다
+            Type("echo p1\necho p2");
+            var beforeConfirm = Log("input");
+            var dialog = AppServices.Dialogs.Current;
+            dialog?.ConfirmCommand.Execute(null);
+            Pump(200);
+            var afterConfirm = Log("input");
+            Check("여러 줄 붙여넣기 확인(터치)", "묻는 동안 안 보냄 → 확인하면 'echo p1\\recho p2'",
+                $"묻기 {(dialog is null ? "없음" : "있음")}, 전 {beforeConfirm.Count}개, 뒤 {string.Join(" ", afterConfirm)}",
+                dialog is not null && beforeConfirm.Count == 0 && afterConfirm.SequenceEqual(["input 'echo p1\\recho p2'"]));
+            Pump(300);
+        }
+
+        // 포커스 보고(?1004) — 키보드를 다시 열 때의 잠깐 나갔다 돌아오는 포커스는 알리지 않는다
+        input.Focus();
+        Pump(200);
+        term.Write("\x1b[?1004h");
+        Pump(100);
+        Log("input");
+        term.FocusInput();
+        Pump(300);
+        var bounce = Log("input");
+        term.Focusable = true; // 포커스를 입력 칸 밖으로
+        term.Focus();
+        Pump(200);
+        var lost = Log("input");
+        input.Focus();
+        Pump(200);
+        var got = Log("input");
+        term.Focusable = false;
+        term.Write("\x1b[?1004l");
+        Check("포커스 보고(?1004)", "다시 열기는 조용히, 잃으면 \\x1b[O, 얻으면 \\x1b[I",
+            $"다시 열기 {bounce.Count}개, 잃음 {string.Join(" ", lost)}, 얻음 {string.Join(" ", got)}",
+            bounce.Count == 0 && lost.SequenceEqual(["input '\\x1b[O'"]) && got.SequenceEqual(["input '\\x1b[I'"]));
+
+        if (desktop)
+        {
+            var cs = term.CellSize;
+            Avalonia.Point At(int col, int row, double dx = 0) =>
+                rowY + new Avalonia.Vector(6 + cs.Width * (col + 0.5) + dx, 4 + cs.Height * (row + 0.5));
+            var none = Avalonia.Input.RawInputModifiers.None;
+            var leftHeld = Avalonia.Input.RawInputModifiers.LeftMouseButton;
+
+            // 휠 — 마우스 보고 중이면 한 칸에 보고 하나, 잘게 나뉜 값(터치패드)은 모아서, 가로 휠은 66/67
+            term.Write("\x1b[?1002h\x1b[?1006h");
+            Pump(100);
+            Log("input");
+            window.MouseWheel(At(5, 3), new Avalonia.Vector(0, 1), none);
+            var oneNotch = Log("input");
+            for (var k = 0; k < 3; k++) window.MouseWheel(At(5, 3), new Avalonia.Vector(0, 0.4), none);
+            var fine = Log("input");
+            window.MouseWheel(At(5, 3), new Avalonia.Vector(-1, 0), none);
+            var horizontal = Log("input");
+            Check("휠(마우스 보고)", "한 칸 → 64 하나, 0.4×3 → 하나, 가로 → 66/67",
+                $"{string.Join(" ", oneNotch)} | {string.Join(" ", fine)} | {string.Join(" ", horizontal)}",
+                oneNotch.SequenceEqual(["input '\\x1b[<64;6;4M'"]) && fine.SequenceEqual(["input '\\x1b[<64;6;4M'"]) &&
+                horizontal.Count == 1 && (horizontal[0] == "input '\\x1b[<66;6;4M'" || horizontal[0] == "input '\\x1b[<67;6;4M'"));
+
+            // 끌기 — 칸이 바뀔 때만, 두 단추를 눌렀다 하나씩 떼면 뗀 단추를 알린다
+            window.MouseDown(At(2, 2), Avalonia.Input.MouseButton.Left, none);
+            window.MouseMove(At(2, 2, 2), leftHeld);
+            window.MouseMove(At(4, 2), leftHeld);
+            window.MouseMove(At(4, 2, 2), leftHeld);
+            window.MouseDown(At(4, 2), Avalonia.Input.MouseButton.Right, leftHeld);
+            window.MouseUp(At(4, 2), Avalonia.Input.MouseButton.Right, leftHeld);
+            window.MouseUp(At(4, 2), Avalonia.Input.MouseButton.Left, none);
+            var drag = Log("input");
+            Check("끌기 보고(?1002)", "누름 · 칸 바뀜 한 번 · 오른쪽 누름·뗌 · 왼쪽 뗌", string.Join(" ", drag),
+                drag.SequenceEqual(["input '\\x1b[<0;3;3M'", "input '\\x1b[<32;5;3M'", "input '\\x1b[<2;5;3M'",
+                    "input '\\x1b[<2;5;3m'", "input '\\x1b[<0;5;3m'"]));
+
+            // ?1003 — 단추 없이 움직여도 알린다(35), 칸이 바뀔 때만
+            term.Write("\x1b[?1003h");
+            Pump(100);
+            Log("input");
+            window.MouseMove(At(7, 1), none);
+            window.MouseMove(At(7, 1, 2), none);
+            window.MouseMove(At(8, 1), none);
+            var hover = Log("input");
+            Check("움직임 보고(?1003)", "칸마다 35 하나", string.Join(" ", hover),
+                hover.SequenceEqual(["input '\\x1b[<35;8;2M'", "input '\\x1b[<35;9;2M'"]));
+
+            // 대체 화면의 휠(마우스 보고 없음) — 방향키 3번, ?1007 을 끄면 아무것도 보내지 않는다
+            term.Write("\x1b[?1003l\x1b[?1006l\x1b[?1049h");
+            Pump(100);
+            Log("input");
+            window.MouseWheel(At(5, 3), new Avalonia.Vector(0, 1), none);
+            var arrows = Log("input");
+            term.Write("\x1b[?1007l");
+            window.MouseWheel(At(5, 3), new Avalonia.Vector(0, 1), none);
+            var off = Log("input");
+            term.Write("\x1b[?1007h\x1b[?1049l");
+            Pump(100);
+            Check("대체 화면 휠(?1007)", "켜짐 → ↑×3, 꺼짐 → 없음", $"{string.Join(" ", arrows)} | {off.Count}개",
+                arrows.SequenceEqual(["input '\\x1b[A\\x1b[A\\x1b[A'"]) && off.Count == 0);
+        }
+
+        Key(Avalonia.Input.Key.C, Avalonia.Input.RawInputModifiers.Control);
+        Log("input");
+    }
 
     // 창 크기 변경 → PTY 크기
     var oldColumns = buffer.Columns;
@@ -758,6 +2396,7 @@ async Task ConsoleUsabilityCheck()
     var g = surface.Gestures;
     var vp = surface.Viewport;
     long now = 1_000_000;
+
     var results = new List<(string Name, string Expect, string Got, bool Pass)>();
     var logOffset = 0L;
 
@@ -770,7 +2409,7 @@ async Task ConsoleUsabilityCheck()
         using var reader = new StreamReader(fs);
         var text = reader.ReadToEnd();
         logOffset = fs.Position;
-        return text.Split('\n').Where(l => l.StartsWith("RFB pointer") || l.StartsWith("RFB key") || l.StartsWith("RFB qkey"))
+        return text.Split('\n').Where(l => l.StartsWith("RFB pointer") || l.StartsWith("RFB key") || l.StartsWith("RFB qkey") || l.StartsWith("RFB cut"))
             .Select(l => l[4..].Trim()).ToList();
     }
 
@@ -814,26 +2453,99 @@ async Task ConsoleUsabilityCheck()
     }
 
     Events(); // 연결 시 이벤트 버림
+
+    // 버블(사용자 요청): 처음엔 페이지 위쪽 막대·특수키 막대를 숨기고 버블만. 누르면 메뉴가 열리고, 끌면 옮겨진다
+    {
+        var bubble = page.GetVisualDescendants().OfType<ProxmoxClient.UI.Views.Controls.FloatingBubble>().First();
+        var navBarHidden = !NavigationPage.GetHasNavigationBar(page);
+        var keyBarHidden = !page.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == "Esc" && b.IsEffectivelyVisible);
+        Check0("콘솔 처음 화면", "위쪽 막대·특수키 숨김, 버블 보임",
+            $"위쪽 막대 {(navBarHidden ? "숨김" : "보임")}, 특수키 {(keyBarHidden ? "숨김" : "보임")}, 버블 {(bubble.IsEffectivelyVisible ? "보임" : "없음")}",
+            navBarHidden && keyBarHidden && bubble.IsEffectivelyVisible && !page.IsMenuOpen);
+
+        Events();
+        var bubbleAt = bubble.TranslatePoint(new Avalonia.Point(ProxmoxClient.UI.Views.Controls.FloatingBubble.Size / 2, ProxmoxClient.UI.Views.Controls.FloatingBubble.Size / 2), window)!.Value;
+        var bt = window.TouchBegin(bubbleAt, Avalonia.Input.RawInputModifiers.None);
+        for (var i = 1; i <= 10; i++)
+        {
+            window.TouchMove(bt, bubbleAt + new Avalonia.Vector(-i * 15, i * 20), Avalonia.Input.RawInputModifiers.None);
+            Pump(16);
+        }
+        window.TouchEnd(bt, bubbleAt + new Avalonia.Vector(-150, 200), Avalonia.Input.RawInputModifiers.None);
+        Pump(200);
+        var movedAt = bubble.TranslatePoint(new Avalonia.Point(ProxmoxClient.UI.Views.Controls.FloatingBubble.Size / 2, ProxmoxClient.UI.Views.Controls.FloatingBubble.Size / 2), window)!.Value;
+        var bubbleDragEvents = Events().Count(e => e.StartsWith("pointer"));
+        Check0("버블 끌기", "버블이 손가락을 따라 옮겨짐, 메뉴 안 열림, 원격에 포인터 안 보냄",
+            $"이동 ({movedAt.X - bubbleAt.X:F0},{movedAt.Y - bubbleAt.Y:F0}), 메뉴 {(page.IsMenuOpen ? "열림" : "닫힘")}, 포인터 {bubbleDragEvents}개",
+            Math.Abs(movedAt.X - bubbleAt.X + 150) <= 2 && Math.Abs(movedAt.Y - bubbleAt.Y - 200) <= 2 && !page.IsMenuOpen && bubbleDragEvents == 0);
+
+        bt = window.TouchBegin(movedAt, Avalonia.Input.RawInputModifiers.None);
+        Pump(30);
+        window.TouchEnd(bt, movedAt, Avalonia.Input.RawInputModifiers.None);
+        Pump(300);
+        var bubbleTapEvents = Events().Count(e => e.StartsWith("pointer"));
+        var keysShown = page.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == "Esc" && b.IsEffectivelyVisible);
+        var settingsShown = page.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == L.T("ConsoleSettingsWindow_01") && b.IsEffectivelyVisible);
+        Shot("console-menu");
+        Check0("버블 누르기", "메뉴 열림(특수키·콘솔 설정 보임), 원격에 클릭 안 보냄",
+            $"메뉴 {(page.IsMenuOpen ? "열림" : "닫힘")}, 특수키 {(keysShown ? "보임" : "없음")}, 설정 {(settingsShown ? "보임" : "없음")}, 포인터 {bubbleTapEvents}개",
+            page.IsMenuOpen && keysShown && settingsShown && bubbleTapEvents == 0);
+
+        // 화면 키보드를 연 동안 화면을 만져 커서를 움직여도 키보드(입력 칸 포커스)가 유지된다(사용자 요청)
+        var keyboardButton = page.GetVisualDescendants().OfType<Button>().First(b => ToolTip.GetTip(b) as string == L.T("Console_Keyboard"));
+        keyboardButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Pump(200);
+        var softInput = page.GetVisualDescendants().OfType<TextBox>().First();
+        var openedKeyboard = softInput.IsFocused;
+        var dragFrom = surface.TranslatePoint(new Avalonia.Point(surface.Bounds.Width / 2, surface.Bounds.Height / 2), window)!.Value;
+        var kt = window.TouchBegin(dragFrom, Avalonia.Input.RawInputModifiers.None);
+        for (var i = 1; i <= 10; i++)
+        {
+            window.TouchMove(kt, dragFrom + new Avalonia.Vector(i * 6, i * 4), Avalonia.Input.RawInputModifiers.None);
+            Pump(16);
+        }
+        window.TouchEnd(kt, dragFrom + new Avalonia.Vector(60, 40), Avalonia.Input.RawInputModifiers.None);
+        Pump(200);
+        var keptKeyboard = softInput.IsFocused;
+        // 키보드를 쓰지 않을 때는 예전처럼 화면이 포커스를 가져온다(물리 키보드 → 스캔코드)
+        surface.Focusable = true; // 키보드를 직접 닫은 것과 같게(헤드리스에는 키보드 상태가 없다)
+        surface.Focus();
+        Pump(100);
+        kt = window.TouchBegin(dragFrom, Avalonia.Input.RawInputModifiers.None);
+        Pump(30);
+        window.TouchMove(kt, dragFrom + new Avalonia.Vector(40, 0), Avalonia.Input.RawInputModifiers.None);
+        Pump(30);
+        window.TouchEnd(kt, dragFrom + new Avalonia.Vector(40, 0), Avalonia.Input.RawInputModifiers.None);
+        Pump(200);
+        var surfaceFocused = surface.IsFocused;
+        Events();
+        Check0("키보드를 연 채 화면 끌기", "입력 칸 포커스 유지(키보드 안 닫힘), 키보드 없을 땐 화면이 포커스",
+            $"키보드 {(openedKeyboard ? "열림" : "안 열림")} → 끈 뒤 {(keptKeyboard ? "유지" : "닫힘")}, 키보드 없이 → 화면 포커스 {(surfaceFocused ? "있음" : "없음")}",
+            openedKeyboard && keptKeyboard && surfaceFocused);
+    }
     g.Mode = ProxmoxClient.UI.Views.Console.TouchInputMode.Mouse;
     g.ResetCursor(new Avalonia.Point(400, 300));
 
-    // 탭 규칙(사용자 요청): 한 번 = 클릭 안 함, 두 번 = 클릭, 세 번 = 더블 클릭
-    void Settle() { now += GestureInterpreter.MultiTapMs + 50; g.Tick(now); now += 200; } // 세 번째 탭을 기다린 뒤
+    // 탭 규칙(사용자 요청): 탭 N번 = 클릭 N번(1 = 클릭, 2 = 더블 클릭) — 마지막 탭 뒤 다음 터치를 기다렸다 보낸다
+    void Settle() { now += GestureInterpreter.MultiTapMs + 50; g.Tick(now); now += 200; } // 다음 터치를 기다린 뒤
     Tap(center);
-    Settle();
     var ev = Events();
-    Check("마우스 모드 · 한 번 탭", "클릭 안 함(스치기만 해도 클릭되지 않게)", ev.Count == 0 ? "이벤트 없음" : Masks(ev), ev.Count == 0);
-
-    Tap(center); now -= 150; Tap(center);
+    Check("마우스 모드 · 한 번 탭 직후", "다음 터치를 기다리는 동안 클릭 안 보냄", ev.Count == 0 ? "이벤트 없음" : Masks(ev), ev.Count == 0);
     Settle();
     ev = Events();
-    Check("마우스 모드 · 두 번 탭", "왼쪽 클릭(0 1 0) @ 커서(400,300)", $"{Masks(ev)} @ {LastXY(ev)}",
+    Check("마우스 모드 · 한 번 탭", "왼쪽 클릭(0 1 0) @ 커서(400,300)", $"{Masks(ev)} @ {LastXY(ev)}",
         Masks(ev) == "0 1 0" && LastXY(ev) == (400, 300));
+
+    Tap(center); now -= 150; Tap(center + new Avalonia.Vector(6, 4)); // 두 번째 탭이 조금 비껴도
+    Settle();
+    ev = Events();
+    Check("마우스 모드 · 두 번 탭", "더블 클릭(0 1 0 1 0) @ 첫 탭 자리(400,300)", $"{Masks(ev)} @ {LastXY(ev)}",
+        Masks(ev) == "0 1 0 1 0" && ev.Where(e => e.StartsWith("pointer")).All(e => e.Contains("x=400 y=300")));
 
     Tap(center); now -= 150; Tap(center); now -= 150; Tap(center);
     Settle();
     ev = Events();
-    Check("세 번 탭", "더블 클릭(0 1 0 1 0)", Masks(ev), Masks(ev) == "0 1 0 1 0");
+    Check("세 번 탭", "세 번 클릭(0 1 0 1 0 1 0)", Masks(ev), Masks(ev) == "0 1 0 1 0 1 0");
 
     now += 1000; // 두 번 탭 직후가 아니게(바로 끌면 '두 번 탭 후 끌기' = 끌어다 놓기)
     Drag(center, new Avalonia.Vector(100, 0));
@@ -900,8 +2612,92 @@ async Task ConsoleUsabilityCheck()
     g.Up(1, center, now); g.Up(2, center, now); now += 200;
     ev = Events();
     var panned = vp.Offset - offsetBefore;
-    Check("확대 중 두 손가락 끌기", "화면 이동(오프셋 변화), 휠·클릭 없음", $"이동 ({panned.X:F0},{panned.Y:F0}), 이벤트 {ev.Count}개",
-        Math.Abs(panned.X) + Math.Abs(panned.Y) > 20 && ev.Count == 0);
+    // 화면 밖으로 밀려난 커서는 안쪽으로 옮긴다(커서 이동만 — 버튼·휠 없음)
+    var panCursor = vp.ToView(g.Cursor);
+    Check("확대 중 두 손가락 끌기", "화면 이동(오프셋 변화), 휠·클릭 없음, 커서는 화면 안", $"이동 ({panned.X:F0},{panned.Y:F0}), 이벤트 {Masks(ev)}, 커서 ({panCursor.X:F0},{panCursor.Y:F0})",
+        Math.Abs(panned.X) + Math.Abs(panned.Y) > 20 && ev.All(e => e.StartsWith("pointer mask=0 ")) &&
+        panCursor.X >= 0 && panCursor.X <= vp.View.Width && panCursor.Y >= 0 && panCursor.Y <= vp.View.Height);
+
+    // ---- 확대 중 가장자리(사용자 요청): 커서는 가장자리에 붙지 않고, 끄는 중 손가락이 가장자리에 머물면 그쪽으로 조금씩 이동
+    {
+        var W = vp.View.Width;
+        var H = vp.View.Height;
+        var margin = Math.Clamp(Math.Min(W, H) * 0.2, 40, 160);
+        bool RightEdgeShown() => vp.Offset.X + vp.Remote.Width * vp.Scale <= W + 1;
+
+        // 마우스 모드: 커서를 오른쪽으로 크게 밀어도 가장자리 여유 안쪽(화면이 먼저 따라감)
+        g.Mode = TouchInputMode.Mouse;
+        vp.PanBy(new Avalonia.Vector(100000, 100000)); // 왼쪽 위 끝을 보게
+        g.ResetCursor(vp.ToRemote(center));
+        now += 1000;
+        Events();
+        Drag(center, new Avalonia.Vector(W * 0.45, 0), steps: 20);
+        var cursorView = vp.ToView(g.Cursor);
+        Check("확대 중 커서 여유(마우스 모드)", $"커서가 오른쪽 가장자리에서 {margin:F0}px 안쪽(화면이 따라 이동)",
+            $"커서 보기 x {cursorView.X:F0} / 폭 {W:F0}, 화면 이동 {vp.Offset.X:F0}",
+            cursorView.X <= W - margin + 2 && vp.Offset.X < -1 || RightEdgeShown());
+
+        // 터치 모드: 끌다가 오른쪽 가장자리에 손가락을 멈추면 화면이 조금씩 오른쪽으로, 버튼은 누른 채
+        g.Mode = TouchInputMode.Touch;
+        vp.PanBy(new Avalonia.Vector(100000, 0));
+        now += 1000;
+        Events();
+        var edge = new Avalonia.Point(W - 8, H / 2);
+        var from = new Avalonia.Point(W / 2, H / 2);
+        g.Down(1, from, now);
+        for (var i = 1; i <= 10; i++) { now += 16; g.Move(1, from + (edge - from) * i / 10, now); }
+        var offsetAtEdge = vp.Offset.X;
+        g.Tick(now);
+        for (var i = 0; i < 15; i++) { now += 60; g.Tick(now); } // 0.9초 머묾
+        var offsetAfter = vp.Offset.X;
+        g.Up(1, edge, now);
+        now += 200;
+        ev = Events();
+        var dragXs = ev.Where(e => e.StartsWith("pointer mask=1")).Select(e => int.Parse(e.Split(' ')[2][2..])).ToList();
+        var shifted = offsetAtEdge - offsetAfter;
+        Check("확대 중 끌기 · 가장자리에 머묾(터치 모드)", "화면이 오른쪽으로 조금씩(0.9초에 50~250px), 끌기 이어짐(1 0)",
+            $"화면 {shifted:F0}px, 마스크 {Masks(ev)}, 원격 x {dragXs.FirstOrDefault()}→{dragXs.LastOrDefault()}",
+            shifted is > 50 and < 250 && Masks(ev).EndsWith("1 0") && dragXs.Count > 0 && dragXs.Last() > dragXs.First());
+
+        // 마우스 모드: 길게 눌러 끌다가 오른쪽 가장자리에 머물면 커서가 계속 오른쪽으로
+        g.Mode = TouchInputMode.Mouse;
+        vp.PanBy(new Avalonia.Vector(100000, 0));
+        g.ResetCursor(vp.ToRemote(center));
+        now += 1000;
+        Events();
+        g.Down(1, from, now);
+        now += GestureInterpreter.LongPressMs + 100;
+        g.Tick(now);
+        for (var i = 1; i <= 10; i++) { now += 16; g.Move(1, from + (edge - from) * i / 10, now); }
+        g.Tick(now);
+        var cursorAtEdge = g.Cursor.X;
+        for (var i = 0; i < 15; i++) { now += 60; g.Tick(now); }
+        var cursorAfter = g.Cursor.X;
+        g.Up(1, edge, now);
+        now += 200;
+        ev = Events();
+        Check("확대 중 끌기 · 가장자리에 머묾(마우스 모드)", "커서가 오른쪽으로 계속 이동, 왼쪽 버튼 끌기(1 0)",
+            $"커서 x {cursorAtEdge:F0}→{cursorAfter:F0}, 마스크 {Masks(ev)}",
+            cursorAfter > cursorAtEdge + 10 && Masks(ev).EndsWith("1 0"));
+
+        // 확대하지 않았으면 가장자리에 머물러도 움직이지 않는다
+        var zoomBefore = vp.Zoom;
+        vp.Fit();
+        g.Mode = TouchInputMode.Touch;
+        now += 1000;
+        Events();
+        g.Down(1, from, now);
+        for (var i = 1; i <= 10; i++) { now += 16; g.Move(1, from + (edge - from) * i / 10, now); }
+        var fitOffset = vp.Offset;
+        for (var i = 0; i < 10; i++) { now += 60; g.Tick(now); }
+        var still = vp.Offset == fitOffset;
+        g.Up(1, edge, now);
+        now += 200;
+        Events();
+        Check("확대 안 함 · 가장자리에 머묾", "화면 그대로", still ? "그대로" : "움직임", still);
+        vp.ZoomAt(zoomBefore, center); // 이어지는 검사를 위해 확대 상태로
+        g.Mode = TouchInputMode.Mouse;
+    }
 
     // 화면 모드 단추: 맞춤 → 가로 채우기 → 1:1 → 맞춤
     var modeButton = page.GetVisualDescendants().OfType<Button>().First(b => ToolTip.GetTip(b) as string == L.T("Console_ViewModeTip"));
@@ -924,14 +2720,14 @@ async Task ConsoleUsabilityCheck()
     Settle();
     ev = Events();
     var at = LastXY(ev);
-    Check("터치 모드 · 한 번 탭", "클릭 없이 커서만 누른 곳(100,50)으로", $"{Masks(ev)} @ {at}",
-        Masks(ev) == "0" && Math.Abs(at.X - 100) <= 2 && Math.Abs(at.Y - 50) <= 2);
+    Check("터치 모드 · 한 번 탭", "누른 곳(100,50) 왼쪽 클릭(0 1 0)", $"{Masks(ev)} @ {at}",
+        Masks(ev) == "0 1 0" && Math.Abs(at.X - 100) <= 2 && Math.Abs(at.Y - 50) <= 2);
     Tap(target); now -= 150; Tap(target);
     Settle();
     ev = Events();
     at = LastXY(ev);
-    Check("터치 모드 · 두 번 탭", "누른 곳(100,50) 왼쪽 클릭", $"{Masks(ev)} @ {at}",
-        Masks(ev).EndsWith("0 1 0") && Math.Abs(at.X - 100) <= 2 && Math.Abs(at.Y - 50) <= 2);
+    Check("터치 모드 · 두 번 탭", "누른 곳(100,50) 더블 클릭(0 1 0 1 0)", $"{Masks(ev)} @ {at}",
+        Masks(ev) == "0 1 0 1 0" && Math.Abs(at.X - 100) <= 2 && Math.Abs(at.Y - 50) <= 2);
 
     Drag(vp.ToView(new Avalonia.Point(200, 200)), new Avalonia.Vector(60, 0));
     ev = Events();
@@ -945,8 +2741,8 @@ async Task ConsoleUsabilityCheck()
     var buttons = page.GetVisualDescendants().OfType<Button>().ToList();
     buttons.First(b => b.Content as string == "Esc").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
     ev = Events();
-    Check("특수키 Esc", "key 0xff1b 누름·뗌", string.Join(", ", ev),
-        ev.Count == 2 && ev.All(e => e.EndsWith("0xff1b")));
+    Check("특수키 Esc", "Esc(스캔코드 0x1, keysym 0xff1b) 누름·뗌", string.Join(", ", ev),
+        ev.Count == 2 && ev.All(e => e.Contains("keysym=0xff1b") && e.EndsWith("keycode=0x1")));
 
     page.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ToggleButton>()
         .First(b => b.Content as string == "Ctrl").IsChecked = true;
@@ -954,15 +2750,142 @@ async Task ConsoleUsabilityCheck()
     input.Text = "c";
     ev = Events();
     Check("Ctrl 고정 + 키보드 c", "Ctrl↓ c↓ c↑ Ctrl↑", string.Join(", ", ev.Select(e => e.Replace("key ", ""))),
-        ev.Count == 4 && ev[0].EndsWith("0xffe3") && ev[1].EndsWith("0x63") && ev[3].EndsWith("0xffe3") &&
+        ev.Count == 4 && ev[0].Contains("keysym=0xffe3 ") && ev[1].Contains("keysym=0x63 ") && ev[3].Contains("keysym=0xffe3 ") &&
         ev[3].Contains("down=0"));
 
     input.Text = "안";
     ev = Events();
-    Check("한글 입력 '안'", "유니코드 keysym 0x100c548", string.Join(", ", ev),
-        ev.Count == 2 && ev[0].EndsWith("0x100c548"));
+    string SoftCodes(List<string> list) => string.Join(" ", list.Select(e => (e.Contains("down=1") ? "↓" : "↑") + e.Split("keycode=").Last()));
+    Check("한글 입력 '안'", "두벌식 키 d k s(↓20 ↑20 ↓25 ↑25 ↓1f ↑1f)", SoftCodes(ev),
+        SoftCodes(ev) == "↓0x20 ↑0x20 ↓0x25 ↑0x25 ↓0x1f ↑0x1f");
 
-    // ---- TeamViewer 방식: 두 번 탭한 뒤 끌기 = 끌어다 놓기 (마우스 모드)
+    // ---- 화면 키보드 Shift·한/영·클립보드·벨·화면 배치·가려진 동안 갱신 멈춤·제자리 다시 연결
+    {
+        List<string> RfbLines()
+        {
+            Pump(300);
+            if (logPath.Length == 0 || !File.Exists(logPath)) return [];
+            using var fs = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            fs.Seek(logOffset, SeekOrigin.Begin);
+            using var reader = new StreamReader(fs);
+            var text = reader.ReadToEnd();
+            logOffset = fs.Position;
+            return text.Split('\n').Where(l => l.StartsWith("RFB ")).Select(l => l[4..].Trim()).ToList();
+        }
+        Button Tip(string key) => page.GetVisualDescendants().OfType<Button>().First(b => ToolTip.GetTip(b) as string == L.T(key));
+        void Click(Button b) => b.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        input.Text = "Hi!";
+        var soft = Events();
+        Check("화면 키보드 'Hi!'", "Shift 로 감쌈(↓2a ↓23 ↑23 ↑2a ↓17 ↑17 ↓2a ↓2 ↑2 ↑2a)", SoftCodes(soft),
+            SoftCodes(soft) == "↓0x2a ↓0x23 ↑0x23 ↑0x2a ↓0x17 ↑0x17 ↓0x2a ↓0x2 ↑0x2 ↑0x2a");
+
+        Click(Tip("Console_HangulTip"));
+        soft = Events();
+        Check("특수키 한/영", "스캔코드 ↓f2 ↑f2", SoftCodes(soft), SoftCodes(soft) == "↓0xf2 ↑0xf2");
+
+        // ⋯ 줄을 펼쳐 클립보드 단추를 쓴다
+        var moreKeys = page.GetVisualDescendants().OfType<Button>().First(b => b.Content as string == "⋯");
+        if (!page.GetVisualDescendants().OfType<Button>().Any(b => b.Content as string == "F1" && b.IsEffectivelyVisible)) Click(moreKeys);
+        Pump(200);
+        var deviceClipboard = TopLevel.GetTopLevel(page)!.Clipboard!;
+        await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(deviceClipboard, "ping-42");
+        var bellsBefore = page.BellCount;
+        Click(Tip("Console_PasteToGuestTip"));
+        Pump(300);
+        soft = Events();
+        Pump(300); // 가짜 게스트가 같은 글을 클립보드로 돌려주고 벨을 울린다
+        Check("붙여넣기(게스트로)", "기기 클립보드 'ping-42' 를 게스트 클립보드로, 게스트 벨 → 화면 테두리 깜빡임",
+            $"{string.Join(", ", soft)}, 벨 {page.BellCount - bellsBefore}번",
+            soft.Any(e => e.Contains("cut b'ping-42'")) && page.BellCount > bellsBefore);
+
+        await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(deviceClipboard, "other");
+        Click(Tip("Console_CopyFromGuestTip"));
+        Pump(1200);
+        var copied = await Avalonia.Input.Platform.ClipboardExtensions.TryGetTextAsync(deviceClipboard);
+        Check("복사(게스트에서)", "게스트 클립보드 'ping-42' → 기기 클립보드", copied ?? "(없음)", copied == "ping-42");
+
+        await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(deviceClipboard, "aB\r\n");
+        Events();
+        Click(Tip("Console_TypeClipboardTip"));
+        soft = Events();
+        Check("클립보드 입력(키로)", "a ↓1e ↑1e, B = Shift+b, 줄바꿈 = Enter 한 번", SoftCodes(soft),
+            SoftCodes(soft) == "↓0x1e ↑0x1e ↓0x2a ↓0x30 ↑0x30 ↑0x2a ↓0x1c ↑0x1c");
+
+        // 떨어진 두 영역은 하나로 감싸지 않고 따로 올린다
+        surface.MarkDirty(0, 0, 8, 8);
+        surface.MarkDirty(700, 500, 8, 8);
+        Pump(100);
+        Check("바뀐 영역 따로 올리기", "떨어진 두 영역 = 2개", $"{surface.LastCopiedRects}개", surface.LastCopiedRects == 2);
+
+        // 휠: 움직인 만큼 — 반 칸 두 번 = 한 번, 세 칸 = 세 번
+        var halfA = surface.WheelClicks(new Avalonia.Vector(0, 0.5)).Count;
+        var halfB = surface.WheelClicks(new Avalonia.Vector(0, 0.5));
+        var three = surface.WheelClicks(new Avalonia.Vector(0, -3));
+        Check("휠 크기 반영", "0.5+0.5 → 위 1번, -3 → 아래 3번", $"{halfA}+{string.Join(",", halfB)} / {string.Join(",", three)}",
+            halfA == 0 && halfB.SequenceEqual([8]) && three.SequenceEqual([16, 16, 16]));
+
+        // 1:1 = 원격 1픽셀이 화면 물리 1픽셀(화면 배율 반영, 원격이 작으면 맞춤)
+        vp.SetMode(ViewMode.Actual);
+        var physical = vp.Scale * surface.RenderScaling;
+        Check("1:1 보기", "원격 1px = 물리 1px(작으면 맞춤)", $"{physical:0.00}", Math.Abs(physical - 1) < 0.01 || vp.Zoom <= 1);
+
+        // 화면 크기가 바뀌어도(회전) 채우기 유지
+        vp.SetMode(ViewMode.Fill);
+        var (winW, winH) = (window.Width, window.Height);
+        window.Width = winH;
+        window.Height = winW;
+        Pump(300);
+        var fillAfter = vp.Mode == ViewMode.Fill && Math.Abs(vp.Scale - Math.Max(vp.View.Width / vp.Remote.Width, vp.View.Height / vp.Remote.Height)) < 0.01;
+        window.Width = winW;
+        window.Height = winH;
+        Pump(300);
+        Check("회전 뒤 채우기", "채우기 그대로, 새 크기에 빈 곳 없이", $"{vp.Mode} {vp.Scale:0.00}", fillAfter && vp.Mode == ViewMode.Fill);
+
+        // 확대한 채 끌면 손짓 타이머가 화면 갱신 주기(16ms)로 — 가장자리 이동이 부드럽게
+        vp.ZoomAt(2, center);
+        g.Mode = TouchInputMode.Touch;
+        var edgeDragAt = surface.TranslatePoint(center, window)!.Value;
+        var edgeTouch = window.TouchBegin(edgeDragAt, Avalonia.Input.RawInputModifiers.None);
+        Pump(30);
+        for (var i = 1; i <= 5; i++)
+        {
+            window.TouchMove(edgeTouch, edgeDragAt + new Avalonia.Vector(i * 10, 0), Avalonia.Input.RawInputModifiers.None);
+            Pump(16);
+        }
+        var fastTicks = g.IsEdgeDragging ? surface.TickIntervalMs : -1;
+        window.TouchEnd(edgeTouch, edgeDragAt + new Avalonia.Vector(50, 0), Avalonia.Input.RawInputModifiers.None);
+        Pump(200);
+        Events();
+        Check("확대 중 끌기 타이머", $"{VncSurface.FastTickMs}ms", $"{fastTicks}ms", fastTicks == VncSurface.FastTickMs);
+
+        // 다른 화면이 위를 덮은 동안은 화면 갱신을 요청하지 않는다
+        vp.Fit();
+        await Wait(AppServices.Navigator.PushViewAsync("cover", new TextBlock { Text = "cover" }));
+        Pump(400);
+        RfbLines();
+        Pump(1000);
+        var hiddenUpdates = RfbLines().Count(l => l.StartsWith("update"));
+        await Wait(AppServices.Navigator.PopAsync());
+        Pump(1000);
+        var shownLines = RfbLines();
+        var shownUpdates = shownLines.Count(l => l.StartsWith("update"));
+        Check("가려진 동안 갱신 멈춤", "가려진 1초 요청 ≤ 1, 돌아오면 다시(≥ 3)", $"가려짐 {hiddenUpdates}, 돌아옴 {shownUpdates}",
+            hiddenUpdates <= 1 && shownUpdates >= 3 && nav.CurrentPage == page);
+
+        // 다시 연결은 이 화면에서 — 화면 모드·확대가 그대로
+        vp.SetMode(ViewMode.Fill);
+        var sessionBefore = vm.Vnc;
+        await Wait(vm.ReconnectAsync());
+        WaitFor(() => vm.IsConnected && vm.Vnc != sessionBefore, 10000);
+        Pump(300);
+        Check("제자리 다시 연결", "같은 화면·새 세션, 채우기 유지", $"{(nav.CurrentPage == page ? "같은 화면" : "바뀜")}, {(vm.Vnc != sessionBefore && vm.IsConnected ? "새 세션 연결" : "연결 안 됨")}, {vp.Mode}",
+            nav.CurrentPage == page && vm.Vnc != sessionBefore && vm.IsConnected && vp.Mode == ViewMode.Fill);
+        vp.Fit();
+        Events();
+    }
+
+    // ---- 탭 뒤 이어진 터치(마우스 모드): 끌기 = 왼쪽 끌기, 가만히 길게 = 오른쪽 버튼. 첫 탭은 빼고 그 사이 탭만큼 먼저 클릭
     vp.Fit();
     g.Mode = TouchInputMode.Mouse;
     g.ResetCursor(new Avalonia.Point(400, 300));
@@ -973,14 +2896,28 @@ async Task ConsoleUsabilityCheck()
     Check("탭 후 끌기(TeamViewer)", "클릭 없이 왼쪽 버튼 누른 채 끌기(1 0)", Masks(ev),
         Masks(ev) == "1 0" && LastXY(ev).Y > 300);
 
-    // 두 번 탭한 뒤 끌기도 왼쪽 끌기(기다리던 클릭은 버림)
+    // 탭 2번 → 끌기 = 클릭 한 번 후 왼쪽 끌기
     now += 1000;
     Tap(center); now -= 150; Tap(center); now -= 100;
     Drag(center, new Avalonia.Vector(0, 60));
     ev = Events();
-    Check("두 번 탭 후 끌기", "클릭 없이 왼쪽 버튼 끌기(1 0)", Masks(ev), Masks(ev) == "1 0");
+    Check("두 번 탭 후 끌기", "클릭 후 왼쪽 버튼 끌기(0 1 0 1 0)", Masks(ev), Masks(ev) == "0 1 0 1 0");
 
-    // 짧게 탭 → 길게 눌러 그대로 끌기 = 오른쪽 버튼 끌기
+    // 탭 3번 → 끌기 = 더블 클릭 후 왼쪽 버튼 누른 채 끌기
+    now += 1000;
+    Tap(center); now -= 150; Tap(center); now -= 150; Tap(center); now -= 100;
+    Drag(center, new Avalonia.Vector(0, 60));
+    ev = Events();
+    Check("세 번 탭 후 끌기", "더블 클릭 후 왼쪽 버튼 끌기(0 1 0 1 0 1 0)", Masks(ev), Masks(ev) == "0 1 0 1 0 1 0");
+
+    // 탭 → 그 자리에서 가만히 길게 눌렀다 떼기 = 오른쪽 클릭
+    now += 1000;
+    Tap(center); now -= 100;
+    Tap(center, holdMs: GestureInterpreter.LongPressMs + 100);
+    ev = Events();
+    Check("탭 후 가만히 길게 눌렀다 떼기", "오른쪽 버튼 누름·놓음(4 0)", Masks(ev), Masks(ev) == "4 0");
+
+    // 탭 → 가만히 길게 누른 뒤 끌기 = 오른쪽 버튼 끌기
     now += 1000;
     g.ResetCursor(new Avalonia.Point(400, 300));
     Tap(center); now -= 100;
@@ -1023,6 +2960,34 @@ async Task ConsoleUsabilityCheck()
     ev = Events();
     Check("물리 마우스 왼쪽 끌기", "왼쪽 누른 채 이동 후 놓기(… 1 0) @ (350,260)", $"{Masks(ev)} @ {LastXY(ev)}",
         Masks(ev).EndsWith("1 0") && Math.Abs(LastXY(ev).X - 350) <= 2);
+    Check("물리 마우스 · 커서 하나만", "운영체제 커서만(앱이 커서를 따로 그리지 않음)",
+        surface.DrawsSoftwareCursor ? "따로 그림" : "운영체제 커서만", !surface.DrawsSoftwareCursor);
+
+    // 확대 중 실제 마우스가 오른쪽 가장자리에 머물면 화면이 그쪽으로 이동(버튼 없이도)
+    {
+        vp.ZoomAt(2.5, center);
+        vp.PanBy(new Avalonia.Vector(100000, 100000));
+        Events();
+        var edgeAt = surface.TranslatePoint(new Avalonia.Point(surface.Bounds.Width - 4, surface.Bounds.Height / 2), window)!.Value;
+        window.MouseMove(edgeAt, Avalonia.Input.RawInputModifiers.None);
+        Pump(50);
+        var mouseOffset = vp.Offset.X;
+        long ms = Environment.TickCount64;
+        surface.TickMouseEdge(ms);
+        for (var i = 0; i < 15; i++) { ms += 60; surface.TickMouseEdge(ms); }
+        var mouseShift = mouseOffset - vp.Offset.X;
+        ev = Events();
+        var xs = ev.Where(e => e.StartsWith("pointer mask=0")).Select(e => int.Parse(e.Split(' ')[2][2..])).ToList();
+        var midAt = surface.TranslatePoint(new Avalonia.Point(surface.Bounds.Width / 2, surface.Bounds.Height / 2), window)!.Value;
+        window.MouseMove(midAt, Avalonia.Input.RawInputModifiers.None);
+        Pump(50);
+        var stops = !surface.TickMouseEdge(ms + 60);
+        Check("물리 마우스 · 확대 중 가장자리", "화면이 오른쪽으로 이동(0.9초에 100~500px), 원격 커서도 따라감, 가운데로 오면 멈춤",
+            $"화면 {mouseShift:F0}px, 원격 x {xs.FirstOrDefault()}→{xs.LastOrDefault()}, {(stops ? "멈춤" : "계속")}",
+            mouseShift is > 100 and < 500 && xs.Count > 1 && xs.Last() > xs.First() && stops);
+        vp.Fit();
+        Events();
+    }
 
     // ---- 물리 키보드: 키 위치(스캔코드) + keysym — 서버가 QEMU 확장 키를 알리므로 qkey 로 와야 한다
     List<string> Keys() => Events().Where(e => e.StartsWith("key") || e.StartsWith("qkey")).ToList();
@@ -1189,7 +3154,7 @@ async Task ConsoleUsabilityCheck()
             $"커서 +{midX - startX:F0}px, 이동 {moves}개, 화면 {(nav.CurrentPage == page ? "그대로" : "바뀜")}",
             midX - startX >= 150 && moves >= 20 && nav.CurrentPage == page);
 
-        // 실제 터치로 두 번 탭 = 클릭 — 손을 뗄 때 오는 캡처 해제가 기다리던 클릭을 지우면 안 된다(실기기 보고)
+        // 실제 터치로 두 번 탭 = 더블 클릭 — 손을 뗄 때 오는 캡처 해제가 기다리던 클릭을 지우면 안 된다(실기기 보고)
         Pump(500);
         Events();
         var tapAt = surface.TranslatePoint(new Avalonia.Point(surface.Bounds.Width / 2, surface.Bounds.Height / 2), window)!.Value;
@@ -1201,16 +3166,16 @@ async Task ConsoleUsabilityCheck()
             Pump(60);
         }
 
-        Pump(450); // 세 번째 탭을 기다리는 시간이 지나도록
+        Pump(450); // 다음 터치를 기다리는 시간이 지나도록
         g.Tick(Environment.TickCount64); // 헤드리스는 DispatcherTimer 가 돌지 않아 직접 부른다
         Pump(200);
         var tapMasks = Masks(Events());
-        Check("실제 터치로 두 번 탭", "왼쪽 클릭(0 1 0)", tapMasks, tapMasks.EndsWith("0 1 0"));
+        Check("실제 터치로 두 번 탭", "더블 클릭(0 1 0 1 0)", tapMasks, tapMasks.EndsWith("0 1 0 1 0") && !tapMasks.EndsWith("0 1 0 1 0 1 0"));
 
-        // 실제 터치로 세 번 탭 = 더블 클릭(클릭 두 번이 한 묶음으로)
+        // 실제 터치로 한 번 탭 = 클릭
         Pump(500);
         Events();
-        for (var i = 0; i < 3; i++)
+        for (var i = 0; i < 1; i++)
         {
             var tap = window.TouchBegin(tapAt, Avalonia.Input.RawInputModifiers.None);
             Pump(30);
@@ -1221,8 +3186,8 @@ async Task ConsoleUsabilityCheck()
         Pump(450);
         g.Tick(Environment.TickCount64);
         Pump(200);
-        var tripleMasks = Masks(Events());
-        Check("실제 터치로 세 번 탭", "더블 클릭(0 1 0 1 0)", tripleMasks, tripleMasks.EndsWith("0 1 0 1 0") && !tripleMasks.EndsWith("0 1 0 1 0 1 0"));
+        var singleMasks = Masks(Events());
+        Check("실제 터치로 한 번 탭", "왼쪽 클릭(0 1 0)", singleMasks, singleMasks.EndsWith("0 1 0") && !singleMasks.EndsWith("0 1 0 1 0"));
     }
 
     // 실시간 마우스 끌기 — 8ms 마다 움직인 이동이 서버에 고르게 도착하는가(보내는 쪽 간격 두기·타이머 오차 없음)
@@ -1230,6 +3195,10 @@ async Task ConsoleUsabilityCheck()
     {
         Events();
         var liveFrom = surface.TranslatePoint(new Avalonia.Point(200, 200), window)!.Value;
+        // 터치 → 마우스 전환(앱이 그리던 커서를 지우는 한 번의 다시 그리기)은 끌기 전에 끝낸다 — 끌기 도중 간격만 잰다
+        window.MouseMove(liveFrom, Avalonia.Input.RawInputModifiers.None);
+        Pump(200);
+        Events();
         window.MouseDown(liveFrom, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
         for (var i = 1; i <= 60; i++)
         {
@@ -1271,9 +3240,10 @@ async Task ConsoleUsabilityCheck()
     Shot("console-settings");
     var save = nav.CurrentPage?.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => ToolTip.GetTip(b) as string == L.T("AppSettingsWindow_12")
                                                                                             || b.Content as string == L.T("AppSettingsWindow_12"));
+    var settingsSession = vm.Vnc;
     save?.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-    WaitFor(() => nav.CurrentPage?.DataContext is ConsoleViewModel cv && cv != vm && cv.IsConnected, 10000);
-    var again = nav.CurrentPage?.DataContext is ConsoleViewModel cv2 && cv2 != vm && cv2.IsConnected;
+    WaitFor(() => nav.CurrentPage == page && vm.Vnc != settingsSession && vm.IsConnected, 10000);
+    var again = nav.CurrentPage == page && vm.Vnc != settingsSession && vm.IsConnected;
     Check0("콘솔 설정(콘솔 화면에서)", "⋯ 줄의 [콘솔 설정] → 저장 → 다시 연결", $"{(settingsButton is null ? "단추 없음" : "단추 있음")}, {(opened ? "설정 열림" : "안 열림")}, {(again ? "다시 연결됨" : "연결 안 됨")}",
         settingsButton is not null && opened && again);
 
@@ -1281,17 +3251,22 @@ async Task ConsoleUsabilityCheck()
     if (!desktop || tablet)
     {
         var bgVm = (ConsoleViewModel)nav.CurrentPage!.DataContext!;
+        var bgSession = bgVm.Vnc;
         SetForeground(false);
         Pump(500);
         var paused = !bgVm.IsConnected && bgVm.Status == L.T("Console_PausedBackground");
         SetForeground(true);
-        WaitFor(() => nav.CurrentPage?.DataContext is ConsoleViewModel c && c != bgVm && c.IsConnected, 10000);
-        var back = nav.CurrentPage?.DataContext is ConsoleViewModel c2 && c2 != bgVm && c2.IsConnected;
+        WaitFor(() => nav.CurrentPage == page && bgVm.Vnc != bgSession && bgVm.IsConnected, 10000);
+        var back = nav.CurrentPage == page && bgVm.Vnc != bgSession && bgVm.IsConnected;
         Check0("콘솔 배경 → 복귀", "배경에서 끊김 → 돌아오면 다시 연결", $"{(paused ? "끊김" : "그대로")} → {(back ? "다시 연결" : "연결 안 됨")}", paused && back);
     }
 
     await Wait(AppServices.Navigator.PopAsync());
 }
+
+// 항목 작업 단추가 있는 곳 — 휴대폰은 카드를 눌러 뜬 상세 시트, 데스크톱은 표 위 단추 줄
+Control RowActions(Control table) =>
+    AppServices.Dialogs.Sheet is ProxmoxClient.UI.Views.Shared.RowDetailSheet sheet ? sheet : table;
 
 void SetForeground(bool foreground) =>
     typeof(AppServices).Assembly.GetType("ProxmoxClient.UI.Services.AppLifecycle")!
@@ -1322,7 +3297,8 @@ void SelfTestWrites()
     var list = table.GetVisualDescendants().OfType<ListBox>().First();
     list.SelectedIndex = 0;
     Pump(200);
-    ButtonOf("Action_Delete").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    RowActions(table).GetVisualDescendants().OfType<Button>()
+        .First(b => ToolTip.GetTip(b) as string == L.T("Action_Delete")).RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
     WaitFor(() => AppServices.Dialogs.Current is not null);
     Console.WriteLine("DELETE confirm: " + (AppServices.Dialogs.Current?.Message ?? "NO DIALOG (BUG)"));
     AppServices.Dialogs.Current?.ConfirmCommand.Execute(null); // 확인 → 같은 흐름이라 다시 묻지 않고 DELETE
@@ -1457,7 +3433,9 @@ void CheckStatus(string name)
         .Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
     var page = nav.CurrentPage as Control;
     foreach (var text in page?.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text ?? "") ?? [])
-        if (failPrefixes.Any(p => text.StartsWith(p, StringComparison.Ordinal)))
+        if (real && text.Contains("zfsutils-linux not installed"))
+            Console.WriteLine($"KNOWN {name}: {text} (Docker 안 시험 PVE 에는 ZFS 가 없다)");
+        else if (failPrefixes.Any(p => text.StartsWith(p, StringComparison.Ordinal)))
         {
             failures++;
             Console.WriteLine($"FAIL {name}: {text}");
@@ -1544,7 +3522,7 @@ void Shot(string name)
 {
     Pump(250);
     var file = Path.Combine(outDir, $"{++shot:000}-{name}.png");
-    window.CaptureRenderedFrame()!.Save(file);
+    window.CaptureRenderedFrame()!.Save(file, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
     Console.WriteLine("shot " + file);
     if (Environment.GetEnvironmentVariable("AUDIT") == "1") AuditButtons(name);
 }
@@ -1692,4 +3670,16 @@ static Dictionary<string, string> ParseArgs(string[] args)
     var map = new Dictionary<string, string>();
     for (var i = 0; i + 1 < args.Length; i += 2) map[args[i].TrimStart('-')] = args[i + 1];
     return map;
+}
+
+/// <summary>검사용 연결 유지 장치 — 알림에 보일 제목만 기억한다.</summary>
+sealed class FakeKeepAliveHost : ProxmoxClient.UI.Platform.ISessionKeepAliveHost
+{
+    public List<string> Titles { get; } = [];
+
+    public void Update(IReadOnlyList<string> titles)
+    {
+        Titles.Clear();
+        Titles.AddRange(titles);
+    }
 }

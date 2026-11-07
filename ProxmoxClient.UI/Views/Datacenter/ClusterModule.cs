@@ -37,7 +37,7 @@ internal static class ClusterModule
             ctx => DatacenterTables.Replication(ctx.Api, true)));
         PreviewRegistry.Add(area, new PreviewTab("cpumodels", "CpuModel_Tab", "IconSettings", ctx =>
             ctx.Api.Cluster.Feature(nameof(ClusterApi.CpuModelsAsync)).IsAvailable
-                ? CpuModelsTab.Create(ctx.Api, true)
+                ? Shared.ViewSpecs.Build(CpuModelsTab.Create(ctx.Api, true))
                 // 탐색 창은 서버가 못 쓰는 탭을 빼지만, 미리보기는 탭을 그대로 열므로 안내만 보여 준다
                 : new TextBlock
                 {

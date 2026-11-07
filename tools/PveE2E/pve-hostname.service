@@ -1,0 +1,13 @@
+[Unit]
+Description=Set hostname and /etc/hosts before pmxcfs starts
+DefaultDependencies=no
+Before=pve-cluster.service network.target sysinit.target
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/pve-hostname.sh
+
+[Install]
+WantedBy=sysinit.target

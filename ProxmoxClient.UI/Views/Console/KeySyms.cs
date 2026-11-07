@@ -9,7 +9,10 @@ public static class KeySyms
     public const int Home = 0xFF50, Left = 0xFF51, Up = 0xFF52, Right = 0xFF53, Down = 0xFF54;
     public const int PageUp = 0xFF55, PageDown = 0xFF56, End = 0xFF57, Insert = 0xFF63;
     public const int F1 = 0xFFBE;
-    public const int ShiftL = 0xFFE1, ControlL = 0xFFE3, AltL = 0xFFE9, SuperL = 0xFFEB;
+    public const int ShiftL = 0xFFE1, ControlL = 0xFFE3, AltL = 0xFFE9, AltR = 0xFFEA, SuperL = 0xFFEB;
+
+    /// <summary>한/영 전환(Hangul).</summary>
+    public const int Hangul = 0xFF31;
 
     /// <summary>글자 하나의 keysym — Latin-1 은 그대로, 그 밖은 0x01000000 + 유니코드.</summary>
     public static int FromChar(int codePoint)

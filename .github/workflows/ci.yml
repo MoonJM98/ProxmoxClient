@@ -1,0 +1,289 @@
+# 빌드·검사 — push 와 PR 마다.
+# CI=true 이므로 Directory.Build.props 가 경고를 오류로 다룬다(로컬 빌드는 경고만).
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags-ignore: ["v*"] # 태그는 release.yml 이 맡는다
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  # ------------------------------------------------------------------ Linux: 빌드 + 단위 검사 + 화면 검사
+  linux:
+    name: Linux (빌드·검사·화면)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: nuget-linux-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'nuget.config') }}
+          restore-keys: nuget-linux-
+
+      # CrossPlatform 솔루션의 Android 헤드는 android 작업이 빌드한다(여기는 워크로드 없이 빠르게)
+      - name: 빌드(Core·UI·Desktop·검사 도구)
+        run: |
+          dotnet build ProxmoxClient.Desktop -c Release
+          dotnet build tests/ProxmoxClient.Core.Tests -c Release
+          dotnet build tools/TerminalTests -c Release
+          dotnet build tools/UiSnapshot -c Release
+          dotnet build tools/VirtualFido -c Release
+
+      - name: Core 단위 검사(xunit)
+        run: dotnet test tests/ProxmoxClient.Core.Tests -c Release --no-build --logger "trx;LogFileName=core-tests.trx" --results-directory test-results
+
+      - name: 터미널 검사(tools/TerminalTests)
+        run: dotnet run --project tools/TerminalTests -c Release --no-build
+
+      # 가짜 PVE 서버(tools/FakePve)에 화면 검사 도구를 붙여 휴대폰·PC 배치의 주요 화면을 확인한다
+      - name: 화면 검사(tools/UiSnapshot + FakePve)
+        run: |
+          set -u
+          PORT=19700
+          mkdir -p shots
+          python3 -I tools/FakePve/fake_pve.py "$PORT" > shots/fakepve.log 2>&1 &
+          FAKE_PID=$!
+          trap 'kill "$FAKE_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do grep -q "^listening" shots/fakepve.log && break; sleep 1; done
+          grep -q "^listening" shots/fakepve.log || { echo "가짜 서버가 뜨지 않음"; cat shots/fakepve.log; exit 1; }
+          failed=0
+          for mode in mobile desktop; do
+            for target in cluster console terminal; do
+              out="shots/$mode-$target"
+              echo "::group::UiSnapshot $mode $target"
+              dotnet run --project tools/UiSnapshot -c Release --no-build -- \
+                --port "$PORT" --out "$out" --mode "$mode" --target "$target" \
+                --serverlog shots/fakepve.log > "$out.log" 2>&1 || true
+              tail -n 40 "$out.log"
+              echo "::endgroup::"
+              if ! grep -q "^DONE ok" "$out.log"; then
+                echo "::error::UiSnapshot $mode/$target 실패 — $(grep '^DONE' "$out.log" || echo 'DONE 없음')"
+                failed=1
+              fi
+            done
+          done
+          exit "$failed"
+
+      # USB 보안 키 끝까지: uhid 로 가상 FIDO2 키(tools/VirtualFido)를 꽂고 실제 LinuxHidWebAuthnProvider 가 커널 hidraw 를
+      # 거쳐 서명을 받는지(PIN v1·v2·U2F·취소·뽑기·FakePve 로그인), 2단계 인증 창에서 그 키로 로그인되는지 본다(hid-e2e.yml 과 같다)
+      - name: 보안 키 검사(uhid 가상 키 + FakePve)
+        run: |
+          set -u
+          sudo modprobe uhid
+          echo 'KERNEL=="hidraw*", SUBSYSTEM=="hidraw", MODE="0666"' | sudo tee /etc/udev/rules.d/70-virtual-fido.rules > /dev/null
+          sudo udevadm control --reload-rules
+          sudo chmod 666 /dev/uhid
+          mkdir -p shots
+          python3 -I tools/FakePve/fake_pve.py 19702 > shots/fakepve-hid.log 2>&1 &
+          FAKE_PID=$!
+          python3 -I tools/FakePve/fake_pve.py 19703 > shots/fakepve-hid-ui.log 2>&1 &
+          FAKE_UI_PID=$!
+          KEY_PID=
+          trap 'kill "$FAKE_PID" "$FAKE_UI_PID" $KEY_PID 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do grep -q "^listening" shots/fakepve-hid.log && grep -q "^listening" shots/fakepve-hid-ui.log && break; sleep 1; done
+          dotnet run --project tools/VirtualFido -c Release --no-build -- --fakepve 19702 > shots/virtualfido.log 2>&1 || true
+          grep -E "^(PASS|FAIL|SKIP|DONE)" shots/virtualfido.log
+          grep -q "^DONE ok" shots/virtualfido.log || { cat shots/virtualfido.log; exit 1; }
+          dotnet run --project tools/VirtualFido -c Release --no-build -- serve --pin 1234 --always-uv \
+            --cred fake-credential --rp pve.example > shots/virtualfido-serve.log 2>&1 &
+          KEY_PID=$!
+          for i in $(seq 1 30); do grep -q "^READY" shots/virtualfido-serve.log && break; sleep 1; done
+          dotnet run --project tools/UiSnapshot -c Release --no-build -- \
+            --port 19703 --out shots/mobile-webauthn-hid --mode mobile --target webauthn --webauthn-key linux \
+            --serverlog shots/fakepve-hid-ui.log > shots/mobile-webauthn-hid.log 2>&1 || true
+          tail -n 12 shots/mobile-webauthn-hid.log
+          grep -q "^DONE ok" shots/mobile-webauthn-hid.log && grep -q "CBOR 06" shots/virtualfido-serve.log
+
+      # RDP 콘솔 끝까지: 러너에 xrdp(+ xorgxrdp·openbox·xterm)와 시험 계정을 두고, 가짜 PVE 의 RDCleanPath 프록시로
+      # 붙는다(연결·입력·해상도 변경·다시 연결). 러너 패키지 사정에 따라 깨질 수 있어 실패해도 작업은 막지 않는다
+      - name: RDP 콘솔 검사(xrdp + FakePve rdpproxy)
+        continue-on-error: true
+        run: |
+          set -u
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq xrdp xorgxrdp openbox xterm > /dev/null
+          sudo useradd -m -s /bin/bash rdptest
+          echo 'rdptest:RdpTest!234' | sudo chpasswd
+          printf '#!/bin/sh\nxterm -geometry 100x30+20+20 -fa Monospace -fs 14 &\nexec openbox\n' | sudo tee /home/rdptest/.xsession > /dev/null
+          sudo chmod 755 /home/rdptest/.xsession
+          sudo chown rdptest: /home/rdptest/.xsession
+          sudo systemctl restart xrdp-sesman xrdp
+          for i in $(seq 1 30); do ss -ltn | grep -q ':3389 ' && break; sleep 1; done
+          PORT=19701
+          mkdir -p shots
+          python3 -I tools/FakePve/fake_pve.py "$PORT" > shots/fakepve-rdp.log 2>&1 &
+          FAKE_PID=$!
+          trap 'kill "$FAKE_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do grep -q "^listening" shots/fakepve-rdp.log && break; sleep 1; done
+          dotnet run --project tools/UiSnapshot -c Release --no-build -- \
+            --port "$PORT" --out shots/mobile-rdp --mode mobile --target rdp --rdp 127.0.0.1:3389 \
+            --serverlog shots/fakepve-rdp.log > shots/mobile-rdp.log 2>&1 || true
+          tail -n 40 shots/mobile-rdp.log
+          grep -q "^DONE ok" shots/mobile-rdp.log && ! grep -q "^SKIP rdp" shots/mobile-rdp.log
+
+      # RDP 콘솔 NLA(CredSSP/NTLM): xrdp 는 NLA 가 없어 Windows 게스트처럼 NLA 를 요구하는 서버로 따로 본다 —
+      # FreeRDP 그림자 서버(Xvfb 화면 + openbox + xterm, SAM 파일 계정). 틀린 비밀번호 알림·CredSSP 연결·입력·다시 연결.
+      # 이것도 러너 패키지 사정에 따라 깨질 수 있어 실패해도 작업은 막지 않는다
+      - name: RDP 콘솔 NLA 검사(FreeRDP 그림자 서버 + FakePve rdpproxy)
+        continue-on-error: true
+        run: |
+          set -u
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq freerdp3-shadow-x11 winpr3-utils xvfb openbox xterm > /dev/null
+          tools/FakePve/nla-server.sh "$RUNNER_TEMP/nla" 33891 :47 nlauser 'NlaTest!234'
+          PORT=19702
+          mkdir -p shots
+          python3 -I tools/FakePve/fake_pve.py "$PORT" > shots/fakepve-nla.log 2>&1 &
+          FAKE_PID=$!
+          trap 'kill "$FAKE_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do grep -q "^listening" shots/fakepve-nla.log && break; sleep 1; done
+          dotnet run --project tools/UiSnapshot -c Release --no-build -- \
+            --port "$PORT" --out shots/mobile-rdp-nla --mode mobile --target rdp --rdp 127.0.0.1:33891 \
+            --rdpuser nlauser --rdppass 'NlaTest!234' --rdpnla 1 \
+            --serverlog shots/fakepve-nla.log > shots/mobile-rdp-nla.log 2>&1 || true
+          tail -n 40 shots/mobile-rdp-nla.log
+          cp "$RUNNER_TEMP/nla/shadow.log" shots/nla-shadow.log 2>/dev/null || true
+          grep -q "^DONE ok" shots/mobile-rdp-nla.log && ! grep -q "^SKIP rdp" shots/mobile-rdp-nla.log
+
+      - name: 검사 결과 올리기(실패 시)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-failure-${{ github.run_id }}
+          path: |
+            shots/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ------------------------------------------------------------------ Windows: WPF 앱
+  windows:
+    name: Windows (WPF)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: nuget-windows-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'nuget.config') }}
+          restore-keys: nuget-windows-
+
+      - name: 빌드(ProxmoxClient.slnx)
+        run: dotnet build ProxmoxClient.slnx -c Release
+
+      # 인증서·파일 교체(File.Replace) 등 OS 마다 다른 부분이 있어 Windows 에서도 돌린다
+      - name: Core 단위 검사(xunit)
+        run: dotnet test tests/ProxmoxClient.Core.Tests -c Release
+
+  # ------------------------------------------------------------------ Android: 전체 CrossPlatform 솔루션 + APK
+  android:
+    name: Android (APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: nuget-android-${{ hashFiles('**/*.csproj', 'Directory.Build.props', 'nuget.config') }}
+          restore-keys: nuget-android-
+
+      - name: android 워크로드 설치
+        run: dotnet workload install android
+
+      # 러너의 Android SDK 에 빠진 플랫폼·빌드 도구가 있으면 받는다
+      - name: Android SDK 의존성
+        run: >
+          dotnet build ProxmoxClient.Android -t:InstallAndroidDependencies -f net10.0-android
+          -p:AndroidSdkDirectory="$ANDROID_SDK_ROOT" -p:AcceptAndroidSDKLicenses=True
+
+      - name: 빌드(ProxmoxClient.CrossPlatform.slnx, Release)
+        run: dotnet build ProxmoxClient.CrossPlatform.slnx -c Release -p:AndroidSdkDirectory="$ANDROID_SDK_ROOT"
+
+      # 서명 키가 없으면 디버그 키로 서명된다 — 시험 설치용(스토어 배포용 아님)
+      - name: APK 만들기
+        run: >
+          dotnet publish ProxmoxClient.Android -c Release -f net10.0-android
+          -p:AndroidSdkDirectory="$ANDROID_SDK_ROOT" -o artifacts/android
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-debug-signed
+          path: artifacts/android/*-Signed.apk
+          retention-days: 14
+          if-no-files-found: error
+
+  # ------------------------------------------------------------------ macOS: Desktop(macOS) + iOS — 워크로드·Xcode 버전에 따라 깨질 수 있어 실패해도 CI 는 통과
+  apple:
+    name: macOS·iOS (참고용)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      # .NET for iOS 는 정해진 Xcode 판을 요구한다. 최신 iOS 워크로드(27.x)는 러너에 아직 없는 Xcode 27 을 요구하므로
+      # 러너 기본 Xcode(26.6)에 맞는 워크로드 묶음(10.0.401 = iOS 26.5 SDK, Xcode 26.6 요구)으로 고정한다
+      - name: ios 워크로드 설치(Xcode 26 용 묶음)
+        run: dotnet workload install ios --version 10.0.401
+
+      - name: 빌드(Desktop — macOS)
+        run: dotnet build ProxmoxClient.Desktop -c Release
+
+      # 서명 없이 기기용(ios-arm64)으로 컴파일만 확인한다(IronRDP 2026.10 부터는 시뮬레이터용 라이브러리도 있다)
+      - name: 빌드(iOS 기기, 서명 없음)
+        # 서명·배포가 아닌 컴파일 확인용. Avalonia iOS 와 새 iOS SDK 사이의 연결 경고(IL2037)는 외부 라이브러리 것이라
+        # 오류로 다루지 않는다
+        # iOS 워크로드가 요구하는 SDK 보다 러너의 Xcode 가 낮으면(새 판이 러너에 아직 없음) 건너뛰고 알림만 남긴다
+        shell: bash
+        run: |
+          set +e
+          out=$(dotnet build ProxmoxClient.iOS -c Debug -p:RuntimeIdentifier=ios-arm64 -p:EnableCodeSigning=false -p:TreatWarningsAsErrors=false 2>&1)
+          code=$?
+          echo "$out" | tail -40
+          if [ $code -ne 0 ] && echo "$out" | grep -q "requires Xcode"; then
+            echo "::notice::iOS 빌드 건너뜀 — iOS 워크로드가 요구하는 Xcode 가 러너에 아직 없다($(xcodebuild -version | head -1))"
+            exit 0
+          fi
+          exit $code

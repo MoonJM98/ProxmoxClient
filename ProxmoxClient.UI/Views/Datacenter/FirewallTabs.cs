@@ -4,7 +4,8 @@ using ProxmoxClient.UI.Views.Shared;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Api.Domains;
 using ProxmoxClient.Core.Models;
-using static ProxmoxClient.UI.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.FormHelpers;
 using ProxmoxClient.Core.Api.Versioning;
 using Avalonia.Controls;
 
@@ -33,6 +34,12 @@ internal static class FirewallTabs
         public (string Value, string Label)[]? Choices { get; init; }
 
         public string? EmptyLabelKey { get; init; }
+
+        /// <summary>
+        ///     설정이 없을 때 서버가 쓰는 값(웹 UI FirewallOptions.js 와 같다). 실제 PVE 는 설정한 키만 돌려주므로
+        ///     (아무것도 안 바꾼 서버는 digest 뿐) 이 값이 없으면 칸이 비어 보인다.
+        /// </summary>
+        public string? Default { get; init; }
     }
 
     private static readonly IReadOnlyList<TableColumn> GroupColumns =
@@ -72,18 +79,18 @@ internal static class FirewallTabs
 
     private static readonly FirewallOption[] NodeOptions =
     [
-        new() { Key = "enable", LabelKey = "FirewallWindow_03", Input = OptionInput.Bool },
-        new() { Key = "log_level_in", LabelKey = "DcFirewall_LogIn", Input = OptionInput.Choice, Choices = LogLevels },
-        new() { Key = "log_level_out", LabelKey = "DcFirewall_LogOut", Input = OptionInput.Choice, Choices = LogLevels },
+        new() { Key = "enable", LabelKey = "FirewallWindow_03", Input = OptionInput.Bool, Default = "1" },
+        new() { Key = "log_level_in", LabelKey = "DcFirewall_LogIn", Input = OptionInput.Choice, Choices = LogLevels, Default = "nolog" },
+        new() { Key = "log_level_out", LabelKey = "DcFirewall_LogOut", Input = OptionInput.Choice, Choices = LogLevels, Default = "nolog" },
         new()
         {
-            Key = "log_level_forward", LabelKey = "DcFirewall_LogForward", Input = OptionInput.Choice, Choices = LogLevels
+            Key = "log_level_forward", LabelKey = "DcFirewall_LogForward", Input = OptionInput.Choice, Choices = LogLevels, Default = "nolog"
         },
-        new() { Key = "nftables", LabelKey = "DcFirewall_Nftables", Input = OptionInput.Bool },
-        new() { Key = "ndp", LabelKey = "DcFirewall_Ndp", Input = OptionInput.Bool },
-        new() { Key = "nosmurfs", LabelKey = "DcFirewall_NoSmurfs", Input = OptionInput.Bool },
-        new() { Key = "tcpflags", LabelKey = "DcFirewall_TcpFlags", Input = OptionInput.Bool },
-        new() { Key = "protection_synflood", LabelKey = "DcFirewall_SynFlood", Input = OptionInput.Bool },
+        new() { Key = "nftables", LabelKey = "DcFirewall_Nftables", Input = OptionInput.Bool, Default = "0" },
+        new() { Key = "ndp", LabelKey = "DcFirewall_Ndp", Input = OptionInput.Bool, Default = "1" },
+        new() { Key = "nosmurfs", LabelKey = "DcFirewall_NoSmurfs", Input = OptionInput.Bool, Default = "1" },
+        new() { Key = "tcpflags", LabelKey = "DcFirewall_TcpFlags", Input = OptionInput.Bool, Default = "0" },
+        new() { Key = "protection_synflood", LabelKey = "DcFirewall_SynFlood", Input = OptionInput.Bool, Default = "0" },
         new()
         {
             Key = "nf_conntrack_max", LabelKey = "DcFirewall_ConntrackMax", Input = OptionInput.Text,
@@ -93,29 +100,29 @@ internal static class FirewallTabs
 
     private static readonly FirewallOption[] GuestFirewallOptions =
     [
-        new() { Key = "enable", LabelKey = "FirewallWindow_03", Input = OptionInput.Bool },
-        new() { Key = "policy_in", LabelKey = "DcFirewall_PolicyIn", Input = OptionInput.Choice, Choices = Policies },
-        new() { Key = "policy_out", LabelKey = "DcFirewall_PolicyOut", Input = OptionInput.Choice, Choices = Policies },
-        new() { Key = "log_level_in", LabelKey = "DcFirewall_LogIn", Input = OptionInput.Choice, Choices = LogLevels },
-        new() { Key = "log_level_out", LabelKey = "DcFirewall_LogOut", Input = OptionInput.Choice, Choices = LogLevels },
-        new() { Key = "macfilter", LabelKey = "DcFirewall_MacFilter", Input = OptionInput.Bool },
-        new() { Key = "ipfilter", LabelKey = "DcFirewall_IpFilter", Input = OptionInput.Bool },
-        new() { Key = "dhcp", LabelKey = "DcFirewall_Dhcp", Input = OptionInput.Bool },
-        new() { Key = "ndp", LabelKey = "DcFirewall_Ndp", Input = OptionInput.Bool },
-        new() { Key = "radv", LabelKey = "DcFirewall_Radv", Input = OptionInput.Bool }
+        new() { Key = "enable", LabelKey = "FirewallWindow_03", Input = OptionInput.Bool, Default = "0" },
+        new() { Key = "policy_in", LabelKey = "DcFirewall_PolicyIn", Input = OptionInput.Choice, Choices = Policies, Default = "DROP" },
+        new() { Key = "policy_out", LabelKey = "DcFirewall_PolicyOut", Input = OptionInput.Choice, Choices = Policies, Default = "ACCEPT" },
+        new() { Key = "log_level_in", LabelKey = "DcFirewall_LogIn", Input = OptionInput.Choice, Choices = LogLevels, Default = "nolog" },
+        new() { Key = "log_level_out", LabelKey = "DcFirewall_LogOut", Input = OptionInput.Choice, Choices = LogLevels, Default = "nolog" },
+        new() { Key = "macfilter", LabelKey = "DcFirewall_MacFilter", Input = OptionInput.Bool, Default = "1" },
+        new() { Key = "ipfilter", LabelKey = "DcFirewall_IpFilter", Input = OptionInput.Bool, Default = "0" },
+        new() { Key = "dhcp", LabelKey = "DcFirewall_Dhcp", Input = OptionInput.Bool, Default = "1" },
+        new() { Key = "ndp", LabelKey = "DcFirewall_Ndp", Input = OptionInput.Bool, Default = "1" },
+        new() { Key = "radv", LabelKey = "DcFirewall_Radv", Input = OptionInput.Bool, Default = "0" }
     ];
 
     private static readonly FirewallOption[] ClusterOptions =
     [
-        new() { Key = "enable", LabelKey = "FirewallWindow_03", Input = OptionInput.Bool },
-        new() { Key = "policy_in", LabelKey = "DcFirewall_PolicyIn", Input = OptionInput.Choice, Choices = Policies },
-        new() { Key = "policy_out", LabelKey = "DcFirewall_PolicyOut", Input = OptionInput.Choice, Choices = Policies },
+        new() { Key = "enable", LabelKey = "FirewallWindow_03", Input = OptionInput.Bool, Default = "0" },
+        new() { Key = "policy_in", LabelKey = "DcFirewall_PolicyIn", Input = OptionInput.Choice, Choices = Policies, Default = "DROP" },
+        new() { Key = "policy_out", LabelKey = "DcFirewall_PolicyOut", Input = OptionInput.Choice, Choices = Policies, Default = "ACCEPT" },
         new()
         {
             Key = "policy_forward", LabelKey = "DcFirewall_PolicyForward", Input = OptionInput.Choice,
-            Choices = [("ACCEPT", "ACCEPT"), ("DROP", "DROP")]
+            Choices = [("ACCEPT", "ACCEPT"), ("DROP", "DROP")], Default = "ACCEPT"
         },
-        new() { Key = "ebtables", LabelKey = "DcFirewall_Ebtables", Input = OptionInput.Bool },
+        new() { Key = "ebtables", LabelKey = "DcFirewall_Ebtables", Input = OptionInput.Bool, Default = "1" },
         new()
         {
             Key = "log_ratelimit", LabelKey = "DcFirewall_LogRateLimit", Input = OptionInput.Text,
@@ -215,8 +222,8 @@ internal static class FirewallTabs
                 new TableAction
                 {
                     LabelKey = "Action_Edit", IconKey = "IconPencil", NeedsSelection = true,
-                    Run = (row, owner) => EditOptionAsync(api, scope, shown.First(o => o.Key == row!["key"]),
-                        target, owner)
+                    Run = (row, owner) => DigestGuard.RunAsync(() => EditOptionAsync(api, scope,
+                        shown.First(o => o.Key == row!["key"]), target, owner))
                 }
             ]);
     }
@@ -241,15 +248,20 @@ internal static class FirewallTabs
 
     private static string OptionText(FirewallOption option, string raw)
     {
+        if (raw.Length == 0 && option.Default is { } fallback)
+            return option.Input == OptionInput.Bool
+                ? Loc.T(fallback == "1" ? "GuestOptions_DefaultOn" : "GuestOptions_DefaultOff")
+                : Loc.T("DcFirewall_DefaultValue", fallback);
         if (raw.Length == 0) return option.EmptyLabelKey is null ? string.Empty : Loc.T(option.EmptyLabelKey);
         return option.Input == OptionInput.Bool ? Loc.T(raw is "1" ? "Common_Enabled" : "Common_Disabled") : raw;
     }
 
     /// <summary>한 옵션의 편집 칸 하나 — 확인하면 그 옵션만 서버로 보낸다(비우면 서버 기본값으로 되돌린다).</summary>
     private static async Task<string?> EditOptionAsync(ProxmoxApiClient api, FirewallScope scope,
-        FirewallOption option, ApiFeature? target, Control? owner)
+        FirewallOption option, ApiFeature? target, object? owner)
     {
-        var current = Value(await api.Firewall.GetOptionsAsync(scope), option.Key);
+        var all = await api.Firewall.GetOptionsAsync(scope);
+        var current = Value(all, option.Key);
         var field = new FormField
         {
             Key = option.Key, LabelKey = option.LabelKey,
@@ -260,11 +272,18 @@ internal static class FirewallTabs
                 _ => FormFieldKind.Text
             },
             Choices = option.Choices,
-            Initial = option.Input == OptionInput.Bool && current.Length == 0 ? "0" : current,
+            // 설정이 없으면 서버가 실제로 쓰는 값으로 시작한다(기본값이 켜짐인 칸을 꺼짐으로 보이면 그대로 확인만 해도 꺼진다)
+            Initial = current.Length > 0 ? current : option.Default ?? (option.Input == OptionInput.Bool ? "0" : current),
             Hint = option.EmptyLabelKey is null ? null : Loc.T(option.EmptyLabelKey)
         };
         return await SubmitAsync(owner, Loc.T(option.LabelKey), [field],
-            values => api.Firewall.UpdateOptionsAsync(scope, UpdateForm(values)), "DcFirewall_Updated",
+            values =>
+            {
+                // 읽을 때 받은 digest 로 그 사이 다른 곳에서 바뀐 옵션을 덮어쓰지 않게 한다
+                var form = UpdateForm(values);
+                if (Value(all, "digest") is { Length: > 0 } digest) form["digest"] = digest;
+                return api.Firewall.UpdateOptionsAsync(scope, form);
+            }, "DcFirewall_Updated",
             titleIsKey: false, target: target);
     }
 
@@ -358,7 +377,7 @@ internal static class FirewallTabs
 
     /// <summary>IP 집합의 주소 목록 창 — 목록에서 집합을 두 번 누르면 연다(웹 UI 오른쪽 IP/CIDR 표).</summary>
     private static void ShowIpSetEntries(ProxmoxApiClient api, FirewallScope scope, bool canEdit, string name,
-        Control? owner)
+        object? owner)
     {
         TableWindow.ShowModal(owner, Loc.T("DcFirewall_EntriesTitle", name),
             new TableTab(() => api.Firewall.ListIpSetEntriesAsync(scope, name), IpSetEntryColumns,

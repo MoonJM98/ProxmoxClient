@@ -1,0 +1,56 @@
+using ProxmoxClient.Core.Api;
+using ProxmoxClient.UI.Platform;
+
+namespace UiSnapshot;
+
+/// <summary>
+///     스냅샷 검사용 보안 키(--target webauthn) — 실제 키 없이 2단계 인증 창 → Core 응답 조립 → 서버까지의 흐름을 본다.
+///     처음 <see cref="CancelFirst" /> 번은 취소(null)를 돌려주고, 그다음은 가짜 서명(자격 증명 "fake-credential")을 준다.
+///     <see cref="AskPin" /> 이면 서명 전에 PIN 을 묻는다(PIN 1234, 틀리면 남은 횟수를 줄여 다시 묻는다).
+///     <see cref="Inner" /> 가 있으면 취소 다음부터는 그 공급자(실제 LinuxHidWebAuthnProvider + tools/VirtualFido 가상 키)에 맡긴다.
+/// </summary>
+internal sealed class FakeWebAuthnProvider : IWebAuthnProvider
+{
+    public int CancelFirst { get; set; }
+    public IWebAuthnProvider? Inner { get; init; }
+    public bool AskPin { get; set; }
+    public int Calls { get; private set; }
+    public Uri? LastOrigin { get; private set; }
+
+    public bool IsAvailable => true;
+    public string UnavailableReason => string.Empty;
+    public string PromptText => "fake key";
+
+    public async Task<string?> GetAssertionAsync(Uri serverOrigin, string publicKeyJson, PinPrompt? pin,
+        CancellationToken ct)
+    {
+        Calls++;
+        LastOrigin = serverOrigin;
+        if (Calls <= CancelFirst) return null;
+        if (Inner is not null) return await Inner.GetAssertionAsync(serverOrigin, publicKeyJson, pin, ct);
+
+        if (AskPin && pin is not null)
+        {
+            var retries = 8;
+            string? error = null;
+            while (true)
+            {
+                var entered = await Task.Run(() => pin(new PinPromptInfo(retries, error), ct), ct);
+                if (entered is null) return null;
+                if (entered == "1234") break;
+
+                retries--;
+                error = "PIN invalid";
+            }
+        }
+
+        var request = WebAuthnRequest.Parse(publicKeyJson);
+        var authData = new byte[37];
+        WebAuthnRequest.RpIdHash(request.EffectiveRpId(serverOrigin)).CopyTo(authData, 0);
+        authData[32] = 0x01; // UP
+        authData[36] = 0x07; // 서명 횟수
+        var assertion = new WebAuthnAssertion(request.AllowCredentials[0], authData,
+            request.BuildClientDataJson(serverOrigin), [0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x01]);
+        return assertion.ToPveResponse(request.Challenge);
+    }
+}

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using ProxmoxClient.Core.Localization;
 
@@ -9,10 +10,12 @@ namespace ProxmoxClient.Core.Vpn;
 
 /// <summary>
 ///     Drives a local openvpn.exe process over its TCP management interface
-///     (--management 127.0.0.1 {port} --management-hold). Exposes tunnel state,
+///     (--management 127.0.0.1 {port} {pwfile} --management-hold). Exposes tunnel state,
 ///     live byte counters and the OpenVPN log as events.
+///     관리 포트는 루프백이라도 같은 PC 의 다른 프로그램이 붙을 수 있으므로 실행마다 무작위 비밀번호를 건다.
+///     끝낼 때는 <see cref="DisposeAsync" />(정상 종료 대기)를 쓰고, <see cref="Dispose" /> 는 기다리지 않고 프로세스를 끝낸다.
 /// </summary>
-public sealed class OpenVpnManager : IDisposable
+public sealed class OpenVpnManager : IDisposable, IAsyncDisposable
 {
     private const int MgmtConnectAttempts = 20;
     private const int MgmtConnectDelayMs = 250;
@@ -25,6 +28,9 @@ public sealed class OpenVpnManager : IDisposable
     private NetworkStream? _mgmtStream;
 
     private Process? _process;
+
+    /// <summary>관리 인터페이스 비밀번호 파일(openvpn 이 읽는다) — 이 사용자만 읽을 수 있고, 끊을 때 지운다.</summary>
+    private string? _passwordFile;
 
     // openvpn writes its log to stdout and, after "log on", also as >LOG: notifications. Once the management log is on
     // the stdout copy is dropped, otherwise every line shows twice (and the log view fills up twice as fast).
@@ -53,21 +59,58 @@ public sealed class OpenVpnManager : IDisposable
     /// <summary>OpenVPN process id while running.</summary>
     public int? ProcessId => _process is { HasExited: false } p ? p.Id : null;
 
-    /// <inheritdoc />
+    /// <summary>
+    ///     기다리지 않고 정리한다 — openvpn 프로세스를 바로 끝내고 관리 연결을 닫는다(UI 스레드를 막지 않는다).
+    ///     터널을 정상 종료(SIGTERM·경로 정리)하려면 <see cref="DisposeAsync" /> 를 쓴다.
+    /// </summary>
     public void Dispose()
     {
         if (_disposed) return;
 
+        _disposed = true;
         try
         {
-            DisconnectAsync().GetAwaiter().GetResult();
+            CancelReadLoop();
+            Interlocked.Exchange(ref _mgmtStream, null)?.Dispose();
+            Interlocked.Exchange(ref _mgmtClient, null)?.Dispose();
+            if (Interlocked.Exchange(ref _process, null) is { } process)
+            {
+                try
+                {
+                    if (!process.HasExited) process.Kill(true);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+                {
+                }
+
+                process.Dispose();
+            }
+
+            DeletePasswordFile();
         }
         catch
         {
             // Dispose는 예외를 던지지 않음
         }
 
-        _disposed = true;
+        SetState(VpnState.Disconnected);
+    }
+
+    /// <summary>터널을 정상 종료(<see cref="DisconnectAsync" />)한 뒤 정리한다.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+
+        try
+        {
+            await DisconnectAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // Dispose는 예외를 던지지 않음
+        }
+
+        Dispose();
     }
 
     /// <summary>Raised on every tunnel state transition.</summary>
@@ -131,7 +174,8 @@ public sealed class OpenVpnManager : IDisposable
                 Res.T("OpenVpnManager_04"));
 
         await CleanupAsync().ConfigureAwait(false);
-        ConfigPath = Path.GetFullPath(configPath);
+        var fullConfigPath = Path.GetFullPath(configPath);
+        ConfigPath = fullConfigPath;
         LastError = null;
         VirtualIp = null;
         BytesIn = 0;
@@ -139,17 +183,24 @@ public sealed class OpenVpnManager : IDisposable
 
         var port = GetFreeTcpPort();
         var workingDir = Path.GetDirectoryName(Path.GetFullPath(configPath)) ?? Environment.CurrentDirectory;
+        var password = RandomNumberGenerator.GetHexString(32);
+        var passwordFile = WritePasswordFile(password);
+        _passwordFile = passwordFile;
 
+        // 인자는 ArgumentList 로 하나씩 넘긴다 — 경로에 따옴표·공백이 있어도 다른 옵션으로 해석되지 않는다
         var startInfo = new ProcessStartInfo
         {
             FileName = exe,
-            Arguments = $"--config \"{configPath}\" --management 127.0.0.1 {port} --management-hold --verb 3",
             WorkingDirectory = workingDir,
             CreateNoWindow = true,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true
         };
+        foreach (var argument in (string[])["--config", fullConfigPath, "--management", "127.0.0.1",
+                     port.ToString(System.Globalization.CultureInfo.InvariantCulture), passwordFile,
+                     "--management-hold", "--verb", "3"])
+            startInfo.ArgumentList.Add(argument);
 
         var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
         _managementLog = false;
@@ -174,6 +225,8 @@ public sealed class OpenVpnManager : IDisposable
 
             SetState(VpnState.Connecting);
             await AttachManagementAsync(process, port, ct).ConfigureAwait(false);
+            // 관리 인터페이스가 묻는 비밀번호("ENTER PASSWORD:")가 첫 줄이어야 한다. 파일은 끊을 때 지운다(재시작 때 다시 읽을 수 있다)
+            await SendCommandAsync(password).ConfigureAwait(false);
 
             await SendCommandAsync("state on").ConfigureAwait(false);
             _managementLog = true;
@@ -264,6 +317,39 @@ public sealed class OpenVpnManager : IDisposable
         }
 
         return null;
+    }
+
+    /// <summary>관리 비밀번호 파일 — 임시 폴더에 이 사용자만 읽을 수 있게(유닉스 0600) 만든다.</summary>
+    private static string WritePasswordFile(string password)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"proxmoxclient-ovpn-{Guid.NewGuid():N}.pw");
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.CreateNew,
+            Access = FileAccess.Write,
+            Share = FileShare.None
+        };
+        if (!OperatingSystem.IsWindows()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+
+        using (var stream = new FileStream(path, options))
+        {
+            stream.Write(Encoding.ASCII.GetBytes(password + "\n"));
+        }
+
+        return path;
+    }
+
+    private void DeletePasswordFile()
+    {
+        if (Interlocked.Exchange(ref _passwordFile, null) is not { } path) return;
+
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
     }
 
     private static int GetFreeTcpPort()
@@ -493,7 +579,7 @@ public sealed class OpenVpnManager : IDisposable
         }
     }
 
-    private async Task CleanupAsync()
+    private void CancelReadLoop()
     {
         try
         {
@@ -502,6 +588,12 @@ public sealed class OpenVpnManager : IDisposable
         catch (ObjectDisposedException)
         {
         }
+    }
+
+    private async Task CleanupAsync()
+    {
+        CancelReadLoop();
+        DeletePasswordFile();
 
         if (_readLoop is not null)
             try
@@ -516,27 +608,24 @@ public sealed class OpenVpnManager : IDisposable
         _readCts = null;
         _readLoop = null;
 
-        _mgmtStream?.Dispose();
-        _mgmtStream = null;
-        _mgmtClient?.Dispose();
-        _mgmtClient = null;
+        Interlocked.Exchange(ref _mgmtStream, null)?.Dispose();
+        Interlocked.Exchange(ref _mgmtClient, null)?.Dispose();
 
-        if (_process is not null)
+        if (Interlocked.Exchange(ref _process, null) is { } process)
         {
             try
             {
-                if (!_process.HasExited)
+                if (!process.HasExited)
                 {
-                    _process.Kill(true);
-                    await _process.WaitForExitAsync().ConfigureAwait(false);
+                    process.Kill(true);
+                    await process.WaitForExitAsync().ConfigureAwait(false);
                 }
             }
             catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
             {
             }
 
-            _process.Dispose();
-            _process = null;
+            process.Dispose();
         }
     }
 

@@ -7,6 +7,7 @@ using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Services;
 using ProxmoxClient.Core.Files;
 using ProxmoxClient.Core.Vnc;
+using static ProxmoxClient.Presentation.Files.SftpProfileRules;
 
 namespace ProxmoxClient.App.Views.Shared;
 
@@ -193,19 +194,6 @@ public partial class SftpProfilesEditor : UserControl
         }
         return Task.CompletedTask;
     });
-
-    private static string LocalKeyPath(string input)
-    {
-        var path = Environment.ExpandEnvironmentVariables(input.Trim());
-        if (path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~\\", StringComparison.Ordinal))
-            path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), path[2..]);
-        return Path.GetFullPath(path);
-    }
-
-    private static bool SameAuthentication(SftpAccountProfile old, SftpAccountProfile current) =>
-        old.UserName == current.UserName && old.AuthenticationMode == current.AuthenticationMode &&
-        old.PrivateKeyPath == current.PrivateKeyPath && old.CertificatePath == current.CertificatePath &&
-        old.CredentialRevision == current.CredentialRevision;
 
     private void OnConnectionSelected(object sender, SelectionChangedEventArgs e)
     {

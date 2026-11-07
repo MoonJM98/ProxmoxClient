@@ -7,6 +7,42 @@
   <data name="Settings_SftpPending" xml:space="preserve">
     <value>SFTP account editing will be ported together with the guest file features.</value>
   </data>
+  <data name="Settings_Security" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="Settings_SecureScreen" xml:space="preserve">
+    <value>Protect screen</value>
+  </data>
+  <data name="Settings_SecureScreenCheck" xml:space="preserve">
+    <value>Hide recent-apps preview, block screenshots</value>
+  </data>
+  <data name="Settings_SecureScreenHint" xml:space="preserve">
+    <value>When on, the app's screen is hidden in the recent apps list and screenshots and screen recording are blocked.</value>
+  </data>
+  <data name="Settings_Diagnostics" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="Settings_Log" xml:space="preserve">
+    <value>App log</value>
+  </data>
+  <data name="Settings_LogHint" xml:space="preserve">
+    <value>Error log, including the cause of unexpected app exits. Save it and attach it when reporting a problem.</value>
+  </data>
+  <data name="Settings_LogView" xml:space="preserve">
+    <value>View log</value>
+  </data>
+  <data name="Settings_LogSave" xml:space="preserve">
+    <value>Save log...</value>
+  </data>
+  <data name="Settings_LogEmpty" xml:space="preserve">
+    <value>Nothing has been logged.</value>
+  </data>
+  <data name="Settings_LogSaved" xml:space="preserve">
+    <value>Log saved.</value>
+  </data>
+  <data name="Settings_LogSaveFailed" xml:space="preserve">
+    <value>Could not save the log: {0}</value>
+  </data>
   <data name="Spice_StatusMissing" xml:space="preserve">
     <value>Not installed - a SPICE client (remote-viewer or a SPICE app) is required for the SPICE console.</value>
   </data>

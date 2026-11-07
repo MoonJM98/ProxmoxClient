@@ -30,12 +30,18 @@
 	<!-- 사내망(같은 Wi-Fi)의 Proxmox 서버에 붙으려면 iOS 14+ 로컬 네트워크 권한이 필요하다 -->
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>같은 네트워크에 있는 Proxmox 서버에 연결합니다.</string>
-	<!-- 자체 서명 인증서 서버 — 확인은 앱이 지문(TOFU)으로 직접 한다 -->
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
+	<!--
+		ATS(NSAppTransportSecurity) 예외는 두지 않는다 — HTTP·웹소켓은 .NET 관리형 처리기(UseNativeHttpHandler=false,
+		SocketsHttpHandler·ClientWebSocket)가 직접 소켓을 열어 ATS 를 거치지 않는다. 자체 서명 인증서는 앱이 지문(TOFU)으로 확인한다.
+		권한 문구의 영어·한국어는 Resources/en.lproj · ko.lproj 의 InfoPlist.strings.
+	-->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>ko</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ko</string>
+		<string>en</string>
+	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

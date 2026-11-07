@@ -584,7 +584,7 @@
         <comment>FirewallWindow.xaml · Content</comment>
   </data>
     <data name="FirewallWindow_03" xml:space="preserve">
-    <value>게스트 방화벽 사용</value>
+    <value>방화벽 사용</value>
         <comment>FirewallWindow.xaml · Content</comment>
   </data>
     <data name="FirewallWindow_04" xml:space="preserve">
@@ -1490,6 +1490,39 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <data name="LoginWindow_M10" xml:space="preserve">
     <value>로그인 실패: {0}</value>
         <comment>LoginWindow.cs · 메시지</comment>
+  </data>
+  <data name="LoginWindow_TfaTitle" xml:space="preserve">
+    <value>2단계 인증</value>
+  </data>
+  <data name="LoginWindow_TfaMethod" xml:space="preserve">
+    <value>방식</value>
+  </data>
+  <data name="LoginWindow_TfaCode" xml:space="preserve">
+    <value>인증 코드</value>
+  </data>
+  <data name="LoginWindow_TfaTotp" xml:space="preserve">
+    <value>인증 앱(TOTP)</value>
+  </data>
+  <data name="LoginWindow_TfaRecovery" xml:space="preserve">
+    <value>복구 키</value>
+  </data>
+  <data name="LoginWindow_TfaYubico" xml:space="preserve">
+    <value>Yubico OTP</value>
+  </data>
+  <data name="LoginWindow_TfaUnsupported" xml:space="preserve">
+    <value>보안 키(WebAuthn·U2F)는 Windows 10 1903 이상에서 쓸 수 있고, 옛 형식(PVE 7.2 이전) U2F 요청은 지원하지 않습니다 — TOTP나 복구 키를 쓰거나 API 토큰을 쓰세요.</value>
+  </data>
+  <data name="LoginWindow_TfaWebAuthn" xml:space="preserve">
+    <value>보안 키(WebAuthn)</value>
+  </data>
+  <data name="LoginWindow_TfaU2f" xml:space="preserve">
+    <value>보안 키(U2F)</value>
+  </data>
+  <data name="LoginWindow_TfaWebAuthnHint" xml:space="preserve">
+    <value>보안 키는 코드 없이 확인을 누르면 Windows 보안 창이 뜹니다.</value>
+  </data>
+  <data name="LoginWindow_TfaWebAuthnCancelled" xml:space="preserve">
+    <value>보안 키 확인을 취소했습니다. 다시 하거나 다른 방식을 고르세요.</value>
   </data>
     <data name="ProfileDialog_M01" xml:space="preserve">
     <value>프로필 추가</value>
@@ -4319,6 +4352,10 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>Ceph 상태(읽기 전용)입니다. 설치·OSD·풀 관리는 노드 셸의 pveceph 로 합니다.</value>
     <comment>ClusterTabs</comment>
   </data>
+  <data name="DcCeph_NotInstalled" xml:space="preserve">
+    <value>이 클러스터에는 Ceph 가 설치되어 있지 않습니다. 노드의 Ceph 화면에서 설치할 수 있습니다(root 권한 필요).</value>
+    <comment>ClusterTabs</comment>
+  </data>
   <data name="DcSdn_Zones" xml:space="preserve">
     <value>영역</value>
     <comment>ClusterTabs</comment>
@@ -4926,6 +4963,10 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
   <data name="GuestOptions_DefaultOff" xml:space="preserve">
     <value>(기본값: 아니요)</value>
     <comment>GuestOptions</comment>
+  </data>
+  <data name="GuestOptions_DescriptionTooLong" xml:space="preserve">
+    <value>설명은 {0} KiB 를 넘을 수 없습니다.</value>
+    <comment>Views/Guest/Tabs/OptionEditors.Text</comment>
   </data>
   <data name="GuestOptions_Features" xml:space="preserve">
     <value>기능(nesting=1,keyctl=1 …)</value>
@@ -8130,6 +8171,10 @@ VM 이 실행 중이고 하드웨어의 디스플레이가 SPICE(qxl)로 설정�
     <value>경로는 / 로 시작해야 합니다.</value>
     <comment>Views/Guest/Hardware</comment>
   </data>
+  <data name="Ct_MountPathRules" xml:space="preserve">
+    <value>컨테이너 안의 절대 경로를 입력하세요(/ 제외). 쉼표·줄바꿈과 /./ · /../ 는 쓸 수 없습니다.</value>
+    <comment>Views/Guest/Hardware</comment>
+  </data>
   <data name="Ct_Quota" xml:space="preserve">
     <value>쿼터 사용</value>
     <comment>Views/Guest/Hardware</comment>
@@ -10508,5 +10553,23 @@ SHA-256: {5}</value>
   </data>
   <data name="FormDialog_Refresh" xml:space="preserve">
     <value>지금 입력한 값으로 다시 찾기</value>
+  </data>
+  <data name="NodeSubscription_Status_new" xml:space="preserve">
+    <value>새로 등록</value>
+  </data>
+  <data name="NodeSubscription_Status_notfound" xml:space="preserve">
+    <value>구독 없음</value>
+  </data>
+  <data name="NodeSubscription_Status_active" xml:space="preserve">
+    <value>활성</value>
+  </data>
+  <data name="NodeSubscription_Status_invalid" xml:space="preserve">
+    <value>잘못된 키</value>
+  </data>
+  <data name="NodeSubscription_Status_expired" xml:space="preserve">
+    <value>만료됨</value>
+  </data>
+  <data name="NodeSubscription_Status_suspended" xml:space="preserve">
+    <value>정지됨</value>
   </data>
 </root>

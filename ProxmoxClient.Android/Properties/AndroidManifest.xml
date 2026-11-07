@@ -2,6 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 터미널 연결 유지(포그라운드 서비스 + 알림) — 배경으로 가도 CT 콘솔·노드 셸 세션이 끊기지 않게 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 2단계 인증 보안 키(WebAuthn) — NFC·USB 보안 키에 서명을 받는다. NFC·USB 호스트가 없는 기기에도 설치되게 required=false -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
     <!-- Android 11 이상: SPICE 앱(.vv 를 여는 앱)이 보이게 — 없으면 설치 여부를 알 수 없다 -->
     <queries>
         <intent>
@@ -12,6 +20,12 @@
     <!-- 비밀값은 키스토어 키로 암호화해 두지만, 기기 백업·이전으로 앱 데이터가 밖으로 나가지 않게 막는다 -->
     <application android:label="Proxmox Client" android:icon="@mipmap/appicon"
                  android:allowBackup="false" android:fullBackupContent="false">
+        <!-- 터미널 연결 유지 서비스(TerminalKeepAliveService.cs) — 사용자가 연 원격 터미널 세션을 배경에서도 유지 -->
+        <service android:name="io.github.moonjm98.proxmoxclient.TerminalKeepAliveService"
+                 android:exported="false" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                      android:value="Keeps a remote terminal session (Proxmox CT console or node shell) that the user opened connected while the app is in the background, like an SSH client." />
+        </service>
         <!-- SPICE 연결 파일을 다른 앱(SPICE 클라이언트)에 넘긴다 — 캐시의 spice 폴더만(res/xml/spice_file_paths.xml) -->
         <provider android:name="androidx.core.content.FileProvider"
                   android:authorities="io.github.moonjm98.proxmoxclient.spicefiles"

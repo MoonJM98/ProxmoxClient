@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using ProxmoxClient.Presentation.Shared;
 using ProxmoxClient.UI.Services;
 using ProxmoxClient.UI.Views.Shared;
 
@@ -36,7 +37,7 @@ internal static class SelfTest
                             values => context.Api.PostActionAsync("cluster/selftest", values), "Common_Ok")
                     },
                     ActionHelpers.DeleteAction(row => $"delete {row["upid"]}?",
-                        row => context.Api.DeleteActionAsync("cluster/selftest/" + ActionHelpers.Seg(row["upid"])),
+                        row => context.Api.DeleteActionAsync("cluster/selftest/" + FormHelpers.Seg(row["upid"])),
                         "Common_Ok")
                 ],
                 filterable: true)));

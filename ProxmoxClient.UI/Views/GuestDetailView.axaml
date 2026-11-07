@@ -10,6 +10,11 @@
     <ScrollViewer>
         <StackPanel Margin="16,12,16,32" Spacing="12">
 
+            <!-- 상태를 새로 고치지 못함(권한·연결) — 화면은 마지막 값을 유지 -->
+            <Border Classes="banner" IsVisible="{Binding HasError}">
+                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+            </Border>
+
             <!-- 상태 -->
             <Border Classes="card">
                 <StackPanel Spacing="6">
@@ -210,6 +215,7 @@
                     <ItemsControl ItemsSource="{Binding Snapshots}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="m:PveSnapshot">
+                                <!-- 되돌리기·삭제는 둘 다 되돌릴 수 없는 작업 — 잘못 누르지 않게 크게, 사이를 띄운다 -->
                                 <Grid ColumnDefinitions="*,Auto,Auto" Margin="8,4,0,4">
                                     <StackPanel Spacing="2" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
@@ -219,14 +225,17 @@
                                                    TextTrimming="None"
                                                    IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                     </StackPanel>
-                                    <Button Grid.Column="1" Classes="icon"
+                                    <Button Grid.Column="1" Classes="icon" MinWidth="48" MinHeight="48"
                                             Command="{Binding $parent[ItemsControl].((vm:GuestDetailViewModel)DataContext).RollbackSnapshotCommand}"
-                                            CommandParameter="{Binding}" ToolTip.Tip="{l:Tr Snapshot_Rollback}">
+                                            CommandParameter="{Binding}" ToolTip.Tip="{l:Tr Snapshot_Rollback}"
+                                            AutomationProperties.Name="{l:Tr Snapshot_Rollback}">
                                         <Path Classes="icon" Data="{StaticResource IconUndo}" />
                                     </Button>
-                                    <Button Grid.Column="2" Classes="icon danger"
+                                    <Button Grid.Column="2" Classes="icon danger" MinWidth="48" MinHeight="48"
+                                            Margin="16,0,0,0"
                                             Command="{Binding $parent[ItemsControl].((vm:GuestDetailViewModel)DataContext).DeleteSnapshotCommand}"
-                                            CommandParameter="{Binding}" ToolTip.Tip="{l:Tr Action_Delete}">
+                                            CommandParameter="{Binding}" ToolTip.Tip="{l:Tr Action_Delete}"
+                                            AutomationProperties.Name="{l:Tr Action_Delete}">
                                         <Path Classes="icon" Data="{StaticResource IconTrash}" />
                                     </Button>
                                 </Grid>
@@ -235,11 +244,17 @@
                     </ItemsControl>
                     <TextBlock Classes="subtle" Margin="8,8" Text="{l:Tr Snapshot_None}"
                                IsVisible="{Binding HasNoSnapshots}" />
+                    <TextBlock Classes="subtle" Margin="8,8" Text="{Binding SnapshotsError}" TextWrapping="Wrap"
+                               TextTrimming="None" Foreground="{StaticResource DangerBrush}"
+                               IsVisible="{Binding HasSnapshotsError}" />
                 </StackPanel>
             </Border>
 
             <!-- 설정 -->
             <Expander Header="{l:Tr Guest_Config}" HorizontalAlignment="Stretch" Margin="0,8,0,0">
+                <StackPanel>
+                <TextBlock Classes="subtle" Text="{Binding ConfigError}" TextWrapping="Wrap" TextTrimming="None"
+                           Foreground="{StaticResource DangerBrush}" IsVisible="{Binding HasConfigError}" />
                 <ItemsControl ItemsSource="{Binding Config}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:ConfigEntry">
@@ -250,6 +265,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                </StackPanel>
             </Expander>
         </StackPanel>
     </ScrollViewer>

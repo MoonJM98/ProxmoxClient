@@ -155,6 +155,7 @@ def serve(handler):
                     log('qemu-ext-key on')
             elif t == 3:  # FramebufferUpdateRequest
                 inc, x, y, w, h = struct.unpack('>BHHHH', stream.read(9))
+                log('update inc=%d' % inc)
                 if not inc or pending_full:
                     pending_full = False
                     ws.send(struct.pack('>BBH', 0, 0, 1) + struct.pack('>HHHHi', 0, 0, W, H, 0) + DESKTOP)
@@ -169,7 +170,11 @@ def serve(handler):
                 log('pointer mask=%d x=%d y=%d t=%.4f' % (mask, x, y, time.monotonic()))
             elif t == 6:  # ClientCutText
                 _, n = struct.unpack('>3sI', stream.read(7))
-                log('cut %r' % stream.read(n))
+                data = stream.read(n)
+                log('cut %r' % data)
+                # 게스트가 붙여넣은 글을 클립보드에 두고 벨을 울린 것처럼 — 게스트 → 기기 복사·벨 검사용
+                ws.send(struct.pack('>B3xI', 3, len(data)) + data)
+                ws.send(bytes([2]))
             elif t == 255:  # QEMU 확장 키 이벤트
                 sub, down, keysym, keycode = struct.unpack('>BHII', stream.read(11))
                 log('qkey down=%d keysym=0x%x keycode=0x%x' % (down, keysym, keycode))

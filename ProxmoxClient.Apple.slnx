@@ -1,6 +1,7 @@
 <Solution>
     <!-- Mac 에서 여는 솔루션 — macOS 앱(Desktop 헤드)과 iOS·iPadOS 앱. iOS 워크로드가 필요하다(dotnet workload install ios) -->
     <Project Path="ProxmoxClient.Core/ProxmoxClient.Core.csproj"/>
+    <Project Path="ProxmoxClient.Presentation/ProxmoxClient.Presentation.csproj"/>
     <Project Path="ProxmoxClient.UI/ProxmoxClient.UI.csproj"/>
     <Project Path="ProxmoxClient.Desktop/ProxmoxClient.Desktop.csproj"/>
     <Project Path="ProxmoxClient.iOS/ProxmoxClient.iOS.csproj"/>

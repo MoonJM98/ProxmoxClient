@@ -33,9 +33,31 @@ public partial class MainWindow : Window
             Loc.T("TableTab_ConfirmTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
         _autoConnectProfile = autoConnectProfile;
         Loaded += OnLoadedAsync;
-        Closing += (_, _) => _vm.Dispose();
+        Closing += OnClosingAsync;
         StateChanged += (_, _) => _vm.SetBackgrounded(WindowState == WindowState.Minimized);
     }
+
+    /// <summary>창 닫기 — 처음 한 번은 닫기를 미루고 VPN 터널을 정상 종료(최대 몇 초)한 뒤 다시 닫는다(UI 는 멈추지 않는다).</summary>
+    private async void OnClosingAsync(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (_vmDisposed) return;
+
+        e.Cancel = true;
+        _vmDisposed = true;
+        IsEnabled = false;
+        try
+        {
+            await _vm.DisposeAsync();
+        }
+        catch
+        {
+            _vm.Dispose();
+        }
+
+        Close();
+    }
+
+    private bool _vmDisposed;
 
     private async void OnLoadedAsync(object sender, RoutedEventArgs e)
     {
@@ -219,7 +241,7 @@ public partial class MainWindow : Window
         }
 
         var window = Views.Datacenter.DatacenterNavigator.Create(api, _vm.Permissions ?? PermissionsInfo.Admin,
-            openResource: (row, owner) => OpenResourceWindow(api, row, owner));
+            openResource: (row, owner) => OpenResourceWindow(api, row, owner as Window));
         window.Owner = this;
         window.ShowDialog();
         _ = _vm.RefreshDataAsync();
@@ -241,7 +263,7 @@ public partial class MainWindow : Window
             // 풀은 웹 UI 처럼 구성원 목록을 띄운다(편집 버튼은 Pool.Allocate 가 있을 때만)
             var pool = Value("pool");
             Views.Shared.TableWindow.ShowModal(owner ?? this, Loc.T("DcPools_MembersTitle", pool),
-                Views.Datacenter.PoolMembers.Create(api, pool, permissions.Has("Pool.Allocate")));
+                Views.Shared.ViewSpecs.Build(PoolMembers.Create(api, pool, permissions.Has("Pool.Allocate"))));
             _ = _vm.RefreshDataAsync();
             return;
         }

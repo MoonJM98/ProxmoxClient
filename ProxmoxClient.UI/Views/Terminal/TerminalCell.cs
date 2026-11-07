@@ -1,8 +1,11 @@
 namespace ProxmoxClient.UI.Views.Terminal;
 
-/// <summary>글자 꾸밈(SGR).</summary>
+/// <summary>
+///     글자 꾸밈(SGR). 비트 8~10 은 밑줄 모양(<see cref="UnderlineStyle" />), 위 8비트(24~31)는 밑줄 색 칸 번호
+///     (<see cref="TerminalBuffer.UnderlineColor" /> 로 읽는다, 0 = 글자색).
+/// </summary>
 [Flags]
-public enum CellFlags : ushort
+public enum CellFlags : uint
 {
     None = 0,
     Bold = 1,
@@ -12,7 +15,32 @@ public enum CellFlags : ushort
     Blink = 16,
     Inverse = 32,
     Hidden = 64,
-    Strike = 128
+    Strike = 128,
+
+    /// <summary>결합 문자·ZWJ 이모지·국기 등이 붙은 칸 — 붙은 글자는 <see cref="TerminalBuffer.Line.GetExtra" /> 에 있다.</summary>
+    Combined = 0x8000,
+    UnderlineDouble = 0x100,
+    UnderlineCurly = 0x200,
+    UnderlineDotted = 0x300,
+    UnderlineDashed = 0x400,
+    UnderlineStyleMask = 0x700,
+    Overline = 0x800,
+
+    /// <summary>글자색을 SGR 30~37 로 골랐다 — 굵은 글자를 밝은 색으로 바꾸는 것은 이때만(38;5;n 은 그대로).</summary>
+    BasicColor = 0x1000,
+
+    UnderlineColorMask = 0xFF00_0000
+}
+
+/// <summary>밑줄 모양(SGR 4:n).</summary>
+public enum UnderlineStyle
+{
+    None,
+    Single,
+    Double,
+    Curly,
+    Dotted,
+    Dashed
 }
 
 /// <summary>
@@ -29,6 +57,14 @@ public struct TerminalCell
 
     public static TerminalCell Blank(uint background) => new() { Width = 1, Background = background };
 
+    /// <summary>밑줄 모양 — 밑줄이 없으면 None.</summary>
+    public readonly UnderlineStyle Underline => (Flags & CellFlags.Underline) == 0
+        ? UnderlineStyle.None
+        : (UnderlineStyle)((uint)(Flags & CellFlags.UnderlineStyleMask) >> 8) + 1;
+
+    /// <summary>밑줄 색 칸 번호(0 = 글자색).</summary>
+    public readonly int UnderlineColorSlot => (int)((uint)Flags >> 24);
+
     public readonly bool SameStyle(in TerminalCell other)
     {
         return Flags == other.Flags && Foreground == other.Foreground && Background == other.Background;
@@ -39,6 +75,14 @@ public struct TerminalCell
 public static class TerminalColor
 {
     public const uint Default = 0;
+
+    /// <summary>기본 글자색·바탕색(OSC 10/11 로 바꾸기 전).</summary>
+    public const uint DefaultForegroundRgb = 0xCCCCCC;
+    public const uint DefaultBackgroundRgb = 0x0C0C0C;
+
+    /// <summary>기본 256색 — Campbell 16색(WPF 터미널과 같음) + 6×6×6 색 정육면체 + 회색 24단.</summary>
+    public static readonly uint[] DefaultPalette = BuildPalette();
+
     private const uint IndexedTag = 0x0100_0000;
     private const uint RgbTag = 0x0200_0000;
 
@@ -59,62 +103,58 @@ public static class TerminalColor
         rgb = color & 0x00FF_FFFF;
         return (color & 0xFF00_0000) == RgbTag;
     }
+
+    private static uint[] BuildPalette()
+    {
+        uint[] base16 =
+        [
+            0x0C0C0C, 0xC50F1F, 0x13A10E, 0xC19C00, 0x0037DA, 0x881798, 0x3A96DD, 0xCCCCCC,
+            0x767676, 0xE74856, 0x16C60C, 0xF9F1A5, 0x3B78FF, 0xB4009E, 0x61D6D6, 0xF2F2F2
+        ];
+        var palette = new uint[256];
+        Array.Copy(base16, palette, 16);
+        int[] steps = [0, 95, 135, 175, 215, 255];
+        for (var i = 0; i < 216; i++)
+            palette[16 + i] = (uint)(steps[i / 36] << 16 | steps[i / 6 % 6] << 8 | steps[i % 6]);
+        for (var i = 0; i < 24; i++)
+        {
+            var v = (uint)(8 + i * 10);
+            palette[232 + i] = v << 16 | v << 8 | v;
+        }
+
+        return palette;
+    }
 }
 
-/// <summary>동아시아 넓은 글자·폭 없는 글자(결합 문자) 판정 — 셸(wcwidth)과 같은 칸 수를 쓰도록.</summary>
+/// <summary>
+///     글자 폭 — 셸(glibc wcwidth)과 같은 칸 수를 쓰도록. 표는 유니코드 16 에서 만든 <see cref="CharWidthTable" />.
+///     이체자 선택자(FE0F)는 폭을 늘리지 않는다(glibc·xterm.js 와 같다. Node string-width 는 '☺️' 를 2칸으로 보지만
+///     셸은 wcwidth 로 커서를 옮기므로 그쪽에 맞춘다). 국기 글자(지역 표시 문자)는 하나면 1칸, 둘이 짝이면 해석기가 2칸 한 묶음으로.
+/// </summary>
 public static class CharWidth
 {
     public static int Of(int cp)
     {
         if (cp < 0x300) return 1;
-        if (IsZeroWidth(cp)) return 0;
-        return IsWide(cp) ? 2 : 1;
+        if (In(CharWidthTable.Zero, cp)) return 0;
+        return In(CharWidthTable.Wide, cp) ? 2 : 1;
     }
 
-    private static bool IsZeroWidth(int cp)
-    {
-        return cp is >= 0x0300 and <= 0x036F // 결합 발음 부호
-            or >= 0x1160 and <= 0x11FF // 한글 중성·종성 자모(조합용)
-            or >= 0x200B and <= 0x200F // 폭 없는 공백·방향 표시
-            or >= 0x20D0 and <= 0x20FF
-            or >= 0xFE00 and <= 0xFE0F // 이체자 선택자
-            or 0xFEFF
-            or >= 0x1AB0 and <= 0x1AFF
-            or >= 0x1DC0 and <= 0x1DFF
-            or >= 0xE0100 and <= 0xE01EF;
-    }
+    /// <summary>지역 표시 문자(국기 글자 🇦~🇿).</summary>
+    public static bool IsRegionalIndicator(int cp) => cp is >= 0x1F1E6 and <= 0x1F1FF;
 
-    private static bool IsWide(int cp)
+    /// <summary>[시작, 끝] 쌍 배열에서 이진 탐색.</summary>
+    private static bool In(int[] ranges, int cp)
     {
-        return cp is >= 0x1100 and <= 0x115F // 한글 초성
-            or >= 0x231A and <= 0x231B
-            or >= 0x2329 and <= 0x232A
-            or >= 0x23E9 and <= 0x23EC
-            or 0x23F0 or 0x23F3
-            or >= 0x25FD and <= 0x25FE
-            or >= 0x2614 and <= 0x2615
-            or >= 0x2648 and <= 0x2653
-            or 0x267F or 0x2693 or 0x26A1 or >= 0x26AA and <= 0x26AB or >= 0x26BD and <= 0x26BE
-            or >= 0x26C4 and <= 0x26C5 or 0x26CE or 0x26D4 or 0x26EA or >= 0x26F2 and <= 0x26F3 or 0x26F5
-            or 0x26FA or 0x26FD or 0x2705 or >= 0x270A and <= 0x270B or 0x2728 or 0x274C or 0x274E
-            or >= 0x2753 and <= 0x2755 or 0x2757 or >= 0x2795 and <= 0x2797 or 0x27B0 or 0x27BF
-            or >= 0x2B1B and <= 0x2B1C or 0x2B50 or 0x2B55
-            or >= 0x2E80 and <= 0x303E // CJK 부수·기호
-            or >= 0x3041 and <= 0x33FF // 가나·한글 호환 자모·CJK 호환
-            or >= 0x3400 and <= 0x4DBF
-            or >= 0x4E00 and <= 0x9FFF
-            or >= 0xA000 and <= 0xA4CF
-            or >= 0xA960 and <= 0xA97F
-            or >= 0xAC00 and <= 0xD7A3 // 한글 음절
-            or >= 0xF900 and <= 0xFAFF
-            or >= 0xFE10 and <= 0xFE19
-            or >= 0xFE30 and <= 0xFE6F
-            or >= 0xFF00 and <= 0xFF60 // 전각
-            or >= 0xFFE0 and <= 0xFFE6
-            or >= 0x1F300 and <= 0x1F64F // 그림 문자
-            or >= 0x1F680 and <= 0x1F6FF
-            or >= 0x1F900 and <= 0x1F9FF
-            or >= 0x1FA70 and <= 0x1FAFF
-            or >= 0x20000 and <= 0x3FFFD;
+        int lo = 0, hi = ranges.Length / 2 - 1;
+        while (lo <= hi)
+        {
+            var mid = (lo + hi) >> 1;
+            if (cp < ranges[mid * 2]) hi = mid - 1;
+            else if (cp > ranges[mid * 2 + 1]) lo = mid + 1;
+            else return true;
+        }
+
+        return false;
     }
 }

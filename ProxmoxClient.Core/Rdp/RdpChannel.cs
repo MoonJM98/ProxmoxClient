@@ -73,9 +73,9 @@ internal sealed class RdpChannel
         var written = sequence.NextPduHint() is { } hint
             ? sequence.Step(await ReadByHintAsync(hint).ConfigureAwait(false), buf)
             : sequence.StepNoInput(buf);
-        if (written.GetWrittenType() == WrittenType.Nothing) return;
+        if (written.WrittenType == WrittenType.Nothing) return;
 
-        var response = new byte[(int)written.GetSize().Get()];
+        var response = new byte[(int)written.Size.Get()];
         buf.ReadIntoBuf(response);
         await WriteAsync(response).ConfigureAwait(false);
     }

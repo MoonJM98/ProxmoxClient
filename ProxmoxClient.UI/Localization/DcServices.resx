@@ -8,6 +8,10 @@
     <value>값</value>
     <comment>FirewallTabs (Options)</comment>
   </data>
+  <data name="DcFirewall_DefaultValue" xml:space="preserve">
+    <value>(기본값: {0})</value>
+    <comment>FirewallTabs (Options) — 서버에 설정이 없을 때 실제로 쓰이는 값</comment>
+  </data>
   <data name="DcFirewall_OptionsHint" xml:space="preserve">
     <value>방화벽 옵션 목록입니다. 한 줄을 눌러 그 옵션만 고칩니다.</value>
     <comment>FirewallTabs (Options)</comment>

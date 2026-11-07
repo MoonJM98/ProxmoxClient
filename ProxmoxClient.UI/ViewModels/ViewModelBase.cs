@@ -38,15 +38,23 @@ public abstract partial class ViewModelBase : ObservableObject
     {
     }
 
-    /// <summary>작업을 실행하고 실패하면 오류 대화상자를 띄운다. 성공하면 true.</summary>
-    protected async Task<bool> TryAsync(Func<Task> action, string? busyText = null)
+    /// <summary>
+    ///     작업을 실행하고 실패하면 오류 대화상자를 띄운다. 성공하면 true.
+    ///     <paramref name="cancel" /> 을 주면 진행 표시에 취소 단추가 생기고, 취소하면 조용히 false.
+    /// </summary>
+    protected async Task<bool> TryAsync(Func<Task> action, string? busyText = null,
+        CancellationTokenSource? cancel = null)
     {
-        using var busy = busyText is null ? null : AppServices.Dialogs.ShowBusy(busyText);
+        using var busy = busyText is null ? null : AppServices.Dialogs.ShowBusy(busyText, cancel is null ? null : cancel.Cancel);
         IsBusy = true;
         try
         {
             await action();
             return true;
+        }
+        catch (Exception) when (cancel?.IsCancellationRequested == true)
+        {
+            return false; // 사용자가 진행 표시에서 취소함
         }
         catch (Core.Api.WriteCancelledException)
         {

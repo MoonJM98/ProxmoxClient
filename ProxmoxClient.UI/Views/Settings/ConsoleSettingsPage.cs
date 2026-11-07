@@ -178,6 +178,8 @@ public sealed class ConsoleSettingsPage : UserControl
             Loc.T("ConsoleSettings_RdpResolutionHint")));
 
         _rdpClipboard = Check(s.RdpClipboard, Loc.T("ConsoleSettings_RdpClipboardAuto"));
+        // Windows 에서만 된다 — 다른 OS 는 끄지 않고(저장값 유지) 바꿀 수만 없게
+        _rdpClipboard.IsEnabled = ProxmoxClient.Core.Rdp.ProxmoxRdpSession.ClipboardSupported;
         panel.Children.Add(HardwareInput.Form(Loc.T("ConsoleSettings_Clipboard"), _rdpClipboard,
             Loc.T("ConsoleSettings_RdpClipboardHint")));
 

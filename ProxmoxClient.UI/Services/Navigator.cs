@@ -62,6 +62,9 @@ public sealed class Navigator
         return Navigation.PopToRootAsync();
     }
 
+    /// <summary>지금 보이는 페이지(붙기 전이면 null) — 디버그 자동 검사(Android)가 화면 상태를 읽는다.</summary>
+    public Page? CurrentPage => _navigation?.CurrentPage;
+
     private NavigationPage Navigation =>
         _navigation ?? throw new InvalidOperationException("Navigator is not attached.");
 }

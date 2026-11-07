@@ -29,6 +29,12 @@ WPF 앱은 기능이 모두 옮겨질 때까지 그대로 유지한다.
   메모리에만 두고 "저장" 선택지를 숨긴다.
 - 화면 배치: 같은 뷰모델을 `PageFactory` 가 형태(`PlatformInfo.FormFactor`)에 따라 다른 페이지로 보여 준다.
   상세 화면(게스트·노드·작업 로그)은 UserControl 하나를 모바일 페이지와 데스크톱 상세 창이 함께 쓴다.
+- 휴대폰 목록(`TableTab`): 카드에는 한눈에 볼 것만(제목 · 상태 칩 · 요약 한 줄 · ›). 카드를 누르면 아래에서 상세 시트
+  (`RowDetailSheet`)가 올라와 표의 모든 열(빈 값은 —)과 표에 없는 서버 필드까지 보이고, 항목 작업(편집·지우기 등)은
+  시트의 큰 단추로 한다(지우기는 빨간 글자로 맨 아래). 위 단추 줄에는 항목을 고르지 않는 작업(추가 등)만, 둘을 넘으면
+  "더 보기" 메뉴. 열마다 `TableColumn.Mobile`(Title·Status·Summary·Detail)로 카드 자리를 정하고, 정하지 않으면
+  첫 열 = 제목, status·state 열 = 상태 칩, 다음 두 열 = 요약. 설정 목록·파일 목록처럼 여는 것이 곧 할 일이면
+  `TapOpens`(누르면 바로 열고, 길게 누르면 시트).
 - 새 OS 전용 기능은 `Platform/` 에 인터페이스 + OS 별 구현으로 넣고, 화면 코드에서 `OperatingSystem.IsXxx()` 를 직접 쓰지 않는다.
 
 ## 지연 최소화
@@ -55,6 +61,13 @@ WPF 앱은 기능이 모두 옮겨질 때까지 그대로 유지한다.
 | 터미널 출력 | 수신 스레드에서 VT 해석(화면 스레드 막지 않음) → 다시 그리기는 한 프레임에 한 번으로 모은다 | `Views/Terminal/TerminalView.cs` `Write` |
 | 터미널 그리기 | 같은 모양이 이어지는 글자를 GlyphRun 한 번으로, 바탕은 같은 색 구간을 사각형 하나로. 대체 글꼴(한글) 글리프는 캐시. 선·블록 문자는 도형 | `Views/Terminal/TerminalRenderer.cs`, `BoxDrawing.cs` |
 | 터미널 크기 | 창 크기를 바꾸는 동안 바뀐 크기를 모아 한 번만 PTY 에 보낸다(같은 크기는 세션이 거른다) | `Views/Terminal/TerminalPage.cs` |
+| 터미널 대체 글꼴 | JetBrains Mono → Pretendard(한글) → 이모지는 기기 컬러 이모지 먼저 → DejaVu Sans Mono·Noto Sans Math·Symbols 1/2·Symbols Nerd Font Mono → Noto Sans Mono CJK KR(한자·가나·중국어, 16MB — 그런 글자가 처음 나올 때 읽음) → 기기 글꼴 → Noto Emoji(흑백) → 네모 | `Views/Terminal/TerminalFonts.cs`, `Assets/TerminalFonts`, `Assets/CjkFonts` |
+| 터미널 다시 감기 | 폭이 바뀌면 이어진 줄(자동 줄바꿈)을 다시 감는다 — 좁혔다 넓히면 원래대로. 커서·저장 커서·보던 위치 유지. PTY 크기는 120ms 모아 보냄 | `Views/Terminal/TerminalBuffer.Reflow.cs`, `TerminalPage.cs` |
+| 터미널 글자 | 유니코드 16 폭 표(생성: `tools/TerminalTests/gen_width.py`), 결합 문자·NFD 한글·ZWJ 이모지·국기 묶음, 기울임·밑줄 모양(4:n)·밑줄 색(58)·윗줄, 색 OSC 4/10/11/12/104/110~112, 화면 반전 ?5, 깜박임 | `TerminalCell.cs`, `TerminalRenderer.cs`, `BoxDrawing.cs` |
+| 터미널 입력 | 키보드 앱 붙여넣기도 괄호 붙여넣기, 고정 Shift(⇧Tab), AltGr, 휠 한 칸=보고 한 번, 마우스 수식키·?1003 움직임·좌표 95 제한, 포커스 보고 ?1004, ?1007, 숫자패드 응용 모드, 4KB 씩 나눠 보내기 | `TerminalKeys.cs`, `TerminalView.cs`, `ProxmoxTerminalSession.cs` |
+| 터미널 질의 응답 | 창 크기(CSI 18t)·배경색(OSC 10/11)·터미널 이름(XTGETTCAP)·모드(DECRQM)·커서 위치에 바로 답한다 — systemd 는 콘솔을 열 때 0.33초씩만 기다려, 답이 없거나 늦으면 로그인 칸에 `^[[24;80R` 이 찍힌다 | `Views/Terminal/TerminalBuffer.cs` |
+| 터미널 동기화 출력 | DEC 2026(Claude Code·neovim 등이 다시 그릴 때 켜고 끈다) 동안 그리지 않고, 끄는 신호가 0.2초 안에 안 오면 그냥 그린다. 모드 질의(DECRQM)에 답한다 | `Views/Terminal/TerminalView.cs` `Redraw`, `TerminalBuffer.cs` `ReportMode` |
+| 터미널 손가락 선택 | 길게 눌러 단어 선택 → 양 끝 손잡이(맨 아랫줄이면 위로)를 끌어 넓히기·줄이기, 끄는 동안 손가락 위 확대경. 프로그램이 마우스를 받으면(Claude Code 전체 화면·htop) 손가락 끌기는 휠로 보낸다 | `Views/Terminal/TerminalView.cs` |
 | 목록 새로 고침 | 로그인 직후 첫 화면 데이터 미리 요청, gzip 응답, 같은 요청은 동시에 | `ViewModels/ProfilesViewModel.cs`, `Core/Api` |
 
 렌더링 방식은 첫 화면(로그인·서버 목록) 아래에 작게 보인다(예: `Vulkan · Android · Mobile · 1.0.3`). 데스크톱은
@@ -95,18 +108,24 @@ GPU 경로가 초기화는 되는데 창이 검게 나오면 `PROXMOXCLIENT_REND
 | 대상 | 방법 | 결과 |
 |---|---|---|
 | 화면 전체(데스크톱·태블릿·모바일 배치) | UiSnapshot + 가짜 PVE(`tools/FakePve`) | 모든 대상 통과 |
-| VNC 콘솔 조작(제스처·물리 키) | `--target console` | 26/26 |
-| 터미널 해석·입력 | `--target terminal` (가짜 셸) | 16/16 |
-| 터미널 + 실제 프로그램 | `FAKEPVE_REAL_SHELL=1` + `--target realshell` (진짜 bash PTY: stty·vim·top·Ctrl+C·Tab 완성·Tab 후보 목록·최근 명령 기록·5만 줄 출력·크기·종료) | 14/14 |
+| VNC 콘솔 조작(제스처·물리 키·화면 키보드 Shift/두벌식·클립보드) | `--target console` | 모바일·데스크톱 통과 |
+| 해석기·순수 논리 | `dotnet run --project tools/TerminalTests` (터미널 제어열·질의·유니코드·다시 감기·입력 부호, RDP 키, 2단계 인증·보안 키(CTAP2·PIN·U2F, 소프트웨어 키), 관리 입력 검사, 터미널 다시 열기 등) | 708/708 |
+| Core 단위 검사 | `dotnet test tests/ProxmoxClient.Core.Tests` (RFB 디코딩·VNC 인증·PVE 응답·저장소·UPID) | 60/60 |
+| RDP 실제 서버 | xrdp·FreeRDP(NLA) + 가짜 PVE rdpproxy(RDCleanPath) + `--target rdp` (IronRDP 2026.10.29), Windows Server 2025(러너 자신, NLA 필수) + `tools/WinRdpE2E` | 연결·CredSSP/NTLM(HYBRID·HYBRID_EX)·로그인 실패 안내·화면·입력·한글 유니코드 키·해상도 맞춤·다시 연결·Windows 클립보드 양방향 통과 |
+| 보안 키(USB, Linux) | GitHub 러너의 `/dev/uhid` 가상 FIDO 키(`tools/VirtualFido`) + 실제 `LinuxHidWebAuthnProvider` | CTAP2·PIN v1/v2·U2F·취소·뽑기·로그인 12개 통과. 실제 키·NFC·Windows/macOS 경로는 실물 확인 필요 |
+| 로그인 | `--target tfa`·`--target webauthn`(가짜 키)·`--target restore` | 통과 — 실제 보안 키는 미확인 |
+| CI | `.github/workflows/ci.yml` (Linux 빌드·검사·화면·RDP, Windows WPF, Android APK, macOS Desktop·iOS) | 모두 통과 |
+| 터미널 해석·입력 | `--target terminal` (가짜 셸: + 손잡이 선택·동기화 출력·마우스 보고 중 스크롤) | 모바일 20/20 |
+| 터미널 + 실제 프로그램 | `FAKEPVE_REAL_SHELL=1` + `--target realshell` (진짜 bash PTY: stty·vim·top·Ctrl+C·Tab 완성·Tab 후보 목록·최근 명령 기록·5만 줄 출력·크기·키보드로 줄 때 대체 화면 크기·종료) | 18/18 |
 | CT 파일(노드 셸 스크립트) | 진짜 bash + pct/lxc-info 심, `preview:files` | 목록·링크 정상 |
 | 세션 만료 | `/__fake/expire` + `--target expiry` | 알림 → 로그인 화면 |
 | VPN | 실제 OpenVPN 2.6 서버(자체 CA·tun) + 터널 주소에만 묶은 가짜 PVE, `--vpn` | 터널 → 로그인 → 종료 시 정리, 강제 종료 뒤 남은 openvpn 정리 |
 | Linux 실제 데스크톱 | 릴리스 빌드를 Xvfb(X11) 에서 실행, xdotool 로 조작 | 인증서 확인·로그인·메인·CT 터미널(vim·top)·VNC 콘솔(물리 키 → 스캔코드) 정상 |
 | Linux 렌더링 경로 | 같은 실행에서 `PROXMOXCLIENT_LOG=1` 로 초기화 기록 확인 | GPU 없음: Vulkan(드라이버 없음) → EGL(libEGL 없음) → GLX(llvmpipe 는 Avalonia 가 거부) → 소프트웨어로 정상 전환. Mesa lavapipe 를 깔면 **Vulkan** 으로 그리며 로그인·메인·CT 터미널·VNC(타일 업로드·확대)·휠 입력 정상 |
 | Windows 빌드(Wine 9, Xvfb) | win-x64 자체 포함 빌드를 Wine 으로 실행 | Win32 플랫폼으로 시작. ANGLE(D3D11) 은 Wine 의 D3D 변환에서 창이 검게 나옴(Wine 한계로 보임 — 실제 Windows 미확인) → `PROXMOXCLIENT_RENDER=software` 로 로그인 화면 정상(라벨 'Software · Windows · Desktop'). 가짜 서버에 Windows 빌드로 접속: 자체 서명 인증서 확인 창 → 신뢰 → 영역 목록 받기 → 틀린 비밀번호는 '사용자 이름·비밀번호·영역이 맞지 않습니다' → 맞는 비밀번호로 메인(게스트 5·노드 2, 자동 새로고침, 상세 그래프) → 더블클릭으로 VNC 콘솔(웹소켓·화면·커서 모양, 클릭 mask=1, 키 a/b → QEMU 스캔코드 0x1e/0x30) |
-| Android | 헤드 빌드(AOT 설정 포함) | 빌드만 — 실기기·에뮬레이터 확인 필요(이 환경은 KVM 없음) |
+| Android 실제 동작 | GitHub Actions 에뮬레이터(API 35, x86_64) + 디버그 전용 자동화 고리 + `tools/AndroidE2E/e2e.sh` (`.github/workflows/android-e2e.yml`) | 35개 통과 — 안전 영역(제스처·3버튼), 액티비티 재생성 뒤 같은 셸, 연결 유지 서비스·알림·[모두 끊기]·연결 직후 끊김 10회, 마우스 우클릭(uinput)·뒤로 가기, 화면 보호. 알려진 것: 보호한 채 최근 앱에서 돌아온 뒤 끄면 앱을 나갈 때까지 캡처가 검다(시스템 최근 앱 상태 — 앱 밖) |
 | Windows·macOS | 빌드(WPF·데스크톱 헤드) | 실기기 확인 필요(Direct3D/ANGLE·Metal 경로, Credential Manager·Keychain, remote-viewer·openvpn 실행) |
-| 실제 Proxmox 서버 | — | 실서버 확인 필요(가짜 서버는 PVE 9.0 API 응답 형식을 따른다) |
+| 실제 Proxmox 서버 | GitHub 러너의 특권 Docker 안 실제 PVE 9.2(KVM·Alpine VM 100·CT 200, TOTP 사용자·API 토큰) + `--real 1 --target real` (`.github/workflows/pve-e2e.yml`, `tools/PveE2E`) | 데스크톱·모바일 통과 — 로그인(비밀번호·TOTP·API 토큰)·인증서 신뢰, 모든 탭, 작업 기록, VNC 콘솔(입력 → poweroff 로 실제 종료), 노드 셸(termproxy, stty 크기), CT 콘솔, digest 편집·충돌 안내(VM·CT·방화벽), 스냅숏, 백업, 복제·삭제. 여기서 찾아 고친 것: VM digest 문구, 스냅숏 snapname, CT 복제 hostname, PVE 9 SDN, 방화벽 옵션 기본값 |
 
 ## 배포 파일
 

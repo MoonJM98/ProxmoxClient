@@ -23,7 +23,7 @@ public sealed class GuestFilesWindow : UserControl
             // 게스트 에이전트 명령으로 읽는 것은 쓰기 확인 창이 막으므로, 화면을 열 때 한 번 허락받는다(쓰기는 따로 묻는다)
             if ((await connections.LoadAsync()).EffectiveTransport == GuestFileTransport.Agent && !skipAgentApproval)
             {
-                if (!await Ask.ConfirmAsync(Loc.T("GuestFiles_AgentReadConfirm", guest.Name), Loc.T("GuestFiles_Title")))
+                if (!await Ask.ConfirmAsync(Loc.T(guest.Kind == ResourceKind.Lxc ? "GuestFiles_ContainerReadConfirm" : "GuestFiles_AgentReadConfirm", guest.Name), Loc.T("GuestFiles_Title")))
                     throw new OperationCanceledException(ct);
             }
 
