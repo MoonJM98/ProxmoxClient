@@ -3,7 +3,9 @@
                     xmlns:m="using:ProxmoxClient.Core.Models"
                     xmlns:c="using:ProxmoxClient.UI.Converters"
                     xmlns:l="using:ProxmoxClient.UI.Localization"
-                    xmlns:vm="using:ProxmoxClient.UI.ViewModels">
+                    xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+                    xmlns:mv="using:ProxmoxClient.UI.Views.Main"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
     <!--
         게스트 한 줄 — 누르면 목록(ItemsControl)의 Tag 에 넣은 명령을 실행한다(클러스터·노드 화면 공용).
@@ -23,6 +25,23 @@
                             <Run Text="·" />
                             <Run Text="{Binding Node}" />
                         </TextBlock>
+                        <!-- 태그 — 태그마다 늘 같은 색 알약(데스크톱 표와 같은 팔레트), 많으면 다음 줄로 -->
+                        <ItemsControl ItemsSource="{Binding Tags}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="sys:String">
+                                    <Border Background="{Binding Converter={x:Static mv:MainConv.TagBrush}}"
+                                            CornerRadius="9" Padding="8,1" Margin="0,5,5,0">
+                                        <TextBlock Text="{Binding}" FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="White" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <Border IsVisible="{Binding IsTemplate}" CornerRadius="6" Padding="6,2"
