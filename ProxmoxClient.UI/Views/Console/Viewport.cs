@@ -37,12 +37,42 @@ public sealed class Viewport
 
     public event Action? Changed;
 
+    /// <summary>화면 픽셀 / 논리 단위(TopLevel.RenderScaling, 폰은 2.625 처럼 소수) — 1:1 은 원격 1픽셀 = 화면 1픽셀.</summary>
+    public double PixelScale { get; set; } = 1;
+
+    /// <summary>
+    ///     보기·원격 크기가 정해지거나 바뀌었다. 원격 크기가 바뀌면(해상도 변경) 전체 맞춤으로, 보기만 바뀌면(화면 회전·키보드)
+    ///     채우기·1:1 은 새 크기로 다시 맞추고, 직접 확대한 화면은 보던 가운데를 그대로 둔다.
+    /// </summary>
     public void SetSizes(Size view, Size remote)
     {
-        var refit = remote != Remote;
+        if (remote != Remote)
+        {
+            View = view;
+            Remote = remote;
+            Zoom = 1;
+            Mode = ViewMode.Fit;
+            Clamp();
+            return;
+        }
+
+        if (view == View)
+        {
+            Clamp();
+            return;
+        }
+
+        // 보던 가운데(원격 좌표)를 기억해 새 보기의 가운데에 둔다
+        var anchor = new Point((View.Width / 2 - Offset.X) / Scale, (View.Height / 2 - Offset.Y) / Scale);
         View = view;
-        Remote = remote;
-        if (refit) Zoom = 1;
+        if (Mode is ViewMode.Fill or ViewMode.Actual)
+        {
+            Offset = new Point(View.Width / 2 - anchor.X * Scale, View.Height / 2 - anchor.Y * Scale);
+            SetMode(Mode);
+            return;
+        }
+
+        Offset = new Point(View.Width / 2 - anchor.X * Scale, View.Height / 2 - anchor.Y * Scale);
         Clamp();
     }
 
@@ -88,7 +118,7 @@ public sealed class Viewport
 
     /// <summary>
     ///     화면 모드 — 전체 맞춤(다 보임) · 채우기(빈 곳 없이 꽉 채우고 넘치는 쪽으로 이동) · 원본(원격 1픽셀 =
-    ///     화면 1픽셀). 지금 보고 있는 가운데를 그대로 둔다.
+    ///     화면 물리 1픽셀, <see cref="PixelScale" /> 반영). 지금 보고 있는 가운데를 그대로 둔다.
     /// </summary>
     public void SetMode(ViewMode mode)
     {
@@ -100,7 +130,7 @@ public sealed class Viewport
             // 빈 곳 없이 화면을 꽉 채운다(가로·세로 중 큰 쪽 배율) — 세로 휴대폰의 가로 원격 화면은 높이를 채우고 옆으로 이동
             ViewMode.Fill when Remote.Width > 0 && Remote.Height > 0 =>
                 Math.Clamp(Math.Max(View.Width / Remote.Width, View.Height / Remote.Height) / fit, 1, MaxZoom),
-            ViewMode.Actual => Math.Clamp(1 / fit, 1, MaxZoom),
+            ViewMode.Actual => Math.Clamp(1 / (fit * PixelScale), 1, MaxZoom),
             _ => 1
         };
         Mode = mode;

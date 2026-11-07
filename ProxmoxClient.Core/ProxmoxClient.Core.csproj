@@ -4,12 +4,22 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <!-- RDP 디코딩 버퍼에서 바뀐 영역만 읽기(Rdp/RdpFramebufferCopy.cs) -->
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <!-- 트리밍·AOT 분석 — 기본은 끔(경고가 남아 있음). 확인할 때: dotnet build -p:TrimAnalysis=true -->
+        <EnableTrimAnalyzer Condition="'$(TrimAnalysis)' == 'true'">true</EnableTrimAnalyzer>
+        <EnableAotAnalyzer Condition="'$(TrimAnalysis)' == 'true'">true</EnableAotAnalyzer>
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- 단위 테스트(tests/ProxmoxClient.Core.Tests)가 내부 형식(PixelConvert·ParseUpid 등)을 검사한다 -->
+        <InternalsVisibleTo Include="ProxmoxClient.Core.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <!-- RDP 콘솔(RDCleanPath·CredSSP·그래픽 디코딩) — IronRDP .NET 바인딩, MIT/Apache-2.0 -->
-        <PackageReference Include="Devolutions.IronRdp" Version="2025.12.4" />
-        <PackageReference Include="FluentFTP" Version="55.0.0" />
+        <PackageReference Include="Devolutions.IronRdp" Version="2026.10.29" />
+        <PackageReference Include="FluentFTP" Version="55.1.0" />
         <PackageReference Include="SSH.NET" Version="2026.0.0" />
     </ItemGroup>
 

@@ -40,6 +40,16 @@ public sealed class PropertyString
         return new PropertyString(items);
     }
 
+    /// <summary>
+    ///     값으로 쓸 수 있는가 — PVE 의 property string 에는 따옴표·이스케이프가 없다. 서버는 모든 쉼표에서 나누고
+    ///     (pve-common parse_property_string: split /,/), 쉼표가 든 값은 만들 때 거절한다("illegal value with commas"),
+    ///     줄바꿈도 받지 않는다. 그래서 이런 값은 보내기 전에 입력 단계에서 막아야 한다.
+    /// </summary>
+    public static bool IsValidValue(string value)
+    {
+        return value.IndexOfAny([',', '\n', '\r']) < 0;
+    }
+
     public string? this[string key] => _items.FirstOrDefault(kv => kv.Key == key).Value;
 
     public bool Has(string key)

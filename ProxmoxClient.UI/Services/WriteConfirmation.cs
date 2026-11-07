@@ -16,9 +16,9 @@ public static class WriteConfirmation
     private static readonly AsyncLocal<Flow?> CurrentFlow = new();
 
     /// <summary>
-    ///     서버 상태를 바꾸지 않는 POST — 콘솔 연결 표 발급만 한다(확인 없이 보낸다).
+    ///     서버 상태를 바꾸지 않는 POST — 콘솔 연결 표 발급만 한다(확인 없이 보낸다). rdpproxy 는 RDP 콘솔.
     /// </summary>
-    private static readonly string[] NonChangingSuffixes = ["/vncproxy", "/termproxy", "/spiceproxy"];
+    private static readonly string[] NonChangingSuffixes = ["/vncproxy", "/termproxy", "/spiceproxy", "/rdpproxy"];
 
     /// <summary>작업 흐름을 시작한다. 반환값을 Dispose 하면 이전 흐름으로 돌아간다.</summary>
     /// <param name="description">확인 창에 보일 작업 이름(예: "사용자 추가").</param>

@@ -454,7 +454,7 @@
     <value>Apply options</value>
   </data>
     <data name="FirewallWindow_03" xml:space="preserve">
-    <value>Enable guest firewall</value>
+    <value>Enable firewall</value>
   </data>
     <data name="FirewallWindow_04" xml:space="preserve">
     <value>Delete</value>
@@ -1140,6 +1140,39 @@ The setup window downloads the Windows installer (about 80 MB) from the official
   </data>
     <data name="LoginWindow_M10" xml:space="preserve">
     <value>Sign-in failed: {0}</value>
+  </data>
+  <data name="LoginWindow_TfaTitle" xml:space="preserve">
+    <value>Two-factor authentication</value>
+  </data>
+  <data name="LoginWindow_TfaMethod" xml:space="preserve">
+    <value>Method</value>
+  </data>
+  <data name="LoginWindow_TfaCode" xml:space="preserve">
+    <value>Verification code</value>
+  </data>
+  <data name="LoginWindow_TfaTotp" xml:space="preserve">
+    <value>Authenticator app (TOTP)</value>
+  </data>
+  <data name="LoginWindow_TfaRecovery" xml:space="preserve">
+    <value>Recovery key</value>
+  </data>
+  <data name="LoginWindow_TfaYubico" xml:space="preserve">
+    <value>Yubico OTP</value>
+  </data>
+  <data name="LoginWindow_TfaUnsupported" xml:space="preserve">
+    <value>Security keys (WebAuthn/U2F) require Windows 10 1903 or later, and legacy-format (pre-PVE 7.2) U2F requests are not supported — use TOTP or a recovery key, or an API token.</value>
+  </data>
+  <data name="LoginWindow_TfaWebAuthn" xml:space="preserve">
+    <value>Security key (WebAuthn)</value>
+  </data>
+  <data name="LoginWindow_TfaU2f" xml:space="preserve">
+    <value>Security key (U2F)</value>
+  </data>
+  <data name="LoginWindow_TfaWebAuthnHint" xml:space="preserve">
+    <value>For a security key, leave the code empty and press OK — the Windows Security prompt opens.</value>
+  </data>
+  <data name="LoginWindow_TfaWebAuthnCancelled" xml:space="preserve">
+    <value>Security key verification was cancelled. Try again or choose another method.</value>
   </data>
     <data name="ProfileDialog_M01" xml:space="preserve">
     <value>Add profile</value>
@@ -3265,6 +3298,9 @@ Paste the join information below into 'Join cluster' on the new node (same forma
   <data name="DcCeph_Hint" xml:space="preserve">
     <value>Ceph status (read-only). Use pveceph in the node shell for installation, OSDs and pools.</value>
   </data>
+  <data name="DcCeph_NotInstalled" xml:space="preserve">
+    <value>Ceph is not installed in this cluster. Install it from a node's Ceph screen (requires root).</value>
+  </data>
   <data name="DcSdn_Zones" xml:space="preserve">
     <value>Zones</value>
   </data>
@@ -3720,6 +3756,9 @@ Paste the join information below into 'Join cluster' on the new node (same forma
   </data>
   <data name="GuestOptions_DefaultOff" xml:space="preserve">
     <value>(Default: no)</value>
+  </data>
+  <data name="GuestOptions_DescriptionTooLong" xml:space="preserve">
+    <value>The description cannot exceed {0} KiB.</value>
   </data>
   <data name="GuestOptions_Features" xml:space="preserve">
     <value>Features (nesting=1,keyctl=1 …)</value>
@@ -6483,6 +6522,9 @@ Overwrite them?</value>
   <data name="Ct_MountPathInvalid" xml:space="preserve">
     <value>The path must start with /.</value>
   </data>
+  <data name="Ct_MountPathRules" xml:space="preserve">
+    <value>Enter an absolute path inside the container (not /). Commas, line breaks, /./ and /../ are not allowed.</value>
+  </data>
   <data name="Ct_Quota" xml:space="preserve">
     <value>Enable quota</value>
   </data>
@@ -8332,5 +8374,23 @@ Previous SHA-256: {6}</value>
   </data>
   <data name="FormDialog_Refresh" xml:space="preserve">
     <value>Search again with the values entered</value>
+  </data>
+  <data name="NodeSubscription_Status_new" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="NodeSubscription_Status_notfound" xml:space="preserve">
+    <value>No subscription</value>
+  </data>
+  <data name="NodeSubscription_Status_active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="NodeSubscription_Status_invalid" xml:space="preserve">
+    <value>Invalid key</value>
+  </data>
+  <data name="NodeSubscription_Status_expired" xml:space="preserve">
+    <value>Expired</value>
+  </data>
+  <data name="NodeSubscription_Status_suspended" xml:space="preserve">
+    <value>Suspended</value>
   </data>
 </root>

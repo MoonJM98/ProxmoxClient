@@ -19,7 +19,6 @@ namespace ProxmoxClient.Core.Api;
 /// </summary>
 public sealed partial class ProxmoxApiClient : IDisposable
 {
-    private const int ResponseExcerptLength = 300;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -42,6 +41,7 @@ public sealed partial class ProxmoxApiClient : IDisposable
 
     /// <summary>
     ///     세션이 만료되어 갱신도 거부됐다(한 번만 발생) — 화면은 다시 로그인하도록 안내한다. 아무 스레드에서나 발생한다.
+    ///     API 토큰 모드는 인증 요청이 401 을 받으면(토큰 삭제·만료·비밀값 변경) 발생한다.
     /// </summary>
     public event Action? SessionExpiredDetected;
     private bool _disposed;
@@ -64,11 +64,22 @@ public sealed partial class ProxmoxApiClient : IDisposable
         handler.ServerCertificateCustomValidationCallback =
             (_, certificate, _, errors) => CertificateValidator.Validate(certificate, errors);
 
-        ConfigureProxy(handler, profile);
+        Uri baseAddress;
+        try
+        {
+            ConfigureProxy(handler, profile);
+            baseAddress = BuildBaseAddress(profile);
+        }
+        catch (Exception ex) when (ex is UriFormatException or ArgumentException)
+        {
+            // 잘못된 주소·포트(프록시 포함)는 호출자가 이미 처리하는 API 오류로 알린다
+            handler.Dispose();
+            throw new ProxmoxApiException(0, null, Res.T("ProxmoxApiClient_BadAddress", ex.Message));
+        }
 
         _http = new HttpClient(handler)
         {
-            BaseAddress = BuildBaseAddress(profile),
+            BaseAddress = baseAddress,
             // 제한 시간은 요청마다 건다(SendOnceAsync) — 대용량 업로드만 더 길게 줄 수 있게
             Timeout = Timeout.InfiniteTimeSpan
         };
@@ -114,7 +125,9 @@ public sealed partial class ProxmoxApiClient : IDisposable
         if (string.IsNullOrWhiteSpace(Profile.UserName) || Profile.Password is null)
             throw new ProxmoxApiException(0, Res.T("ProxmoxApiClient_02"));
 
-        await AcquireTicketAsync(SecureStringHelper.ToPlainString(Profile.Password) ?? string.Empty, ct)
+        // 2단계 인증 계정이면 TfaRequiredException — CompleteTfaAsync 로 마저 로그인한다
+        await AcquireTicketAsync(TicketForm(SecureStringHelper.ToPlainString(Profile.Password) ?? string.Empty),
+                TicketStep.Login, ct)
             .ConfigureAwait(false);
     }
     /// <summary>
@@ -127,7 +140,7 @@ public sealed partial class ProxmoxApiClient : IDisposable
         if (Profile.AuthMode != AuthMode.Password || _auth is not { } current) return;
         if (_authRejected) throw SessionExpired();
 
-        if (!force && Environment.TickCount64 - current.IssuedAtTick < (long)TicketRenewAge.TotalMilliseconds) return;
+        if (!force && TicketClockMs - current.IssuedAtTick < (long)TicketRenewAge.TotalMilliseconds) return;
 
         await _renewGate.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -139,11 +152,15 @@ public sealed partial class ProxmoxApiClient : IDisposable
             {
                 try
                 {
-                    await AcquireTicketAsync(current.Ticket, ct).ConfigureAwait(false);
+                    // 완성된 티켓으로 갱신하면 2단계 인증을 다시 묻지 않는다
+                    await AcquireTicketAsync(TicketForm(current.Ticket), TicketStep.Renew, ct).ConfigureAwait(false);
                 }
                 catch (ProxmoxApiException) when (Profile.Password is not null)
                 {
-                    await AcquireTicketAsync(SecureStringHelper.ToPlainString(Profile.Password) ?? string.Empty, ct)
+                    // 비밀번호로 다시 로그인 — 2단계 인증 계정은 여기서 코드를 물을 수 없으니 세션 만료로 끝난다
+                    await AcquireTicketAsync(
+                            TicketForm(SecureStringHelper.ToPlainString(Profile.Password) ?? string.Empty),
+                            TicketStep.Renew, ct)
                         .ConfigureAwait(false);
                 }
             }
@@ -161,18 +178,30 @@ public sealed partial class ProxmoxApiClient : IDisposable
             _renewGate.Release();
         }
     }
+    /// <summary>
+    ///     티켓 나이를 재는 시계(밀리초) — 벽시계 기준. TickCount64 는 Android 깊은 절전 동안 멈춰
+    ///     깨어난 뒤 만료된 티켓을 새것으로 여긴다.
+    /// </summary>
+    private static long TicketClockMs => DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
     private static ProxmoxApiException SessionExpired()
     {
         return new ProxmoxApiException((int)HttpStatusCode.Unauthorized, null, Res.T("ProxmoxApiClient_SessionExpired"));
     }
-    private async Task AcquireTicketAsync(string password, CancellationToken ct)
+    /// <summary>POST /access/ticket 의 기본 양식(사용자 + 비밀번호 또는 티켓).</summary>
+    private Dictionary<string, string> TicketForm(string password)
     {
-        var form = new Dictionary<string, string>
+        return new Dictionary<string, string>
         {
             ["username"] = Profile.UserName,
             ["password"] = password
         };
-
+    }
+    /// <summary>
+    ///     티켓을 받아 인증 상태로 삼는다. 2단계 인증을 기다리는 반쪽 티켓은 인증 상태로 두지 않는다 —
+    ///     로그인이면 <see cref="TfaRequiredException" />, 갱신이면 세션 만료(401), 2단계 응답 뒤에도 또 요구하면 오류.
+    /// </summary>
+    private async Task AcquireTicketAsync(Dictionary<string, string> form, TicketStep step, CancellationToken ct)
+    {
         JsonElement data;
         try
         {
@@ -180,8 +209,9 @@ public sealed partial class ProxmoxApiClient : IDisposable
         }
         catch (ProxmoxApiException ex) when (ex.StatusCode == (int)HttpStatusCode.Unauthorized)
         {
-            // PVE 는 이름·비밀번호·영역이 틀리면 본문 없이 401 만 준다 — 'HTTP 401 {"data":null}' 대신 알아볼 문구로
-            throw new ProxmoxApiException(ex.StatusCode, ex.ResponseExcerpt, Res.T("ProxmoxApiClient_LoginRejected"));
+            // PVE 는 이름·비밀번호·영역(또는 2단계 코드)이 틀리면 본문 없이 401 만 준다 — 알아볼 문구로
+            throw new ProxmoxApiException(ex.StatusCode, ex.ResponseExcerpt,
+                Res.T(step == TicketStep.SecondFactor ? "ProxmoxApiClient_TfaRejected" : "ProxmoxApiClient_LoginRejected"));
         }
 
         var ticket = data.TryGetProperty("ticket", out var ticketEl) ? ticketEl.GetString() : null;
@@ -189,16 +219,17 @@ public sealed partial class ProxmoxApiClient : IDisposable
 
         if (string.IsNullOrEmpty(ticket)) throw new ProxmoxApiException(0, Res.T("ProxmoxApiClient_03"));
         // 2단계 인증 계정 — 서버는 TFA 를 기다리는 반쪽 티켓을 준다. 받아 두면 로그인은 "성공"인데 모든 요청이 401 이다
-        if (data.TryGetProperty("NeedTFA", out var needTfa) && needTfa.ValueKind switch
+        if (TfaChallenge.NeedsSecondFactor(data, ticket))
+            throw step switch
             {
-                JsonValueKind.Number => needTfa.TryGetInt32(out var flag) && flag != 0,
-                JsonValueKind.String => needTfa.GetString() is { Length: > 0 } text && text != "0",
-                JsonValueKind.True => true,
-                _ => false
-            })
-            throw new ProxmoxApiException(0, null, Res.T("ProxmoxApiClient_NeedTfa"));
+                TicketStep.Login => new TfaRequiredException(
+                    await ReadTfaChallengeAsync(data, ticket, form, ct).ConfigureAwait(false)),
+                TicketStep.Renew => new ProxmoxApiException((int)HttpStatusCode.Unauthorized, null,
+                    Res.T("ProxmoxApiClient_SessionExpired")),
+                _ => new ProxmoxApiException(0, null, Res.T("ProxmoxApiClient_NeedTfa"))
+            };
 
-        _auth = new AuthSession(ticket, csrfToken, Environment.TickCount64);
+        _auth = new AuthSession(ticket, csrfToken, TicketClockMs);
         _authRejected = false;
         // 서버가 알려 준 실제 사용자 ID — 프로필에 영역 없이 "root" 로 적어 두어도 "root@pam" 으로 온다
         AuthenticatedUser = GetString(data, "username") is { Length: > 0 } user ? user : Profile.UserName;
@@ -430,7 +461,11 @@ public sealed partial class ProxmoxApiClient : IDisposable
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(profile.ProxyHost) || profile.ProxyPort is not > 0) return;
+        if (string.IsNullOrWhiteSpace(profile.ProxyHost) || profile.ProxyPort is not > 0)
+        {
+            handler.UseProxy = false; // 지정 프록시 주소가 비었다 — 시스템 프록시로 새지 않고 직접 연결
+            return;
+        }
 
         var scheme = profile.ProxyMode switch
         {
@@ -440,11 +475,16 @@ public sealed partial class ProxmoxApiClient : IDisposable
             _ => "http"
         };
 
-        var proxy = new WebProxy($"{scheme}://{profile.ProxyHost}:{profile.ProxyPort!.Value}");
+        handler.Proxy = BuildProxy(scheme, profile);
+    }
+    /// <summary>프록시 주소(IPv6 는 대괄호)와 자격 증명 — HTTP 클라이언트와 콘솔 웹소켓이 함께 쓴다.</summary>
+    internal static WebProxy BuildProxy(string scheme, ConnectionProfile profile)
+    {
+        var proxy = new WebProxy(new UriBuilder(scheme, UriHost(profile.ProxyHost!), profile.ProxyPort!.Value).Uri);
         if (!string.IsNullOrEmpty(profile.ProxyUserName))
             proxy.Credentials = new NetworkCredential(profile.ProxyUserName, profile.ProxyPassword ?? string.Empty);
 
-        handler.Proxy = proxy;
+        return proxy;
     }
     private static string Escape(string segment)
     {
@@ -453,12 +493,6 @@ public sealed partial class ProxmoxApiClient : IDisposable
     private void ThrowIfDisposed()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-    }
-    private static string Excerpt(string body)
-    {
-        return body.Length <= ResponseExcerptLength
-            ? body
-            : body[..ResponseExcerptLength];
     }
     /// <summary>GET → "data" 요소(복제본). 1초 주기 목록 조회는 복제 없이 문서에서 바로 매핑하는 <see cref="GetListAsync{T,TDto}" /> 사용.</summary>
     private async Task<JsonElement> GetJsonAsync(string relative, CancellationToken ct, TimeSpan? timeout = null)
@@ -472,7 +506,7 @@ public sealed partial class ProxmoxApiClient : IDisposable
         using var response = await SendAsync(() => new HttpRequestMessage(HttpMethod.Get, relative), true, ct,
                 timeout)
             .ConfigureAwait(false);
-        return await ReadJsonDocumentAsync(response, ct).ConfigureAwait(false);
+        return await ReadJsonDocumentAsync(response, ct, timeout).ConfigureAwait(false);
     }
     /// <summary>
     ///     POSTs a form and returns the "data" element (login path: requireAuth=false, no cookie/renewal).
@@ -538,11 +572,23 @@ public sealed partial class ProxmoxApiClient : IDisposable
         if (requireAuth) await EnsureFreshTicketAsync(false, ct).ConfigureAwait(false);
 
         var response = await SendOnceAsync(createRequest, requireAuth, ct, timeout).ConfigureAwait(false);
+        if (requireAuth && response.StatusCode == HttpStatusCode.Unauthorized && Profile.AuthMode == AuthMode.ApiToken)
+            ReportTokenRejected();
         if (!requireAuth || response.StatusCode != HttpStatusCode.Unauthorized || _auth is null) return response;
 
         response.Dispose();
         await EnsureFreshTicketAsync(true, ct).ConfigureAwait(false);
         return await SendOnceAsync(createRequest, requireAuth, ct, timeout).ConfigureAwait(false);
+    }
+    /// <summary>
+    ///     API 토큰이 거부됐다(401 — 토큰 삭제·만료·비밀값 변경). 토큰은 갱신할 수 없으니 세션 만료와 같이 한 번 알린다.
+    /// </summary>
+    private void ReportTokenRejected()
+    {
+        if (_authRejected) return;
+
+        _authRejected = true;
+        SessionExpiredDetected?.Invoke();
     }
     /// <summary>
     ///     서버 상태를 바꿀 수 있는 요청(GET 이 아닌 인증 요청) 직전에 호출된다. false 를 돌려주면 요청을 보내지 않고
@@ -603,19 +649,26 @@ public sealed partial class ProxmoxApiClient : IDisposable
         if (request.Method != HttpMethod.Get && !string.IsNullOrEmpty(auth.CsrfToken))
             request.Headers.TryAddWithoutValidation("CSRFPreventionToken", auth.CsrfToken);
     }
-    /// <summary>성공 응답 본문을 스트림에서 바로 파싱; 실패(non-2xx)는 본문 발췌와 함께 <see cref="ProxmoxApiException" />.</summary>
-    private static async Task<JsonDocument> ReadJsonDocumentAsync(HttpResponseMessage response, CancellationToken ct)
+    /// <summary>
+    ///     성공 응답 본문을 스트림에서 바로 파싱; 실패(non-2xx)는 사유 문구·칸별 오류와 함께 <see cref="ProxmoxApiException" />.
+    ///     본문 읽기에도 제한 시간을 건다(머리글 뒤 본문이 멈추면 주기 조회가 영영 끝나지 않는다).
+    ///     timeout 이 무한(업로드)이면 본문은 기본 제한 시간 — 응답 본문 자체는 작다.
+    /// </summary>
+    private static async Task<JsonDocument> ReadJsonDocumentAsync(HttpResponseMessage response, CancellationToken ct,
+        TimeSpan? timeout = null)
     {
+        using var bodyCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        bodyCts.CancelAfter(timeout is { } t && t != Timeout.InfiniteTimeSpan ? t : DefaultRequestTimeout);
         try
         {
-            if (!response.IsSuccessStatusCode)
-            {
-                var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-                throw new ProxmoxApiException((int)response.StatusCode, Excerpt(body));
-            }
+            if (!response.IsSuccessStatusCode) throw await ErrorFromResponseAsync(response, bodyCts.Token).ConfigureAwait(false);
 
-            await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-            return await JsonDocument.ParseAsync(stream, default, ct).ConfigureAwait(false);
+            await using var stream = await response.Content.ReadAsStreamAsync(bodyCts.Token).ConfigureAwait(false);
+            return await JsonDocument.ParseAsync(stream, default, bodyCts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new ProxmoxApiException(0, null, Res.T("ProxmoxApiClient_10"));
         }
         catch (JsonException ex)
         {
@@ -625,6 +678,25 @@ public sealed partial class ProxmoxApiClient : IDisposable
         {
             throw new ProxmoxApiException((int)response.StatusCode, null, Res.T("ProxmoxApiClient_12", ex.Message));
         }
+    }
+    /// <summary>
+    ///     실패 응답 → 예외. pveproxy 는 오류 문구를 상태 줄 사유(예: "500 VM 100 already running")에 담고
+    ///     본문은 {"data":null} 이거나 칸별 "errors" 다. 본문을 못 읽어도 사유 문구는 살린다.
+    /// </summary>
+    private static async Task<ProxmoxApiException> ErrorFromResponseAsync(HttpResponseMessage response,
+        CancellationToken ct)
+    {
+        string? body;
+        try
+        {
+            body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException)
+        {
+            body = null; // 본문이 끊기거나 늦어도 상태·사유 문구만으로 알린다
+        }
+
+        return ProxmoxApiException.FromResponse((int)response.StatusCode, response.ReasonPhrase, body);
     }
     /// <summary>{"data": ...} 봉투의 data, 봉투가 없으면 루트.</summary>
     private static JsonElement DataElement(JsonDocument doc)
@@ -682,10 +754,9 @@ public sealed partial class ProxmoxApiClient : IDisposable
             NetOutBytes = dto.NetOut ?? 0,
             UptimeSeconds = dto.Uptime ?? 0,
             IsTemplate = (dto.Template ?? 0) != 0,
+            // PVE 는 태그를 ';' 로 잇는다(설정 파일에는 ',' · 공백도 쓰인다) — 모두 나눈다
             Tags = (dto.Tags ?? string.Empty)
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(t => t.TrimStart(';'))
-                .ToArray(),
+                .Split([';', ',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
             Pool = string.IsNullOrEmpty(dto.Pool) ? null : dto.Pool
         };
     }

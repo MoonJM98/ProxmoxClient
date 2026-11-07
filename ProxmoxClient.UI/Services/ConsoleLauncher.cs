@@ -1,6 +1,7 @@
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
 using ProxmoxClient.Core.Vnc;
+using ProxmoxClient.UI.Localization;
 using ProxmoxClient.UI.ViewModels;
 using ProxmoxClient.UI.Views.Main;
 
@@ -31,13 +32,13 @@ public static class ConsoleLauncher
     public static Task OpenSerialAsync(ServerSession session, PveResource guest)
     {
         return AppServices.Navigator.PushAsync(new TerminalViewModel(session.Api,
-            ConsoleTarget.ForGuest(guest.Node, guest.Kind, guest.VmId), Title(guest) + " · serial", guest));
+            ConsoleTarget.ForGuest(guest.Node, guest.Kind, guest.VmId), L.T("Console_SerialTitle", Title(guest)), guest));
     }
 
     /// <summary>노드 셸 — command 가 있으면(upgrade·ceph_install) 로그인 셸 대신 그 명령.</summary>
     public static Task OpenNodeShellAsync(ProxmoxApiClient api, string node, string? command = null)
     {
-        var title = command is null ? $"{node} · Shell" : $"{node} · {command}";
+        var title = command is null ? L.T("Console_NodeShellTitle", node) : $"{node} · {command}";
         return AppServices.Navigator.PushAsync(new TerminalViewModel(api, ConsoleTarget.ForNode(node, command), title));
     }
 

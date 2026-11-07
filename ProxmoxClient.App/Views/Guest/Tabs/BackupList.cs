@@ -4,7 +4,8 @@ using ProxmoxClient.App.Localization;
 using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Models;
-using static ProxmoxClient.App.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.FormHelpers;
 
 namespace ProxmoxClient.App.Views.Guest.Tabs;
 
@@ -91,7 +92,7 @@ internal static class BackupList
     ///     복원 — 같은 번호면 지금 게스트를 덮어쓰고(번호 입력 확인), 다른 번호면 새 게스트로 만든다.
     /// </summary>
     private static async Task<string?> RestoreAsync(ProxmoxApiClient api, PveResource guest,
-        IReadOnlyDictionary<string, string> row, Window? owner)
+        IReadOnlyDictionary<string, string> row, object? owner)
     {
         var isVm = guest.Kind == ResourceKind.Qemu;
         var current = guest.VmId.ToString(CultureInfo.InvariantCulture);

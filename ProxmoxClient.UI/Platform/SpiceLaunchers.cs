@@ -20,6 +20,7 @@ public static class SpiceLaunchers
 
     public static ISpiceLauncher CreateDefault()
     {
+        _ = Task.Run(DesktopSpiceLauncher.CleanupLeftovers); // 지난 실행이 남긴 .vv(비밀번호 포함)
         if (OperatingSystem.IsWindows())
             return new DesktopSpiceLauncher(WindowsRemoteViewerLocator.Detect, WindowsGuide,
                 new WindowsVirtViewerInstaller());

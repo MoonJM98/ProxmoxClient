@@ -65,18 +65,17 @@ public sealed partial class ProxmoxApiClient
     /// <summary>
     ///     Polls a task (default every 2 s) until it leaves the "running" state and
     ///     returns the final task snapshot. Cancellation stops the wait.
+    ///     연결 끊김·시간 초과·5xx 는 <see cref="PollRetryPolicy.Default" /> 대로 다시 묻는다(작업은 서버에서 계속 돈다) —
+    ///     2분 넘게 계속 실패하거나 4xx 면 오류를 알린다.
     /// </summary>
     [Versioning.PveApi("GET", "/nodes/{node}/tasks/{upid}/status")]
-    public async Task<PveTask> WaitTaskAsync(string upid, TimeSpan? pollInterval = null, CancellationToken ct = default)
+    public Task<PveTask> WaitTaskAsync(string upid, TimeSpan? pollInterval = null, CancellationToken ct = default)
     {
-        var delay = pollInterval ?? TimeSpan.FromSeconds(2);
-        while (true)
-        {
-            var task = await GetTaskStatusAsync(upid, ct).ConfigureAwait(false);
-            if (!task.IsRunning) return task;
-
-            await Task.Delay(delay, ct).ConfigureAwait(false);
-        }
+        return PollRetryPolicy.Default.PollAsync(
+            token => GetTaskStatusAsync(upid, token),
+            task => !task.IsRunning,
+            pollInterval ?? TimeSpan.FromSeconds(2),
+            ct);
     }
     private static PveTask MapTask(TaskDto dto)
     {

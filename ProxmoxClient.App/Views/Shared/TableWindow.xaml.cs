@@ -14,9 +14,9 @@ public partial class TableWindow : Window
     }
 
     /// <summary>주인 창 위에 모달로 띄운다. 보기 전용이라 표에서 바뀐 것은 없다고 돌려준다(null).</summary>
-    public static string? ShowModal(Window? owner, string title, UIElement content)
+    public static string? ShowModal(object? owner, string title, UIElement content)
     {
-        new TableWindow(title, content) { Owner = owner }.ShowDialog();
+        new TableWindow(title, content) { Owner = owner as Window }.ShowDialog();
         return null;
     }
 }

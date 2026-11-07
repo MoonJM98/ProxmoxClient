@@ -26,6 +26,8 @@ public sealed partial class ProxmoxRdpSession
                 }
 
                 if (!await ApplyAsync(channel, outputs).ConfigureAwait(false)) break;
+
+                TryApplyPendingResize(); // 디스플레이 제어 채널이 준비되기 전에 온 해상도 요청
             }
         }
         catch (Exception ex) when (IsEndOfStream(ex))
@@ -63,7 +65,7 @@ public sealed partial class ProxmoxRdpSession
 
     /// <summary>
     ///     (잠금 안에서) IronRDP 결과를 모은다 — 보낼 응답은 이 자리에서 줄에 넣어 입력과 순서가 섞이지 않게 하고,
-    ///     화면이 바뀌었으면 표시만 해 둔다(프레임버퍼로 옮기는 것은 창이 그릴 때).
+    ///     화면이 바뀌었으면 그 영역을 프레임버퍼로 옮겨 둔다(창은 알림을 받고 프레임버퍼를 읽는다).
     /// </summary>
     private Outputs Collect(ActiveStageOutputIterator iterator)
     {
@@ -71,18 +73,20 @@ public sealed partial class ProxmoxRdpSession
         while (!iterator.IsEmpty() && iterator.Next() is { } next)
         {
             using var output = next;
-            switch (output.GetEnumType())
+            switch (output.EnumType)
             {
                 case ActiveStageOutputType.ResponseFrame:
-                    var frame = ToBytes(output.GetResponseFrame());
+                    var frame = ToBytes(output.ResponseFrame);
                     outputs.Frames.Add(frame);
                     _channel?.Enqueue(frame);
                     break;
                 case ActiveStageOutputType.GraphicsUpdate:
-                    outputs.AddDirty(output.GetGraphicsUpdate());
+                    var rect = output.GraphicsUpdate;
+                    CopyRect(rect);
+                    outputs.AddDirty(rect);
                     break;
                 case ActiveStageOutputType.PointerBitmap:
-                    outputs.Cursor = ToCursor(output.GetPointerBitmap());
+                    outputs.Cursor = ToCursor(output.PointerBitmap);
                     break;
                 case ActiveStageOutputType.PointerHidden:
                     outputs.Cursor = new RfbCursor([], 0, 0, 0, 0);
@@ -95,14 +99,13 @@ public sealed partial class ProxmoxRdpSession
                     outputs.Terminate = true;
                     break;
                 case ActiveStageOutputType.DeactivateAll:
-                    outputs.Activation = output.GetDeactivateAll();
+                    // 새 바인딩: 활성화 단계는 세션이 만든다(CreateConnectionActivation) — 끝나면 Reactivate
+                    outputs.Activation = _stage!.CreateConnectionActivation();
                     _reactivating = true; // 잠금을 놓기 전에 — 그 틈에 입력이 옛 채널로 나가지 않게
                     break;
                 // PointerPosition: 입력이 절대 좌표라 게스트가 옮긴 커서 위치는 쓰지 않는다
             }
         }
-
-        if (outputs.Dirty is not null) _framebufferStale = true;
 
         return outputs;
     }
@@ -110,9 +113,7 @@ public sealed partial class ProxmoxRdpSession
     /// <summary>(잠금 밖에서) 화면·커서 알림과 재활성화. 서버가 세션을 끝냈으면 false.</summary>
     private async Task<bool> ApplyAsync(RdpChannel channel, Outputs outputs)
     {
-        if (Interlocked.Exchange(ref _resignalFrame, 0) == 1)
-            FrameReceived?.Invoke(0, 0, _width, _height); // 창이 처리 중에 옛 화면을 가져갔다 — 다시 그리게
-        else if (outputs.Dirty is { } dirty)
+        if (outputs.Dirty is { } dirty)
             FrameReceived?.Invoke(dirty.Left, dirty.Top, dirty.Right - dirty.Left + 1, dirty.Bottom - dirty.Top + 1);
 
         if (outputs.Dirty is not null) Interlocked.Increment(ref _statsFrames);
@@ -129,29 +130,31 @@ public sealed partial class ProxmoxRdpSession
     ///     서버가 해상도를 바꿨다(Deactivate-All) — 연결 활성화 단계를 다시 밟고 새 크기로 버퍼를 만든다.
     ///     그동안 들어온 입력은 붙잡아 두었다가(옛 채널로 나가지 않게) 끝나면 보낸다.
     /// </summary>
-    private async Task ReactivateAsync(RdpChannel channel, ConnectionActivationSequence activation)
+    private async Task ReactivateAsync(RdpChannel channel, ConnectionActivationSequence sequence)
     {
-        using var sequence = activation;
         try
         {
             using var buf = WriteBuf.New();
             while (true)
             {
-                using var state = sequence.GetState();
-                if (state.Type == ConnectionActivationStateType.Finalized) break;
+                var type = sequence.State.Type;
+                if (type == ConnectionActivationStateType.Finalized) break;
+                if (type is ConnectionActivationStateType.Redirected or ConnectionActivationStateType.Consumed)
+                    throw new InvalidOperationException(Res.T("Rdp_Failed", type.ToString()));
 
                 await channel.StepAsync(sequence, buf).ConfigureAwait(false);
             }
 
-            using var done = sequence.GetState();
-            using var finalized = done.GetFinalized();
-            using var size = finalized.GetDesktopSize();
+            var finalized = sequence.State.Finalized;
             lock (_gate)
             {
                 if (_stage is null) return; // 그사이 닫혔다
-                _stage.SetFastpathProcessor(finalized.GetIoChannelId(), finalized.GetUserChannelId(),
-                    finalized.GetEnableServerPointer(), finalized.GetPointerSoftwareRendering());
-                ResetImage(size);
+                // 채널 번호는 활성화 단계가, 나머지(shareId·커서·정적 채널 조각 크기 등)는 마친 상태가 준다 — 바인딩 예제와 같다
+                _stage.Reactivate(sequence.IoChannelId, sequence.UserChannelId, finalized.ShareId,
+                    finalized.EnableServerPointer, finalized.PointerSoftwareRendering,
+                    finalized.StaticChannelChunkSize, finalized.WindowSupportLevel);
+                _stage.EnableServerPointer = finalized.EnableServerPointer;
+                ResetImage(finalized.DesktopSize);
             }
 
             // 창은 프레임버퍼 크기가 바뀐 것을 다음 갱신에서 알아챈다 — 전체를 한 번 알린다
@@ -168,29 +171,27 @@ public sealed partial class ProxmoxRdpSession
         }
     }
 
-    private static byte[] ToBytes(BytesSlice slice)
+    private static byte[] ToBytes(VecU8 bytes)
     {
-        using var owned = slice;
-        var bytes = new byte[(int)slice.GetSize()];
-        slice.Fill(bytes);
-        return bytes;
+        using (bytes)
+            return Utils.VecU8ToByte(bytes);
     }
 
     /// <summary>IronRDP 커서(RGBA, 알파 곱하지 않음) → 콘솔 창 커서(BGRA).</summary>
     private static RfbCursor ToCursor(DecodedPointer pointer)
     {
-        var pixels = ToBytes(pointer.GetData());
+        using var owned = pointer;
+        var pixels = ToBytes(pointer.Data);
         for (var i = 0; i + 3 < pixels.Length; i += 4) (pixels[i], pixels[i + 2]) = (pixels[i + 2], pixels[i]);
 
-        return new RfbCursor(pixels, pointer.GetWidth(), pointer.GetHeight(), pointer.GetHotspotX(),
-            pointer.GetHotspotY());
+        return new RfbCursor(pixels, pointer.Width, pointer.Height, pointer.HotspotX, pointer.HotspotY);
     }
 
     /// <summary>한 번의 처리에서 나온 결과 묶음.</summary>
     private sealed class Outputs
     {
         public List<byte[]> Frames { get; } = [];
-        public (int Left, int Top, int Right, int Bottom)? Dirty { get; private set; }
+        public DirtyRect? Dirty { get; private set; }
         public RfbCursor? Cursor { get; set; }
         public bool CursorDefault { get; set; }
         public bool Terminate { get; set; }
@@ -199,12 +200,8 @@ public sealed partial class ProxmoxRdpSession
         /// <summary>바뀐 영역을 하나로 합친다(포함 좌표).</summary>
         public void AddDirty(InclusiveRectangle rect)
         {
-            var next = (Left: (int)rect.GetLeft(), Top: (int)rect.GetTop(), Right: (int)rect.GetRight(),
-                Bottom: (int)rect.GetBottom());
-            Dirty = Dirty is { } d
-                ? (Math.Min(d.Left, next.Left), Math.Min(d.Top, next.Top), Math.Max(d.Right, next.Right),
-                    Math.Max(d.Bottom, next.Bottom))
-                : next;
+            var next = new DirtyRect(rect.Left, rect.Top, rect.Right, rect.Bottom);
+            Dirty = Dirty is { } d ? d.Union(next) : next;
         }
     }
 }

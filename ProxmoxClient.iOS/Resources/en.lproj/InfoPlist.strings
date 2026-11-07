@@ -1,0 +1,2 @@
+/* 로컬 네트워크 권한 문구(영어) — Info.plist 의 NSLocalNetworkUsageDescription */
+"NSLocalNetworkUsageDescription" = "Connects to Proxmox servers on your local network.";

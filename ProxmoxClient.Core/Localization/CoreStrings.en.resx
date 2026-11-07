@@ -108,6 +108,9 @@
     <data name="ProxmoxTerminalSession_06" xml:space="preserve">
     <value>Terminal authentication failed. Check the VM.Console privilege and whether the ticket expired.</value>
   </data>
+    <data name="ConsoleSocket_Lost" xml:space="preserve">
+    <value>The connection was lost (the server stopped responding).</value>
+  </data>
     <data name="ProxmoxVncSession_01" xml:space="preserve">
     <value>The VNC console is for VMs only. Use the terminal console for CTs.</value>
   </data>
@@ -240,6 +243,9 @@
     <data name="ProxmoxApiClient_12" xml:space="preserve">
     <value>The connection dropped while reading the response: {0}</value>
   </data>
+    <data name="ProxmoxApiClient_BadAddress" xml:space="preserve">
+    <value>The server or proxy address is invalid: {0}</value>
+  </data>
     <data name="RfbClient_20" xml:space="preserve">
     <value>Unsupported VNC security type: {0}</value>
   </data>
@@ -272,6 +278,15 @@
   </data>
   <data name="Rdp_NeedsNetworkAuth" xml:space="preserve">
     <value>RDP authentication needs an external server (Kerberos), which is not supported.</value>
+  </data>
+  <data name="Rdp_LogonFailed" xml:space="preserve">
+    <value>The RDP server rejected the one-time credentials (logon failure). Check the guest RDP login settings.</value>
+  </data>
+  <data name="Rdp_LogonNotGranted" xml:space="preserve">
+    <value>The RDP server does not allow remote logon for this account (Remote Desktop Users right).</value>
+  </data>
+  <data name="Rdp_CredsspFailed" xml:space="preserve">
+    <value>RDP login (NLA) failed: {0}</value>
   </data>
   <data name="Rdp_Failed" xml:space="preserve">
     <value>RDP error: {0}</value>
@@ -350,7 +365,49 @@
     <value>Wrong user name, password or realm. Check the realm (PAM/PVE etc.) too.</value>
   </data>
   <data name="ProxmoxApiClient_NeedTfa" xml:space="preserve">
-    <value>This account uses two-factor authentication (TOTP etc.), which is not supported yet. Connect with an API token instead.</value>
+    <value>This account uses two-factor authentication (TOTP etc.). Enter the verification code to sign in.</value>
+  </data>
+  <data name="ProxmoxApiClient_TfaRejected" xml:space="preserve">
+    <value>The verification code is wrong or expired. Try again.</value>
+  </data>
+  <data name="Tfa_BadChallenge" xml:space="preserve">
+    <value>Could not read the two-factor request sent by the server.</value>
+  </data>
+  <data name="Tfa_EmptyCode" xml:space="preserve">
+    <value>Enter the verification code.</value>
+  </data>
+  <data name="WebAuthn_NoCredential" xml:space="preserve">
+    <value>This security key has no credential registered for this server. Check that it is the key you registered.</value>
+  </data>
+  <data name="WebAuthn_Denied" xml:space="preserve">
+    <value>The security key refused the request.</value>
+  </data>
+  <data name="WebAuthn_Timeout" xml:space="preserve">
+    <value>The security key check timed out. Try again.</value>
+  </data>
+  <data name="WebAuthn_PinRequired" xml:space="preserve">
+    <value>This security key requires PIN or fingerprint verification, which cannot be done with this key here — use TOTP or a recovery key.</value>
+  </data>
+  <data name="WebAuthn_PinInvalid" xml:space="preserve">
+    <value>Incorrect PIN.</value>
+  </data>
+  <data name="WebAuthn_PinTooShort" xml:space="preserve">
+    <value>The PIN must be at least 4 characters.</value>
+  </data>
+  <data name="WebAuthn_PinBlocked" xml:space="preserve">
+    <value>The security key's PIN is blocked (too many attempts). The key must be reset before it can be used again — use TOTP or a recovery key.</value>
+  </data>
+  <data name="WebAuthn_PinAuthBlocked" xml:space="preserve">
+    <value>Too many wrong PIN attempts. Remove and reinsert (or re-tap) the security key, then try again.</value>
+  </data>
+  <data name="WebAuthn_PinNotSet" xml:space="preserve">
+    <value>The server requires user verification, but this security key has no PIN set. Set a PIN with the key's management tool.</value>
+  </data>
+  <data name="WebAuthn_NotFidoKey" xml:space="preserve">
+    <value>This is not a FIDO security key.</value>
+  </data>
+  <data name="WebAuthn_DeviceError" xml:space="preserve">
+    <value>Could not communicate with the security key: {0}</value>
   </data>
   <data name="ProxmoxApiClient_SessionExpired" xml:space="preserve">
     <value>The session expired and could not be renewed. Disconnect and connect again.</value>

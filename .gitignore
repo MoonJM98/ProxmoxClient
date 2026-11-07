@@ -62,6 +62,10 @@ coverage*.xml
 *.psess
 *.vsp
 *.vspx
+# dotnet test 결과(CI 의 --results-directory)
+test-results/
+# 화면 검사 도구(tools/UiSnapshot) 캡처
+shots/
 
 # ----------------------------------------------------------------- 운영체제
 [Tt]humbs.db
@@ -76,6 +80,11 @@ $RECYCLE.BIN/
 .env.*
 appsettings.*.local.json
 secrets.json
+# Android 서명 키·패키지 — 키는 저장소 밖에 두고 CI 비밀값(release.yml)으로 넘긴다
+*.keystore
+*.jks
+*.apk
+*.aab
 
 # 임시 파일
 *.tmp
@@ -85,4 +94,5 @@ secrets.json
 
 # 파이썬 캐시(가짜 PVE 서버 실행 시 생김)
 __pycache__/
+tools/FakePve/__pycache__/
 *.pyc

@@ -104,6 +104,9 @@ public sealed class ProxmoxVncSession : IConsoleSession
     /// <summary>게스트 클립보드가 바뀌었다(확장 클립보드 — VM 이 clipboard=vnc 일 때). 수신 스레드에서 불린다.</summary>
     public event Action<string>? ClipboardReceived;
 
+    /// <summary>게스트가 벨(경고음)을 울렸다. 수신 스레드에서 불린다.</summary>
+    public event Action? Bell;
+
     /// <summary>VNC 는 기본 커서 알림이 없다(모양은 <see cref="CursorShape" /> 로만 온다).</summary>
     event Action? IConsoleSession.CursorDefault
     {
@@ -182,6 +185,8 @@ public sealed class ProxmoxVncSession : IConsoleSession
         rfb.CursorShape += cursor => CursorShape?.Invoke(cursor);
         rfb.LedState += leds => LedState?.Invoke(leds);
         rfb.ServerCutText += text => ClipboardReceived?.Invoke(text);
+        rfb.Bell += () => Bell?.Invoke();
+        if (_updatesPaused) _ = rfb.SetUpdatesPausedAsync(true, CancellationToken.None); // 연결 전에 가려졌다
         rfb.ConnectionClosed += ex =>
         {
             IsConnected = false;
@@ -238,6 +243,27 @@ public sealed class ProxmoxVncSession : IConsoleSession
         catch (InvalidOperationException)
         {
             return Task.CompletedTask; // 전송 채널 종료(연결 끊김) — 종료는 Closed 이벤트로 처리
+        }
+    }
+
+    private volatile bool _updatesPaused;
+
+    /// <summary>
+    ///     화면 갱신 요청을 멈추거나 다시 켠다 — 콘솔 화면이 가려진 동안 데이터·배터리를 아낀다.
+    ///     다시 켜면 그동안 바뀐 곳을 한 번에 받는다.
+    /// </summary>
+    public void SetUpdatesPaused(bool paused)
+    {
+        _updatesPaused = paused;
+        if (!TryGetSender(out var rfb, out var token)) return;
+
+        try
+        {
+            _ = rfb.SetUpdatesPausedAsync(paused, token);
+        }
+        catch (InvalidOperationException)
+        {
+            // 전송 채널 종료(연결 끊김) — 종료는 Closed 이벤트로 처리
         }
     }
 

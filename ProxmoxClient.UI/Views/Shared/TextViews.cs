@@ -116,7 +116,7 @@ public sealed class TextEditTab : UserControl
 /// <summary>표 하나를 새 화면으로 — WPF TableWindow.ShowModal 대신(모달 창 없이 화면 스택에 쌓는다).</summary>
 public static class TableWindow
 {
-    public static string? ShowModal(Control? owner, string title, Control content)
+    public static string? ShowModal(object? owner, string title, Control content)
     {
         _ = AppServices.Navigator.PushViewAsync(title, content);
         return null;
@@ -126,7 +126,7 @@ public static class TableWindow
 /// <summary>긴 텍스트를 새 화면으로 — WPF TextViewWindow.ShowModal 대신.</summary>
 public static class TextViewWindow
 {
-    public static string? ShowModal(Control? owner, string title, string text)
+    public static string? ShowModal(object? owner, string title, string text)
     {
         var view = new ScrollViewer
         {
@@ -145,7 +145,7 @@ public static class TextViewWindow
 /// <summary>작업 로그 화면 — WPF TaskLogViewer.Show 대신.</summary>
 public static class TaskLogViewer
 {
-    public static void Show(ProxmoxApiClient api, PveTask task, Control? owner)
+    public static void Show(ProxmoxApiClient api, PveTask task, object? owner)
     {
         _ = AppServices.Navigator.PushAsync(new TaskLogViewModel(api, task));
     }

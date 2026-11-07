@@ -147,7 +147,7 @@ public sealed class TerminalHistory(string key, string? path = null)
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-                File.WriteAllText(_path, JsonSerializer.Serialize(all));
+                File.WriteAllText(_path, JsonSerializer.Serialize(all, UiJsonContext.Default.DictionaryStringListString));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -161,7 +161,7 @@ public sealed class TerminalHistory(string key, string? path = null)
         try
         {
             return File.Exists(_path)
-                ? JsonSerializer.Deserialize<Dictionary<string, List<string>>>(File.ReadAllText(_path)) ?? []
+                ? JsonSerializer.Deserialize(File.ReadAllText(_path), UiJsonContext.Default.DictionaryStringListString) ?? []
                 : [];
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)

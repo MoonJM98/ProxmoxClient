@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        가상 USB 보안 키 — Linux /dev/uhid 로 진짜 커널 HID 장치(/dev/hidrawN, FIDO 보고서 설명자)를 만들고
+        CTAPHID·CTAP2·U2F 에 답한다. 실제 LinuxHidWebAuthnProvider 를 그 장치에 붙여 끝까지 검사한다.
+        사용법: dotnet run (프로젝트 tools/VirtualFido) — 검사(/dev/uhid 가 없으면 SKIP),
+               serve [옵션] — 장치만 띄워 둔다(UiSnapshot 의 webauthn-key linux 용). Program.cs 첫 주석 참고
+    -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\ProxmoxClient.UI\ProxmoxClient.UI.csproj" />
+    </ItemGroup>
+
+</Project>

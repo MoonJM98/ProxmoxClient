@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 알림 작은 아이콘(흰색 단색) — 터미널 프롬프트 모양, 앱 아이콘 모음(Icons.axaml)의 IconTerminal 과 같은 선 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M4,17 L10,11 L4,5 M12,19 H20" android:strokeColor="#FFFFFFFF" android:strokeWidth="2"
+          android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000" />
+</vector>

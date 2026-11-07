@@ -454,7 +454,7 @@
     <value>Apply options</value>
   </data>
     <data name="FirewallWindow_03" xml:space="preserve">
-    <value>Enable guest firewall</value>
+    <value>Enable firewall</value>
   </data>
     <data name="FirewallWindow_04" xml:space="preserve">
     <value>Delete</value>
@@ -711,6 +711,15 @@
     <data name="SnapshotDialog_09" xml:space="preserve">
     <value>Include memory (RAM) state</value>
   </data>
+    <data name="Snapshot_NameRules" xml:space="preserve">
+      <value>Snapshot names must start with a letter and use only letters, digits, _ and - (2 to {0} characters).</value>
+    </data>
+    <data name="Snapshot_RollbackStart" xml:space="preserve">
+      <value>Start after rollback</value>
+    </data>
+    <data name="Snapshot_RamNeedsRunning" xml:space="preserve">
+      <value>Memory state can only be saved while the VM is running.</value>
+    </data>
     <data name="TerminalWindow_01" xml:space="preserve">
     <value>Terminal</value>
   </data>
@@ -1430,6 +1439,15 @@ Try again, or install it yourself with [Open download page].</value>
     <data name="GuestSettings_VlanRange" xml:space="preserve">
     <value>The VLAN tag must be between 1 and 4094.</value>
   </data>
+    <data name="GuestSettings_CtIpInvalid" xml:space="preserve">
+      <value>IP must be empty, dhcp, manual, or address/prefix (e.g. 192.168.1.10/24).</value>
+    </data>
+    <data name="GuestSettings_BalloonTooLarge" xml:space="preserve">
+      <value>Minimum memory (balloon) cannot exceed memory (0 disables it).</value>
+    </data>
+    <data name="Digest_Changed" xml:space="preserve">
+      <value>The configuration was changed elsewhere in the meantime, so nothing was saved. The latest version has been reloaded; check it and try again.</value>
+    </data>
     <data name="ProfileRegister_AuthUnknown" xml:space="preserve">
     <value>unavailable (defaults: Linux PAM, Proxmox VE authentication)</value>
   </data>
@@ -1540,6 +1558,9 @@ Try again, or install it yourself with [Open download page].</value>
   </data>
   <data name="GuestOptions_EditTitle" xml:space="preserve">
     <value>Edit: {0}</value>
+  </data>
+  <data name="GuestOptions_DescriptionTooLong" xml:space="preserve">
+    <value>The description cannot exceed {0} KiB.</value>
   </data>
   <data name="GuestOptions_EmptyHint" xml:space="preserve">
     <value>Leave empty for {0}.</value>
@@ -2206,6 +2227,41 @@ Try again, or install it yourself with [Open download page].</value>
   </data>
   <data name="NodeNetwork_AddBond" xml:space="preserve">
     <value>Add bond</value>
+  </data>
+  <data name="NodeNetwork_ApplyFailed" xml:space="preserve">
+    <value>Applying the network configuration failed: {0}</value>
+  </data>
+  <data name="NodeNetwork_ApplyDiff" xml:space="preserve">
+    <value>Apply these changes? A mistake can cut off your connection.
+
+{0}</value>
+  </data>
+  <data name="NodeNetwork_NoChanges" xml:space="preserve">
+    <value>There are no pending changes to apply.</value>
+  </data>
+  <data name="NodeNetwork_BadGateway" xml:space="preserve">
+    <value>Invalid gateway address: {0}</value>
+  </data>
+  <data name="NodeNetwork_BadCidr" xml:space="preserve">
+    <value>Not an address/prefix: {0}</value>
+  </data>
+  <data name="NodeNetwork_Gateway6" xml:space="preserve">
+    <value>IPv6 gateway</value>
+  </data>
+  <data name="NodeNetwork_Cidr6" xml:space="preserve">
+    <value>IPv6/CIDR</value>
+  </data>
+  <data name="NodeNetwork_VlanId" xml:space="preserve">
+    <value>VLAN tag</value>
+  </data>
+  <data name="NodeNetwork_VlanRawDevice" xml:space="preserve">
+    <value>VLAN raw device</value>
+  </data>
+  <data name="NodeNetwork_VlanNameHint" xml:space="preserve">
+    <value>e.g. vmbr0.10, eno1.20 (device.tag) or vlan10 (fill in the two fields below)</value>
+  </data>
+  <data name="NodeNetwork_AddVlan" xml:space="preserve">
+    <value>Add VLAN</value>
   </data>
   <data name="NodeNetwork_EditTitle" xml:space="preserve">
     <value>Edit interface: {0}</value>
@@ -3265,6 +3321,9 @@ Paste the join information below into 'Join cluster' on the new node (same forma
   <data name="DcCeph_Hint" xml:space="preserve">
     <value>Ceph status (read-only). Use pveceph in the node shell for installation, OSDs and pools.</value>
   </data>
+  <data name="DcCeph_NotInstalled" xml:space="preserve">
+    <value>Ceph is not installed in this cluster. Install it from a node's Ceph screen (requires root).</value>
+  </data>
   <data name="DcSdn_Zones" xml:space="preserve">
     <value>Zones</value>
   </data>
@@ -3499,6 +3558,30 @@ Paste the join information below into 'Join cluster' on the new node (same forma
   <data name="BackupList_StartAfter" xml:space="preserve">
     <value>Start after restore</value>
   </data>
+  <data name="BackupList_Unprivileged0" xml:space="preserve">
+    <value>No (privileged)</value>
+  </data>
+  <data name="BackupList_Unprivileged1" xml:space="preserve">
+    <value>Yes (unprivileged)</value>
+  </data>
+  <data name="BackupList_FromBackup" xml:space="preserve">
+    <value>As in the backup</value>
+  </data>
+  <data name="BackupList_Unprivileged" xml:space="preserve">
+    <value>Unprivileged container</value>
+  </data>
+  <data name="BackupList_LiveRestoreHint" xml:space="preserve">
+    <value>Starts the VM right away while restoring in the background (Proxmox Backup Server only).</value>
+  </data>
+  <data name="BackupList_LiveRestore" xml:space="preserve">
+    <value>Live restore</value>
+  </data>
+  <data name="BackupList_BwLimitHint" xml:space="preserve">
+    <value>Numbers only (KiB/s). Empty uses the datacenter/storage setting; 0 means unlimited.</value>
+  </data>
+  <data name="BackupList_BwLimit" xml:space="preserve">
+    <value>Bandwidth limit (KiB/s)</value>
+  </data>
   <data name="BackupList_OverwriteConfirm" xml:space="preserve">
     <value>Retype the ID to overwrite</value>
   </data>
@@ -3552,6 +3635,27 @@ Paste the join information below into 'Join cluster' on the new node (same forma
   </data>
   <data name="StorageUpload_Button" xml:space="preserve">
     <value>Upload</value>
+  </data>
+  <data name="StorageUpload_ChecksumBoth" xml:space="preserve">
+    <value>Enter both the checksum and the algorithm.</value>
+  </data>
+  <data name="StorageUpload_NoChecksum" xml:space="preserve">
+    <value>Don't verify</value>
+  </data>
+  <data name="StorageUpload_ChecksumHint" xml:space="preserve">
+    <value>Hex value; the server verifies it after receiving and discards the file on mismatch.</value>
+  </data>
+  <data name="StorageUpload_Checksum" xml:space="preserve">
+    <value>Checksum</value>
+  </data>
+  <data name="StorageUpload_ChecksumAlgorithm" xml:space="preserve">
+    <value>Checksum algorithm</value>
+  </data>
+  <data name="StorageUpload_BadTemplateExt" xml:space="preserve">
+    <value>Only .tar, .tar.gz, .tar.xz, .tar.zst or .tar.bz2 files can be uploaded as CT templates: {0}</value>
+  </data>
+  <data name="StorageUpload_BadIsoExt" xml:space="preserve">
+    <value>Only .iso or .img files can be uploaded as ISO images: {0}</value>
   </data>
   <data name="StorageUpload_Title" xml:space="preserve">
     <value>Uploading</value>
@@ -5019,7 +5123,7 @@ Continue?</value>
     <value>Share the clipboard with the guest automatically</value>
   </data>
   <data name="ConsoleSettings_RdpClipboardHint" xml:space="preserve">
-    <value>Copy on one side and paste on the other right away (text, images and other standard formats). The guest may need a clipboard agent such as spice-vdagent. Takes effect on reconnect.</value>
+    <value>Windows only. Copy on one side and paste on the other right away (text, images and other standard formats). The guest may need a clipboard agent such as spice-vdagent. Takes effect on reconnect.</value>
   </data>
   <data name="GuestFiles_Title" xml:space="preserve">
     <value>Files</value>
@@ -6482,6 +6586,9 @@ Overwrite them?</value>
   </data>
   <data name="Ct_MountPathInvalid" xml:space="preserve">
     <value>The path must start with /.</value>
+  </data>
+  <data name="Ct_MountPathRules" xml:space="preserve">
+    <value>Enter an absolute path inside the container (not /). Commas, line breaks, /./ and /../ are not allowed.</value>
   </data>
   <data name="Ct_Quota" xml:space="preserve">
     <value>Enable quota</value>
@@ -8332,5 +8439,29 @@ Previous SHA-256: {6}</value>
   </data>
   <data name="FormDialog_Refresh" xml:space="preserve">
     <value>Search again with the values entered</value>
+  </data>
+  <data name="NodeSubscription_Status_new" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="NodeSubscription_Status_notfound" xml:space="preserve">
+    <value>No subscription</value>
+  </data>
+  <data name="NodeSubscription_Status_active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="NodeSubscription_Status_invalid" xml:space="preserve">
+    <value>Invalid key</value>
+  </data>
+  <data name="NodeSubscription_Status_expired" xml:space="preserve">
+    <value>Expired</value>
+  </data>
+  <data name="NodeSubscription_Status_suspended" xml:space="preserve">
+    <value>Suspended</value>
+  </data>
+  <data name="TableTab_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="TableTab_RawFields" xml:space="preserve">
+    <value>Raw server fields ({0})</value>
   </data>
 </root>

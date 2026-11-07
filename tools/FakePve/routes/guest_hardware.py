@@ -67,6 +67,13 @@ def guest_config(m, query, body):
 
 @route('PUT', r'/nodes/([^/]+)/(qemu|lxc)/(\d+)/config')
 def guest_config_put(m, query, body):
+    # 실서버처럼 보낸 digest 가 지금 설정과 다르면 거절한다 — VM(qemu-server)과 CT(PVE::Tools::assert_if_modified)는
+    # 문구가 다르다(실제 PVE 9.2 로 확인)
+    current = _config_for(int(m.group(3))).get('digest')
+    if body.get('digest') and current and body['digest'] != current:
+        if m.group(2) == 'qemu':
+            raise STATE.PveError(500, 'checksum mismatch (file change by other user?)\n')
+        raise STATE.PveError(500, 'detected modified configuration - file changed by other user? Try again.\n')
     return None
 
 

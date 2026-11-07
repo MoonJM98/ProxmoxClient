@@ -38,7 +38,7 @@ internal sealed partial class GuestFileConnections
         if (!configure && current.IsComplete(transport)) return true;
 
         var detection = await DetectAsync(transport);
-        var entered = RemoteConnectionForm.Show(owner, transport, guest.Name, current, detection);
+        var entered = await RemoteConnectionForm.ShowAsync(owner, transport, guest.Name, current, detection);
         if (entered is not var (settings, password)) return false;
 
         // 기억하기로 한 비밀번호는 로그인에 성공한 뒤에 저장한다(RememberSecretAsync) — 틀린 비밀번호를 남기지 않게
@@ -98,7 +98,7 @@ internal sealed partial class GuestFileConnections
             ct.ThrowIfCancellationRequested();
             if (secret is null && settings.UserName.Length > 0)
             {
-                var asked = RemoteConnectionForm.AskPassword(owner, settings, attempt > 0)
+                var asked = await RemoteConnectionForm.AskPasswordAsync(owner, settings, attempt > 0)
                             ?? throw new OperationCanceledException(ct);
                 (secret, remember) = asked;
             }

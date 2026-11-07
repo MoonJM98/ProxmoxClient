@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        Windows RDP 끝까지 검사(.github/workflows/win-rdp-e2e.yml) — 같은 Windows 러너의 원격 데스크톱(NLA)을 서버로,
+        가짜 PVE(tools/FakePve)의 RDCleanPath 프록시를 거쳐 ProxmoxRdpSession 을 직접 돌린다.
+        클립보드 백엔드(IronRDP WinCliprdr)가 메시지 루프가 있는 STA 스레드를 요구해서 WinForms 메시지 루프 위에서 돈다.
+        Windows 전용 — 솔루션에는 넣지 않는다.
+    -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <UseWindowsForms>true</UseWindowsForms>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>false</IsPackable>
+        <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\ProxmoxClient.Core\ProxmoxClient.Core.csproj" />
+    </ItemGroup>
+
+</Project>

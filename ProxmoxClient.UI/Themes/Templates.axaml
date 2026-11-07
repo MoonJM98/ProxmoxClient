@@ -3,13 +3,15 @@
                     xmlns:m="using:ProxmoxClient.Core.Models"
                     xmlns:c="using:ProxmoxClient.UI.Converters"
                     xmlns:l="using:ProxmoxClient.UI.Localization"
-                    xmlns:vm="using:ProxmoxClient.UI.ViewModels">
+                    xmlns:vm="using:ProxmoxClient.UI.ViewModels"
+                    xmlns:mv="using:ProxmoxClient.UI.Views.Main"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
     <!--
         게스트 한 줄 — 누르면 목록(ItemsControl)의 Tag 에 넣은 명령을 실행한다(클러스터·노드 화면 공용).
     -->
     <DataTemplate x:Key="GuestRowTemplate" x:DataType="m:PveResource">
-        <Border Classes="card" Padding="0">
+        <Border Classes="card" Padding="0" Margin="0,0,0,10">
             <Button Classes="row" Command="{Binding $parent[ItemsControl].Tag}" CommandParameter="{Binding}">
                 <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
                     <Ellipse Classes="dot" Margin="0,0,12,0"
@@ -23,6 +25,23 @@
                             <Run Text="·" />
                             <Run Text="{Binding Node}" />
                         </TextBlock>
+                        <!-- 태그 — 태그마다 늘 같은 색 알약(데스크톱 표와 같은 팔레트), 많으면 다음 줄로 -->
+                        <ItemsControl ItemsSource="{Binding Tags}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="sys:String">
+                                    <Border Background="{Binding Converter={x:Static mv:MainConv.TagBrush}}"
+                                            CornerRadius="9" Padding="8,1" Margin="0,5,5,0">
+                                        <TextBlock Text="{Binding}" FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="White" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <Border IsVisible="{Binding IsTemplate}" CornerRadius="6" Padding="6,2"
@@ -70,7 +89,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="NodeRowTemplate" x:DataType="m:PveNode">
-            <Border Classes="card" Padding="0">
+            <Border Classes="card" Padding="0" Margin="0,0,0,10">
                 <Button Classes="row"
                         Command="{Binding $parent[ItemsControl].Tag}"
                         CommandParameter="{Binding}">
@@ -121,7 +140,7 @@
         </DataTemplate>
 
     <DataTemplate x:Key="StorageRowTemplate" x:DataType="m:PveStorage">
-            <Border Classes="card" Padding="0">
+            <Border Classes="card" Padding="0" Margin="0,0,0,10">
             <Button Classes="row" Command="{Binding $parent[ItemsControl].Tag}" CommandParameter="{Binding}">
                 <StackPanel Spacing="8">
                     <Grid ColumnDefinitions="Auto,*,Auto">
@@ -157,7 +176,7 @@
         </DataTemplate>
 
     <DataTemplate x:Key="TaskRowTemplate" x:DataType="m:PveTask">
-            <Border Classes="card" Padding="0">
+            <Border Classes="card" Padding="0" Margin="0,0,0,8">
                 <Button Classes="row"
                         Command="{Binding $parent[ItemsControl].Tag}"
                         CommandParameter="{Binding}">
@@ -195,7 +214,11 @@
         </Button>
     </DataTemplate>
 
+    <!--
+        카드 목록 — 보이는 줄만 만든다(게스트·작업이 수백 개여도 가볍게). 바깥 ScrollViewer 안에 있어도
+        가상화된다(보이는 영역을 따라감). VirtualizingStackPanel 에는 Spacing 이 없어 카드 간격은 각 줄 템플릿의 아래 여백.
+    -->
     <ItemsPanelTemplate x:Key="CardListPanel">
-        <StackPanel Spacing="10" />
+        <VirtualizingStackPanel />
     </ItemsPanelTemplate>
 </ResourceDictionary>

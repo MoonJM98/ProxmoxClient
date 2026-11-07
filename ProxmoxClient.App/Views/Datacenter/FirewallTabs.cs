@@ -4,7 +4,8 @@ using ProxmoxClient.App.Views.Shared;
 using ProxmoxClient.Core.Api;
 using ProxmoxClient.Core.Api.Domains;
 using ProxmoxClient.Core.Models;
-using static ProxmoxClient.App.Views.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.ActionHelpers;
+using static ProxmoxClient.Presentation.Shared.FormHelpers;
 
 namespace ProxmoxClient.App.Views.Datacenter;
 
@@ -277,7 +278,7 @@ internal static class FirewallTabs
 
     /// <summary>IP 집합의 주소 목록 창 — 목록에서 집합을 두 번 누르면 연다(웹 UI 오른쪽 IP/CIDR 표).</summary>
     private static void ShowIpSetEntries(ProxmoxApiClient api, FirewallScope scope, bool canEdit, string name,
-        System.Windows.Window? owner)
+        object? owner)
     {
         TableWindow.ShowModal(owner, Loc.T("DcFirewall_EntriesTitle", name),
             new TableTab(() => api.Firewall.ListIpSetEntriesAsync(scope, name), IpSetEntryColumns,

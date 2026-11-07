@@ -2,7 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using ProxmoxClient.Core.Api;
 using ProxmoxClient.UI.Localization;
+using ProxmoxClient.UI.Views.Shared;
 
 namespace ProxmoxClient.UI.Views.Guest.Tabs;
 

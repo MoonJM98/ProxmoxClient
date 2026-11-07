@@ -144,14 +144,21 @@
         <Setter Property="Margin" Value="0,0,8,0" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Background="{TemplateBinding Background}"
-                        BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="16"
-                        Padding="14,7">
-                    <ContentPresenter Content="{TemplateBinding Content}"
-                                      Foreground="{TemplateBinding Foreground}"
-                                      FontSize="14" />
+                <!-- 바깥은 누름 영역(휴대폰 48 높이까지 늘어남), 안쪽 알약은 늘 같은 크기로 가운데 — 글자가 위로 쏠리지 않게 -->
+                <Border Background="Transparent">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="17"
+                            MinHeight="34"
+                            Padding="14,0"
+                            VerticalAlignment="Center">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          VerticalAlignment="Center"
+                                          HorizontalAlignment="Center"
+                                          FontSize="14" />
+                    </Border>
                 </Border>
             </ControlTemplate>
         </Setter>

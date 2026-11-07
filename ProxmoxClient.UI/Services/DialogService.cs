@@ -14,7 +14,8 @@ public sealed partial class DialogService : ObservableObject
     private static readonly TimeSpan ToastDuration = TimeSpan.FromSeconds(3);
     private readonly Queue<DialogRequest> _pending = new();
     private DispatcherTimer? _toastTimer;
-    private int _busyDepth;
+    /// <summary>떠 있는 진행 표시들(겹쳐 불릴 수 있다) — 맨 뒤가 화면에 보이는 것.</summary>
+    private readonly List<BusyScope> _busyScopes = [];
 
     [ObservableProperty] public partial DialogRequest? Current { get; private set; }
 
@@ -61,6 +62,13 @@ public sealed partial class DialogService : ObservableObject
     public bool IsToastVisible => ToastText is not null;
 
     public bool IsBusyVisible => BusyText is not null;
+
+    /// <summary>진행 표시에 취소 단추가 있다(오래 걸리는 연결 등).</summary>
+    public bool CanCancelBusy => TopBusy?.Cancel is not null;
+
+    public string BusyCancelText => L.T("Common_Cancel");
+
+    private BusyScope? TopBusy => _busyScopes.Count > 0 ? _busyScopes[^1] : null;
 
     partial void OnCurrentChanged(DialogRequest? value)
     {
@@ -119,15 +127,55 @@ public sealed partial class DialogService : ObservableObject
         });
     }
 
-    /// <summary>화면 전체를 막는 진행 표시 — 돌려준 값을 Dispose 하면 사라진다(겹쳐 불러도 된다).</summary>
-    public IDisposable ShowBusy(string text)
+    /// <summary>
+    ///     화면 전체를 막는 진행 표시 — 돌려준 값을 Dispose 하면 사라진다(겹쳐 불러도 된다).
+    ///     <paramref name="cancel" /> 을 주면 취소 단추를 보이고, 누르거나 뒤로 가기를 하면 부른다(한 번만).
+    /// </summary>
+    public IDisposable ShowBusy(string text, Action? cancel = null)
     {
-        _busyDepth++;
-        BusyText = text;
-        return new BusyScope(this);
+        var scope = new BusyScope(this, text, cancel);
+        _busyScopes.Add(scope);
+        UpdateBusy();
+        return scope;
     }
 
-    /// <summary>뒤로 가기 — 열린 대화상자가 있으면 취소하고 true.</summary>
+    private void UpdateBusy()
+    {
+        BusyText = TopBusy?.Text;
+        OnPropertyChanged(nameof(CanCancelBusy));
+    }
+
+    /// <summary>진행 중인 작업을 취소한다(취소할 수 있을 때만 true).</summary>
+    [RelayCommand]
+    private void CancelBusy()
+    {
+        TryCancelBusy();
+    }
+
+    public bool TryCancelBusy()
+    {
+        if (TopBusy is not { Cancel: { } cancel } top) return false;
+
+        top.Cancel = null; // 두 번 누르지 않게 — 작업이 정리되며 진행 표시가 닫힌다
+        OnPropertyChanged(nameof(CanCancelBusy));
+        cancel();
+        return true;
+    }
+
+    /// <summary>
+    ///     뒤로 가기 — 열린 대화상자가 있으면 취소하고 true. 대화상자가 없고 진행 표시가 떠 있으면 취소할 수 있을 때
+    ///     취소하고, 어느 쪽이든 진행 중에는 true(뒤 화면으로 넘어가지 않게).
+    /// </summary>
+    public bool HandleBack()
+    {
+        if (TryCancelCurrent()) return true;
+        if (!IsBusyVisible) return false;
+
+        TryCancelBusy();
+        return true;
+    }
+
+    /// <summary>열린 대화상자가 있으면 취소하고 true.</summary>
     public bool TryCancelCurrent()
     {
         if (Current is null && Sheet is IDismissible sheet)
@@ -172,16 +220,18 @@ public sealed partial class DialogService : ObservableObject
         return timer;
     }
 
-    private sealed class BusyScope(DialogService owner) : IDisposable
+    /// <summary>진행 표시 한 겹.</summary>
+    private sealed class BusyScope(DialogService owner, string text, Action? cancel) : IDisposable
     {
-        private bool _disposed;
+        public string Text { get; } = text;
+
+        public Action? Cancel { get; set; } = cancel;
 
         public void Dispose()
         {
-            if (_disposed) return;
+            if (!owner._busyScopes.Remove(this)) return;
 
-            _disposed = true;
-            if (--owner._busyDepth == 0) owner.BusyText = null;
+            owner.UpdateBusy();
         }
     }
 }
@@ -193,6 +243,9 @@ public interface IDismissible
 {
     void Dismiss();
 }
+
+/// <summary>화면 아래에서 올라오는 시트(휴대폰) — 바깥을 누르거나 뒤로 가기로 닫힌다.</summary>
+public interface IBottomSheet : IDismissible;
 
 /// <summary>대화상자 하나 — 확인/취소를 누르면 <see cref="Result" /> 가 끝난다.</summary>
 public sealed partial class DialogRequest(string title, string message) : ObservableObject

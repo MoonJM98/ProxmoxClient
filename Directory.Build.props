@@ -3,4 +3,17 @@
     <PropertyGroup>
         <AvaloniaVersion>12.1.5</AvaloniaVersion>
     </PropertyGroup>
+
+    <!--
+        코드 분석 규칙 묶음을 .NET 10 기본값으로 고정한다 — SDK 를 올려도 새 규칙이 저절로 켜져 경고가 늘지 않게.
+        CI(GitHub Actions 는 환경 변수 CI=true)에서는 경고를 오류로 다룬다. 로컬 빌드는 그대로 경고만.
+        NuGet 취약점 알림(NU1901~NU1904)은 새 공지만으로 빌드가 깨지지 않게 경고로 둔다.
+    -->
+    <PropertyGroup>
+        <AnalysisLevel>10.0</AnalysisLevel>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(CI)' == 'true'">
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+    </PropertyGroup>
 </Project>

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
@@ -13,13 +14,6 @@ namespace ProxmoxClient.UI.Views.Terminal;
 /// </summary>
 internal sealed class TerminalRenderer
 {
-    /// <summary>Campbell(WPF 터미널과 같은 16색).</summary>
-    private static readonly uint[] Base16 =
-    [
-        0x0C0C0C, 0xC50F1F, 0x13A10E, 0xC19C00, 0x0037DA, 0x881798, 0x3A96DD, 0xCCCCCC,
-        0x767676, 0xE74856, 0x16C60C, 0xF9F1A5, 0x3B78FF, 0xB4009E, 0x61D6D6, 0xF2F2F2
-    ];
-
     /// <summary>모노 글꼴 후보 — 운영체제마다 처음 있는 것을 쓴다.</summary>
     private static readonly string[] MonoFamilies =
     [
@@ -27,15 +21,16 @@ internal sealed class TerminalRenderer
         "Liberation Mono", "Droid Sans Mono", "Noto Sans Mono", "Roboto Mono", "monospace"
     ];
 
-    private static readonly uint[] Palette = BuildPalette();
+    /// <summary>처음 기본색 — 실제 색은 터미널마다(<see cref="ScreenForeground" />·<see cref="ScreenBackground" />).</summary>
+    public const uint DefaultForeground = TerminalColor.DefaultForegroundRgb;
 
-    public const uint DefaultForeground = 0xCCCCCC;
-    public const uint DefaultBackground = 0x0C0C0C;
+    public const uint DefaultBackground = TerminalColor.DefaultBackgroundRgb;
 
     private readonly Dictionary<uint, IImmutableSolidColorBrush> _brushes = [];
     private readonly Dictionary<(int Rune, bool Bold), Fallback?> _fallbacks = [];
     private readonly List<GlyphInfo> _runGlyphs = [];
     private readonly List<char> _runChars = [];
+    private readonly Dictionary<(string Text, bool Bold, uint Color), FormattedText> _clusters = [];
 
     private GlyphTypeface _regular = null!;
     private GlyphTypeface _bold = null!;
@@ -72,6 +67,7 @@ internal sealed class TerminalRenderer
         CellHeight = Math.Ceiling(Math.Max(m.LineSpacing * scale, ascent + descent));
         Baseline = Math.Round((CellHeight - (ascent + descent)) / 2 + ascent);
         _fallbacks.Clear();
+        _clusters.Clear();
     }
 
     /// <summary>
@@ -117,13 +113,41 @@ internal sealed class TerminalRenderer
 
     // ------------------------------------------------------------ 색
 
-    public static uint Resolve(uint color, bool foreground, bool bold)
+    /// <summary>색을 읽을 터미널(팔레트·기본색·화면 반전) — 없으면 기본값. 그리기 전에 <see cref="BeginFrame" /> 로 정한다.</summary>
+    public TerminalBuffer? Buffer { get; private set; }
+
+    /// <summary>깜박이는 글자(SGR 5)를 지금 감춘다(깜박임의 꺼진 때).</summary>
+    public bool BlinkOff { get; set; }
+
+    /// <summary>이번 그림에 깜박이는 글자가 있었다 — 있을 때만 깜박임 시계를 돌린다.</summary>
+    public bool DrewBlink { get; private set; }
+
+    /// <summary>한 화면을 그리기 전에 — 색을 읽을 터미널을 정하고 깜박임 표시를 지운다.</summary>
+    public void BeginFrame(TerminalBuffer buffer)
+    {
+        Buffer = buffer;
+        DrewBlink = false;
+    }
+
+    /// <summary>지금 화면의 기본 글자색(OSC 10, 화면 반전이면 바탕색).</summary>
+    public uint ScreenForeground => Buffer is not { } b ? DefaultForeground :
+        b.ReverseVideo ? b.DefaultBackground : b.DefaultForeground;
+
+    /// <summary>지금 화면의 기본 바탕색(OSC 11, 화면 반전이면 글자색).</summary>
+    public uint ScreenBackground => Buffer is not { } b ? DefaultBackground :
+        b.ReverseVideo ? b.DefaultForeground : b.DefaultBackground;
+
+    /// <param name="brighten">SGR 30~37 로 고른 굵은 글자 — 기본 8색을 밝은 색으로(xterm 관례).</param>
+    public uint Resolve(uint color, bool foreground, bool brighten)
     {
         if (TerminalColor.IsRgb(color, out var rgb)) return rgb;
         if (TerminalColor.IsIndexed(color, out var index))
-            return Palette[foreground && bold && index < 8 ? index + 8 : index]; // 굵은 기본 8색은 밝은 색으로(xterm 관례)
+        {
+            if (brighten && index < 8) index += 8;
+            return Buffer?.PaletteColor(index) ?? TerminalColor.DefaultPalette[index];
+        }
 
-        return foreground ? DefaultForeground : DefaultBackground;
+        return foreground ? ScreenForeground : ScreenBackground;
     }
 
     public IImmutableSolidColorBrush Brush(uint rgb, byte alpha = 0xFF)
@@ -137,41 +161,48 @@ internal sealed class TerminalRenderer
         return brush;
     }
 
-    /// <summary>칸의 실제 글자색·바탕색(반전·숨김·흐림 반영).</summary>
+    /// <summary>칸의 실제 글자색·바탕색(반전·숨김·흐림·깜박임 반영). FgAlpha 는 늘 0xFF(흐림은 바탕 쪽으로 섞는다).</summary>
     public (uint Fg, uint Bg, byte FgAlpha) Colors(in TerminalCell cell)
     {
-        var bold = cell.Flags.HasFlag(CellFlags.Bold);
-        var fg = Resolve(cell.Foreground, true, bold);
+        var flags = cell.Flags;
+        var bold = (flags & CellFlags.Bold) != 0;
+        var fg = Resolve(cell.Foreground, true, bold && (flags & CellFlags.BasicColor) != 0);
         var bg = Resolve(cell.Background, false, false);
-        if (cell.Flags.HasFlag(CellFlags.Inverse)) (fg, bg) = (bg, fg);
-        if (cell.Flags.HasFlag(CellFlags.Hidden)) fg = bg;
-        return (fg, bg, cell.Flags.HasFlag(CellFlags.Faint) ? (byte)0x99 : (byte)0xFF);
-    }
-
-    private static uint[] BuildPalette()
-    {
-        var palette = new uint[256];
-        Array.Copy(Base16, palette, 16);
-        int[] steps = [0, 95, 135, 175, 215, 255];
-        for (var i = 0; i < 216; i++)
-            palette[16 + i] = (uint)(steps[i / 36] << 16 | steps[i / 6 % 6] << 8 | steps[i % 6]);
-        for (var i = 0; i < 24; i++)
+        if ((flags & CellFlags.Inverse) != 0) (fg, bg) = (bg, fg);
+        if ((flags & CellFlags.Faint) != 0) fg = Mix(fg, bg);
+        if ((flags & CellFlags.Blink) != 0)
         {
-            var v = (uint)(8 + i * 10);
-            palette[232 + i] = v << 16 | v << 8 | v;
+            DrewBlink = true;
+            if (BlinkOff) fg = bg;
         }
 
-        return palette;
+        if ((flags & CellFlags.Hidden) != 0) fg = bg;
+        return (fg, bg, 0xFF);
+    }
+
+    /// <summary>두 색의 가운데(흐린 글자 — 반투명보다 바탕 위에서 고르게 보인다).</summary>
+    private static uint Mix(uint a, uint b)
+    {
+        return ((a >> 16 & 0xFF) + (b >> 16 & 0xFF)) / 2 << 16 | ((a >> 8 & 0xFF) + (b >> 8 & 0xFF)) / 2 << 8 |
+               ((a & 0xFF) + (b & 0xFF)) / 2;
     }
 
     // ------------------------------------------------------------ 한 줄 그리기
 
-    /// <summary>한 줄의 바탕 → 글자 → 밑줄·취소선 순으로 그린다.</summary>
-    public void DrawLine(DrawingContext context, TerminalCell[] cells, int columns, Point origin)
+    /// <summary>한 줄 — 결합 문자가 붙은 칸(<see cref="CellFlags.Combined" />)까지 그린다.</summary>
+    public void DrawLine(DrawingContext context, TerminalBuffer.Line line, int columns, Point origin)
+    {
+        DrawLine(context, line.Cells, columns, origin, line);
+    }
+
+    /// <summary>한 줄의 바탕 → 밑줄·윗줄·취소선 → 글자 순으로 그린다.</summary>
+    public void DrawLine(DrawingContext context, TerminalCell[] cells, int columns, Point origin,
+        TerminalBuffer.Line? line = null)
     {
         var cw = CellWidth;
         var ch = CellHeight;
         var count = Math.Min(columns, cells.Length);
+        var screenBg = ScreenBackground;
 
         // 바탕: 같은 색이 이어지는 구간을 한 사각형으로
         for (var c = 0; c < count;)
@@ -179,17 +210,20 @@ internal sealed class TerminalRenderer
             var bg = Colors(cells[c]).Bg;
             var start = c;
             while (c < count && Colors(cells[c]).Bg == bg) c++;
-            if (bg == DefaultBackground) continue;
+            if (bg == screenBg) continue;
 
             var x0 = Math.Round(origin.X + start * cw);
             var x1 = Math.Round(origin.X + c * cw);
             context.FillRectangle(Brush(bg), new Rect(x0, origin.Y, x1 - x0, ch));
         }
 
+        DrawDecorations(context, cells, count, origin);
+
         // 글자
         uint runFg = 0;
         byte runAlpha = 0;
         var runBold = false;
+        var runItalic = false;
         var runStart = 0;
         for (var c = 0; c < count; c++)
         {
@@ -198,23 +232,19 @@ internal sealed class TerminalRenderer
 
             var (fg, bg, alpha) = Colors(cell);
             var rune = cell.Rune;
-            var bold = cell.Flags.HasFlag(CellFlags.Bold);
+            var bold = (cell.Flags & CellFlags.Bold) != 0;
+            var italic = (cell.Flags & CellFlags.Italic) != 0;
             var x = origin.X + c * cw;
 
-            if (cell.Flags.HasFlag(CellFlags.Underline) && fg != bg)
-                context.FillRectangle(Brush(fg, alpha),
-                    new Rect(Math.Round(x), origin.Y + Baseline + Math.Max(1, FontSize / 12), Math.Round(cw * cell.Width), Math.Max(1, Math.Round(FontSize / 14))));
-            if (cell.Flags.HasFlag(CellFlags.Strike) && fg != bg)
-                context.FillRectangle(Brush(fg, alpha),
-                    new Rect(Math.Round(x), origin.Y + Math.Round(ch / 2), Math.Round(cw * cell.Width), Math.Max(1, Math.Round(FontSize / 14))));
-
             var face = bold ? _bold : _regular;
-            var blank = rune is 0 or ' ' || fg == bg;
-            var primary = !blank && cell.Width == 1 && rune <= 0xFFFF && !BoxDrawing.Handles(rune) &&
+            var cluster = cell.Flags.HasFlag(CellFlags.Combined) ? line?.GetExtra(c) : null;
+            var blank = cluster is null && rune is 0 or ' ' || fg == bg;
+            var primary = !blank && cluster is null && cell.Width == 1 && rune <= 0xFFFF && !BoxDrawing.Handles(rune) &&
                           face.CharacterToGlyphMap.TryGetGlyph(rune, out _);
 
-            if (_runChars.Count > 0 && (!primary || fg != runFg || alpha != runAlpha || bold != runBold))
-                FlushRun(context, origin, runStart, runFg, runAlpha, runBold);
+            if (_runChars.Count > 0 &&
+                (!primary || fg != runFg || alpha != runAlpha || bold != runBold || italic != runItalic))
+                FlushRun(context, origin, runStart, runFg, runAlpha, runBold, runItalic);
 
             if (blank) continue;
 
@@ -226,6 +256,7 @@ internal sealed class TerminalRenderer
                     runFg = fg;
                     runAlpha = alpha;
                     runBold = bold;
+                    runItalic = italic;
                 }
 
                 face.CharacterToGlyphMap.TryGetGlyph(rune, out var glyph);
@@ -234,31 +265,157 @@ internal sealed class TerminalRenderer
                 continue;
             }
 
-            DrawSingle(context, rune, cell.Width, bold, Brush(fg, alpha), new Point(x, origin.Y));
+            if (cluster is not null)
+                DrawCluster(context, rune, cluster, cell.Width, bold, fg, alpha, new Point(x, origin.Y));
+            else
+                DrawSingle(context, rune, cell.Width, bold, Brush(fg, alpha), new Point(x, origin.Y), italic);
         }
 
-        if (_runChars.Count > 0) FlushRun(context, origin, runStart, runFg, runAlpha, runBold);
+        if (_runChars.Count > 0) FlushRun(context, origin, runStart, runFg, runAlpha, runBold, runItalic);
     }
 
-    private void FlushRun(DrawingContext context, Point origin, int start, uint fg, byte alpha, bool bold)
+    /// <summary>밑줄(한 줄·두 줄·물결·점·끊은 줄, SGR 58 색)·윗줄(53)·취소선(9) — 같은 꾸밈이 이어지는 구간을 한 번에.</summary>
+    private void DrawDecorations(DrawingContext context, TerminalCell[] cells, int count, Point origin)
+    {
+        const CellFlags lines = CellFlags.Underline | CellFlags.Overline | CellFlags.Strike;
+        var cw = CellWidth;
+        for (var c = 0; c < count;)
+        {
+            var cell = cells[c];
+            if ((cell.Flags & lines) == 0)
+            {
+                c++;
+                continue;
+            }
+
+            var (fg, bg, _) = Colors(cell);
+            var key = Decoration(cell, fg);
+            var start = c;
+            for (c++; c < count; c++)
+            {
+                var next = cells[c];
+                if ((next.Flags & lines) == 0) break;
+
+                var nextFg = Colors(next).Fg;
+                if (nextFg != fg || Decoration(next, nextFg) != key) break;
+            }
+
+            if (fg == bg) continue; // 숨긴 글자·깜박임의 꺼진 때
+
+            var x0 = Math.Round(origin.X + start * cw);
+            var x1 = Math.Round(origin.X + c * cw);
+            var t = Math.Max(1, Math.Round(FontSize / 14));
+            var brush = Brush(fg);
+            if ((cell.Flags & CellFlags.Strike) != 0)
+                context.FillRectangle(brush, new Rect(x0, origin.Y + Math.Round(CellHeight / 2), x1 - x0, t));
+            if ((cell.Flags & CellFlags.Overline) != 0)
+                context.FillRectangle(brush, new Rect(x0, origin.Y, x1 - x0, t));
+            if (key.Style != UnderlineStyle.None)
+                DrawUnderline(context, key.Style, Brush(key.Color), x0, x1, origin.Y, t);
+        }
+    }
+
+    /// <summary>구간을 나눌 꾸밈 — 밑줄 모양·밑줄 색·윗줄·취소선.</summary>
+    private (UnderlineStyle Style, uint Color, CellFlags Lines) Decoration(in TerminalCell cell, uint fg)
+    {
+        var style = cell.Underline;
+        var color = fg;
+        if (style != UnderlineStyle.None && Buffer?.UnderlineColor(cell) is { } code && code != TerminalColor.Default)
+            color = Resolve(code, true, false);
+        return (style, color, cell.Flags & (CellFlags.Overline | CellFlags.Strike));
+    }
+
+    private void DrawUnderline(DrawingContext context, UnderlineStyle style, IBrush brush, double x0, double x1,
+        double top, double t)
+    {
+        var bottom = top + CellHeight;
+        var y = Math.Round(top + Baseline + Math.Max(1, FontSize / 12));
+        switch (style)
+        {
+            case UnderlineStyle.Double:
+            {
+                y = Math.Min(y, bottom - 3 * t);
+                context.FillRectangle(brush, new Rect(x0, y, x1 - x0, t));
+                context.FillRectangle(brush, new Rect(x0, y + 2 * t, x1 - x0, t));
+                return;
+            }
+            case UnderlineStyle.Curly:
+            {
+                // 칸마다 물결 한 번 — 이웃 칸과 이어진다
+                var amp = Math.Max(1.5, t * 1.5);
+                var mid = Math.Min(y + t / 2, bottom - amp - t / 2);
+                var geometry = new StreamGeometry();
+                using (var g = geometry.Open())
+                {
+                    g.BeginFigure(new Point(x0, mid), false);
+                    var half = CellWidth / 2;
+                    var up = true;
+                    for (var x = x0; x < x1 - 0.5; x += half, up = !up)
+                        g.QuadraticBezierTo(new Point(x + half / 2, mid + (up ? -2 : 2) * amp),
+                            new Point(Math.Min(x + half, x1), mid));
+                    g.EndFigure(false);
+                }
+
+                context.DrawGeometry(null, new Pen(brush, t), geometry);
+                return;
+            }
+            case UnderlineStyle.Dotted or UnderlineStyle.Dashed:
+            {
+                y = Math.Min(y, bottom - t);
+                var dash = style == UnderlineStyle.Dotted ? new DashStyle([1, 1], 0) : new DashStyle([3, 2], 0);
+                context.DrawLine(new Pen(brush, t, dash), new Point(x0, y + t / 2), new Point(x1, y + t / 2));
+                return;
+            }
+            default:
+                context.FillRectangle(brush, new Rect(x0, Math.Min(y, bottom - t), x1 - x0, t));
+                return;
+        }
+    }
+
+    /// <summary>
+    ///     기울인 글자(SGR 3) — 앱에 넣은 글꼴에 기울임꼴이 없어 글리프를 비스듬히 민다. 기준점은 글자 높이 가운데쯤이라
+    ///     위는 오른쪽·아래는 왼쪽으로 조금씩 나가 칸에서 크게 벗어나지 않는다.
+    /// </summary>
+    private DrawingContext.PushedState? Italic(DrawingContext context, bool italic, Point baseline)
+    {
+        if (!italic) return null;
+
+        var pivotY = baseline.Y - CellHeight * 0.3;
+        return context.PushTransform(Matrix.CreateTranslation(0, -pivotY) * Matrix.CreateSkew(-0.2, 0) *
+                                     Matrix.CreateTranslation(0, pivotY));
+    }
+
+    private void FlushRun(DrawingContext context, Point origin, int start, uint fg, byte alpha, bool bold, bool italic)
     {
         var chars = _runChars.ToArray();
         var glyphs = _runGlyphs.ToArray();
         _runChars.Clear();
         _runGlyphs.Clear();
-        var run = new GlyphRun(bold ? _bold : _regular, FontSize, chars, glyphs,
-            new Point(origin.X + start * CellWidth, origin.Y + Baseline));
-        context.DrawGlyphRun(Brush(fg, alpha), run);
+        var baseline = new Point(origin.X + start * CellWidth, origin.Y + Baseline);
+        var run = new GlyphRun(bold ? _bold : _regular, FontSize, chars, glyphs, baseline);
+        using (Italic(context, italic, baseline))
+        {
+            context.DrawGlyphRun(Brush(fg, alpha), run);
+        }
     }
 
     /// <summary>글자 하나를 칸(1·2칸) 안에 그린다 — 선·블록 문자는 도형으로, 나머지는 대체 글꼴로 가운데에.</summary>
-    public void DrawSingle(DrawingContext context, int rune, int width, bool bold, IBrush brush, Point cellOrigin)
+    public void DrawSingle(DrawingContext context, int rune, int width, bool bold, IBrush brush, Point cellOrigin,
+        bool italic = false)
     {
         var span = CellWidth * width;
-        if (BoxDrawing.TryDraw(context, rune, brush, new Rect(cellOrigin.X, cellOrigin.Y, span, CellHeight), FontSize))
+        var cell = new Rect(cellOrigin.X, cellOrigin.Y, span, CellHeight);
+        if (BoxDrawing.TryDraw(context, rune, brush, cell, FontSize))
             return;
 
-        if (Find(rune, bold) is not { } fallback) return;
+        if (Find(rune, bold) is not { } fallback)
+        {
+            // 어느 글꼴에도 없는 글자 — 빈칸 대신 작은 네모(두부)로 무언가 있음을 보인다
+            var box = new Rect(Math.Round(cell.X + span * 0.15) + 0.5, Math.Round(cell.Y + CellHeight * 0.2) + 0.5,
+                Math.Max(2, Math.Round(span * 0.7) - 1), Math.Max(2, Math.Round(CellHeight * 0.6) - 1));
+            context.DrawRectangle(null, new Pen(brush), box);
+            return;
+        }
 
         // 칸보다 넓은 글리프는 줄여서 옆 칸을 덮지 않게
         var size = FontSize;
@@ -266,38 +423,107 @@ internal sealed class TerminalRenderer
         if (advance > span + 0.5) size *= span / advance;
         var glyphWidth = fallback.Advance * size;
         var text = char.ConvertFromUtf32(rune).ToCharArray();
-        var run = new GlyphRun(fallback.Face, size, text, [new GlyphInfo(fallback.Glyph, 0, glyphWidth)],
-            new Point(cellOrigin.X + (span - glyphWidth) / 2, cellOrigin.Y + Baseline));
-        context.DrawGlyphRun(brush, run);
+        var baseline = new Point(cellOrigin.X + (span - glyphWidth) / 2, cellOrigin.Y + Baseline);
+        var run = new GlyphRun(fallback.Face, size, text, [new GlyphInfo(fallback.Glyph, 0, glyphWidth)], baseline);
+        using (Italic(context, italic, baseline))
+        {
+            context.DrawGlyphRun(brush, run);
+        }
+    }
+
+    /// <summary>
+    ///     결합 문자가 붙은 칸 — 글자 묶음을 NFC 로 합쳐(한글 첫가끝 자모 → 음절, e+◌́ → é) 한 글자가 되면
+    ///     <see cref="DrawSingle" /> 로, 아니면(ZWJ 이모지·국기 등) 글꼴 대체까지 하는 FormattedText 로 칸 안에 그린다.
+    /// </summary>
+    public void DrawCluster(DrawingContext context, int rune, string extra, int width, bool bold, uint fg, byte alpha,
+        Point cellOrigin)
+    {
+        var text = (rune is 0 ? " " : char.ConvertFromUtf32(rune)) + extra;
+        try
+        {
+            text = text.Normalize(NormalizationForm.FormC);
+        }
+        catch (ArgumentException)
+        {
+            // 짝 없는 서러게이트 등 — 그대로 그린다
+        }
+
+        if (text.EnumerateRunes().Count() == 1)
+        {
+            DrawSingle(context, char.ConvertToUtf32(text, 0), width, bold, Brush(fg, alpha), cellOrigin);
+            return;
+        }
+
+        var key = (text, bold, fg | (uint)alpha << 24);
+        if (!_clusters.TryGetValue(key, out var formatted))
+        {
+            var span = CellWidth * width;
+            var typeface = new Typeface(new FontFamily(_family + ", " + AppFonts.FamilyName), FontStyle.Normal,
+                bold ? FontWeight.Bold : FontWeight.Normal);
+            formatted = new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface,
+                FontSize, Brush(fg, alpha));
+            // 칸보다 넓으면 줄여서 옆 칸을 덮지 않게
+            if (formatted.WidthIncludingTrailingWhitespace > span + 0.5)
+                formatted = new FormattedText(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface,
+                    FontSize * span / formatted.WidthIncludingTrailingWhitespace, Brush(fg, alpha));
+            if (_clusters.Count > 512) _clusters.Clear();
+            _clusters[key] = formatted;
+        }
+
+        var w = formatted.WidthIncludingTrailingWhitespace;
+        context.DrawText(formatted,
+            new Point(cellOrigin.X + (CellWidth * width - w) / 2, cellOrigin.Y + Baseline - formatted.Baseline));
+    }
+
+    /// <summary>이 글자를 그릴 글꼴이 있다(검사용 — 없으면 네모를 그린다).</summary>
+    public bool CanDraw(int rune)
+    {
+        return BoxDrawing.Handles(rune) || Find(rune, false) is not null;
+    }
+
+    /// <summary>이 글자를 그리는 글꼴 이름(검사용).</summary>
+    public string? FontFor(int rune)
+    {
+        return Find(rune, false)?.Face.FamilyName;
     }
 
     private Fallback? Find(int rune, bool bold)
     {
         if (_fallbacks.TryGetValue((rune, bold), out var found)) return found;
 
-        Fallback? result = null;
         var face = bold ? _bold : _regular;
+        var weight = bold ? FontWeight.Bold : FontWeight.Normal;
+        Fallback? result = null;
         if (face.CharacterToGlyphMap.TryGetGlyph(rune, out var own))
-        {
             result = Make(face, own);
-        }
-        else if (FontManager.Current.TryGetGlyphTypeface(new Typeface(AppFonts.Family, FontStyle.Normal,
-                     bold ? FontWeight.Bold : FontWeight.Normal), out var app) &&
-                 app.CharacterToGlyphMap.TryGetGlyph(rune, out var appGlyph))
-        {
-            // 한글 등은 앱에 넣은 Pretendard 로 — 기기마다 대체 글꼴이 달라도(또는 없어도) 같은 모양
-            result = Make(app, appGlyph);
-        }
-        else if (FontManager.Current.TryMatchCharacter(rune, FontStyle.Normal, bold ? FontWeight.Bold : FontWeight.Normal,
-                     FontStretch.Normal, new FontFamily(_family), CultureInfo.CurrentUICulture, out var typeface) &&
-                 typeface.GlyphTypeface is { } other && other.CharacterToGlyphMap.TryGetGlyph(rune, out var glyph))
-        {
-            result = Make(other, glyph);
-        }
+        // 한글 등은 앱에 넣은 Pretendard 로 — 기기마다 대체 글꼴이 달라도(또는 없어도) 같은 모양
+        else if (TerminalFonts.TryGlyph(AppFonts.FamilyName, rune, weight) is { } app)
+            result = Make(app.Face, app.Glyph);
+        else if (TerminalFonts.IsEmoji(rune))
+            // 이모지 — 기기의 컬러 이모지를 먼저, 없으면 넣어 둔 흑백 Noto Emoji
+            result = FromSystem() ?? Bundled(TerminalFonts.Emoji(rune, weight));
+        else
+            // 넣어 둔 기호 글꼴(그리스·키릴·수학·화살표·딩뱃·Nerd 아이콘) → 한자·가나(처음 필요할 때 읽는다) → 기기 글꼴
+            result = Bundled(TerminalFonts.Symbol(rune, weight)) ?? Bundled(TerminalFonts.Cjk(rune, weight)) ??
+                     FromSystem() ?? Bundled(TerminalFonts.Emoji(rune, weight));
 
         if (_fallbacks.Count > 8192) _fallbacks.Clear();
         _fallbacks[(rune, bold)] = result;
         return result;
+
+        static Fallback? Bundled((GlyphTypeface Face, ushort Glyph)? hit)
+        {
+            return hit is { } h ? Make(h.Face, h.Glyph) : null;
+        }
+
+        Fallback? FromSystem()
+        {
+            return FontManager.Current.TryMatchCharacter(rune, FontStyle.Normal, weight, FontStretch.Normal,
+                       new FontFamily(_family), CultureInfo.CurrentUICulture, out var typeface) &&
+                   typeface.GlyphTypeface is { } other && other.CharacterToGlyphMap.TryGetGlyph(rune, out var glyph)
+                ? Make(other, glyph)
+                : null;
+        }
 
         static Fallback Make(GlyphTypeface face, ushort glyph)
         {

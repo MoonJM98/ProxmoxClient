@@ -290,13 +290,17 @@ public partial class LoginWindow : Window
         try
         {
             await CertificateTrust.RunAsync(
-                () => client.LoginAsync(),
+                () => LoginWithTfaAsync(client, runtime),
                 rejection => CertificateTrust.Confirm(this, rejection, runtime),
                 () => TrustStoredCertificateAsync(stored, runtime));
 
             RememberIdentity(stored, runtime);
             ResultProfile = runtime;
             DialogResult = true;
+        }
+        catch (OperationCanceledException)
+        {
+            SetStatus(string.Empty); // 2단계 인증 입력을 취소함
         }
         catch (Exception ex)
         {

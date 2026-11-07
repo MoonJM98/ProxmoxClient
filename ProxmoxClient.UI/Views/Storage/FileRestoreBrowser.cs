@@ -97,13 +97,16 @@ internal static class FileRestoreBrowser
                 LabelKey = "FileRestore_Download", IconKey = "IconDownload", NeedsSelection = true,
                 Run = (row, owner) => DownloadAsync(api, node, storage, volume, row!, owner)
             }
-        ], open: (row, _) => Open(row));
+        ], open: (row, _) => Open(row))
+        {
+            TapOpens = true, OpenableIf = row => !IsLeaf(row) // 폴더는 누르면 들어가고, 파일은 누르면 내려받기 시트
+        };
         return tab;
     }
 
     /// <summary>파일은 그대로, 폴더(또는 디스크·파티션)는 zip 으로 받는다 — 저장할 곳은 사용자가 고른다.</summary>
     private static async Task<string?> DownloadAsync(ProxmoxApiClient api, string node, string storage,
-        string volume, IReadOnlyDictionary<string, string> row, Control? owner)
+        string volume, IReadOnlyDictionary<string, string> row, object? owner)
     {
         var isFile = IsLeaf(row);
         var name = Value(row, "text").Trim('/');

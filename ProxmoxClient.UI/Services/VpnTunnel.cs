@@ -85,7 +85,8 @@ public static class VpnTunnel
 
         try
         {
-            if (vpn.State is not VpnState.Disconnected) vpn.DisconnectAsync().Wait(TimeSpan.FromSeconds(5));
+            // 앱 종료 이벤트는 동기라 잠깐(최대 5초)만 정상 종료를 기다린다 — 넘으면 Dispose 가 프로세스를 바로 끝낸다
+            if (vpn.State is not VpnState.Disconnected) vpn.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
         }
         catch (Exception)
         {

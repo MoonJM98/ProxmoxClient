@@ -34,7 +34,11 @@ public sealed class FirewallApi(ProxmoxApiClient api) : PveDomainApi(api)
         return Api.PostActionAsync(scope.RulesPath, form, ct);
     }
 
-    /// <summary>규칙 수정 — moveto 만 주면 자리를 옮긴다.</summary>
+    /// <summary>
+    ///     규칙 수정 — moveto 만 주면 자리를 옮긴다. 규칙은 자리 번호(pos)로 가리키므로, 목록을 읽을 때 받은
+    ///     digest 를 함께 보내야 그 사이 다른 사람이 규칙을 넣거나 지웠을 때 엉뚱한 규칙을 고치지 않는다
+    ///     (서버가 "detected modified configuration" 으로 거절 — <see cref="ProxmoxApiException.IsDigestMismatch" />).
+    /// </summary>
     [PveApi("PUT", "/cluster/firewall/rules/{pos}")]
     [PveApi("PUT", "/cluster/firewall/groups/{group}/{pos}")]
     [PveApi("PUT", "/nodes/{node}/firewall/rules/{pos}")]
@@ -42,9 +46,9 @@ public sealed class FirewallApi(ProxmoxApiClient api) : PveDomainApi(api)
     [PveApi("PUT", "/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}")]
     [PveApi("PUT", "/cluster/sdn/vnets/{vnet}/firewall/rules/{pos}", Since = "8.3")]
     public Task<string> UpdateRuleAsync(FirewallScope scope, string pos, IReadOnlyDictionary<string, string> form,
-        CancellationToken ct = default)
+        string? digest = null, CancellationToken ct = default)
     {
-        return Api.PutActionAsync($"{scope.RulesPath}/{Seg(pos)}", form, ct);
+        return Api.PutActionAsync($"{scope.RulesPath}/{Seg(pos)}", WithDigest(form, digest), ct);
     }
 
     [PveApi("DELETE", "/cluster/firewall/rules/{pos}")]
@@ -53,9 +57,20 @@ public sealed class FirewallApi(ProxmoxApiClient api) : PveDomainApi(api)
     [PveApi("DELETE", "/nodes/{node}/qemu/{vmid}/firewall/rules/{pos}")]
     [PveApi("DELETE", "/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}")]
     [PveApi("DELETE", "/cluster/sdn/vnets/{vnet}/firewall/rules/{pos}", Since = "8.3")]
-    public Task<string> DeleteRuleAsync(FirewallScope scope, string pos, CancellationToken ct = default)
+    /// <summary>규칙 지우기 — digest 는 <see cref="UpdateRuleAsync" /> 와 같은 까닭으로 보낸다(DELETE 는 쿼리로).</summary>
+    public Task<string> DeleteRuleAsync(FirewallScope scope, string pos, string? digest = null,
+        CancellationToken ct = default)
     {
-        return Api.DeleteActionAsync($"{scope.RulesPath}/{Seg(pos)}", ct);
+        var query = string.IsNullOrEmpty(digest) ? string.Empty : $"?digest={Uri.EscapeDataString(digest)}";
+        return Api.DeleteActionAsync($"{scope.RulesPath}/{Seg(pos)}{query}", ct);
+    }
+
+    /// <summary>digest 가 있으면 폼에 더한다(원본은 그대로).</summary>
+    internal static IReadOnlyDictionary<string, string> WithDigest(IReadOnlyDictionary<string, string> form,
+        string? digest)
+    {
+        if (string.IsNullOrEmpty(digest)) return form;
+        return new Dictionary<string, string>(form, StringComparer.Ordinal) { ["digest"] = digest };
     }
 
     [PveApi("GET", "/cluster/firewall/options")]

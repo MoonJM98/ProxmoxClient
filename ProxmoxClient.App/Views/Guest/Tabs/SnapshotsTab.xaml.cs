@@ -178,9 +178,9 @@ public partial class SnapshotsTab : UserControl
 
         var dialog = new Shared.FormDialog(Loc.T("SnapshotDialog_EditNoteTitle", snapshot.Name),
         [
-            new Shared.FormField
+            new FormField
             {
-                Key = "description", LabelKey = "FirewallWindow_13", Kind = Shared.FormFieldKind.Multiline,
+                Key = "description", LabelKey = "FirewallWindow_13", Kind = FormFieldKind.Multiline,
                 Initial = snapshot.Description ?? string.Empty, CanLoadFile = false
             }
         ]) { Owner = Window.GetWindow(this) };

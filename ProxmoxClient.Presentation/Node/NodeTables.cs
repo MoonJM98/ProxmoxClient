@@ -1,0 +1,41 @@
+using ProxmoxClient.Core.Api;
+using ProxmoxClient.Presentation.Shared;
+
+namespace ProxmoxClient.Presentation.Node;
+
+/// <summary>노드 창의 표 화면들 — 서버 경로와 보여 줄 열만 정의한다.</summary>
+internal static class NodeTables
+{
+    private static readonly IReadOnlyList<TableColumn> NetworkColumns =
+    [
+        new() { Key = "iface", HeaderKey = "Table_Name", Width = 110 },
+        new() { Key = "type", HeaderKey = "Table_Type", Width = 90, Mobile = MobileColumn.Summary },
+        new() { Key = "active", HeaderKey = "Table_Active", Width = 60, Format = TableFormats.Flag, Mobile = MobileColumn.Status },
+        new() { Key = "autostart", HeaderKey = "Table_Autostart", Width = 70, Format = TableFormats.Flag },
+        new() { Key = "bridge_ports", HeaderKey = "Table_Ports", Width = 110, Mobile = MobileColumn.Summary },
+        new() { Key = "cidr", HeaderKey = "Table_Cidr", Width = 140, Mobile = MobileColumn.Summary },
+        new() { Key = "gateway", HeaderKey = "Table_Gateway", Width = 120 },
+        new() { Key = "comments", HeaderKey = "Table_Comment", Width = 0 }
+    ];
+
+    private static readonly IReadOnlyList<TableColumn> CertificateColumns =
+    [
+        new() { Key = "filename", HeaderKey = "Table_File", Width = 140 },
+        new() { Key = "issuer", HeaderKey = "Table_Issuer", Width = 200 },
+        new() { Key = "notafter", HeaderKey = "Table_Expires", Width = 140, Format = TableFormats.EpochDate },
+        new() { Key = "san", HeaderKey = "Table_San", Width = 0 },
+        new() { Key = "fingerprint", HeaderKey = "Table_Fingerprint", Width = 200 }
+    ];
+
+    public static TableSpec Network(ProxmoxApiClient api, string node, bool canEdit)
+    {
+        return new TableSpec(() => api.Nodes.ListNetworkAsync(node), NetworkColumns, "NodeNetwork_Hint",
+            canEdit ? AppParts.Current.NetworkActions(api, node) : null);
+    }
+
+    public static TableSpec Certificates(ProxmoxApiClient api, string node, bool canEdit)
+    {
+        return new TableSpec(() => api.Nodes.CertificatesAsync(node), CertificateColumns,
+            "NodeCertificates_Hint", canEdit ? CertificateActions.Actions(api, node) : null);
+    }
+}

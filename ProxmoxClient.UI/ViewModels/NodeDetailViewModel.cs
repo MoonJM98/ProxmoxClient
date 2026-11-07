@@ -93,7 +93,7 @@ public sealed partial class NodeDetailViewModel : ViewModelBase, IReloadable
     public override void OnAppearing()
     {
         _refresher.Start();
-        _ = RefreshAsync();
+        _ = _refresher.RefreshNowAsync();
     }
 
     public override void OnDisappearing(bool removed)
@@ -108,7 +108,7 @@ public sealed partial class NodeDetailViewModel : ViewModelBase, IReloadable
     [RelayCommand]
     private Task Reload()
     {
-        return RefreshAsync();
+        return _refresher.RefreshNowAsync();
     }
 
     private async Task RefreshAsync()

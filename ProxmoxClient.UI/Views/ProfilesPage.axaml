@@ -9,6 +9,38 @@
     <Grid>
         <ScrollViewer>
             <StackPanel Margin="16,12,16,100" Spacing="10" MaxWidth="640">
+                <!-- 앱이 터미널을 연 채로 죽었을 때 — 누르면 그 서버로 로그인하고 다시 열지 묻는다 -->
+                <ItemsControl ItemsSource="{Binding PendingRestores}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="10" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TerminalRestoreItem">
+                            <Border Classes="card" Padding="0">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Button Classes="row" AutomationProperties.Name="{Binding Text}"
+                                            Command="{Binding $parent[ItemsControl].((vm:ProfilesViewModel)DataContext).ConnectCommand}"
+                                            CommandParameter="{Binding Item}">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Classes="title" Text="{Binding Text}" TextWrapping="Wrap" />
+                                            <TextBlock Classes="subtle" Text="{l:Tr Restore_BannerHint}"
+                                                       TextWrapping="Wrap" TextTrimming="None" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Grid.Column="1" Classes="icon" Margin="0,0,6,0"
+                                            Command="{Binding $parent[ItemsControl].((vm:ProfilesViewModel)DataContext).DismissRestoreCommand}"
+                                            CommandParameter="{Binding}" ToolTip.Tip="{l:Tr Restore_Dismiss}"
+                                            AutomationProperties.Name="{l:Tr Restore_Dismiss}">
+                                        <Path Classes="icon" Data="{StaticResource IconX}" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
                 <TextBlock Classes="section" Text="{l:Tr Profiles_Section}" IsVisible="{Binding !IsEmpty}" />
                 <ItemsControl ItemsSource="{Binding Profiles}">
                     <ItemsControl.ItemsPanel>
@@ -59,12 +91,13 @@
                                TextAlignment="Center" TextTrimming="None" />
                 </StackPanel>
 
-                <!-- 렌더링 방식(Vulkan·EGL·소프트웨어 등)과 버전 — 기기에서 바로 확인 -->
-                <p:RenderInfoText Margin="0,24,0,0" />
+                <!-- 렌더링 방식(Vulkan·EGL·소프트웨어 등)과 버전 — 디버그 빌드에서만(사용자 화면에는 내부 정보를 두지 않는다) -->
+                <p:RenderInfoText x:Name="RenderInfoLine" Margin="0,24,0,0" IsVisible="False" />
             </StackPanel>
         </ScrollViewer>
 
-        <Button Classes="fab accent" Command="{Binding AddCommand}">
+        <Button Classes="fab accent" Command="{Binding AddCommand}" ToolTip.Tip="{l:Tr Profile_AddTitle}"
+                AutomationProperties.Name="{l:Tr Profile_AddTitle}">
             <Path Classes="icon" Width="22" Height="22" Data="{StaticResource IconPlus}" />
         </Button>
     </Grid>

@@ -38,6 +38,9 @@ public sealed record AppSettings
     /// <summary>게스트 목록에 템플릿을 보일지 — 숨기면 템플릿 열도 숨긴다.</summary>
     public bool ShowTemplates { get; init; } = true;
 
+    /// <summary>화면 보호(모바일) — 최근 앱 미리보기를 가리고 화면 캡처·녹화를 막는다(Android FLAG_SECURE).</summary>
+    public bool SecureScreen { get; init; }
+
     /// <summary>메인 창 게스트 화면의 위쪽 상세 영역 높이(손잡이로 조절, px).</summary>
     public double GuestDetailHeight { get; init; } = DefaultGuestDetailHeight;
 

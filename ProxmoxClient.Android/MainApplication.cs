@@ -16,6 +16,13 @@ public class MainApplication : AvaloniaAndroidApplication<App>
 
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
+        // 앱 기록(처리하지 못한 예외)은 앱 전용 폴더에 — 설정 > 일반 > 진단에서 보거나 저장한다
+        ProxmoxClient.UI.Platform.AppLog.Directory = Path.Combine(FilesDir!.AbsolutePath, "logs");
+        ProxmoxClient.UI.Platform.SessionKeepAlive.StatePath = Path.Combine(FilesDir!.AbsolutePath, "open-terminals.txt");
+        ProxmoxClient.UI.Platform.AppLog.InstallGlobalHandlers();
+        // Java 쪽으로 넘어간 .NET 예외(앱이 죽는다) — 기록만 하고 그대로 죽게 둔다
+        Android.Runtime.AndroidEnvironment.UnhandledExceptionRaiser += (_, e) =>
+            ProxmoxClient.UI.Platform.AppLog.Error("Android (fatal)", e.Exception);
         // 비밀번호·토큰은 Android 키스토어 키로 암호화해 앱 전용 저장소에 둔다
         // 짧은 변이 600dp 이상(7인치 이상 태블릿)이면 PC 와 같은 배치, 아니면 휴대폰 배치
         ProxmoxClient.UI.Platform.PlatformInfo.FormFactor =
@@ -25,7 +32,16 @@ public class MainApplication : AvaloniaAndroidApplication<App>
         AppServices.SecretStore = new KeystoreSecretStore(this);
         // SPICE 콘솔 — .vv 파일을 SPICE 앱(aSPICE·Opaque 등)에 ACTION_VIEW 로 넘긴다(데스크톱의 remote-viewer 대신)
         ProxmoxClient.UI.Platform.SpiceLaunchers.Current = new AndroidSpiceLauncher(this);
+        // 터미널 연결 유지 — 연결된 동안 포그라운드 서비스(알림)로 앱을 살려 두어 배경에서도 세션이 끊기지 않게
+        ProxmoxClient.UI.Platform.SessionKeepAlive.Host = new AndroidSessionKeepAliveHost(this);
+        // 2단계 인증 보안 키(WebAuthn) — NFC·USB 보안 키에 직접 서명을 받는다
+        ProxmoxClient.UI.Platform.WebAuthnProviders.Current = new AndroidWebAuthnProvider(this);
+        // 설정의 "화면 보호" — 액티비티 창에 FLAG_SECURE
+        ProxmoxClient.UI.Platform.ScreenSecurity.Host = new AndroidScreenSecurityHost();
         AppServices.ProfilesDirectory = Path.Combine(FilesDir!.AbsolutePath, "profiles");
+#if DEBUG
+        DebugTestHook.Register(this); // 디버그 빌드 전용 자동 검사 고리(에뮬레이터 검사)
+#endif
         return base.CustomizeAppBuilder(builder)
             .UseAppFonts()
             .With(new AndroidPlatformOptions

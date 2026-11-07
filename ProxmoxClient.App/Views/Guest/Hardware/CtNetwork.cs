@@ -92,17 +92,17 @@ internal static partial class CtNetwork
         return value is "dhcp" or "auto" ? $"{key}: {value}" : value;
     }
 
-    private static async Task<string?> EditAsync(ProxmoxApiClient api, PveResource guest, string? key, Window? owner)
+    private static async Task<string?> EditAsync(ProxmoxApiClient api, PveResource guest, string? key, object? owner)
     {
         var config = await api.GetGuestPendingAsync(guest.Node, guest.Kind, guest.VmId);
         var ctx = new HardwareContext(api, guest, config, running: false);
         var edit = await EditorAsync(ctx, key);
         var dialog = new FormDialog(edit.Title, edit.Fields, edit.Validate,
-            api.Guests.Feature(nameof(Core.Api.Domains.GuestsApi.SetConfigAsync))) { Owner = owner };
+            api.Guests.Feature(nameof(Core.Api.Domains.GuestsApi.SetConfigAsync))) { Owner = owner as Window };
         if (dialog.ShowDialog() != true || dialog.Result is not { } values) return null;
 
         await api.UpdateGuestConfigAsync(guest.Node, guest.Kind, guest.VmId,
-            ActionHelpers.UpdateForm(edit.Build(values)));
+            FormHelpers.UpdateForm(edit.Build(values)));
         return Loc.T("GuestSettingsWindow_M06");
     }
 

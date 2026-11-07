@@ -15,4 +15,11 @@ internal sealed class NavTabList : List<NavTab>
         if (visible)
             Add(new NavTab { Id = id, LabelKey = labelKey, IconKey = iconKey, Create = create, Requires = requires });
     }
+
+    /// <summary>공용 화면 설계도(<see cref="ViewSpec" />)로 만드는 탭.</summary>
+    public void Add(string id, string labelKey, string iconKey, bool visible, Func<ViewSpec> create,
+        ApiFeature? requires = null)
+    {
+        Add(id, labelKey, iconKey, visible, () => ViewSpecs.Build(create()), requires);
+    }
 }

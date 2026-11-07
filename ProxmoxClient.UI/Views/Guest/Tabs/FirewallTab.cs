@@ -40,7 +40,7 @@ public sealed class FirewallTab : UserControl
 
         DockPanel.SetDock(_optionsRow, Dock.Top);
         DockPanel.SetDock(_status, Dock.Bottom);
-        var rules = new ContentControl { Content = FirewallRules.Create(api, scope, canEdit).Embedded() }; // 이 화면이 이미 여백을 둔다
+        var rules = new ContentControl { Content = ViewSpecs.Build(FirewallRules.Create(api, scope, canEdit)).Embedded() }; // 이 화면이 이미 여백을 둔다
         Content = new DockPanel
         {
             Margin = new Thickness(16),

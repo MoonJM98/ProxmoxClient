@@ -7,6 +7,114 @@
   <data name="Login_VpnUnsupported" xml:space="preserve">
     <value>이 버전에서는 VPN(OpenVPN) 연결을 아직 지원하지 않습니다. WPF 앱에서 연결하거나, VPN 없이 접속하는 서버로 로그인하세요.</value>
   </data>
+  <data name="Tfa_Title" xml:space="preserve">
+    <value>2단계 인증</value>
+  </data>
+  <data name="Tfa_Prompt" xml:space="preserve">
+    <value>{0} 계정의 2단계 인증 코드를 입력하세요.</value>
+  </data>
+  <data name="Tfa_KindTotp" xml:space="preserve">
+    <value>인증 앱(TOTP)</value>
+  </data>
+  <data name="Tfa_KindRecovery" xml:space="preserve">
+    <value>복구 키</value>
+  </data>
+  <data name="Tfa_KindYubico" xml:space="preserve">
+    <value>Yubico OTP</value>
+  </data>
+  <data name="Tfa_TotpWatermark" xml:space="preserve">
+    <value>인증 앱의 6자리 코드</value>
+  </data>
+  <data name="Tfa_YubicoWatermark" xml:space="preserve">
+    <value>YubiKey 를 눌러 입력</value>
+  </data>
+  <data name="Tfa_RecoveryLeft" xml:space="preserve">
+    <value>남은 복구 키 번호: {0}</value>
+  </data>
+  <data name="Tfa_RecoveryLow" xml:space="preserve">
+    <value>복구 키가 얼마 남지 않았습니다. 로그인한 뒤 새로 만드세요.</value>
+  </data>
+  <data name="Tfa_EmptyCode" xml:space="preserve">
+    <value>인증 코드를 입력하세요.</value>
+  </data>
+  <data name="Tfa_Verifying" xml:space="preserve">
+    <value>확인 중…</value>
+  </data>
+  <data name="Tfa_SecurityKeyUnsupported" xml:space="preserve">
+    <value>옛 형식(PVE 7.2 이전)의 U2F 보안 키 요청은 이 앱에서 지원하지 않습니다 — TOTP나 복구 키를 쓰거나 API 토큰을 쓰세요.</value>
+  </data>
+  <data name="Tfa_KindWebAuthn" xml:space="preserve">
+    <value>보안 키</value>
+  </data>
+  <data name="Tfa_KindU2f" xml:space="preserve">
+    <value>보안 키(U2F)</value>
+  </data>
+  <data name="Tfa_WebAuthnStart" xml:space="preserve">
+    <value>보안 키로 확인</value>
+  </data>
+  <data name="Tfa_WebAuthnHint" xml:space="preserve">
+    <value>등록한 보안 키(WebAuthn)로 확인합니다. 단추를 누른 뒤 안내에 따라 키를 대거나 누르세요.</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptWindows" xml:space="preserve">
+    <value>Windows 보안 창의 안내에 따라 보안 키를 확인하세요…</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptUsb" xml:space="preserve">
+    <value>USB 보안 키를 꽂고 키의 버튼을 누르세요…</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptNfc" xml:space="preserve">
+    <value>보안 키를 휴대폰 뒷면(NFC)에 대고 있으세요…</value>
+  </data>
+  <data name="Tfa_WebAuthnCancelled" xml:space="preserve">
+    <value>보안 키 확인을 취소했습니다. 다시 하거나 다른 방식을 고르세요.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoKey" xml:space="preserve">
+    <value>USB 보안 키를 찾지 못했습니다. 키를 꽂고 다시 시도하세요.</value>
+  </data>
+  <data name="Tfa_WebAuthnHidPermission" xml:space="preserve">
+    <value>보안 키 장치({0})를 열 권한이 없습니다. libfido2 의 udev 규칙을 설치하거나(배포판의 libfido2 패키지) 장치 권한을 확인하세요.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoWindows" xml:space="preserve">
+    <value>보안 키(WebAuthn)는 Windows 10 1903 이상에서 쓸 수 있습니다 — TOTP나 복구 키를 쓰세요.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoLinux" xml:space="preserve">
+    <value>보안 키(WebAuthn)를 쓰려면 USB 보안 키(/dev/hidraw)가 필요합니다 — TOTP나 복구 키를 쓰세요.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoMac" xml:space="preserve">
+    <value>이 Mac 에서는 USB 보안 키를 쓸 수 없습니다 — TOTP나 복구 키를 쓰세요.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoIos" xml:space="preserve">
+    <value>iOS 에서는 보안 키(WebAuthn)를 아직 지원하지 않습니다 — TOTP나 복구 키를 쓰세요.</value>
+  </data>
+  <data name="Tfa_WebAuthnNoNfc" xml:space="preserve">
+    <value>이 기기에는 NFC 와 USB 호스트 기능이 없어 보안 키(WebAuthn)를 쓸 수 없습니다 — TOTP나 복구 키를 쓰세요.</value>
+  </data>
+  <data name="Tfa_WebAuthnNfcOff" xml:space="preserve">
+    <value>NFC 가 꺼져 있습니다. 설정에서 NFC 를 켠 뒤 다시 시도하세요.</value>
+  </data>
+  <data name="Tfa_PinWatermark" xml:space="preserve">
+    <value>보안 키 PIN</value>
+  </data>
+  <data name="Tfa_PinPrompt" xml:space="preserve">
+    <value>보안 키 PIN 을 입력하세요. NFC 키는 입력한 뒤 다시 대세요.</value>
+  </data>
+  <data name="Tfa_PinPromptRetries" xml:space="preserve">
+    <value>보안 키 PIN 을 입력하세요(남은 시도 {0}번). NFC 키는 입력한 뒤 다시 대세요.</value>
+  </data>
+  <data name="Tfa_PinEmpty" xml:space="preserve">
+    <value>PIN 을 입력하세요.</value>
+  </data>
+  <data name="Tfa_WebAuthnMacOpen" xml:space="preserve">
+    <value>USB 보안 키를 열지 못했습니다. 다른 프로그램(브라우저 등)이 키를 쓰고 있으면 닫고 다시 시도하세요.</value>
+  </data>
+  <data name="Tfa_WebAuthnPromptAndroid" xml:space="preserve">
+    <value>보안 키를 휴대폰 뒷면(NFC)에 대거나 USB 로 꽂고 키의 버튼을 누르세요…</value>
+  </data>
+  <data name="Tfa_WebAuthnUsbDenied" xml:space="preserve">
+    <value>USB 보안 키 사용을 허용하지 않았습니다.</value>
+  </data>
+  <data name="Tfa_NoMethod" xml:space="preserve">
+    <value>이 계정에 쓸 수 있는 2단계 인증 방식이 없습니다. 웹 UI에서 2단계 인증 설정을 확인하거나 API 토큰을 쓰세요.</value>
+  </data>
   <data name="Login_VpnNote" xml:space="preserve">
     <value>로그인 전에 이 .ovpn 으로 OpenVPN 터널을 엽니다(데스크톱). Linux·macOS 는 터널을 만들 권한(root 또는 CAP_NET_ADMIN)이 openvpn 에 있어야 합니다. Android 는 VPN 앱으로 먼저 연결하세요.</value>
   </data>

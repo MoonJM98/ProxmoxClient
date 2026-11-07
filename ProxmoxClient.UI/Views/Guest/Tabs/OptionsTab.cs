@@ -68,7 +68,7 @@ public partial class OptionsTab : UserControl
         actions.AddRange((extraActions ?? []).Where(a => a.Requires is not { IsAvailable: false }));
 
         _table = new TableTab(LoadRowsAsync, Columns, "OptionsTab_Hint", actions,
-            open: (row, owner) => _ = OpenAsync(row));
+            open: (row, owner) => _ = OpenAsync(row)) { TapOpens = true };
 
         _lockText = new TextBlock { TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center };
         _lockPanel = new Border
@@ -186,7 +186,16 @@ public partial class OptionsTab : UserControl
             .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
         if (changed.Count == 0) return Loc.T("GuestSettingsWindow_M04");
 
-        await _save(changed);
+        // 읽을 때 받은 digest 를 함께 보낸다 — 그 사이 다른 곳에서 바뀌었으면 서버가 거절하고, 다시 읽어 알린다
+        try
+        {
+            await _save(_config.AddDigest(changed));
+        }
+        catch (ProxmoxApiException ex) when (ex.IsDigestMismatch)
+        {
+            return Loc.T("Digest_Changed");
+        }
+
         return Loc.T("GuestSettingsWindow_M06");
     }
 

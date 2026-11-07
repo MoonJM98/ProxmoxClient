@@ -92,12 +92,10 @@ public sealed partial class ProxmoxRdpSession
             _stage = null;
             _image?.Dispose();
             _image = null;
-            _input?.Dispose();
             _input = null;
             _channel?.Complete();
             _channel = null;
-            foreach (var operation in _heldInputs) operation.Dispose(); // 재활성화 중에 닫혔다
-            _heldInputs.Clear();
+            _heldInputs.Clear(); // 재활성화 중에 닫혔다
         }
     }
 

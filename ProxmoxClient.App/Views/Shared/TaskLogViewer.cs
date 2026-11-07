@@ -11,9 +11,9 @@ namespace ProxmoxClient.App.Views.Shared;
 internal static class TaskLogViewer
 {
     /// <summary>작업 로그 창을 모달로 연다(읽기·중지·다운로드 오류는 창 안에 보여 준다).</summary>
-    public static void Show(ProxmoxApiClient api, PveTask task, Window? owner)
+    public static void Show(ProxmoxApiClient api, PveTask task, object? owner)
     {
-        new TaskLogWindow(api, task) { Owner = owner }.ShowDialog();
+        new TaskLogWindow(api, task) { Owner = owner as Window }.ShowDialog();
     }
 
     /// <summary>더블클릭한 곳이 작업 행이면 그 작업(헤더·빈 영역이면 null).</summary>

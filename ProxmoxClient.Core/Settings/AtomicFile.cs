@@ -105,6 +105,41 @@ public static class AtomicFile
         }
     }
 
+    /// <summary>
+    ///     원본이 손상됐을 때 직전 저장본(<c>.bak</c>)으로 되살린다 — 백업이 있고 isValid 를 통과하면 원본 자리에 원자적으로
+    ///     쓰고(백업은 그대로 둔다) 그 내용을 돌려준다. 백업이 없거나 역시 손상됐거나 쓰지 못하면 null(원본은 그대로).
+    ///     되살린 내용은 쓰기에 실패해도 돌려준다 — 이번 실행은 백업 내용으로 계속할 수 있다.
+    /// </summary>
+    public static async Task<string?> TryRestoreBackupAsync(string path, Func<string, bool> isValid,
+        CancellationToken ct = default)
+    {
+        string backupText;
+        try
+        {
+            var backup = Path.GetFullPath(path) + ".bak";
+            if (!File.Exists(backup)) return null;
+
+            backupText = await File.ReadAllTextAsync(backup, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+
+        if (!isValid(backupText)) return null;
+
+        try
+        {
+            // 백업 없이 교체 — 손상본으로 .bak 을 덮지 않는다(손상본 사본은 PreserveCorrupt 가 남긴다)
+            await WriteAllTextAsync(path, backupText, false, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+
+        return backupText;
+    }
+
     private static void TryDeleteTemp(string tempPath)
     {
         try

@@ -104,7 +104,7 @@ public static class NodeNavigator
             () => DiskTabs.Create(api, node, permissions.CanSysModify));
         tabs.Add("ceph", "DcTab_Ceph", "IconDatabase", audit,
             () => CephGate.Wrap(api, node, () => api.Ceph.StatusJsonAsync(node),
-                () => CephTabs.Create(api, node, permissions.CanSysModify, permissions.CanSysConsole)));
+                () => ViewSpecs.Build(CephTabs.Create(api, node, permissions.CanSysModify, permissions.CanSysConsole))));
         tabs.Add("sdn", "DcTab_Sdn", "IconSwitch", audit, () => NodeSdnTab.Create(api, node),
             api.Sdn.Feature(nameof(Core.Api.Domains.SdnApi.ZoneBridgesAsync)));
         tabs.Add("replication", "DcTab_Replication", "IconCopy", audit, () => NodeSystemTabs.Replication(api, node));
@@ -133,6 +133,6 @@ public static class NodeNavigator
         return new OptionsTab(
             section.Options,
             () => api.GetNodeSectionAsync(node, section.Path),
-            async changes => await api.UpdateNodeSectionAsync(node, section.Path, ActionHelpers.UpdateForm(changes)));
+            async changes => await api.UpdateNodeSectionAsync(node, section.Path, FormHelpers.UpdateForm(changes)));
     }
 }

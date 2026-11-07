@@ -100,18 +100,28 @@ public sealed class ConnectionProfile
     public string? ProxyUserName { get; set; }
 
     /// <summary>
-    ///     Proxy password (메모리상 평문). 디스크에는 평문으로 쓰지 않고 <see cref="ProxyPasswordProtected" /> 로 암호화해 저장한다.
+    ///     Proxy password (메모리상 평문). 디스크에는 평문으로 쓰지 않는다 — Windows 는 <see cref="ProxyPasswordProtected" /> 로
+    ///     암호화해 프로필에 저장하고, 그 밖의 OS 는 프로필에 쓰지 않으므로(<see cref="ProxyPasswordInProfile" />)
+    ///     앱이 자기 보안 저장소에 따로 보관한다.
     /// </summary>
     [JsonIgnore]
     public string? ProxyPassword { get; set; }
 
-    /// <summary>디스크 저장용 — 프록시 비밀번호를 현재 Windows 계정 기준 DPAPI 로 암호화한 값.</summary>
+    /// <summary>
+    ///     프록시 비밀번호가 프로필 JSON 에 (DPAPI 로 암호화되어) 저장되는지 — Windows 만. false 면 저장해도 프로필에 남지 않으니
+    ///     앱이 OS 보안 저장소(키스토어·키체인 등)에 따로 둬야 한다.
+    /// </summary>
+    public static bool ProxyPasswordInProfile => OperatingSystem.IsWindows();
+
+    /// <summary>디스크 저장용 — 프록시 비밀번호를 현재 Windows 계정 기준 DPAPI 로 암호화한 값(Windows 가 아니면 쓰지 않는다).</summary>
     [JsonPropertyName("ProxyPasswordProtected")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public string? ProxyPasswordProtected
     {
-        get => ProxyPassword is { Length: > 0 } plain ? SecretProtector.Protect(plain) : _unreadableProxyPassword;
+        get => ProxyPassword is { Length: > 0 } plain && ProxyPasswordInProfile
+            ? ProtectOrKeep(plain)
+            : _unreadableProxyPassword;
         set
         {
             _unreadableProxyPassword = null;
@@ -121,6 +131,20 @@ public sealed class ConnectionProfile
                 ProxyPassword = plain;
             else
                 _unreadableProxyPassword = value; // 복호화할 수 없어도 버리지 않는다(원래 계정·PC 에선 여전히 유효)
+        }
+    }
+
+    /// <summary>암호화 실패(DPAPI 오류)로 저장 전체가 실패하지 않게 — 그때는 이전 암호값을 유지한다.</summary>
+    private string? ProtectOrKeep(string plain)
+    {
+        try
+        {
+            return SecretProtector.Protect(plain);
+        }
+        catch (Exception ex) when (ex is System.Security.Cryptography.CryptographicException
+                                       or PlatformNotSupportedException)
+        {
+            return _unreadableProxyPassword;
         }
     }
 

@@ -78,7 +78,7 @@ internal static class CephGate
                 HorizontalAlignment = HorizontalAlignment.Center, Classes = { "AccentButton" }
             };
             IconAssist.SetIcon(install, NodeUi.Icon("IconTerminal"));
-            install.Click += async (_, _) => await CephManage.OpenInstallerAsync(api, node);
+            install.Click += async (_, _) => await AvaloniaAppParts.OpenCephInstallerAsync(api, node);
             panel.Children.Add(install);
         }
 

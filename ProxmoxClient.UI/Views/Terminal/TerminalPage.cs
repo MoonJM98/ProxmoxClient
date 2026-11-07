@@ -27,10 +27,17 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
     private readonly Button _paste;
     private readonly ToggleButton _ctrl;
     private readonly ToggleButton _alt;
+    private readonly ToggleButton _shift;
     private readonly Border _more;
     private TerminalViewModel? _vm;
     private (int Columns, int Rows) _pendingSize;
-    private bool _resizeQueued;
+
+    /// <summary>PTY 크기를 보내기 전 기다리는 시간 — 크기 변경이 이만큼 멈추면 보낸다.</summary>
+    private const int PtyResizeDelayMs = 120;
+
+    private int _ptyGeneration;
+    private bool _ptyPending;
+    private bool _ptySizedSinceConnect;
 
     public TerminalPage()
     {
@@ -38,19 +45,33 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
         _terminal.Input = text => _vm?.Send(text);
         _terminal.SizeChanged2 += (columns, rows) =>
         {
-            // 창 크기를 끄는 동안 바뀐 크기는 한 번에 모아 보낸다(같은 크기는 세션이 거른다)
+            // 화면은 바로 바뀐다. 서버 PTY 크기는 창을 끄는 동안(창 끌기·키보드 애니메이션) 멈춘 뒤 한 번만 보낸다 — 크기마다
+            // 보내면 셸·편집기가 그때마다 다시 그려 화면이 어지럽다. 연결 직후 첫 크기는 바로(같은 크기는 세션이 거른다)
             _pendingSize = (columns, rows);
-            if (_resizeQueued) return;
-
-            _resizeQueued = true;
-            Dispatcher.UIThread.Post(() =>
+            if (_vm is not { IsConnected: true } || !_ptySizedSinceConnect)
             {
-                _resizeQueued = false;
-                _vm?.Resize(_pendingSize.Columns, _pendingSize.Rows);
-            }, DispatcherPriority.Background);
+                _ptySizedSinceConnect = _vm?.IsConnected == true;
+                FlushPtySize();
+                return;
+            }
+
+            // 마지막 변경만 보낸다(DispatcherTimer 는 헤드리스 검사에서 돌지 않아 지연 후 Post 로)
+            var generation = ++_ptyGeneration;
+            _ptyPending = true;
+            _ = Task.Delay(PtyResizeDelayMs).ContinueWith(_ => Dispatcher.UIThread.Post(() =>
+            {
+                if (generation == _ptyGeneration && _ptyPending) FlushPtySize();
+            }), TaskScheduler.Default);
         };
         _terminal.SelectionChanged += has => _copy!.IsEnabled = has;
-        _terminal.TakeStickyModifiers = TakeSticky;
+        // 원격 복사(OSC 52 — tmux·vim·neovim 에서 복사) → 이 기기 클립보드
+        _terminal.Buffer.ClipboardWrite += text => Dispatcher.UIThread.Post(async () =>
+        {
+            await ClipboardHelper.SetTextAsync(text);
+            AppServices.Dialogs.Toast(L.T("Terminal_RemoteCopied", text.Length));
+        });
+        _terminal.StickyModifiers = PeekSticky;
+        _terminal.ClearStickyModifiers = ClearSticky;
         _terminal.LineSubmitted += command =>
         {
             _history?.Add(command);
@@ -128,6 +149,7 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
         // 특수 키 막대(터치)
         _ctrl = Toggle("Ctrl");
         _alt = Toggle("Alt");
+        _shift = Toggle("Shift"); // Shift+Tab(모드 바꾸기·메뉴 뒤로)·Shift+방향키
         var main = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -135,9 +157,14 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
             {
                 WithContent(KeyButton(L.T("Console_Keyboard"), () => _terminal.FocusInput(), L.T("Console_Keyboard")), KeyboardIcon()),
                 Key("Esc", Avalonia.Input.Key.Escape),
-                KeyButton("Tab", () => _ = CompleteAsync(), L.T("Terminal_Completions", "…")), // 후보가 여럿이면 목록으로
+                // 후보가 여럿이면 목록으로. Shift 를 고정했으면 Shift+Tab(ESC [ Z)
+                KeyButton("Tab", () =>
+                {
+                    if (_shift.IsChecked == true) _terminal.SendKey(Avalonia.Input.Key.Tab);
+                    else _ = CompleteAsync();
+                }, L.T("Terminal_Completions", "…")),
                 KeyButton(L.T("Terminal_HistoryButton"), ShowHistory, L.T("Terminal_History")),
-                _ctrl, _alt,
+                _ctrl, _alt, _shift,
                 Key("←", Avalonia.Input.Key.Left), Key("↑", Avalonia.Input.Key.Up),
                 Key("↓", Avalonia.Input.Key.Down), Key("→", Avalonia.Input.Key.Right),
                 Text("|"), Text("-"), Text("/"), Text("~"),
@@ -193,6 +220,9 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
         // 최근 명령 기록 — 서버·대상마다 따로(이 기기에만)
         AttachHistory(new TerminalViewModelKey($"{vm.Api.Profile.Host}:{vm.Api.Profile.Port}|{vm.Target.BasePath}"));
         vm.PropertyChanged += OnVmChanged;
+        _ptyPending = false;
+        _ptySizedSinceConnect = false;
+        _pendingSize = (_terminal.Buffer.Columns, _terminal.Buffer.Rows);
         vm.Resize(_terminal.Buffer.Columns, _terminal.Buffer.Rows);
         UpdateButtons();
         _ = ApplySettingsAsync();
@@ -206,8 +236,22 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
         if (PlatformInfo.IsDesktop) _terminal.SetFontSize(settings.TerminalFontSize + 1); // 설정은 pt, 화면은 px
     }
 
+    /// <summary>기다리던 PTY 크기를 지금 보낸다.</summary>
+    private void FlushPtySize()
+    {
+        _ptyPending = false;
+        _vm?.Resize(_pendingSize.Columns, _pendingSize.Rows);
+    }
+
     private void OnVmChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(TerminalViewModel.IsConnected))
+        {
+            // 새로 연결됨 — 기다리던 크기는 바로 보내고, 다음 첫 크기 변경도 바로
+            _ptySizedSinceConnect = false;
+            if (_ptyPending) FlushPtySize();
+        }
+
         if (e.PropertyName is nameof(TerminalViewModel.IsConnected) or nameof(TerminalViewModel.IsConnecting))
             UpdateButtons();
         if (e.PropertyName == nameof(TerminalViewModel.IsConnected) && _vm?.IsConnected == true) _terminal.FocusInput();
@@ -223,11 +267,16 @@ public sealed partial class TerminalPage : ContentPage, IOwnsTouchDrag
         _paste.IsEnabled = connected;
     }
 
-    private (bool Ctrl, bool Alt) TakeSticky()
+    /// <summary>고정해 둔 수식키 — 터미널이 실제로 무언가를 보낼 때 붙이고 <see cref="ClearSticky" /> 로 푼다.</summary>
+    private KeyModifiers PeekSticky()
     {
-        var result = (_ctrl.IsChecked == true, _alt.IsChecked == true);
-        _ctrl.IsChecked = _alt.IsChecked = false;
-        return result;
+        return (_ctrl.IsChecked == true ? KeyModifiers.Control : 0) | (_alt.IsChecked == true ? KeyModifiers.Alt : 0) |
+               (_shift.IsChecked == true ? KeyModifiers.Shift : 0);
+    }
+
+    private void ClearSticky()
+    {
+        _ctrl.IsChecked = _alt.IsChecked = _shift.IsChecked = false;
     }
 
     /// <summary>한 줄 가로 스크롤(스크롤 막대는 숨기고 손가락으로 민다).</summary>

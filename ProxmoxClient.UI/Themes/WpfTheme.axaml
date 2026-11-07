@@ -304,6 +304,10 @@
         <Setter Property="Background" Value="{StaticResource BrushSelection}" />
         <Setter Property="BorderBrush" Value="{StaticResource BrushAccent}" />
     </Style>
+    <!-- 누르는 동안 살짝 밝게 — 손가락 아래에서 눌린 것을 바로 알 수 있게 -->
+    <Style Selector="ListBox.cards > ListBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource BrushHover}" />
+    </Style>
 
     <!-- ===================================================================== 표(DataGrid) -->
     <Style Selector="DataGrid">

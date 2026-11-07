@@ -1,0 +1,96 @@
+# RDP 콘솔 끝까지(Windows): 러너 자신의 원격 데스크톱(NLA 필수)을 서버로, 가짜 PVE(tools/FakePve)의 RDCleanPath
+# 프록시를 거쳐 ProxmoxRdpSession 을 직접 돌린다(tools/WinRdpE2E). CredSSP·화면·키보드·해상도 변경·클립보드 양방향.
+name: Windows RDP E2E
+
+on:
+  # 실제 Windows RDP 서버(러너 자신, NLA 필수)로 끝까지 — RDP 코드나 가짜 프록시가 바뀔 때와 수동 실행
+  push:
+    paths: ["ProxmoxClient.Core/Rdp/**", "tools/FakePve/rdp.py", "tools/WinRdpE2E/**", ".github/workflows/win-rdp-e2e.yml"]
+  pull_request:
+    paths: ["ProxmoxClient.Core/Rdp/**", "tools/FakePve/rdp.py", "tools/WinRdpE2E/**", ".github/workflows/win-rdp-e2e.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  RDP_USER: rdptest
+  RDP_PASSWORD: "RdpE2e!2345x"
+
+jobs:
+  rdp:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 원격 데스크톱 켜기(NLA)·시험 계정
+        shell: pwsh
+        run: |
+          $ts = 'HKLM:\System\CurrentControlSet\Control\Terminal Server'
+          Set-ItemProperty $ts -Name fDenyTSConnections -Value 0
+          Set-ItemProperty "$ts\WinStations\RDP-Tcp" -Name UserAuthentication -Value 1
+          Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
+          Set-Service TermService -StartupType Automatic
+          Restart-Service TermService -Force
+          $pw = ConvertTo-SecureString $env:RDP_PASSWORD -AsPlainText -Force
+          New-LocalUser -Name $env:RDP_USER -Password $pw -PasswordNeverExpires | Out-Null
+          Add-LocalGroupMember -Group 'Remote Desktop Users' -Member $env:RDP_USER
+          Start-Sleep 5
+          Get-ItemProperty "$ts\WinStations\RDP-Tcp" | Select-Object UserAuthentication, SecurityLayer, PortNumber | Format-List
+          Get-NetIPAddress -AddressFamily IPv4 | Format-Table IPAddress, InterfaceAlias, PrefixOrigin
+          netstat -ano | Select-String ':3389'
+          qwinsta
+          [System.Environment]::OSVersion | Format-List
+          $ips = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' }).IPAddress
+          $targets = @('127.0.0.2:3389') + ($ips | ForEach-Object { "${_}:3389" }) + @('127.0.0.1:3389')
+          "RDP_TARGETS=$($targets -join ',')" >> $env:GITHUB_ENV
+
+      - name: 빌드(tools/WinRdpE2E)
+        run: dotnet build tools/WinRdpE2E -c Release
+
+      - name: RDP 검사
+        shell: pwsh
+        run: |
+          dotnet run --project tools/WinRdpE2E -c Release --no-build -- `
+            --python python --fakepve tools/FakePve/fake_pve.py --port 19750 `
+            --rdp $env:RDP_TARGETS --user $env:RDP_USER --pass $env:RDP_PASSWORD --out shots 2>&1 | Tee-Object shots-run.log
+          $ok = Select-String -Path shots-run.log -Pattern '^DONE ok' -Quiet
+          if (-not $ok) { exit 1 }
+
+      - name: 진단(서버 이벤트)
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force shots | Out-Null
+          Copy-Item shots-run.log shots/ -ErrorAction SilentlyContinue
+          qwinsta | Out-File shots/qwinsta.txt
+          foreach ($log in 'Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational',
+                           'Microsoft-Windows-TerminalServices-LocalSessionManager/Operational',
+                           'Microsoft-Windows-RemoteDesktopServices-RdpCoreTS/Operational') {
+            "==== $log" | Out-File -Append shots/events.txt
+            Get-WinEvent -LogName $log -MaxEvents 60 -ErrorAction SilentlyContinue |
+              Format-List TimeCreated, Id, LevelDisplayName, Message | Out-File -Append shots/events.txt
+          }
+          Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4624,4625} -MaxEvents 20 -ErrorAction SilentlyContinue |
+            Format-List TimeCreated, Id, Message | Out-File shots/security.txt
+          Get-ChildItem "C:\Users\$env:RDP_USER*" -Filter 'e2e-*' -Recurse -ErrorAction SilentlyContinue |
+            ForEach-Object { "$($_.FullName): $(Get-Content $_.FullName -Raw)" } | Out-File shots/session-files.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: win-rdp-e2e-${{ github.run_id }}
+          path: shots/
+          retention-days: 14
+          if-no-files-found: warn
